@@ -1,5 +1,15 @@
 # VOILA
 
+Brief description
+
+## Dependencies
+- cmake >= 3.11
+- bison >= 3.2
+- RE/flex
+- gcc >= 9 / clang >= 8
+- llvm
+
+
 ## Setup
 VOILA can be installed using sandbox.sh.
 For instance, run ```N=<CORES> PREFIX=<DIR> sandbox.sh``` to install VOILA and its depedencies in <DIR> while compilation will use up to <CORES> threads.
