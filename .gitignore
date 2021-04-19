@@ -4,3 +4,5 @@ src/voila_parser.cpp
 src/voila_lexer.cpp
 src/voila_parser.cpp
 include/voila_lexer.hpp
+.cache
+build

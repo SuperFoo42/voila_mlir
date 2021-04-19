@@ -7,37 +7,22 @@ Brief description
 - bison >= 3.2
 - RE/flex
 - gcc >= 9 / clang >= 8
+- ninja
 - llvm
+- Doxygen
 
 
 ## Setup
-VOILA can be installed using sandbox.sh.
-For instance, run ```N=<CORES> PREFIX=<DIR> sandbox.sh``` to install VOILA and its depedencies in <DIR> while compilation will use up to <CORES> threads.
+For setup run:
 
-## Direct
-Queries can run directly using:
-```/voila -s 1 -q q9 --default_blend "computation_type=vector(128),concurrent_fsms=1,prefetch=0"```
+```
+./configure
+```
 
-This will run TPC-H Q9 on scale factor 1 using vectorized execution (with 128 tuple chunk size) with 5 repetitions and all available cores.
+The configuration script invokes cmake, creates a subdirectory called `build` and configures the project. To build the project:
+```
+cd build
+ninja
+```
 
-Alternatively, one can set a direct/old flavors:
-
-For Hyper:
-```/voila -s 1 -q q1 --flavor hyper```
-
-For Vectorwise:
-```/voila -s 1 -q q1 --flavor vectorwise```
-
-## Exploration
-
-One can explore base flavors, i.e. one flavor per query, with:
-```explorer -s 1 --base -q q9```
-
-One can explore per-pipeline flavors with:
-```explorer -s 1 --pipeline -q q9```
-
-
-## Experiments
-
-* ```run_all.py``` runs all experiments.
-* ```gen_tables.py``` generates plots/tables etc.
+All further is TBD

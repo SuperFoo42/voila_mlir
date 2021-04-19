@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "extern/magic_enum.hpp"
+#include <magic_enum.hpp>
 
 // VOILA
 
@@ -228,7 +228,7 @@ struct Arithmetic : Expression
     };
     Expression lhs, rhs;
     Arithmetic(Operation op, Expression lhs, Expression rhs) :
-        Expression(Expression::Type::Arithmetic, magic_enum::enum_name(op)
+        Expression(Expression::Type::Arithmetic, std::string(magic_enum::enum_name(op))
 ), lhs{lhs}, rhs{rhs}
     {
     }
@@ -247,7 +247,7 @@ struct Comparison : Expression
     };
     Expression lhs, rhs;
     Comparison(Operation op, Expression lhs, Expression rhs) :
-        Expression(Expression::Type::Comparison, magic_enum::enum_name(op)), lhs{lhs}, rhs{rhs}
+        Expression(Expression::Type::Comparison, std::string(magic_enum::enum_name(op))), lhs{lhs}, rhs{rhs}
     {
     }
 };
@@ -262,11 +262,11 @@ struct Logical : Expression
     };
     std::vector<Expression> args;
     Logical(Operation op, Expression lhs, Expression rhs) :
-        Expression(Expression::Type::Logical, magic_enum::enum_name(op)), args ({lhs, rhs})
+        Expression(Expression::Type::Logical, std::string(magic_enum::enum_name(op))), args ({lhs, rhs})
     {
     }
 	Logical(Operation op, Expression arg) :
-        Expression(Expression::Type::Logical, magic_enum::enum_name(op)), args ({arg})
+        Expression(Expression::Type::Logical, std::string(magic_enum::enum_name(op))), args ({arg})
     {}
 };
 
