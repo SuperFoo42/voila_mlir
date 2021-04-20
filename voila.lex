@@ -8,68 +8,76 @@
 }
 
 %option bison-complete
-%option bison-cc-namespace=voila
+%option bison-cc-namespace=voila::parser
 %option bison-cc-parser=Parser
 %option bison-locations
 
-%option exception="voila::Parser::syntax_error(location(), \"Unknown token.\")"
+%option exception="voila::parser::Parser::syntax_error(location(), \"Unknown token.\")"
 
-%option namespace=voila
+%option namespace=voila::lexer
 %option lexer=Lexer
 
 %%
-"|"                             return voila::Parser::make_BAR(location());
-"="                             return voila::Parser::make_ASSIGN(location());
-";"                             return voila::Parser::make_COLON(location());
-","                             return voila::Parser::make_COMMA(location());
-"("                             return voila::Parser::make_LPAREN(location());
-")"                             return voila::Parser::make_RPAREN(location());
-"{"                             return voila::Parser::make_LBRACE(location());
-"}"                             return voila::Parser::make_RBRACE(location());
-"["                             return voila::Parser::make_LBRACKET(location());
-"]"                             return voila::Parser::make_RBRACKET(location());
+"|"                             return voila::parser::Parser::make_BAR(location());
+"="                             return voila::parser::Parser::make_ASSIGN(location());
+";"                             return voila::parser::Parser::make_COLON(location());
+","                             return voila::parser::Parser::make_COMMA(location());
+"("                             return voila::parser::Parser::make_LPAREN(location());
+")"                             return voila::parser::Parser::make_RPAREN(location());
+"{"                             return voila::parser::Parser::make_LBRACE(location());
+"}"                             return voila::parser::Parser::make_RBRACE(location());
+"["                             return voila::parser::Parser::make_LBRACKET(location());
+"]"                             return voila::parser::Parser::make_RBRACKET(location());
 
-"true"                          return voila::Parser::make_TRUE(location());
-"false"                         return voila::Parser::make_FALSE(location());
+"true"                          return voila::parser::Parser::make_TRUE(location());
+"false"                         return voila::parser::Parser::make_FALSE(location());
 
-"and"                           return voila::Parser::make_AND(location());
-"or"                            return voila::Parser::make_OR(location());
-"not"                           return voila::Parser::make_NOT(location());
+"and"                           return voila::parser::Parser::make_AND(location());
+"or"                            return voila::parser::Parser::make_OR(location());
+"not"                           return voila::parser::Parser::make_NOT(location());
 
-"add"                           return voila::Parser::make_ADD(location());
-"sub"                           return voila::Parser::make_SUB(location());
-"mul"                           return voila::Parser::make_MUL(location());
-"div"                           return voila::Parser::make_DIV(location());
-"mod"                           return voila::Parser::make_MOD(location());
+"add"                           return voila::parser::Parser::make_ADD(location());
+"sub"                           return voila::parser::Parser::make_SUB(location());
+"mul"                           return voila::parser::Parser::make_MUL(location());
+"div"                           return voila::parser::Parser::make_DIV(location());
+"mod"                           return voila::parser::Parser::make_MOD(location());
 
-"eq"                            return voila::Parser::make_EQ(location());
-"neq"                           return voila::Parser::make_NEQ(location());
-"ge"                            return voila::Parser::make_GE(location());
-"le"                            return voila::Parser::make_LE(location());
-"leq"                           return voila::Parser::make_LEQ(location());
-"geq"                           return voila::Parser::make_GEQ(location());
+"eq"                            return voila::parser::Parser::make_EQ(location());
+"neq"                           return voila::parser::Parser::make_NEQ(location());
+"ge"                            return voila::parser::Parser::make_GE(location());
+"le"                            return voila::parser::Parser::make_LE(location());
+"leq"                           return voila::parser::Parser::make_LEQ(location());
+"geq"                           return voila::parser::Parser::make_GEQ(location());
 
-"aggr"                          return voila::Parser::make_AGGR(location());
-"sum"                           return voila::Parser::make_SUM(location());
-"count"                         return voila::Parser::make_CNT(location());
-"min"                           return voila::Parser::make_MIN(location());
-"max"                           return voila::Parser::make_MAX(location());
-"avg"                           return voila::Parser::make_AVG(location());
+"aggr"                          return voila::parser::Parser::make_AGGR(location());
+"sum"                           return voila::parser::Parser::make_SUM(location());
+"count"                         return voila::parser::Parser::make_CNT(location());
+"min"                           return voila::parser::Parser::make_MIN(location());
+"max"                           return voila::parser::Parser::make_MAX(location());
+"avg"                           return voila::parser::Parser::make_AVG(location());
 
-"gather"                        return voila::Parser::make_GATHER(location());
-"scatter"                       return voila::Parser::make_SCATTER(location());
-"read"                          return voila::Parser::make_READ(location());
-"write"                         return voila::Parser::make_WRITE(location());
+"gather"                        return voila::parser::Parser::make_GATHER(location());
+"scatter"                       return voila::parser::Parser::make_SCATTER(location());
+"read"                          return voila::parser::Parser::make_READ(location());
+"write"                         return voila::parser::Parser::make_WRITE(location());
 
-"selfalse"                      rinclude/eturn voila::Parser::make_HASH(location());
+"def"                           return voila::parser::Parser::make_FUNCTION(location());
+"loop"                          return voila::parser::Parser::make_LOOP(location());
+"emit"                          return voila::parser::Parser::make_EMIT(location());
+"main"                          return voila::parser::Parser::make_MAIN(location());
 
-[[:digit:]]+\.[[:digit:]]+      return voila::Parser::make_FLT(std::strtod(str()), location());
-[[:digit:]]+					return voila::Parser::make_INT(std::strtoimax(str(), nullptr, 10), location());
-[[:alpha:]_][[:alnum:]_]*		return voila::Parser::make_ID(str(), location());
-\"([^\\\"]|\\.)*?\"             return voila::Parser::make_STR(str(), location());
+"selfalse"                      return voila::parser::Parser::make_SELFALSE(location());
+"seltrue"                       return voila::parser::Parser::make_SELTRUE(location());
+
+"hash"                          return voila::parser::Parser::make_HASH(location());
+
+ -?([[:digit:]]+|[[:digit:]]*\.[[:digit:]]+([eE][-+]?[[:digit:]]+)?)      return voila::parser::Parser::make_FLT(std::strtod(str()), location());
+-?[[:digit:]]+					return voila::parser::Parser::make_INT(std::strtoimax(str(), nullptr, 10), location());
+[[:alpha:]_][[:alnum:]_]*		return voila::parser::Parser::make_ID(str(), location());
+\"([^\\\"]|\\.)*?\"             return voila::parser::Parser::make_STR(str(), location());
 
 #.*								// Comment
 \s+			                    // Whitespace
-<<EOF>>                         return voila::Parser::make_YYEOF(location());
-.                               throw voila::Parser::syntax_error(location(), "Unknown token.");
+<<EOF>>                         return voila::parser::Parser::make_YYEOF(location());
+.                               throw voila::parser::Parser::syntax_error(location(), "Unknown token.");
 %%

@@ -12,3 +12,4 @@ ${FLEX_VoilaScanner_OUTPUTS}
 )
 
 target_link_libraries(voila_compiler magic_enum reflex fmt)
+target_compile_features(voila_compiler PUBLIC cxx_std_20)
