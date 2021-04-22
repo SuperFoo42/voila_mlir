@@ -1,26 +1,22 @@
 #pragma once
 #include "IExpression.hpp"
-
 namespace voila::ast
 {
-    class Arithmetic : IExpression
+    class Logical : IExpression
     {
-      public:
-        virtual ~Arithmetic() = default;
-
-        bool is_arithmetic() const final
+        bool is_logical() const final
         {
             return true;
         }
 
-        Arithmetic *as_arithmetic() final
+        Logical *as_logical() final
         {
             return this;
         }
 
         std::string type2string() const override
         {
-            return "arithmetic";
+            return "logical";
         }
     };
 } // namespace voila::ast

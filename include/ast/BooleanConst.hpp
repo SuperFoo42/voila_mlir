@@ -1,26 +1,27 @@
 #pragma once
-#include "IExpression.hpp"
-
+#include "Const.hpp"
 namespace voila::ast
 {
-    class Arithmetic : IExpression
+    class BooleanConst : Const
     {
       public:
-        virtual ~Arithmetic() = default;
+        BooleanConst(const bool val) : Const(), val{val} {}
 
-        bool is_arithmetic() const final
+        bool is_bool() const final
         {
             return true;
         }
 
-        Arithmetic *as_arithmetic() final
+        BooleanConst *as_bool() final
         {
             return this;
         }
 
         std::string type2string() const override
         {
-            return "arithmetic";
+            return "bool";
         }
+
+        const bool val;
     };
 } // namespace voila::ast

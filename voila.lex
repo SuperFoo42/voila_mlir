@@ -66,8 +66,7 @@
 "emit"                          return voila::parser::Parser::make_EMIT(location());
 "main"                          return voila::parser::Parser::make_MAIN(location());
 
-"selfalse"                      return voila::parser::Parser::make_SELFALSE(location());
-"seltrue"                       return voila::parser::Parser::make_SELTRUE(location());
+"select"                       return voila::parser::Parser::make_SELECT(location());
 
 "hash"                          return voila::parser::Parser::make_HASH(location());
 

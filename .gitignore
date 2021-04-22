@@ -1,8 +1,8 @@
 include/location.hpp
 include/voila_parser.hpp
+include/voila_lexer.hpp
 src/voila_parser.cpp
 src/voila_lexer.cpp
-src/voila_parser.cpp
-include/voila_lexer.hpp
 .cache
-build
+*build*
+.idea

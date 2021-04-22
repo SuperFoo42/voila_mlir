@@ -1,13 +1,13 @@
 #pragma once
-#include "ASTNode.hpp"
+#include "IExpression.hpp"
 
 namespace voila::ast
 {
     template<class NodeType>
-    class BinaryOP : ASTNode
+    class BinaryOP : public IExpression
     {
       public:
-        BinaryOP(NodeType &lhs, NodeType &rhs) : ASTNode(), lhs{lhs}, rhs{rhs}
+        BinaryOP(NodeType &lhs, NodeType &rhs) : IExpression(), lhs{lhs}, rhs{rhs}
         {
 			check(lhs, rhs);
             // TODO: check that lhs and rhs are numeric

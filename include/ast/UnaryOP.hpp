@@ -1,13 +1,13 @@
 #pragma once
-#include "ASTNode.hpp"
+#include "IExpression.hpp"
 
 namespace voila::ast
 {
 	template<class NodeType>
-    class UnaryOP : ASTNode
+    class UnaryOP : public IExpression
     {
       public:
-        UnaryOP(NodeType &param) : ASTNode(), param{param}
+        UnaryOP(NodeType &param) : IExpression(), param{param}
         {
             checkArg(param);
         }

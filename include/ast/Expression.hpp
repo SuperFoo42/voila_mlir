@@ -1,21 +1,19 @@
 #pragma once
-#include "ASTNode.hpp"
+#include "IExpression.hpp"
 
 #include <concepts>
 #include <memory>
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
     class Expression
     {
-        std::shared_ptr<ASTNode> mImpl;
-        Expression(std::shared_ptr<ASTNode> impl) : mImpl{impl} {}
+        std::shared_ptr<IExpression> mImpl;
+        explicit Expression(std::shared_ptr<IExpression> impl) : mImpl{impl} {}
 
       public:
         template<typename ExprImpl, typename... Args>
-        requires std::derived_from<ExprImpl, ASTNode> static Expression make(Args &&...args)
+        requires std::derived_from<ExprImpl, IExpression> static Expression make(Args &&...args)
         {
             return Expression(std::shared_ptr<ExprImpl>(new ExprImpl(std::forward<Args>(args)...)));
         }
@@ -26,59 +24,14 @@ namespace voila::ast
             return out;
         }
 
-        bool is_get_pos() const
+        bool is_expr() const
         {
-            return mImpl->is_get_pos();
-        }
-
-        bool is_get_morsel() const
-        {
-            return mImpl->is_get_morsel();
-        }
-
-        bool is_aggr() const
-        {
-            return mImpl->is_aggr();
-        }
-
-        bool is_table_op() const
-        {
-            return mImpl->is_table_op();
-        }
-
-        bool is_constant() const
-        {
-            return mImpl->is_constant();
-        }
-
-        bool is_cast() const
-        {
-            return mImpl->is_cast();
+            return true;
         }
 
         bool is_select() const
         {
             return mImpl->is_select();
-        }
-
-        bool is_terminal() const
-        {
-            return mImpl->is_terminal();
-        }
-
-        bool is_tupleop() const
-        {
-            return mImpl->is_tupleop();
-        }
-
-        bool is_expr()
-        {
-            return mImpl->is_expr();
-        }
-
-        bool is_stmt() const
-        {
-            return mImpl->is_stmt();
         }
 
         bool is_arithmetic() const
@@ -174,6 +127,197 @@ namespace voila::ast
         bool is_not() const
         {
             return mImpl->is_not();
+        }
+
+        bool is_string() const
+        {
+            return mImpl->is_string();
+        }
+
+        bool is_float() const
+        {
+            return mImpl->is_float();
+        }
+
+        bool is_integer() const
+        {
+            return mImpl->is_integer();
+        }
+
+        bool is_bool() const
+        {
+            return mImpl->is_bool();
+        }
+
+        bool is_const() const
+        {
+            return mImpl->is_const();
+        }
+
+        bool is_read() const
+        {
+            return mImpl->is_read();
+        }
+
+        bool is_gather() const
+        {
+            return mImpl->is_gather();
+        }
+
+        bool is_tuple_get() const
+        {
+            return mImpl->is_tuple_get();
+        }
+
+        bool is_reference() const
+        {
+            return mImpl->is_reference();
+        }
+
+        // casts
+        IExpression *as_expr() const
+        {
+            return mImpl->as_expr();
+        }
+
+        Selection *as_select() const
+        {
+            return mImpl->as_select();
+        }
+
+        Arithmetic *as_arithmetic() const
+        {
+            return mImpl->as_arithmetic();
+        }
+
+        Add *as_add() const
+        {
+            return mImpl->as_add();
+        }
+
+        Sub *as_sub() const
+        {
+            return mImpl->as_sub();
+        }
+
+        Mul *as_mul() const
+        {
+            return mImpl->as_mul();
+        }
+
+        Div *as_div() const
+        {
+            return mImpl->as_div();
+        }
+
+        Mod *as_mod() const
+        {
+            return mImpl->as_mod();
+        }
+
+        Comparison *as_comparison() const
+        {
+            return mImpl->as_comparison();
+        }
+
+        Geq *as_geq() const
+        {
+            return mImpl->as_geq();
+        }
+
+        Ge *as_ge() const
+        {
+            return mImpl->as_ge();
+        }
+
+        Leq *as_leq() const
+        {
+            return mImpl->as_leq();
+        }
+
+        Le *as_le() const
+        {
+            return mImpl->as_le();
+        }
+
+        Neq *as_neq() const
+        {
+            return mImpl->as_neq();
+        }
+
+        Eq *as_eq() const
+        {
+            return mImpl->as_eq();
+        }
+
+        Logical *as_logical() const
+        {
+            return mImpl->as_logical();
+        }
+
+        And *as_and() const
+        {
+            return mImpl->as_and();
+        }
+
+        Or *as_or() const
+        {
+            return mImpl->as_or();
+        }
+
+        Not *as_not() const
+        {
+            return mImpl->as_not();
+        }
+
+        StrConst *as_string() const
+        {
+            return mImpl->as_string();
+        }
+
+        FltConst *as_float() const
+        {
+            return mImpl->as_float();
+        }
+
+        IntConst *as_integer() const
+        {
+            return mImpl->as_integer();
+        }
+
+        BooleanConst *as_bool() const
+        {
+            return mImpl->as_bool();
+        }
+
+        Const *as_const() const
+        {
+            return mImpl->as_const();
+        }
+
+        Read *as_read() const
+        {
+            return mImpl->as_read();
+        }
+
+        Gather *as_gather() const
+        {
+            return mImpl->as_gather();
+        }
+
+        TupleGet *as_tuple_get() const
+        {
+            return mImpl->as_tuple_get();
+        }
+
+        Ref *as_reference()
+        {
+            return mImpl->as_reference();
+        }
+
+        std::string type2string() const
+        {
+            return mImpl->type2string();
         }
 
         void visit(ASTVisitor &visitor)

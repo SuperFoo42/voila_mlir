@@ -9,7 +9,8 @@
 %define parse.error verbose
 
 %{
-	#include "voila.hpp"
+	#include "ASTNodes.hpp"
+	#include <unordered_set>
 	using namespace voila::ast;
 %}
 
@@ -33,6 +34,7 @@
 	#include <fstream>
 	#include <string>
 	#include <cinttypes>
+	#include <vector>
 	#include "voila_lexer.hpp"
 	#undef yylex
 	#define yylex lexer.lex // Within bison's parse() we should invoke lexer.yylex(), not the global yylex()
@@ -83,8 +85,7 @@
 
 /* TODO: unary operators */
 %token HASH "hash"
-%token SELTRUE "matching selection"
-%token SELFALSE "not matching selection"
+%token SELECT "matching selection"
 
 /* binary operators */
 %token GATHER "gather"
@@ -118,9 +119,10 @@
 %nterm <Main> main;
 %nterm <Const> constant; 
 %nterm <std::shared_ptr<Expression>> pred;
-%nterm <Effect> effect;
+%nterm <Statement> effect;
 %nterm <Arithmetic> arithmetic;
 %nterm <Comparison> comparison;
+%nterm <Selection> selection;
 %nterm <Logical> logical;
 %nterm <Fun> read_op;
 
@@ -128,9 +130,9 @@
 program: 
 	%empty { }
 	| program func { $$ = $1; $$.emplace_back($2); }
-	| program main { $$ = $1; $$.emplace_back($2); }
+	| program main { $$ = $1; $$.emplace_back($2); } //TODO: main function is singleton
 
-func: FUNCTION ID LPAREN IDs RPAREN LBRACE stmts RBRACE { $$ = Fun($2, $7, $4); }
+func: FUNCTION ID LPAREN IDs RPAREN LBRACE stmts RBRACE { $$ = Fun($2, $4, $7); }
 
 main: MAIN LBRACE stmts RBRACE { $$ = Main($3); }
 
@@ -138,39 +140,40 @@ stmts:
 	%empty { }
 	| stmts stmt { $$ = $1; $$.push_back($2); }
 
-stmt: expr COLON { $$ = veclang_new_node1(scanner, VLN_ExecExpr, $1); }
+stmt: expr COLON { $$ = $1; }
 	| ID ASSIGN expr COLON { $$ = Assign($1, $3); }
 	| LOOP pred LBRACE stmts RBRACE { $$ = Loop($2, $4); }
 	| EMIT expr COLON { $$ = Emit($2); }
 	| effect COLON { $$ = $1; }
+	| effect COLON pred { $$ = $1; $$.predicate($3); }
+	| ID LPAREN expr RPAREN COLON { $$ = FunctionCall($1, $3); }
 
 	/* aggregate ( result_store, variable with predicate as aggregation filter, vector_to_aggregate) */
 effect :
-	AGGR LPAREN SUM COMMA ID COMMA expr COMMA expr RPAREN { $$ = AggrGSum($5, $7, $9); } /* maybe we restrict the expressions to more specialized predicates or tuple get in the parser to safe some correctness check effort later on */
-	| AGGR LPAREN CNT COMMA ID COMMA expr COMMA expr RPAREN { $$ = AggrGCount(($5, $7, $9)); }
-	| AGGR LPAREN AVG COMMA ID COMMA expr COMMA expr RPAREN { $$ = AggrGAvg(($5, $7, $9)); }
-	| AGGR LPAREN MIN COMMA ID COMMA expr COMMA expr RPAREN { $$ = AggrGMin(($5, $7, $9)); }
-	| AGGR LPAREN MAX COMMA ID COMMA expr COMMA expr RPAREN { $$ = AggrGMax(($5, $7, $9)); }
-	| SCATTER LPAREN ID COMMA expr pred COMMA expr RPAREN { $$ = Scatter($3, $5, $8, $6); } /* dest, idxs with pred, src */
+	AGGR LPAREN SUM COMMA ID COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrGSum>($5, $7, $9); } /* maybe we restrict the expressions to more specialized predicates or tuple get in the parser to safe some correctness check effort later on */
+	| AGGR LPAREN CNT COMMA ID COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrGCount>($5, $7, $9); }
+	| AGGR LPAREN AVG COMMA ID COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrGAvg>($5, $7, $9); }
+	| AGGR LPAREN MIN COMMA ID COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrGMin>($5, $7, $9); }
+	| AGGR LPAREN MAX COMMA ID COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrGMax>($5, $7, $9); }
+	| SCATTER LPAREN ID COMMA expr COMMA expr RPAREN { $$ = Scatter($3, $5, $7); } /* dest, idxs with pred, src */
 	| WRITE LPAREN ID COMMA expr COMMA ID RPAREN { $$ = Write($3, $5, $7, nullptr); } /* dest, start_idx, src */
 
-pred: BAR ID { $$ = nullptr; std::cout << "noop" << std::endl; } /* FIXME */
+pred: BAR ID { $$ = Ref(ID); }
 
-predicate:
-	SELTRUE LPAREN expr RPAREN
-	| SELFALSE LPAREN expr RPAREN
+selection:
+	SELECT LPAREN expr RPAREN { $$ = Selection($3); }
 
 expr: 
 	constant { $$ = $1; }
 	| ID { $$ = Ref($1); }
 	| ID LBRACKET INT RBRACKET { $$ = TupleGet($1, $3); }
 	| LPAREN expr_list RPAREN { $$ = TupleCreate($2); } /* recursive tuples do not look like a good idea */
-	| expr pred { std::cout << "noop" << std::endl; } /* FIXME */
-	| ID LPAREN expr RPAREN { $$ = veclang_new_node2(scanner, VLN_Call, $1, $3); }
+	| expr pred { $$ = $1; $$.predicate($2); }
 	| arithmetic {$$ = $1; }
 	| comparison {$$ = $1; }
 	| logical {$$ = $1; }
 	| read_op {$$ = $1; }
+	| selection { $$ = $1; }
 
 constant:
 	TRUE { $$ = Const(true); }
@@ -202,7 +205,6 @@ logical:
 read_op:
 	GATHER LPAREN expr COMMA expr RPAREN { $$ = Gather($3, $5); }
 	| READ LPAREN expr COMMA expr RPAREN { $$ = Read($3, $5); }
-
 
 expr_list: 
 	%empty { }
