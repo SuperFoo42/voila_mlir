@@ -1,0 +1,14 @@
+add_library(voila_ast
+        Add.cpp
+        AggrAvg.cpp
+        AggrCnt.cpp
+        Aggregation.cpp
+        AggrMax.cpp
+        AggrMin.cpp
+        AggrSum.cpp
+        And.cpp
+        Arithmetic.cpp
+        ASTNode.cpp BooleanConst.cpp Comparison.cpp Const.cpp Div.cpp Emit.cpp Eq.cpp Expression.cpp FltConst.cpp Fun.cpp FunctionCall.cpp Gather.cpp Ge.cpp Geq.cpp IExpression.cpp IntConst.cpp IStatement.cpp Le.cpp Leq.cpp Logical.cpp Loop.cpp Main.cpp Mod.cpp Mul.cpp Neq.cpp Not.cpp Or.cpp Read.cpp Ref.cpp Scatter.cpp Selection.cpp Statement.cpp StatementWrapper.cpp StrConst.cpp Sub.cpp TupleCreate.cpp TupleGet.cpp Write.cpp Assign.cpp)
+
+set_property(TARGET voila_ast PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+target_compile_features(voila_ast PUBLIC cxx_std_20)

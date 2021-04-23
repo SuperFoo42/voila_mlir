@@ -2,25 +2,17 @@
 #include "Const.hpp"
 namespace voila::ast
 {
-    class FltConst : Const
+    class FltConst : public Const
     {
       public:
-        FltConst(const double val) : Const(), val{val} {}
+        explicit FltConst(const double val) : Const(), val{val} {}
 
-        bool is_float() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_float() const final;
 
-        FltConst *as_float() final
-        {
-            return this;
-        }
+        FltConst *as_float() final;
 
-        std::string type2string() const override
-        {
-            return "float";
-        }
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
 
         const double val;
     };

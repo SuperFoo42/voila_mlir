@@ -2,24 +2,15 @@
 #include "IExpression.hpp"
 namespace voila::ast
 {
-    class Const : IExpression
+    class Const : virtual public IExpression
     {
       public:
-        virtual ~Const() = default;
+        ~Const() override = default;
 
-        bool is_const() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_const() const final;
 
-        Const *as_const() final
-        {
-            return this;
-        }
+        Const *as_const() final;
 
-        std::string type2string() const override
-        {
-            return "constant";
-        }
+        [[nodiscard]] std::string type2string() const override;
     };
 } // namespace voila::ast

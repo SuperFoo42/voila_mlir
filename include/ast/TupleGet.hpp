@@ -2,32 +2,23 @@
 #include "Expression.hpp"
 #include "IExpression.hpp"
 #include "IntConst.hpp"
+
 #include <cassert>
+#include <utility>
 
 namespace voila::ast
 {
-    class TupleGet : IExpression
+    class TupleGet : public IExpression
     {
       public:
-        TupleGet(const Expression &exp, const Expression &idx) : IExpression(), expr{exp}, idx{idx}
-        {
-            assert(idx.is_integer());
-            this->idx = idx.as_integer();
-            assert(this->idx->val >= 0);
-            // TODO: check expr tuple and idx in range
-        }
+        TupleGet(std::string exp, const intmax_t idx);
 
-        bool is_tuple_get() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_tuple_get() const final;
 
-        std::string type2string() const final
-        {
-            return "tuple get";
-        }
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
 
-        Expression expr;
-        IntConst *idx;
+        std::string expr;
+        intmax_t idx;
     };
 } // namespace voila::ast

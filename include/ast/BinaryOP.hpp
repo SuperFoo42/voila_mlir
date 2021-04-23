@@ -4,23 +4,22 @@
 namespace voila::ast
 {
     template<class NodeType>
-    class BinaryOP : public IExpression
+    class BinaryOP : virtual public IExpression
     {
       public:
         BinaryOP(NodeType &lhs, NodeType &rhs) : IExpression(), lhs{lhs}, rhs{rhs}
         {
-			check(lhs, rhs);
-            // TODO: check that lhs and rhs are numeric
+            checkArgs(lhs, rhs);
         }
 
-        virtual ~BinaryOP() = default;
+        ~BinaryOP() override = default;
 
-        bool is_binary() const final
+        [[nodiscard]] bool is_binary() const final
         {
             return true;
         }
 
-        std::string type2string() const override
+        [[nodiscard]] std::string type2string() const override
         {
             return "binary operation";
         }

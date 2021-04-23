@@ -4,24 +4,16 @@
 
 namespace voila::ast
 {
-    class AggrCnt : Aggregation
+    class AggrCnt : public Aggregation
     {
       public:
         using Aggregation::Aggregation;
 
-        bool is_aggr_cnt() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_aggr_cnt() const final;
 
-        AggrCnt *as_aggr_cnt() final
-        {
-            return this;
-        }
+        AggrCnt *as_aggr_cnt() final;
 
-        std::string type2string() const final
-        {
-            return "count aggregation";
-        }
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
     };
 } // namespace voila::ast

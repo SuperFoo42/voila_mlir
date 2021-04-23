@@ -3,29 +3,24 @@
 #include "IStatement.hpp"
 #include "Statement.hpp"
 
+#include <utility>
 #include <vector>
 
 namespace voila::ast
 {
-    class Loop : IStatement
+    class Loop : public IStatement
     {
       public:
-        Loop(const Expression &pred, const std::vector<Statement> &stms) : IStatement(), pred{pred}, stms{stms} {}
-
-        std::string type2string() const final
+        Loop(Expression pred, std::vector<Statement> stms) : IStatement(), pred{std::move(pred)}, stms{std::move(stms)}
         {
-            return "loop";
         }
 
-        bool is_loop() const final
-        {
-            return true;
-        }
+        [[nodiscard]] std::string type2string() const final;
 
-        Loop *as_loop() final
-        {
-            return this;
-        }
+        [[nodiscard]] bool is_loop() const final;
+
+        Loop *as_loop() final;
+        void print(std::ostream &ostream) const final;
 
         Expression pred;
         std::vector<Statement> stms;

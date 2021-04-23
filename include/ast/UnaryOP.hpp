@@ -4,24 +4,24 @@
 namespace voila::ast
 {
 	template<class NodeType>
-    class UnaryOP : public IExpression
+    class UnaryOP : virtual public IExpression
     {
       public:
-        UnaryOP(NodeType &param) : IExpression(), param{param}
+        explicit UnaryOP(NodeType &param) : IExpression(), param{param}
         {
             checkArg(param);
         }
 
-        virtual ~UnaryOP() = default;
+        ~UnaryOP() override = default;
 
-        bool is_unary() const final
+        [[nodiscard]] bool is_unary() const final
         {
             return true;
         }
 
-        std::string type2string() const override
+        [[nodiscard]] std::string type2string() const override
         {
-            return "binary operation";
+            return "unary operation";
         }
 
         void print(std::ostream &o) const override
@@ -31,6 +31,6 @@ namespace voila::ast
 
       protected:
         NodeType param;
-		virtual void checkArg(NodeType &param) = 0;
+        virtual void checkArg(const NodeType &param) = 0;
     };
 }

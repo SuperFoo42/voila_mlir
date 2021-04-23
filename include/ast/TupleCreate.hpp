@@ -1,23 +1,20 @@
 #pragma once
-#include "IExpression.hpp"
 #include "Expression.hpp"
+#include "IExpression.hpp"
+
+#include <utility>
 #include <vector>
 namespace voila::ast
 {
-   class TupleCreate : IExpression
+    class TupleCreate : public IExpression
     {
       public:
-        TupleCreate(std::vector<Expression> &tupleElems) : IExpression(), elems{tupleElems} {}
+        explicit TupleCreate(std::vector<Expression> tupleElems);
 
-        bool is_tuple_create() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_tuple_create() const final;
 
-        std::string type2string() const override
-        {
-            return "tuple create";
-        }
+        [[nodiscard]] std::string type2string() const override;
+        void print(std::ostream &ostream) const override;
 
         std::vector<Expression> elems;
     };

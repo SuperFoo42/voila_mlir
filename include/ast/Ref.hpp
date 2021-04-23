@@ -1,30 +1,21 @@
 #pragma once
+#include "Expression.hpp"
 #include "IExpression.hpp"
 namespace voila::ast
 {
-    class Ref : IExpression
+    class Ref : public IExpression
     {
       public:
-        Ref(const std::string &var) : IExpression()
-        {
-            // TODO find reference or error
-        }
+        explicit Ref(const std::string &var);
 
-        bool is_reference() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_reference() const final;
 
-        std::string type2string() const override
-        {
-            return "reference";
-        }
+        [[nodiscard]] std::string type2string() const override;
 
-        Ref *as_reference() final
-        {
-            return this;
-        }
+        Ref *as_reference() final;
 
-        Expression ref;
+        void print(std::ostream &o) const final;
+
+        // TODO: Expression ref;
     };
 } // namespace voila::ast

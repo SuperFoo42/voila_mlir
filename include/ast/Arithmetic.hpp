@@ -3,24 +3,15 @@
 
 namespace voila::ast
 {
-    class Arithmetic : IExpression
+    class Arithmetic : virtual public IExpression
     {
       public:
-        virtual ~Arithmetic() = default;
+        ~Arithmetic() override = default;
 
-        bool is_arithmetic() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_arithmetic() const final;
 
-        Arithmetic *as_arithmetic() final
-        {
-            return this;
-        }
+        Arithmetic *as_arithmetic() final;
 
-        std::string type2string() const override
-        {
-            return "arithmetic";
-        }
+        [[nodiscard]] std::string type2string() const override;
     };
 } // namespace voila::ast

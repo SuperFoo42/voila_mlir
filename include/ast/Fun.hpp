@@ -6,29 +6,24 @@
 
 namespace voila::ast
 {
-    class Fun : ASTNode
+    class Fun : public ASTNode
     {
       public:
-        Fun(const std::string &fun, const std::vector<std::string> &args, const std::vector<Statement> &exprs) :
-            ASTNode(), name{fun}, args{args}, body{exprs}
-        {
-            // TODO: check function, deduce argument types and register function
-        }
+        Fun(std::string fun, std::vector<std::string> args, std::vector<Statement> exprs);
+        Fun() = default;
+        Fun(Fun &) = default;
+        Fun(const Fun &) = default;
+        Fun(Fun &&) = default;
 
-        bool is_function_definition() const final
-        {
-            return true;
-        }
+        Fun &operator=(const Fun &) = default;
 
-        Fun *as_function_definition() final
-        {
-            return this;
-        }
+        [[nodiscard]] bool is_function_definition() const final;
 
-        std::string type2string() const override
-        {
-            return "function definition";
-        }
+        Fun *as_function_definition() final;
+
+        [[nodiscard]] std::string type2string() const override;
+
+        void print(std::ostream &o) const final;
 
         std::string name;
         std::vector<std::string> args;

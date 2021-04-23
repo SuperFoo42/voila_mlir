@@ -3,36 +3,26 @@
 #include "Expression.hpp"
 #include "IStatement.hpp"
 
+#include <utility>
 #include <vector>
 
 namespace voila::ast
 {
-    class Write : IStatement
+    class Write : public IStatement
     {
       public:
-        Write(const Expression &dest_col, const Expression &wpos, const Expression &src_col) :
-            IStatement(), dest{dest_col}, start{wpos}, src{src_col}
-        {
-        }
+        Write(std::string dest_col, Expression wpos, std::string src_col);
 
-        bool is_write() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_write() const final;
 
-        Write *as_write() final
-        {
-            return this;
-        }
+        Write *as_write() final;
 
-        std::string type2string() const final
-        {
-            return "write";
-        }
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
 
-        Expression dest;
+        std::string dest;
         Expression start;
-        Expression src;
+        std::string src;
     };
 
 } // namespace voila::ast

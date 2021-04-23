@@ -2,32 +2,25 @@
 #include "Expression.hpp"
 #include "IStatement.hpp"
 
+#include <utility>
 #include <vector>
 
 namespace voila::ast
 {
-    class Emit : IStatement
+    class Emit : public IStatement
     {
       public:
-        Emit(const Expression &expr, const Expression &pred) : IStatement(), expr{expr}, pred{pred} {}
+        explicit Emit(Expression expr) : IStatement(), expr{std::move(expr)} {}
 
-        bool is_emit() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_emit() const final;
 
-        Emit *as_emit() final
-        {
-            return this;
-        }
+        Emit *as_emit() final;
 
-        std::string type2string() const final
-        {
-            return "emit";
-        }
+        [[nodiscard]] std::string type2string() const final;
+
+        void print(std::ostream &ostream) const final;
 
         Expression expr;
-        Expression pred;
     };
 
 } // namespace voila::ast

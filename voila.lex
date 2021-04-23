@@ -56,27 +56,27 @@
 "max"                           return voila::parser::Parser::make_MAX(location());
 "avg"                           return voila::parser::Parser::make_AVG(location());
 
-"gather"                        return voila::parser::Parser::make_GATHER(location());
-"scatter"                       return voila::parser::Parser::make_SCATTER(location());
-"read"                          return voila::parser::Parser::make_READ(location());
-"write"                         return voila::parser::Parser::make_WRITE(location());
+"gather" return voila::parser::Parser::make_GATHER(location());
+"scatter" return voila::parser::Parser::make_SCATTER(location());
+"read" return voila::parser::Parser::make_READ(location());
+"write" return voila::parser::Parser::make_WRITE(location());
 
-"def"                           return voila::parser::Parser::make_FUNCTION(location());
-"loop"                          return voila::parser::Parser::make_LOOP(location());
-"emit"                          return voila::parser::Parser::make_EMIT(location());
-"main"                          return voila::parser::Parser::make_MAIN(location());
+"def" return voila::parser::Parser::make_FUNCTION(location());
+"loop" return voila::parser::Parser::make_LOOP(location());
+"emit" return voila::parser::Parser::make_EMIT(location());
+"main" return voila::parser::Parser::make_MAIN(location());
 
-"select"                       return voila::parser::Parser::make_SELECT(location());
+"select" return voila::parser::Parser::make_SELECT(location());
 
-"hash"                          return voila::parser::Parser::make_HASH(location());
+"hash" return voila::parser::Parser::make_HASH(location());
 
- -?([[:digit:]]+|[[:digit:]]*\.[[:digit:]]+([eE][-+]?[[:digit:]]+)?)      return voila::parser::Parser::make_FLT(std::strtod(str()), location());
--?[[:digit:]]+					return voila::parser::Parser::make_INT(std::strtoimax(str(), nullptr, 10), location());
-[[:alpha:]_][[:alnum:]_]*		return voila::parser::Parser::make_ID(str(), location());
+-?([[:digit:]]+|[[:digit:]]*\.[[:digit:]]+([eE][-+]?[[:digit:]]+)?)      return voila::parser::Parser::make_FLT(std::strtod(str()), location());
+- ? [[:digit:]] + return voila::parser::Parser::make_INT(std::strtoimax(str(), nullptr, 10), location());
+[[:alpha:] _][[:alnum:] _] * return voila::parser::Parser::make_ID(str(), location());
 \"([^\\\"]|\\.)*?\"             return voila::parser::Parser::make_STR(str(), location());
 
-#.*								// Comment
-\s+			                    // Whitespace
-<<EOF>>                         return voila::parser::Parser::make_YYEOF(location());
+#.*// Comment
+\s + // Whitespace
+        <<EOF>>                         return voila::parser::Parser::make_YYEOF(location());
 .                               throw voila::parser::Parser::syntax_error(location(), "Unknown token.");
 %%

@@ -14,38 +14,20 @@ namespace voila::ast
     {
       public:
         virtual void print(std::ostream &) const = 0;
-        virtual std::string type2string() const = 0;
+        [[nodiscard]] virtual std::string type2string() const = 0;
         virtual void visit(ASTVisitor &visitor);
         virtual ~ASTNode() = default;
 
-        virtual bool is_expr() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_expr() const;
 
-        virtual bool is_stmt() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_stmt() const;
 
-        virtual bool is_function_definition() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_function_definition() const;
 
-        virtual bool is_main() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_main() const;
 
-        virtual Fun *as_function_definition()
-        {
-            return nullptr;
-        }
+        virtual Fun *as_function_definition();
 
-        virtual Main *as_main()
-        {
-            return nullptr;
-        }
+        virtual Main *as_main();
     };
 } // namespace voila::ast

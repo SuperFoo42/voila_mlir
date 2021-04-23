@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <concepts>
 #include <memory>
+#include <utility>
 
 namespace voila::ast
 {
@@ -12,155 +13,85 @@ namespace voila::ast
     class Statement
     {
         std::shared_ptr<IStatement> mImpl;
-        Statement(std::shared_ptr<IStatement> impl) : mImpl{impl} {}
+        explicit Statement(std::shared_ptr<IStatement> impl) : mImpl{std::move(impl)} {}
 
       public:
+        Statement() = default;
+        Statement(Statement &) = default;
+        Statement(const Statement &) = default;
+        Statement(Statement &&) = default;
+
+        Statement &operator=(const Statement &) = default;
+
         template<typename StmtImpl, typename... Args>
-        requires std::derived_from<StmtImpl, IStatement> static Statement make(Args &&...args)
+        requires std::is_base_of_v<IStatement, StmtImpl>
+        static Statement make(Args &&...args)
         {
-            return Statement(std::shared_ptr<StmtImpl>(new StmtImpl(std::forward<Args>(args)...)));
+            return Statement(std::make_shared<StmtImpl>(std::forward<Args>(args)...));
         }
 
-        friend std::ostream &operator<<(std::ostream &out, const Statement &t)
-        {
-            t.mImpl->print(out);
-            return out;
-        }
+        friend std::ostream &operator<<(std::ostream &out, const Statement &t);
 
-        bool is_stmt() const
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_stmt() const;
 
-        bool is_aggr() const
-        {
-            return mImpl->is_aggr();
-        }
+        [[nodiscard]] bool is_aggr() const;
 
-        bool is_loop() const
-        {
-            return mImpl->is_loop();
-        }
+        [[nodiscard]] bool is_loop() const;
 
-        bool is_assignment() const
-        {
-            return mImpl->is_assignment();
-        }
+        [[nodiscard]] bool is_assignment() const;
 
-        bool is_emit() const
-        {
-            return mImpl->is_emit();
-        }
+        [[nodiscard]] bool is_emit() const;
 
-        bool is_function_call() const
-        {
-            return mImpl->is_function_call();
-        }
+        [[nodiscard]] bool is_function_call() const;
 
-        bool is_scatter() const
-        {
-            return mImpl->is_scatter();
-        }
+        [[nodiscard]] bool is_scatter() const;
 
-        bool is_write() const
-        {
-            return mImpl->is_write();
-        }
+        [[nodiscard]] bool is_write() const;
 
-        bool is_aggr_sum() const
-        {
-            return mImpl->is_aggr_sum();
-        }
+        [[nodiscard]] bool is_aggr_sum() const;
 
-        bool is_aggr_cnt() const
-        {
-            return mImpl->is_aggr_cnt();
-        }
+        [[nodiscard]] bool is_aggr_cnt() const;
 
-        bool is_aggr_min() const
-        {
-            return mImpl->is_aggr_min();
-        }
+        [[nodiscard]] bool is_aggr_min() const;
 
-        bool is_aggr_max() const
-        {
-            return mImpl->is_aggr_max();
-        }
+        [[nodiscard]] bool is_aggr_max() const;
 
-        bool is_aggr_avg() const
-        {
-            return mImpl->is_aggr_avg();
-        }
-//type conversions
-        IStatement * as_stmt()
-        {
-            return mImpl->as_stmt();
-        }
+        [[nodiscard]] bool is_aggr_avg() const;
+        // type conversions
+        IStatement *as_stmt();
 
-        Aggregation * as_aggr()
-        {
-            return mImpl->as_aggr();
-        }
+        Aggregation *as_aggr();
 
-        Loop * as_loop()
-        {
-            return mImpl->as_loop();
-        }
+        Loop *as_loop();
 
-        Assign * as_assignment()
-        {
-            return mImpl->as_assignment();
-        }
+        Assign *as_assignment();
 
-        Emit * as_emit()
-        {
-            return mImpl->as_emit();
-        }
+        Emit *as_emit();
 
-        FunctionCall * as_function_call()
-        {
-            return mImpl->as_function_call();
-        }
+        FunctionCall *as_function_call();
 
-        Scatter * as_scatter()
-        {
-            return mImpl->as_scatter();
-        }
+        Scatter *as_scatter();
 
-        Write * as_write()
-        {
-            return mImpl->as_write();
-        }
+        Write *as_write();
 
-        AggrSum * as_aggr_sum()
-        {
-            return mImpl->as_aggr_sum();
-        }
+        AggrSum *as_aggr_sum();
 
-        AggrCnt * as_aggr_cnt()
-        {
-            return mImpl->as_aggr_cnt();
-        }
+        AggrCnt *as_aggr_cnt();
 
-        AggrMin * as_aggr_min()
-        {
-            return mImpl->as_aggr_min();
-        }
+        AggrMin *as_aggr_min();
 
-        AggrMax * as_aggr_max()
-        {
-            return mImpl->as_aggr_max();
-        }
+        AggrMax *as_aggr_max();
 
-        AggrAvg * as_aggr_avg()
-        {
-            return mImpl->as_aggr_avg();
-        }
+        AggrAvg *as_aggr_avg();
 
-        void visit(ASTVisitor &visitor)
-        {
-            mImpl->visit(visitor);
-        }
+        [[nodiscard]] bool is_statement_wrapper() const;
+
+        std::optional<Expression> as_expression();
+
+        void visit(ASTVisitor &visitor);
+
+        void predicate(Expression expr);
+        ;
         /*TODO: do we need this?
             size_t get_table_column_ref(std::string &tbl_col) const;
             size_t get_table_column_ref(std::string &tbl, std::string &col) const;

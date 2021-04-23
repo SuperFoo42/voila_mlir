@@ -2,21 +2,12 @@
 #include "IExpression.hpp"
 namespace voila::ast
 {
-    class Logical : IExpression
+    class Logical : virtual public IExpression
     {
-        bool is_logical() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_logical() const final;
 
-        Logical *as_logical() final
-        {
-            return this;
-        }
+        Logical *as_logical() final;
 
-        std::string type2string() const override
-        {
-            return "logical";
-        }
+        [[nodiscard]] std::string type2string() const override;
     };
 } // namespace voila::ast

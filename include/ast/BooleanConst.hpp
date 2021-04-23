@@ -2,25 +2,17 @@
 #include "Const.hpp"
 namespace voila::ast
 {
-    class BooleanConst : Const
+    class BooleanConst : public Const
     {
       public:
-        BooleanConst(const bool val) : Const(), val{val} {}
+        explicit BooleanConst(const bool val) : Const(), val{val} {}
 
-        bool is_bool() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_bool() const final;
 
-        BooleanConst *as_bool() final
-        {
-            return this;
-        }
+        BooleanConst *as_bool() final;
 
-        std::string type2string() const override
-        {
-            return "bool";
-        }
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
 
         const bool val;
     };

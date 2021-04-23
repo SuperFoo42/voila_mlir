@@ -5,26 +5,21 @@
 
 namespace voila::ast
 {
-    class Geq : BinaryOP<Expression>, Comparison
+    class Geq : public BinaryOP<Expression>, public Comparison
     {
       public:
         using BinaryOP::BinaryOP;
         using BinaryOP::lhs;
         using BinaryOP::rhs;
 
-        std::string type2string() const final
-        {
-            return "geq";
-        }
+        [[nodiscard]] std::string type2string() const final;
 
-        bool is_geq() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_geq() const final;
 
-        Geq *as_geq() final
-        {
-            return this;
-        }
+        Geq *as_geq() final;
+        void print(std::ostream &ostream) const final;
+
+      protected:
+        void checkArgs(Expression &lhs, Expression &rhs) final;
     };
 } // namespace voila::ast

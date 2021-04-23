@@ -10,7 +10,6 @@
 
 %{
 	#include "ASTNodes.hpp"
-	#include <unordered_set>
 	using namespace voila::ast;
 %}
 
@@ -112,62 +111,63 @@
 %nterm <std::vector<Statement>> stmts; 
 %nterm <std::vector<Expression>> expr_list;
 %nterm <std::vector<Fun>> program;
-%nterm <std::unordered_set<std::string>> IDs;
+%nterm <std::vector<std::string>> IDs;
 %nterm <Statement> stmt;
 %nterm <Expression> expr;
 %nterm <Fun> func;
 %nterm <Main> main;
-%nterm <Const> constant; 
-%nterm <std::shared_ptr<Expression>> pred;
+%nterm <Expression> constant; 
+%nterm <Expression> pred;
+
 %nterm <Statement> effect;
-%nterm <Arithmetic> arithmetic;
-%nterm <Comparison> comparison;
-%nterm <Selection> selection;
-%nterm <Logical> logical;
-%nterm <Fun> read_op;
+%nterm <Expression> arithmetic;
+%nterm <Expression> comparison;
+%nterm <Expression> selection;
+%nterm <Expression> logical;
+%nterm <Expression> read_op;
 
 %%
 program: 
 	%empty { }
-	| program func { $$ = $1; $$.emplace_back($2); }
-	| program main { $$ = $1; $$.emplace_back($2); } //TODO: main function is singleton
+	| program func { $$ = $1; $$.push_back($2); }
+	| program main { $$ = $1; $$.push_back($2); } //TODO: main function is singleton
 
 func: FUNCTION ID LPAREN IDs RPAREN LBRACE stmts RBRACE { $$ = Fun($2, $4, $7); }
 
-main: MAIN LBRACE stmts RBRACE { $$ = Main($3); }
+main: MAIN LPAREN IDs RPAREN LBRACE stmts RBRACE { $$ = Main($3, $6); }
 
 stmts:
 	%empty { }
 	| stmts stmt { $$ = $1; $$.push_back($2); }
 
-stmt: expr COLON { $$ = $1; }
-	| ID ASSIGN expr COLON { $$ = Assign($1, $3); }
-	| LOOP pred LBRACE stmts RBRACE { $$ = Loop($2, $4); }
-	| EMIT expr COLON { $$ = Emit($2); }
+stmt: expr COLON { $$ = Statement::make<StatementWrapper>($1); }
+	| ID ASSIGN expr COLON { $$ = Statement::make<Assign>($1, $3); }
+	| LOOP pred LBRACE stmts RBRACE { $$ = Statement::make<Loop>($2, $4); }
+	| EMIT expr COLON { $$ = Statement::make<Emit>($2); }
 	| effect COLON { $$ = $1; }
 	| effect COLON pred { $$ = $1; $$.predicate($3); }
-	| ID LPAREN expr RPAREN COLON { $$ = FunctionCall($1, $3); }
+	| ID LPAREN IDs RPAREN COLON { $$ = Statement::make<FunctionCall>($1, $3); }
 
 	/* aggregate ( result_store, variable with predicate as aggregation filter, vector_to_aggregate) */
 effect :
-	AGGR LPAREN SUM COMMA ID COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrGSum>($5, $7, $9); } /* maybe we restrict the expressions to more specialized predicates or tuple get in the parser to safe some correctness check effort later on */
-	| AGGR LPAREN CNT COMMA ID COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrGCount>($5, $7, $9); }
-	| AGGR LPAREN AVG COMMA ID COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrGAvg>($5, $7, $9); }
-	| AGGR LPAREN MIN COMMA ID COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrGMin>($5, $7, $9); }
-	| AGGR LPAREN MAX COMMA ID COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrGMax>($5, $7, $9); }
-	| SCATTER LPAREN ID COMMA expr COMMA expr RPAREN { $$ = Scatter($3, $5, $7); } /* dest, idxs with pred, src */
-	| WRITE LPAREN ID COMMA expr COMMA ID RPAREN { $$ = Write($3, $5, $7, nullptr); } /* dest, start_idx, src */
+	AGGR LPAREN SUM COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrSum>($5, $7); } /* maybe we restrict the expressions to more specialized predicates or tuple get in the parser to safe some correctness check effort later on */
+	| AGGR LPAREN CNT COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrCnt>($5, $7); }
+	| AGGR LPAREN AVG COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrAvg>($5, $7); }
+	| AGGR LPAREN MIN COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrMin>($5, $7); }
+	| AGGR LPAREN MAX COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrMax>($5, $7); }
+	| SCATTER LPAREN ID COMMA expr COMMA expr RPAREN { $$ = Statement::make<Scatter>($3, $5, $7); } /* dest, idxs with pred, src */
+	| WRITE LPAREN ID COMMA expr COMMA ID RPAREN { $$ = Statement::make<Write>($3, $5, $7); } /* dest, start_idx, src */
 
-pred: BAR ID { $$ = Ref(ID); }
+pred: BAR ID { $$ = Expression::make<Ref>($2); }
 
 selection:
-	SELECT LPAREN expr RPAREN { $$ = Selection($3); }
+	SELECT LPAREN expr RPAREN { $$ = Expression::make<Selection>($3); }
 
 expr: 
 	constant { $$ = $1; }
-	| ID { $$ = Ref($1); }
-	| ID LBRACKET INT RBRACKET { $$ = TupleGet($1, $3); }
-	| LPAREN expr_list RPAREN { $$ = TupleCreate($2); } /* recursive tuples do not look like a good idea */
+	| ID { $$ = Expression::make<Ref>($1); }
+	| ID LBRACKET INT RBRACKET { $$ = Expression::make<TupleGet>($1, $3); }
+	| LPAREN expr_list RPAREN { $$ = Expression::make<TupleCreate>($2); } /* recursive tuples do not look like a good idea */
 	| expr pred { $$ = $1; $$.predicate($2); }
 	| arithmetic {$$ = $1; }
 	| comparison {$$ = $1; }
@@ -176,35 +176,35 @@ expr:
 	| selection { $$ = $1; }
 
 constant:
-	TRUE { $$ = Const(true); }
-	| FALSE { $$ = Const(false); }
-	| INT { $$ = Const($1); }
-	| FLT { $$ = Const($1); }
-	| STR { $$ = Const($1); }
+	TRUE { $$ = Expression::make<BooleanConst>(true); }
+	| FALSE { $$ = Expression::make<BooleanConst>(false); }
+	| INT { $$ = Expression::make<IntConst>($1); }
+	| FLT { $$ = Expression::make<FltConst>($1); }
+	| STR { $$ = Expression::make<StrConst>($1); }
 
 arithmetic :
-	ADD LPAREN expr COMMA expr RPAREN {$$ = Arithmetic(Arithmetic::Operation::ADD, $3, $5); }
-	| SUB LPAREN expr COMMA expr RPAREN {$$ = Arithmetic(Arithmetic::Operation::SUB, $3, $5); }
-	| MUL LPAREN expr COMMA expr RPAREN {$$ = Arithmetic(Arithmetic::Operation::MUL, $3, $5); }
-	| DIV LPAREN expr COMMA expr RPAREN {$$ = Arithmetic(Arithmetic::Operation::DIV, $3, $5); }
-	| MOD LPAREN expr COMMA expr RPAREN {$$ = Arithmetic(Arithmetic::Operation::MOD, $3, $5); }
+	ADD LPAREN expr COMMA expr RPAREN {$$ =Expression::make<Add>($3, $5); }
+	| SUB LPAREN expr COMMA expr RPAREN {$$ = Expression::make<Sub>($3, $5); }
+	| MUL LPAREN expr COMMA expr RPAREN {$$ = Expression::make<Mul>($3, $5); }
+	| DIV LPAREN expr COMMA expr RPAREN {$$ = Expression::make<Div>($3, $5); }
+	| MOD LPAREN expr COMMA expr RPAREN {$$ = Expression::make<Mod>($3, $5); }
 
 comparison : 
-	EQ LPAREN expr COMMA expr RPAREN {$$ = Comparison(Comparison::Operation::EQ, $3, $5); }
-	| NEQ LPAREN expr COMMA expr RPAREN {$$ = Comparison(Comparison::Operation::NEQ, $3, $5); }
-	| LE LPAREN expr COMMA expr RPAREN {$$ = Comparison(Comparison::Operation::LE, $3, $5); }
-	| LEQ LPAREN expr COMMA expr RPAREN {$$ = Comparison(Comparison::Operation::LEQ, $3, $5); }
-	| GE LPAREN expr COMMA expr RPAREN {$$ = Comparison(Comparison::Operation::GE, $3, $5); }
-	| GEQ LPAREN expr COMMA expr RPAREN {$$ = Comparison(Comparison::Operation::GEQ, $3, $5); }
+	EQ LPAREN expr COMMA expr RPAREN {$$ = Expression::make<Eq>($3, $5); }
+	| NEQ LPAREN expr COMMA expr RPAREN {$$ = Expression::make<Neq>($3, $5); }
+	| LE LPAREN expr COMMA expr RPAREN {$$ = Expression::make<Le>($3, $5); }
+	| LEQ LPAREN expr COMMA expr RPAREN {$$ = Expression::make<Leq>($3, $5); }
+	| GE LPAREN expr COMMA expr RPAREN {$$ = Expression::make<Ge>($3, $5); }
+	| GEQ LPAREN expr COMMA expr RPAREN {$$ = Expression::make<Geq>($3, $5); }
 
 logical:
-	AND LPAREN expr COMMA expr RPAREN {$$ = Comparison(Logical::Operation::AND, $3, $5); }
- 	| OR LPAREN expr COMMA expr RPAREN {$$ = Comparison(Logical::Operation::OR, $3, $5); }
- 	| NOT LPAREN expr RPAREN {$$ = Comparison(Logical::Operation::NOT, $3); }
+	AND LPAREN expr COMMA expr RPAREN {$$ = Expression::make<And>($3, $5); }
+ 	| OR LPAREN expr COMMA expr RPAREN {$$ = Expression::make<Or>($3, $5); }
+ 	| NOT LPAREN expr RPAREN {$$ = Expression::make<Not>($3); }
 
 read_op:
-	GATHER LPAREN expr COMMA expr RPAREN { $$ = Gather($3, $5); }
-	| READ LPAREN expr COMMA expr RPAREN { $$ = Read($3, $5); }
+	GATHER LPAREN expr COMMA expr RPAREN { $$ = Expression::make<Gather>($3, $5); }
+	| READ LPAREN expr COMMA expr RPAREN { $$ = Expression::make<Read>($3, $5); }
 
 expr_list: 
 	%empty { }
@@ -212,7 +212,7 @@ expr_list:
 
 IDs :
 	%empty { }
-	| IDs COMMA ID {$$ = $1; $$.insert($3); }
+	| IDs COMMA ID {$$ = $1; $$.push_back($3); }
 %%
 
 

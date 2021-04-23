@@ -4,25 +4,20 @@
 #include "UnaryOP.hpp"
 namespace voila::ast
 {
-    class Not : UnaryOP<Expression>, Logical
+    class Not : public UnaryOP<Expression>, public Logical
     {
       public:
         using UnaryOP::param;
         using UnaryOP::UnaryOP;
 
-        std::string type2string() const final
-        {
-            return "not";
-        }
+        [[nodiscard]] std::string type2string() const final;
 
-        bool is_not() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_not() const final;
 
-        Not *as_not() final
-        {
-            return this;
-        }
+        Not *as_not() final;
+        void print(std::ostream &ostream) const final;
+
+      protected:
+        void checkArg(const Expression &param) final;
     };
 } // namespace voila::ast

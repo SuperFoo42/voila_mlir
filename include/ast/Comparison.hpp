@@ -3,21 +3,12 @@
 
 namespace voila::ast
 {
-    class Comparison : IExpression
+    class Comparison : virtual public IExpression
     {
-        bool is_comparison() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_comparison() const final;
 
-        Comparison *as_comparison() final
-        {
-            return this;
-        }
+        Comparison *as_comparison() final;
 
-        std::string type2string() const override
-        {
-            return "comparison";
-        }
+        [[nodiscard]] std::string type2string() const override;
     };
 } // namespace voila::ast

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "ASTNode.hpp"
+#include "Expression.hpp"
+
+#include <optional>
 
 namespace voila::ast
 {
@@ -16,144 +19,74 @@ namespace voila::ast
     class Assign;
     class Emit;
     class Loop;
+    class StatementWrapper;
 
-    class IStatement : public ASTNode
+    class IStatement : virtual public ASTNode
     {
       public:
-        virtual ~IStatement() = default;
+        ~IStatement() override = default;
         using ASTNode::print;
         using ASTNode::type2string;
         using ASTNode::visit;
 
+        virtual void predicate(Expression);
+
         // type checks
-        bool is_stmt() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_stmt() const final;
 
-        virtual bool is_aggr() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_aggr() const;
 
-        virtual bool is_loop() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_loop() const;
 
-        virtual bool is_assignment() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_assignment() const;
 
-        virtual bool is_emit() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_emit() const;
 
-        virtual bool is_function_call() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_function_call() const;
 
-        virtual bool is_scatter() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_scatter() const;
 
-        virtual bool is_write() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_write() const;
 
-        virtual bool is_aggr_sum() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_aggr_sum() const;
 
-        virtual bool is_aggr_cnt() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_aggr_cnt() const;
 
-        virtual bool is_aggr_min() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_aggr_min() const;
 
-        virtual bool is_aggr_max() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_aggr_max() const;
 
-        virtual bool is_aggr_avg() const
-        {
-            return false;
-        }
-//type conversions
-        virtual IStatement * as_stmt()
-        {
-            return this;
-        }
+        [[nodiscard]] virtual bool is_aggr_avg() const;
 
-        virtual Aggregation * as_aggr()
-        {
-            return nullptr;
-        }
+        [[nodiscard]] virtual bool is_statement_wrapper() const;
 
-        virtual Loop * as_loop()
-        {
-            return nullptr;
-        }
+        // type conversions
+        virtual IStatement *as_stmt();
 
-        virtual Assign * as_assignment()
-        {
-            return nullptr;
-        }
+        virtual Aggregation *as_aggr();
 
-        virtual Emit * as_emit()
-        {
-            return nullptr;
-        }
+        virtual Loop *as_loop();
 
-        virtual FunctionCall * as_function_call()
-        {
-            return nullptr;
-        }
+        virtual Assign *as_assignment();
 
-        virtual Scatter * as_scatter()
-        {
-            return nullptr;
-        }
+        virtual Emit *as_emit();
 
-        virtual Write * as_write()
-        {
-            return nullptr;
-        }
+        virtual FunctionCall *as_function_call();
 
-        virtual AggrSum * as_aggr_sum()
-        {
-            return nullptr;
-        }
+        virtual Scatter *as_scatter();
 
-        virtual AggrCnt * as_aggr_cnt()
-        {
-            return nullptr;
-        }
+        virtual Write *as_write();
 
-        virtual AggrMin * as_aggr_min()
-        {
-            return nullptr;
-        }
+        virtual AggrSum *as_aggr_sum();
 
-        virtual AggrMax * as_aggr_max()
-        {
-            return nullptr;
-        }
+        virtual AggrCnt *as_aggr_cnt();
 
-        virtual AggrAvg * as_aggr_avg()
-        {
-            return nullptr;
-        }
+        virtual AggrMin *as_aggr_min();
+
+        virtual AggrMax *as_aggr_max();
+
+        virtual AggrAvg *as_aggr_avg();
+
+        virtual std::optional<Expression> as_expression();
     };
 } // namespace voila::ast

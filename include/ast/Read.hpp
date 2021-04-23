@@ -4,26 +4,20 @@
 
 namespace voila::ast
 {
-    class Read : BinaryOP<Expression>
+    class Read : public BinaryOP<Expression>
     {
       public:
         using BinaryOP::BinaryOP;
         using BinaryOP::lhs;
         using BinaryOP::rhs;
 
-        bool is_read() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_read() const final;
 
-        Read *as_read() final
-        {
-            return this;
-        }
+        Read *as_read() final;
 
-        std::string type2string() const final
-        {
-            return "read";
-        }
+        [[nodiscard]] std::string type2string() const final;
+
+      protected:
+        void checkArgs(Expression &lhs, Expression &rhs) final;
     };
 } // namespace voila::ast

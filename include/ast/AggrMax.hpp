@@ -4,24 +4,16 @@
 
 namespace voila::ast
 {
-    class AggrMax : Aggregation
+    class AggrMax : public Aggregation
     {
       public:
         using Aggregation::Aggregation;
 
-        bool is_aggr_max() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_aggr_max() const final;
 
-        AggrMax *as_aggr_max() final
-        {
-            return this;
-        }
+        AggrMax *as_aggr_max() final;
 
-        std::string type2string() const final
-        {
-            return "max aggregation";
-        }
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
     };
 } // namespace voila::ast

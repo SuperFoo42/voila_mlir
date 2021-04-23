@@ -4,26 +4,21 @@
 #include "Expression.hpp"
 namespace voila::ast
 {
-    class Div : BinaryOP<Expression>, Arithmetic
+    class Div : public BinaryOP<Expression>, public Arithmetic
     {
       public:
         using BinaryOP::BinaryOP;
         using BinaryOP::lhs;
         using BinaryOP::rhs;
 
-        std::string type2string() const final
-        {
-            return "div";
-        }
+        [[nodiscard]] std::string type2string() const final;
 
-        bool is_div() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_div() const final;
 
-        Div *as_div() final
-        {
-            return this;
-        }
+        Div *as_div() final;
+        void print(std::ostream &ostream) const final;
+
+      protected:
+        void checkArgs(Expression &lhs, Expression &rhs) final;
     };
 } // namespace voila::ast

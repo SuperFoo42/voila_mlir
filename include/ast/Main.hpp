@@ -1,37 +1,30 @@
 #pragma once
 #include "ASTNode.hpp"
 #include "Statement.hpp"
+#include "ast/Fun.hpp"
 #include "ast/IStatement.hpp"
 
+#include <utility>
 #include <vector>
 
 namespace voila::ast
 {
-    class Main : ASTNode
+    class Main : public Fun
     {
       public:
-        Main(const std::vector<std::string> &args, const std::vector<Statement> &exprs) :
-            ASTNode(), args{args}, exprs{exprs}
-        {
-            // TODO register as entry point and check args + exprs
-        }
+        Main(std::vector<std::string> args, std::vector<Statement> exprs);
 
-        bool is_main() const final
-        {
-            return true;
-        }
+        Main() = default;
+        Main(Main &) = default;
+        Main(const Main &) = default;
+        Main(Main &&) = default;
 
-        Main *as_main() final
-        {
-            return this;
-        }
+        Main &operator=(const Main &) = default;
 
-        std::string type2string() const final
-        {
-            return "main function";
-        }
+        [[nodiscard]] bool is_main() const final;
 
-        std::vector<std::string> args;
-        std::vector<Statement> exprs;
+        Main *as_main() final;
+
+        [[nodiscard]] std::string type2string() const final;
     };
 } // namespace voila::ast

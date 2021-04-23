@@ -1,6 +1,9 @@
 #pragma once
 
 #include "ASTNode.hpp"
+#include "PredicationUnsupportedException.hpp"
+
+#include <fmt/core.h>
 
 namespace voila::ast
 {
@@ -32,316 +35,138 @@ namespace voila::ast
     class Ref;
     class TupleGet;
     class TupleCreate;
+    class Expression;
 
-    class IExpression : ASTNode
+    class IExpression : virtual public ASTNode
     {
       public:
-        virtual ~IExpression() = default;
+        ~IExpression() override = default;
         using ASTNode::print;
         using ASTNode::type2string;
         using ASTNode::visit;
 
+        virtual void predicate(Expression expr);
+
         // type checks
-        bool is_expr() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_expr() const final;
 
-        virtual bool is_select() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_select() const;
 
-        virtual bool is_arithmetic() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_arithmetic() const;
 
-        virtual bool is_add() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_add() const;
 
-        virtual bool is_sub() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_sub() const;
 
-        virtual bool is_mul() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_mul() const;
 
-        virtual bool is_div() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_div() const;
 
-        virtual bool is_mod() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_mod() const;
 
-        virtual bool is_comparison() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_comparison() const;
 
-        virtual bool is_geq() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_geq() const;
 
-        virtual bool is_ge() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_ge() const;
 
-        virtual bool is_leq() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_leq() const;
 
-        virtual bool is_le() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_le() const;
 
-        virtual bool is_neq() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_neq() const;
 
-        virtual bool is_eq() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_eq() const;
 
-        virtual bool is_logical() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_logical() const;
 
-        virtual bool is_unary() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_unary() const;
 
-        virtual bool is_binary() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_binary() const;
 
-        virtual bool is_and() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_and() const;
 
-        virtual bool is_or() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_or() const;
 
-        virtual bool is_not() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_not() const;
 
-        virtual bool is_string() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_string() const;
 
-        virtual bool is_float() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_float() const;
 
-        virtual bool is_integer() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_integer() const;
 
-        virtual bool is_bool() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_bool() const;
 
-        virtual bool is_const() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_const() const;
 
-        virtual bool is_read() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_read() const;
 
-        virtual bool is_gather() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_gather() const;
 
-        virtual bool is_tuple_get() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_tuple_get() const;
 
-        virtual bool is_reference() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_reference() const;
 
-        virtual bool is_tuple_create() const
-        {
-            return false;
-        }
+        [[nodiscard]] virtual bool is_tuple_create() const;
 
         // casts
-        virtual IExpression *as_expr()
-        {
-            return this;
-        }
+        virtual IExpression *as_expr();
 
-        virtual Selection *as_select()
-        {
-            return nullptr;
-        }
+        virtual Selection *as_select();
 
-        virtual Arithmetic *as_arithmetic()
-        {
-            return nullptr;
-        }
+        virtual Arithmetic *as_arithmetic();
 
-        virtual Add *as_add()
-        {
-            return nullptr;
-        }
+        virtual Add *as_add();
 
-        virtual Sub *as_sub()
-        {
-            return nullptr;
-        }
+        virtual Sub *as_sub();
 
-        virtual Mul *as_mul()
-        {
-            return nullptr;
-        }
+        virtual Mul *as_mul();
 
-        virtual Div *as_div()
-        {
-            return nullptr;
-        }
+        virtual Div *as_div();
 
-        virtual Mod *as_mod()
-        {
-            return nullptr;
-        }
+        virtual Mod *as_mod();
 
-        virtual Comparison *as_comparison()
-        {
-            return nullptr;
-        }
+        virtual Comparison *as_comparison();
 
-        virtual Geq *as_geq()
-        {
-            return nullptr;
-        }
+        virtual Geq *as_geq();
 
-        virtual Ge *as_ge()
-        {
-            return nullptr;
-        }
+        virtual Ge *as_ge();
 
-        virtual Leq *as_leq()
-        {
-            return nullptr;
-        }
+        virtual Leq *as_leq();
 
-        virtual Le *as_le()
-        {
-            return nullptr;
-        }
+        virtual Le *as_le();
 
-        virtual Neq *as_neq()
-        {
-            return nullptr;
-        }
+        virtual Neq *as_neq();
 
-        virtual Eq *as_eq()
-        {
-            return nullptr;
-        }
+        virtual Eq *as_eq();
 
-        virtual Logical *as_logical()
-        {
-            return nullptr;
-        }
+        virtual Logical *as_logical();
 
-        virtual And *as_and()
-        {
-            return nullptr;
-        }
+        virtual And *as_and();
 
-        virtual Or *as_or()
-        {
-            return nullptr;
-        }
+        virtual Or *as_or();
 
-        virtual Not *as_not()
-        {
-            return nullptr;
-        }
+        virtual Not *as_not();
 
-        virtual StrConst *as_string()
-        {
-            return nullptr;
-        }
+        virtual StrConst *as_string();
 
-        virtual FltConst *as_float()
-        {
-            return nullptr;
-        }
+        virtual FltConst *as_float();
 
-        virtual IntConst *as_integer()
-        {
-            return nullptr;
-        }
+        virtual IntConst *as_integer();
 
-        virtual BooleanConst *as_bool()
-        {
-            return nullptr;
-        }
+        virtual BooleanConst *as_bool();
 
-        virtual Const *as_const()
-        {
-            return nullptr;
-        }
+        virtual Const *as_const();
 
-        virtual Read *as_read()
-        {
-            return nullptr;
-        }
+        virtual Read *as_read();
 
-        virtual Gather *as_gather()
-        {
-            return nullptr;
-        }
+        virtual Gather *as_gather();
 
-        virtual TupleGet *as_tuple_get()
-        {
-            return nullptr;
-        }
+        virtual TupleGet *as_tuple_get();
 
-        virtual Ref *as_reference()
-        {
-            return nullptr;
-        }
+        virtual Ref *as_reference();
 
-
-        virtual TupleCreate * as_tuple_create()
-        {
-            return nullptr;
-        }
+        virtual TupleCreate *as_tuple_create();
     };
 } // namespace voila::ast

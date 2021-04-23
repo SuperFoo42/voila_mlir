@@ -4,26 +4,21 @@
 #include "Logical.hpp"
 namespace voila::ast
 {
-    class And : BinaryOP<Expression>, Logical
+    class And : public BinaryOP<Expression>, public Logical
     {
       public:
         using BinaryOP::BinaryOP;
         using BinaryOP::lhs;
         using BinaryOP::rhs;
 
-        std::string type2string() const final
-        {
-            return "and";
-        }
+        [[nodiscard]] std::string type2string() const final;
 
-        bool is_and() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_and() const final;
 
-        And *as_and() final
-        {
-            return this;
-        }
+        And *as_and() final;
+        void print(std::ostream &ostream) const final;
+
+      protected:
+        void checkArgs(Expression &lhs, Expression &rhs) final;
     };
 } // namespace voila::ast

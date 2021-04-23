@@ -2,28 +2,21 @@
 #include "Expression.hpp"
 #include "IStatement.hpp"
 
+#include <utility>
+
 namespace voila::ast
 {
-    class Aggregation : IStatement
+    class Aggregation : virtual public IStatement
     {
       public:
-        Aggregation(const Expression &col, const Expression &idxs) : IStatement(), src{col}, idxs{idxs} {}
-        virtual ~Aggregation() = default;
+        Aggregation(Expression col, Expression idxs) : IStatement(), src{col}, idxs{idxs} {}
+        ~Aggregation() override = default;
 
-        bool is_aggr() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_aggr() const final;
 
-        Aggregation *as_aggr() final
-        {
-            return this;
-        }
+        Aggregation *as_aggr() final;
 
-        std::string type2string() const override
-        {
-            return "aggregation";
-        }
+        [[nodiscard]] std::string type2string() const override;
 
         Expression src;
         Expression idxs;

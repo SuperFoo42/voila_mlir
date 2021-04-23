@@ -2,25 +2,17 @@
 #include "Const.hpp"
 namespace voila::ast
 {
-    class IntConst : Const
+    class IntConst : public Const
     {
       public:
-        IntConst(const std::intmax_t val) : Const(), val{val} {}
+        explicit IntConst(const std::intmax_t val) : Const(), val{val} {}
 
-        bool is_integer() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_integer() const final;
 
-        IntConst *as_integer() final
-        {
-            return this;
-        }
+        IntConst *as_integer() final;
 
-        std::string type2string() const override
-        {
-            return "integer";
-        }
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
 
         const std::intmax_t val;
     };

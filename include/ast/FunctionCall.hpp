@@ -2,34 +2,24 @@
 #include "Expression.hpp"
 #include "IStatement.hpp"
 
+#include <utility>
 #include <vector>
 
 namespace voila::ast
 {
-    class FunctionCall : IStatement
+    class FunctionCall : public IStatement
     {
       public:
-        FunctionCall(const std::string fun, std::vector<Expression> args) : IStatement(), fun{fun}, args{args}
-        {
-            // TODO: lookup function definition and check if all arguments match
-        }
+        FunctionCall(std::string fun, std::vector<std::string> args);
 
-        bool is_function_call() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_function_call() const final;
 
-        FunctionCall *as_function_call() final
-        {
-            return this;
-        }
+        FunctionCall *as_function_call() final;
 
-        std::string type2string() const final
-        {
-            return "function call";
-        }
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
 
         std::string fun;
-        std::vector<Expression> args;
+        std::vector<std::string> args;
     };
 } // namespace voila::ast

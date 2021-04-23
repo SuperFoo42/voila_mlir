@@ -4,5 +4,6 @@ include/voila_lexer.hpp
 src/voila_parser.cpp
 src/voila_lexer.cpp
 .cache
-*build*
+build
+cmake-build-*
 .idea

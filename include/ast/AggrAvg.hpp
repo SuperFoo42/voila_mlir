@@ -4,24 +4,16 @@
 
 namespace voila::ast
 {
-    class AggrAvg : Aggregation
+    class AggrAvg : public Aggregation
     {
       public:
         using Aggregation::Aggregation;
 
-        bool is_aggr_avg() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_aggr_avg() const final;
 
-        AggrAvg *as_aggr_avg() final
-        {
-            return this;
-        }
+        AggrAvg *as_aggr_avg() final;
 
-        std::string type2string() const final
-        {
-            return "avg aggregation";
-        }
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
     };
 } // namespace voila::ast

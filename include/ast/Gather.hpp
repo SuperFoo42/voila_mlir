@@ -4,26 +4,20 @@
 
 namespace voila::ast
 {
-    class Gather : BinaryOP<Expression>
+    class Gather : public BinaryOP<Expression>
     {
       public:
         using BinaryOP::BinaryOP;
         using BinaryOP::lhs;
         using BinaryOP::rhs;
 
-        bool is_gather() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_gather() const final;
 
-        Gather *as_gather() final
-        {
-            return this;
-        }
+        Gather *as_gather() final;
 
-        std::string type2string() const final
-        {
-            return "gather";
-        }
+        [[nodiscard]] std::string type2string() const final;
+
+      protected:
+        void checkArgs(Expression &lhs, Expression &rhs) final;
     };
 } // namespace voila::ast

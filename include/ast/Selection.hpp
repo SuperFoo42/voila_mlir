@@ -4,25 +4,18 @@
 
 namespace voila::ast
 {
-    class Selection : UnaryOP<Expression>
+    class Selection : public UnaryOP<Expression>
     {
       public:
         using UnaryOP::param;
         using UnaryOP::UnaryOP;
 
-        bool is_select() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_select() const final;
 
-        Selection *as_select() final
-        {
-            return this;
-        }
+        Selection *as_select() final;
 
-        std::string type2string() const final
-        {
-            return "selection";
-        }
+        [[nodiscard]] std::string type2string() const final;
+
+        void checkArg(const Expression &) override;
     };
 } // namespace voila::ast

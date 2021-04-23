@@ -3,327 +3,155 @@
 
 #include <concepts>
 #include <memory>
+#include <utility>
 
 namespace voila::ast
 {
     class Expression
     {
         std::shared_ptr<IExpression> mImpl;
-        explicit Expression(std::shared_ptr<IExpression> impl) : mImpl{impl} {}
+        explicit Expression(std::shared_ptr<IExpression> impl) : mImpl{std::move(impl)} {}
 
       public:
+        Expression() = default;
+        Expression(Expression &) = default;
+        Expression(const Expression &) = default;
+        Expression(Expression &&) = default;
+
+        Expression &operator=(const Expression &) = default;
+
         template<typename ExprImpl, typename... Args>
-        requires std::derived_from<ExprImpl, IExpression> static Expression make(Args &&...args)
+        requires std::is_base_of_v<IExpression, ExprImpl>
+        static Expression make(Args &&...args)
         {
-            return Expression(std::shared_ptr<ExprImpl>(new ExprImpl(std::forward<Args>(args)...)));
+            return Expression(std::make_shared<ExprImpl>(std::forward<Args>(args)...));
         }
 
-        friend std::ostream &operator<<(std::ostream &out, const Expression &t)
-        {
-            t.mImpl->print(out);
-            return out;
-        }
+        friend std::ostream &operator<<(std::ostream &out, const Expression &t);
 
-        bool is_expr() const
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_expr() const;
 
-        bool is_select() const
-        {
-            return mImpl->is_select();
-        }
+        [[nodiscard]] bool is_select() const;
 
-        bool is_arithmetic() const
-        {
-            return mImpl->is_arithmetic();
-        }
+        [[nodiscard]] bool is_arithmetic() const;
 
-        bool is_add() const
-        {
-            return mImpl->is_add();
-        }
+        [[nodiscard]] bool is_add() const;
 
-        bool is_sub() const
-        {
-            return mImpl->is_sub();
-        }
+        [[nodiscard]] bool is_sub() const;
 
-        bool is_mul() const
-        {
-            return mImpl->is_mul();
-        }
+        [[nodiscard]] bool is_mul() const;
 
-        bool is_div() const
-        {
-            return mImpl->is_div();
-        }
+        [[nodiscard]] bool is_div() const;
 
-        bool is_mod() const
-        {
-            return mImpl->is_mod();
-        }
+        [[nodiscard]] bool is_mod() const;
 
-        bool is_comparison() const
-        {
-            return mImpl->is_comparison();
-        }
+        [[nodiscard]] bool is_comparison() const;
 
-        bool is_geq() const
-        {
-            return mImpl->is_geq();
-        }
+        [[nodiscard]] bool is_geq() const;
 
-        bool is_ge() const
-        {
-            return mImpl->is_ge();
-        }
+        [[nodiscard]] bool is_ge() const;
 
-        bool is_leq() const
-        {
-            return mImpl->is_leq();
-        }
+        [[nodiscard]] bool is_leq() const;
 
-        bool is_le() const
-        {
-            return mImpl->is_le();
-        }
+        [[nodiscard]] bool is_le() const;
 
-        bool is_neq() const
-        {
-            return mImpl->is_neq();
-        }
+        [[nodiscard]] bool is_neq() const;
 
-        bool is_eq() const
-        {
-            return mImpl->is_eq();
-        }
+        [[nodiscard]] bool is_eq() const;
 
-        bool is_logical() const
-        {
-            return mImpl->is_logical();
-        }
+        [[nodiscard]] bool is_logical() const;
 
-        bool is_unary() const
-        {
-            return mImpl->is_unary();
-        }
+        [[nodiscard]] bool is_unary() const;
 
-        bool is_binary() const
-        {
-            return mImpl->is_binary();
-        }
+        [[nodiscard]] bool is_binary() const;
 
-        bool is_and() const
-        {
-            return mImpl->is_and();
-        }
+        [[nodiscard]] bool is_and() const;
 
-        bool is_or() const
-        {
-            return mImpl->is_or();
-        }
+        [[nodiscard]] bool is_or() const;
 
-        bool is_not() const
-        {
-            return mImpl->is_not();
-        }
+        [[nodiscard]] bool is_not() const;
 
-        bool is_string() const
-        {
-            return mImpl->is_string();
-        }
+        [[nodiscard]] bool is_string() const;
 
-        bool is_float() const
-        {
-            return mImpl->is_float();
-        }
+        [[nodiscard]] bool is_float() const;
 
-        bool is_integer() const
-        {
-            return mImpl->is_integer();
-        }
+        [[nodiscard]] bool is_integer() const;
 
-        bool is_bool() const
-        {
-            return mImpl->is_bool();
-        }
+        [[nodiscard]] bool is_bool() const;
 
-        bool is_const() const
-        {
-            return mImpl->is_const();
-        }
+        [[nodiscard]] bool is_const() const;
 
-        bool is_read() const
-        {
-            return mImpl->is_read();
-        }
+        [[nodiscard]] bool is_read() const;
 
-        bool is_gather() const
-        {
-            return mImpl->is_gather();
-        }
+        [[nodiscard]] bool is_gather() const;
 
-        bool is_tuple_get() const
-        {
-            return mImpl->is_tuple_get();
-        }
+        [[nodiscard]] bool is_tuple_get() const;
 
-        bool is_reference() const
-        {
-            return mImpl->is_reference();
-        }
+        [[nodiscard]] bool is_reference() const;
 
         // casts
-        IExpression *as_expr() const
-        {
-            return mImpl->as_expr();
-        }
+        [[nodiscard]] IExpression *as_expr() const;
 
-        Selection *as_select() const
-        {
-            return mImpl->as_select();
-        }
+        [[nodiscard]] Selection *as_select() const;
 
-        Arithmetic *as_arithmetic() const
-        {
-            return mImpl->as_arithmetic();
-        }
+        [[nodiscard]] Arithmetic *as_arithmetic() const;
 
-        Add *as_add() const
-        {
-            return mImpl->as_add();
-        }
+        [[nodiscard]] Add *as_add() const;
 
-        Sub *as_sub() const
-        {
-            return mImpl->as_sub();
-        }
+        [[nodiscard]] Sub *as_sub() const;
 
-        Mul *as_mul() const
-        {
-            return mImpl->as_mul();
-        }
+        [[nodiscard]] Mul *as_mul() const;
 
-        Div *as_div() const
-        {
-            return mImpl->as_div();
-        }
+        [[nodiscard]] Div *as_div() const;
 
-        Mod *as_mod() const
-        {
-            return mImpl->as_mod();
-        }
+        [[nodiscard]] Mod *as_mod() const;
 
-        Comparison *as_comparison() const
-        {
-            return mImpl->as_comparison();
-        }
+        [[nodiscard]] Comparison *as_comparison() const;
 
-        Geq *as_geq() const
-        {
-            return mImpl->as_geq();
-        }
+        [[nodiscard]] Geq *as_geq() const;
 
-        Ge *as_ge() const
-        {
-            return mImpl->as_ge();
-        }
+        [[nodiscard]] Ge *as_ge() const;
 
-        Leq *as_leq() const
-        {
-            return mImpl->as_leq();
-        }
+        [[nodiscard]] Leq *as_leq() const;
 
-        Le *as_le() const
-        {
-            return mImpl->as_le();
-        }
+        [[nodiscard]] Le *as_le() const;
 
-        Neq *as_neq() const
-        {
-            return mImpl->as_neq();
-        }
+        [[nodiscard]] Neq *as_neq() const;
 
-        Eq *as_eq() const
-        {
-            return mImpl->as_eq();
-        }
+        [[nodiscard]] Eq *as_eq() const;
 
-        Logical *as_logical() const
-        {
-            return mImpl->as_logical();
-        }
+        [[nodiscard]] Logical *as_logical() const;
 
-        And *as_and() const
-        {
-            return mImpl->as_and();
-        }
+        [[nodiscard]] And *as_and() const;
 
-        Or *as_or() const
-        {
-            return mImpl->as_or();
-        }
+        [[nodiscard]] Or *as_or() const;
 
-        Not *as_not() const
-        {
-            return mImpl->as_not();
-        }
+        [[nodiscard]] Not *as_not() const;
 
-        StrConst *as_string() const
-        {
-            return mImpl->as_string();
-        }
+        [[nodiscard]] StrConst *as_string() const;
 
-        FltConst *as_float() const
-        {
-            return mImpl->as_float();
-        }
+        [[nodiscard]] FltConst *as_float() const;
 
-        IntConst *as_integer() const
-        {
-            return mImpl->as_integer();
-        }
+        [[nodiscard]] IntConst *as_integer() const;
 
-        BooleanConst *as_bool() const
-        {
-            return mImpl->as_bool();
-        }
+        [[nodiscard]] BooleanConst *as_bool() const;
 
-        Const *as_const() const
-        {
-            return mImpl->as_const();
-        }
+        [[nodiscard]] Const *as_const() const;
 
-        Read *as_read() const
-        {
-            return mImpl->as_read();
-        }
+        [[nodiscard]] Read *as_read() const;
 
-        Gather *as_gather() const
-        {
-            return mImpl->as_gather();
-        }
+        [[nodiscard]] Gather *as_gather() const;
 
-        TupleGet *as_tuple_get() const
-        {
-            return mImpl->as_tuple_get();
-        }
+        [[nodiscard]] TupleGet *as_tuple_get() const;
 
-        Ref *as_reference()
-        {
-            return mImpl->as_reference();
-        }
+        Ref *as_reference();
 
-        std::string type2string() const
-        {
-            return mImpl->type2string();
-        }
+        [[nodiscard]] std::string type2string() const;
 
-        void visit(ASTVisitor &visitor)
-        {
-            mImpl->visit(visitor);
-        }
+        void visit(ASTVisitor &visitor);
+
+        void predicate(Expression expr);
+        ;
         /*TODO: do we need this?
             size_t get_table_column_ref(std::string &tbl_col) const;
             size_t get_table_column_ref(std::string &tbl, std::string &col) const;

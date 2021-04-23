@@ -4,24 +4,16 @@
 
 namespace voila::ast
 {
-    class AggrMin : Aggregation
+    class AggrMin : public Aggregation
     {
       public:
         using Aggregation::Aggregation;
 
-        bool is_aggr_min() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_aggr_min() const final;
 
-        AggrMin *as_aggr_min() final
-        {
-            return this;
-        }
+        AggrMin *as_aggr_min() final;
 
-        std::string type2string() const final
-        {
-            return "min aggregation";
-        }
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
     };
 } // namespace voila::ast

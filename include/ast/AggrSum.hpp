@@ -4,24 +4,16 @@
 
 namespace voila::ast
 {
-    class AggrSum : Aggregation
+    class AggrSum : public Aggregation
     {
       public:
         using Aggregation::Aggregation;
 
-        bool is_aggr_sum() const final
-        {
-            return true;
-        }
+        [[nodiscard]] bool is_aggr_sum() const final;
 
-        AggrSum *as_aggr_sum() final
-        {
-            return this;
-        }
+        AggrSum *as_aggr_sum() final;
 
-        std::string type2string() const final
-        {
-            return "sum aggregation";
-        }
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
     };
 } // namespace voila::ast
