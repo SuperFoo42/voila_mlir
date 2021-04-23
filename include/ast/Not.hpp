@@ -8,7 +8,10 @@ namespace voila::ast
     {
       public:
         using UnaryOP::param;
-        using UnaryOP::UnaryOP;
+        explicit Not(Expression expr) : UnaryOP<Expression>(expr)
+        {
+            // TODO
+        }
 
         [[nodiscard]] std::string type2string() const final;
 
@@ -16,8 +19,5 @@ namespace voila::ast
 
         Not *as_not() final;
         void print(std::ostream &ostream) const final;
-
-      protected:
-        void checkArg(const Expression &param) final;
     };
 } // namespace voila::ast

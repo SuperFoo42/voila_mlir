@@ -8,14 +8,15 @@ namespace voila::ast
     {
       public:
         using UnaryOP::param;
-        using UnaryOP::UnaryOP;
+        explicit Selection(Expression expr) : UnaryOP<Expression>(expr)
+        {
+            // TODO
+        }
 
         [[nodiscard]] bool is_select() const final;
 
         Selection *as_select() final;
 
         [[nodiscard]] std::string type2string() const final;
-
-        void checkArg(const Expression &) override;
     };
 } // namespace voila::ast

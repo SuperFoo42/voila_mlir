@@ -18,8 +18,4 @@ namespace voila::ast
     {
         ostream << "!";
     }
-    void Not::checkArg(const Expression &param)
-    {
-        // TODO
-    }
 } // namespace voila::ast

@@ -14,8 +14,4 @@ namespace voila::ast
     {
         return "read";
     }
-    void Read::checkArgs(Expression &lhs, Expression &rhs)
-    {
-        // TODO
-    }
 } // namespace voila::ast

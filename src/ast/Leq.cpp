@@ -18,8 +18,4 @@ namespace voila::ast
     {
         ostream << "<=";
     }
-    void Leq::checkArgs(Expression &lhs, Expression &rhs)
-    {
-        // TODO
-    }
 } // namespace voila::ast

@@ -9,7 +9,6 @@ namespace voila::ast
       public:
         BinaryOP(NodeType &lhs, NodeType &rhs) : IExpression(), lhs{lhs}, rhs{rhs}
         {
-            checkArgs(lhs, rhs);
         }
 
         ~BinaryOP() override = default;
@@ -31,7 +30,5 @@ namespace voila::ast
 
       protected:
         NodeType lhs, rhs;
-	
-		virtual void checkArgs(NodeType &lhs, NodeType &rhs) = 0;
     };
 }

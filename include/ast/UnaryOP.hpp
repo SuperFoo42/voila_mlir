@@ -9,7 +9,6 @@ namespace voila::ast
       public:
         explicit UnaryOP(NodeType &param) : IExpression(), param{param}
         {
-            checkArg(param);
         }
 
         ~UnaryOP() override = default;
@@ -31,6 +30,5 @@ namespace voila::ast
 
       protected:
         NodeType param;
-        virtual void checkArg(const NodeType &param) = 0;
     };
 }

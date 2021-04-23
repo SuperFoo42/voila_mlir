@@ -18,7 +18,4 @@ namespace voila::ast
     {
         ostream << "+";
     }
-    void Add::checkArgs(Expression &lhs, Expression &rhs)
-    { /*TODO*/
-    }
 } // namespace voila::ast

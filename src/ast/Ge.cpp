@@ -18,8 +18,4 @@ namespace voila::ast
     {
         ostream << ">";
     }
-    void Ge::checkArgs(Expression &lhs, Expression &rhs)
-    {
-        //
-    }
 } // namespace voila::ast

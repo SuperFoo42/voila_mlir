@@ -9,17 +9,15 @@ namespace voila::ast
     class Sub : public BinaryOP<Expression>, public Arithmetic
     {
       public:
-        using BinaryOP::BinaryOP;
-        using BinaryOP::lhs;
-        using BinaryOP::rhs;
+        Sub(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        {
+            // TODO
+        }
 
         [[nodiscard]] std::string type2string() const final;
 
         [[nodiscard]] bool is_sub() const final;
         void print(std::ostream &ostream) const final;
-
-      protected:
-        void checkArgs(Expression &lhs, Expression &rhs) final;
     };
 }
 

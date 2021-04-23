@@ -7,9 +7,10 @@ namespace voila::ast
     class Div : public BinaryOP<Expression>, public Arithmetic
     {
       public:
-        using BinaryOP::BinaryOP;
-        using BinaryOP::lhs;
-        using BinaryOP::rhs;
+        Div(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        {
+            // TODO
+        }
 
         [[nodiscard]] std::string type2string() const final;
 
@@ -17,8 +18,5 @@ namespace voila::ast
 
         Div *as_div() final;
         void print(std::ostream &ostream) const final;
-
-      protected:
-        void checkArgs(Expression &lhs, Expression &rhs) final;
     };
 } // namespace voila::ast

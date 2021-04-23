@@ -14,8 +14,4 @@ namespace voila::ast
     {
         return "gather";
     }
-    void Gather::checkArgs(Expression &lhs, Expression &rhs)
-    {
-        // TODO
-    }
 } // namespace voila::ast

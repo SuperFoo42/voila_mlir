@@ -14,8 +14,4 @@ namespace voila::ast
     {
         return "selection";
     }
-    void Selection::checkArg(const Expression &)
-    {
-        // TODO: check param is boolean result
-    }
 } // namespace voila::ast

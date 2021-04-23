@@ -7,9 +7,10 @@ namespace voila::ast
     class Or : public BinaryOP<Expression>, public Logical
     {
       public:
-        using BinaryOP::BinaryOP;
-        using BinaryOP::lhs;
-        using BinaryOP::rhs;
+        Or(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        {
+            // TODO
+        }
 
         [[nodiscard]] std::string type2string() const final;
 
@@ -17,8 +18,5 @@ namespace voila::ast
 
         Or *as_or() final;
         void print(std::ostream &ostream) const final;
-
-      protected:
-        void checkArgs(Expression &lhs, Expression &rhs) final;
     };
 } // namespace voila::ast
