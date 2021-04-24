@@ -89,6 +89,7 @@ namespace voila::ast
         std::optional<Expression> as_expression();
 
         void visit(ASTVisitor &visitor);
+        void visit(ASTVisitor &visitor) const;
 
         void predicate(Expression expr);
         ;

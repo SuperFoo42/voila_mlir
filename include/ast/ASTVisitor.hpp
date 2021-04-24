@@ -42,6 +42,9 @@ namespace voila::ast
     class Ref;
     class TupleGet;
     class TupleCreate;
+    class ASTNode;
+    class Fun;
+    class Main;
 
     class ASTVisitor
     {
@@ -86,5 +89,7 @@ namespace voila::ast
         virtual void operator()(const Ref &) {}
         virtual void operator()(const TupleGet &) {}
         virtual void operator()(const TupleCreate &) {}
+        virtual void operator()(const Fun &) {}
+        virtual void operator()(const Main &) {}
     };
 } // namespace voila::ast

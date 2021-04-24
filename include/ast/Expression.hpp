@@ -149,6 +149,7 @@ namespace voila::ast
         [[nodiscard]] std::string type2string() const;
 
         void visit(ASTVisitor &visitor);
+        void visit(ASTVisitor &visitor) const;
 
         void predicate(Expression expr);
         ;

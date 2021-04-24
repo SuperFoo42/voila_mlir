@@ -124,4 +124,7 @@ namespace voila::ast
     {
         mImpl->predicate(std::move(expr));
     }
+    void Statement::visit(ASTVisitor &visitor) const {
+        mImpl->visit(visitor);
+    }
 } // namespace voila::ast

@@ -1,0 +1,9 @@
+main(x,y)
+{
+    123;
+}
+
+def foo(x)
+{
+    x = true;
+}
