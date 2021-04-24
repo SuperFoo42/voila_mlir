@@ -7,18 +7,22 @@
 void invoke_parser(const std::string &file)
 {
     FILE *f = std::fopen(file.c_str(), "r");
+    std::vector<Fun> funcs;
     if (f != nullptr)
     {
         voila::lexer::Lexer lexer(f); // read file, decode UTF-8/16/32 format
         lexer.filename = file;        // the filename to display with error locations
-        voila::parser::Parser parser(lexer);
-        if (parser.parse() != 0)
+
+        voila::parser::Parser parser(lexer, funcs);
+        if (parser() != 0)
             std::cerr << "error parsing file" << std::endl;
     }
     else
     {
         std::cerr << "error opening file" << std::endl;
     }
+
+    assert(funcs.size() > 0);
 }
 
 int main(int argc, char *argv[])

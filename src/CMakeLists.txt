@@ -21,6 +21,7 @@ add_library(voila_compiler
 voila_parser.cpp
 voila_lexer.cpp
 )
+#TODO: fix libreflex dependency
 target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast ${CMAKE_SOURCE_DIR}/../RE-flex/lib/libreflex.so)
 target_compile_features(voila_compiler PUBLIC cxx_std_20)
 set_property(TARGET voila_compiler PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
