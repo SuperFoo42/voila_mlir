@@ -14,8 +14,12 @@ namespace voila::ast
     {
         return this;
     }
-    void Ge::print(std::ostream &ostream) const
+    void Ge::visit(ASTVisitor &visitor) const
     {
-        ostream << ">";
+        visitor(*this);
+    }
+    void Ge::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

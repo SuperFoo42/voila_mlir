@@ -15,6 +15,7 @@ namespace voila::ast
       public:
         virtual void print(std::ostream &) const = 0;
         [[nodiscard]] virtual std::string type2string() const = 0;
+        virtual void visit(ASTVisitor &visitor) const;
         virtual void visit(ASTVisitor &visitor);
         virtual ~ASTNode() = default;
 

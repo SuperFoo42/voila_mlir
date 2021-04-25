@@ -16,6 +16,14 @@ namespace voila::ast
     }
     void TupleGet::print(std::ostream &ostream) const
     {
-        ostream << "tuple get";
+        ostream << expr << fmt::format("[{}]", idx);
+    }
+    void TupleGet::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void TupleGet::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

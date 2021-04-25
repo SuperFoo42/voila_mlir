@@ -1,14 +1,14 @@
 #pragma once
-#include "BinaryOP.hpp"
+#include "ASTVisitor.hpp"
 #include "Comparison.hpp"
 #include "Expression.hpp"
 
 namespace voila::ast
 {
-    class Neq : public BinaryOP<Expression>, public Comparison
+    class Neq : public Comparison
     {
       public:
-        Neq(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        Neq(Expression lhs, Expression rhs) : Comparison(std::move(lhs), std::move(rhs))
         { // TODO
         }
         [[nodiscard]] std::string type2string() const final;
@@ -16,6 +16,7 @@ namespace voila::ast
         [[nodiscard]] bool is_neq() const final;
 
         Neq *as_neq() final;
-        void print(std::ostream &ostream) const final;
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
     };
 } // namespace voila::ast

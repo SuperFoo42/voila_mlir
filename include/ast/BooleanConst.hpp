@@ -1,5 +1,6 @@
 #pragma once
 #include "Const.hpp"
+#include "ASTVisitor.hpp"
 namespace voila::ast
 {
     class BooleanConst : public Const
@@ -13,6 +14,9 @@ namespace voila::ast
 
         [[nodiscard]] std::string type2string() const final;
         void print(std::ostream &ostream) const final;
+
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
 
         const bool val;
     };

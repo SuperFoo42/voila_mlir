@@ -16,6 +16,15 @@ namespace voila::ast
     }
     void BooleanConst::print(std::ostream &ostream) const
     {
-        ostream << std::to_string(val);
+        ostream << std::boolalpha << val << std::noboolalpha;
+    }
+
+    void BooleanConst::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void BooleanConst::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

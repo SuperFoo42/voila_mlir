@@ -4,10 +4,6 @@
 
 namespace voila::ast
 {
-    void ASTNode::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
-    }
     bool ASTNode::is_stmt() const
     {
         return false;
@@ -31,5 +27,14 @@ namespace voila::ast
     bool ASTNode::is_expr() const
     {
         return false;
+    }
+    void ASTNode::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+
+    void ASTNode::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

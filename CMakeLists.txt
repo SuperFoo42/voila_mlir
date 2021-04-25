@@ -13,15 +13,9 @@ find_package(Doxygen
              REQUIRED dot
              OPTIONAL_COMPONENTS mscgen dia)
 endif()
-
-set(CMAKE_CXX_FLAGS " ${ARCH_FLAGS} -g -fPIC -Wall -Wextra --std=c++17")
-
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}  ${ARCH_FLAGS} -fno-omit-frame-pointer -fsanitize=address  -DIS_DEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${ARCH_FLAGS} -fno-omit-frame-pointer -fsanitize=address  -DIS_DEBUG")
-
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${ARCH_FLAGS} -O3 -g -fno-omit-frame-pointer -DIS_RELEASE")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${ARCH_FLAGS} -O3 -g -fno-omit-frame-pointer -DIS_RELEASE")
-set(CMAKE_LINKER_FLAGS_RELEASE "${CMAKE_LINKER_FLAGS_RELEASE} ${ARCH_FLAGS} -O3 -g -fno-omit-frame-pointer -DIS_RELEASE")
+#Enable sanitizers globally
+add_compile_options(-fsanitize=address -fsanitize=undefined)
+add_link_options(-fsanitize=address -fsanitize=undefined)
 
 find_package(TBB)
 include_directories(${TBB_INCLUDE_DIRS})

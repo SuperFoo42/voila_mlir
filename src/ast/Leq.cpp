@@ -14,8 +14,12 @@ namespace voila::ast
     {
         return this;
     }
-    void Leq::print(std::ostream &ostream) const
+    void Leq::visit(ASTVisitor &visitor) const
     {
-        ostream << "<=";
+        visitor(*this);
+    }
+    void Leq::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

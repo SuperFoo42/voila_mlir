@@ -21,6 +21,15 @@ namespace voila::ast
     }
     void Assign::print(std::ostream &ostream) const
     {
-        ostream << "=";
+        ostream << dest << " =";
+    }
+
+    void Assign::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void Assign::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

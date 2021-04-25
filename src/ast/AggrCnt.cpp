@@ -14,8 +14,12 @@ namespace voila::ast
     {
         return "count aggregation";
     }
-    void AggrCnt::print(std::ostream &ostream) const
+    void AggrCnt::visit(ASTVisitor &visitor) const
     {
-        ostream << "count";
+        visitor(*this);
+    }
+    void AggrCnt::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

@@ -5,6 +5,7 @@
 #include <optional>
 #include <utility>
 #include <vector>
+#include "ASTVisitor.hpp"
 
 namespace voila::ast
 {
@@ -24,9 +25,10 @@ namespace voila::ast
 
         void predicate(Expression expression) final;
 
-      private:
         void print(std::ostream &ostream) const final;
 
+        void visit(ASTVisitor &visitor);
+        void visit(ASTVisitor &visitor) const;
       public:
         std::string dest;
         Expression expr;

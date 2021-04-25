@@ -37,13 +37,10 @@ namespace voila::ast
     class TupleCreate;
     class Expression;
 
-    class IExpression : virtual public ASTNode
+    class IExpression : public ASTNode
     {
       public:
         ~IExpression() override = default;
-        using ASTNode::print;
-        using ASTNode::type2string;
-        using ASTNode::visit;
 
         virtual void predicate(Expression expr);
 

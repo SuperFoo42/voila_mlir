@@ -1,14 +1,14 @@
 #pragma once
-#include "BinaryOP.hpp"
+
+#include "ASTVisitor.hpp"
 #include "Comparison.hpp"
 #include "Expression.hpp"
-
 namespace voila::ast
 {
-    class Leq : public BinaryOP<Expression>, public Comparison
+    class Leq : public Comparison
     {
       public:
-        Leq(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        Leq(Expression lhs, Expression rhs) : Comparison(std::move(lhs), std::move(rhs))
         {
             // TODO
         }
@@ -18,6 +18,7 @@ namespace voila::ast
         [[nodiscard]] bool is_leq() const final;
 
         Leq *as_leq() final;
-        void print(std::ostream &ostream) const final;
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
     };
 } // namespace voila::ast

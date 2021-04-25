@@ -1,15 +1,14 @@
 #include "Expression.hpp"
-#include "BinaryOP.hpp"
 #include "Arithmetic.hpp"
-
+#include "ASTVisitor.hpp"
 #pragma once
 
 namespace voila::ast
 {
-    class Sub : public BinaryOP<Expression>, public Arithmetic
+    class Sub : public Arithmetic
     {
       public:
-        Sub(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        Sub(Expression lhs, Expression rhs) : Arithmetic(std::move(lhs), std::move(rhs))
         {
             // TODO
         }
@@ -17,7 +16,9 @@ namespace voila::ast
         [[nodiscard]] std::string type2string() const final;
 
         [[nodiscard]] bool is_sub() const final;
-        void print(std::ostream &ostream) const final;
+
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
     };
 }
 

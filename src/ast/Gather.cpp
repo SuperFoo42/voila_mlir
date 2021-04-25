@@ -14,4 +14,13 @@ namespace voila::ast
     {
         return "gather";
     }
+    void Gather::print(std::ostream &) const {}
+    void Gather::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void Gather::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
+    }
 } // namespace voila::ast

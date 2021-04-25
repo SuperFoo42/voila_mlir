@@ -4,6 +4,7 @@ namespace voila::ast
 {
     Ref::Ref(const std::string &var) : IExpression()
     {
+        (void)var;
         // TODO find reference or error
     }
     bool Ref::is_reference() const
@@ -18,8 +19,16 @@ namespace voila::ast
     {
         return this;
     }
-    void Ref::print(std::ostream &o) const
+    void Ref::print(std::ostream &) const
     {
-        o << "Reference to "; // TODO << ref.type2string();
+    }
+
+    void Ref::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void Ref::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

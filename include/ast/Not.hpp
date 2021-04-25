@@ -1,14 +1,15 @@
 #pragma once
+#include <utility>
+
 #include "Expression.hpp"
 #include "Logical.hpp"
-#include "UnaryOP.hpp"
+#include "ASTVisitor.hpp"
 namespace voila::ast
 {
-    class Not : public UnaryOP<Expression>, public Logical
+    class Not : public Logical
     {
       public:
-        using UnaryOP::param;
-        explicit Not(Expression expr) : UnaryOP<Expression>(expr)
+        explicit Not(Expression expr) : param(std::move(expr))
         {
             // TODO
         }
@@ -18,6 +19,10 @@ namespace voila::ast
         [[nodiscard]] bool is_not() const final;
 
         Not *as_not() final;
-        void print(std::ostream &ostream) const final;
+
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
+
+        Expression param;
     };
 } // namespace voila::ast

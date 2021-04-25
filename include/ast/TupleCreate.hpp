@@ -4,6 +4,7 @@
 
 #include <utility>
 #include <vector>
+#include "ASTVisitor.hpp"
 namespace voila::ast
 {
     class TupleCreate : public IExpression
@@ -13,8 +14,10 @@ namespace voila::ast
 
         [[nodiscard]] bool is_tuple_create() const final;
 
-        [[nodiscard]] std::string type2string() const override;
-        void print(std::ostream &ostream) const override;
+        [[nodiscard]] std::string type2string() const final;
+        void print(std::ostream &ostream) const final;
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
 
         std::vector<Expression> elems;
     };

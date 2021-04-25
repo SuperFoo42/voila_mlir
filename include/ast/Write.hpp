@@ -5,6 +5,7 @@
 
 #include <utility>
 #include <vector>
+#include "ASTVisitor.hpp"
 
 namespace voila::ast
 {
@@ -19,6 +20,8 @@ namespace voila::ast
 
         [[nodiscard]] std::string type2string() const final;
         void print(std::ostream &ostream) const final;
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
 
         std::string dest;
         Expression start;

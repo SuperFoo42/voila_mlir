@@ -10,8 +10,12 @@ namespace voila::ast
     {
         return true;
     }
-    void Sub::print(std::ostream &ostream) const
+    void Sub::visit(ASTVisitor &visitor) const
     {
-        ostream << "-";
+        visitor(*this);
+    }
+    void Sub::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

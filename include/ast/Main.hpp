@@ -1,5 +1,6 @@
 #pragma once
 #include "ASTNode.hpp"
+#include "ASTVisitor.hpp"
 #include "Statement.hpp"
 #include "ast/Fun.hpp"
 #include "ast/IStatement.hpp"
@@ -21,10 +22,13 @@ namespace voila::ast
 
         Main &operator=(const Main &) = default;
 
-        [[nodiscard]] bool is_main() const final;
+        [[nodiscard]] bool is_main() const override;
 
-        Main *as_main() final;
+        Main *as_main() override;
 
-        [[nodiscard]] std::string type2string() const final;
+        [[nodiscard]] std::string type2string() const override;
+
+        void visit(ASTVisitor &visitor) const override;
+        void visit(ASTVisitor &visitor) override;
     };
 } // namespace voila::ast

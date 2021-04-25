@@ -14,4 +14,13 @@ namespace voila::ast
     {
         return "selection";
     }
+    void Selection::print(std::ostream &) const {}
+    void Selection::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void Selection::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
+    }
 } // namespace voila::ast

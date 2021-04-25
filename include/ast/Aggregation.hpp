@@ -6,10 +6,10 @@
 
 namespace voila::ast
 {
-    class Aggregation : virtual public IStatement
+    class Aggregation : public IStatement
     {
       public:
-        Aggregation(Expression col, Expression idxs) : IStatement(), src{col}, idxs{idxs} {}
+        Aggregation(Expression col, Expression idxs) : IStatement(), src{std::move(col)}, idxs{std::move(idxs)} {}
         ~Aggregation() override = default;
 
         [[nodiscard]] bool is_aggr() const final;
@@ -17,6 +17,8 @@ namespace voila::ast
         Aggregation *as_aggr() final;
 
         [[nodiscard]] std::string type2string() const override;
+
+        void print(std::ostream &) const final {}
 
         Expression src;
         Expression idxs;

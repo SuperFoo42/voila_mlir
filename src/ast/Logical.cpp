@@ -14,4 +14,6 @@ namespace voila::ast
     {
         return "logical";
     }
+
+    void Logical::print(std::ostream &) const {}
 } // namespace voila::ast

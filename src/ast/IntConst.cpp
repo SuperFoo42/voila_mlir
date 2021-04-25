@@ -18,4 +18,12 @@ namespace voila::ast
     {
         ostream << std::to_string(val);
     }
+    void IntConst::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void IntConst::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
+    }
 } // namespace voila::ast

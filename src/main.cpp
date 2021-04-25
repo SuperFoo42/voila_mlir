@@ -1,30 +1,50 @@
+#include "ParsingError.hpp"
 #include "voila_lexer.hpp"
 #include "voila_parser.hpp"
 
+#include <ast/DotVisualizer.hpp>
 #include <cstdlib>
 #include <cxxopts.hpp>
-
-void invoke_parser(const std::string &file)
+#include <filesystem>
+#include <fmt/core.h>
+#include <fstream>
+std::vector<Fun> parse(const std::string &file)
 {
-    FILE *f = std::fopen(file.c_str(), "r");
-    std::vector<Fun> funcs;
-    if (f != nullptr)
+    if (!std::filesystem::is_regular_file(std::filesystem::path(file)))
     {
-        voila::lexer::Lexer lexer(f); // read file, decode UTF-8/16/32 format
+        throw std::invalid_argument("invalid file");
+    }
+    std::vector<Fun> funcs;
+    std::ifstream fst(file, std::ios::in);
+
+    if (fst.is_open())
+    {
+        voila::lexer::Lexer lexer(fst); // read file, decode UTF-8/16/32 format
         lexer.filename = file;        // the filename to display with error locations
 
         voila::parser::Parser parser(lexer, funcs);
         if (parser() != 0)
-            std::cerr << "error parsing file" << std::endl;
+            throw ParsingError();
+        fst.close();
     }
     else
     {
-        std::cerr << "error opening file" << std::endl;
+        std::cout << fmt::format("failed to open {}", file) << std::endl;
     }
 
-    assert(funcs.size() > 0);
+    return funcs;
 }
 
+void asts_to_dot(const std::string &outFileName, std::vector<Fun> &funcs)
+{
+    for (auto &func : funcs)
+    {
+        DotVisualizer vis(func);
+        std::ofstream out(outFileName+"."+func.name+".dot", std::ios::out);
+        out << vis;
+        out.close();
+    }
+}
 int main(int argc, char *argv[])
 {
     cxxopts::Options options("VOILA compiler", "");
@@ -43,7 +63,11 @@ int main(int argc, char *argv[])
             exit(EXIT_SUCCESS);
         }
 
-        invoke_parser(cmd["f"].as<std::string>());
+        auto funcs = parse(cmd["f"].as<std::string>());
+        if (cmd.count("a"))
+        {
+            asts_to_dot(cmd["f"].as<std::string>(), funcs);
+        }
     }
     catch (const cxxopts::OptionException &e)
     {

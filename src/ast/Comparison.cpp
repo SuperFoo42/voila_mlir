@@ -14,4 +14,5 @@ namespace voila::ast
     {
         return "comparison";
     }
+    void Comparison::print(std::ostream &) const {}
 } // namespace voila::ast

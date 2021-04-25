@@ -1,13 +1,15 @@
 #pragma once
-#include "BinaryOP.hpp"
+#include "ASTVisitor.hpp"
 #include "Expression.hpp"
 #include "Logical.hpp"
+
+#include <utility>
 namespace voila::ast
 {
-    class And : public BinaryOP<Expression>, public Logical
+    class And : public Logical
     {
       public:
-        And(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        And(Expression lhs, Expression rhs) : lhs{std::move(lhs)}, rhs{std::move(rhs)}
         {
             // TODO
         }
@@ -17,6 +19,9 @@ namespace voila::ast
         [[nodiscard]] bool is_and() const final;
 
         And *as_and() final;
-        void print(std::ostream &ostream) const final;
+
+        Expression lhs, rhs;
+        void visit(ASTVisitor &visitor);
+        void visit(ASTVisitor &visitor) const;
     };
 } // namespace voila::ast

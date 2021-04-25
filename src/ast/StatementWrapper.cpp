@@ -15,8 +15,16 @@ namespace voila::ast
         return std::make_optional(expr);
     }
     StatementWrapper::StatementWrapper(Expression expr) : IStatement(), expr{std::move(expr)} {}
-    void StatementWrapper::print(std::ostream &ostream) const
+    void StatementWrapper::print(std::ostream &) const
     {
-        ostream << "statement wrapper";
+    }
+
+    void StatementWrapper::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void StatementWrapper::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

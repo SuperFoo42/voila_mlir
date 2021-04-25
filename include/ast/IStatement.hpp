@@ -21,13 +21,10 @@ namespace voila::ast
     class Loop;
     class StatementWrapper;
 
-    class IStatement : virtual public ASTNode
+    class IStatement : public ASTNode
     {
       public:
         ~IStatement() override = default;
-        using ASTNode::print;
-        using ASTNode::type2string;
-        using ASTNode::visit;
 
         virtual void predicate(Expression);
 

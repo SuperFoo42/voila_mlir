@@ -1,15 +1,16 @@
 #pragma once
 #include "Arithmetic.hpp"
-#include "BinaryOP.hpp"
 #include "Expression.hpp"
+#include "ASTVisitor.hpp"
 
 namespace voila::ast
 {
     // Expressions
-    class Add : public BinaryOP<Expression>, public Arithmetic
+    class Add : public Arithmetic
     {
       public:
-        Add(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        Add(Expression lhs, Expression rhs) :
+            Arithmetic(std::move(lhs), std::move(rhs))
         {
             // TODO
         }
@@ -19,6 +20,8 @@ namespace voila::ast
         [[nodiscard]] bool is_add() const final;
 
         Add *as_add() final;
-        void print(std::ostream &ostream) const final;
+
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
     };
 } // namespace voila::ast

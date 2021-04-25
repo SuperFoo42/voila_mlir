@@ -14,8 +14,12 @@ namespace voila::ast
     {
         return this;
     }
-    void AggrSum::print(std::ostream &ostream) const
+    void AggrSum::visit(ASTVisitor &visitor) const
     {
-        ostream << "sum";
+        visitor(*this);
+    }
+    void AggrSum::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

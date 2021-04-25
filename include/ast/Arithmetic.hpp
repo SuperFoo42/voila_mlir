@@ -1,11 +1,13 @@
 #pragma once
 #include "IExpression.hpp"
+#include "Expression.hpp"
 
 namespace voila::ast
 {
-    class Arithmetic : virtual public IExpression
+    class Arithmetic : public IExpression
     {
       public:
+        Arithmetic(Expression lhs, Expression rhs);
         ~Arithmetic() override = default;
 
         [[nodiscard]] bool is_arithmetic() const final;
@@ -13,5 +15,8 @@ namespace voila::ast
         Arithmetic *as_arithmetic() final;
 
         [[nodiscard]] std::string type2string() const override;
+        void print(std::ostream &ostream) const final;
+
+        Expression lhs, rhs;
     };
 } // namespace voila::ast

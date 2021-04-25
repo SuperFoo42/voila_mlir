@@ -14,8 +14,12 @@ namespace voila::ast
     {
         return "min aggregation";
     }
-    void AggrMin::print(std::ostream &ostream) const
+    void AggrMin::visit(ASTVisitor &visitor) const
     {
-        ostream << "avg";
+        visitor(*this);
+    }
+    void AggrMin::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

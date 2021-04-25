@@ -19,4 +19,13 @@ namespace voila::ast
     {
         return "main function";
     }
+
+    void Main::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void Main::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
+    }
 } // namespace voila::ast

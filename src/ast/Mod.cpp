@@ -14,8 +14,12 @@ namespace voila::ast
     {
         return this;
     }
-    void Mod::print(std::ostream &ostream) const
+    void Mod::visit(ASTVisitor &visitor) const
     {
-        ostream << "%";
+        visitor(*this);
+    }
+    void Mod::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

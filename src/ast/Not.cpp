@@ -14,8 +14,13 @@ namespace voila::ast
     {
         return this;
     }
-    void Not::print(std::ostream &ostream) const
+
+    void Not::visit(ASTVisitor &visitor) const
     {
-        ostream << "!";
+        visitor(*this);
+    }
+    void Not::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

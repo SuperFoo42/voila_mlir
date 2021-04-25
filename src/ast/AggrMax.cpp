@@ -14,8 +14,12 @@ namespace voila::ast
     {
         return "max aggregation";
     }
-    void AggrMax::print(std::ostream &ostream) const
+    void AggrMax::visit(ASTVisitor &visitor) const
     {
-        ostream << "max";
+        visitor(*this);
+    }
+    void AggrMax::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

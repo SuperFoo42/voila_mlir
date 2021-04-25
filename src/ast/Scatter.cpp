@@ -20,6 +20,14 @@ namespace voila::ast
     }
     void Scatter::print(std::ostream &ostream) const
     {
-        ostream << "scatter";
+        ostream << "dest: " << dest;
+    }
+    void Scatter::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void Scatter::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

@@ -1,13 +1,15 @@
 #pragma once
-#include "BinaryOP.hpp"
+#include "ASTVisitor.hpp"
 #include "Expression.hpp"
 #include "Logical.hpp"
+
+#include <utility>
 namespace voila::ast
 {
-    class Or : public BinaryOP<Expression>, public Logical
+    class Or : public Logical
     {
       public:
-        Or(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        Or(Expression lhs, Expression rhs) : lhs{std::move(lhs)}, rhs{std::move(rhs)}
         {
             // TODO
         }
@@ -17,6 +19,10 @@ namespace voila::ast
         [[nodiscard]] bool is_or() const final;
 
         Or *as_or() final;
-        void print(std::ostream &ostream) const final;
+
+        Expression lhs, rhs;
+
+        void visit(ASTVisitor &visitor);
+        void visit(ASTVisitor &visitor) const;
     };
 } // namespace voila::ast

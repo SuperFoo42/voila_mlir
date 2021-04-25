@@ -14,8 +14,12 @@ namespace voila::ast
     {
         return this;
     }
-    void AggrAvg::print(std::ostream &ostream) const
+    void AggrAvg::visit(ASTVisitor &visitor) const
     {
-        ostream << "average";
+        visitor(*this);
+    }
+    void AggrAvg::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

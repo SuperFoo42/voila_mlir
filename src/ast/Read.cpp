@@ -14,4 +14,13 @@ namespace voila::ast
     {
         return "read";
     }
+    void Read::print(std::ostream &) const {}
+    void Read::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void Read::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
+    }
 } // namespace voila::ast

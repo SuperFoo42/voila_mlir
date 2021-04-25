@@ -2,7 +2,7 @@
 #include "Expression.hpp"
 #include "IStatement.hpp"
 #include "Statement.hpp"
-
+#include "ASTVisitor.hpp"
 #include <utility>
 #include <vector>
 
@@ -21,6 +21,8 @@ namespace voila::ast
 
         Loop *as_loop() final;
         void print(std::ostream &ostream) const final;
+        void visit(ASTVisitor &visitor) const override;
+        void visit(ASTVisitor &visitor) override;
 
         Expression pred;
         std::vector<Statement> stms;

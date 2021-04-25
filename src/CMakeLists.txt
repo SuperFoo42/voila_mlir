@@ -25,11 +25,26 @@ voila_lexer.cpp
 target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast ${CMAKE_SOURCE_DIR}/../RE-flex/lib/libreflex.so)
 target_compile_features(voila_compiler PUBLIC cxx_std_20)
 set_property(TARGET voila_compiler PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-
+target_compile_options(voila_compiler PUBLIC
+        -Wpedantic
+        -Wall
+        -Wextra
+        -Werror
+        -Wno-c++98-compat
+        -Wno-c++98-c++11-c++14-compat
+        -Wno-c++98-compat-pedantic)
 add_executable(voila
         main.cpp)
 
 target_link_libraries(voila voila_compiler cxxopts fmt reflex ${CMAKE_SOURCE_DIR}/../RE-flex/lib/libreflex.so)
+target_compile_options(voila PUBLIC
+        -Wpedantic
+        -Wall
+        -Wextra
+        -Werror
+        -Wno-c++98-compat
+        -Wno-c++98-c++11-c++14-compat
+        -Wno-c++98-compat-pedantic)
 target_compile_features(voila PUBLIC cxx_std_20)
 set_property(TARGET voila PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 

@@ -92,7 +92,7 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const;
 
         void predicate(Expression expr);
-        ;
+
         /*TODO: do we need this?
             size_t get_table_column_ref(std::string &tbl_col) const;
             size_t get_table_column_ref(std::string &tbl, std::string &col) const;

@@ -14,4 +14,13 @@ namespace voila::ast
     {
         ostream << "\"" << val << "\"";
     }
+
+    void StrConst::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void StrConst::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
+    }
 } // namespace voila::ast

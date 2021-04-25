@@ -1,13 +1,13 @@
 #pragma once
 #include "Arithmetic.hpp"
-#include "BinaryOP.hpp"
 #include "Expression.hpp"
+#include "ASTVisitor.hpp"
 namespace voila::ast
 {
-    class Mod : public BinaryOP<Expression>, public Arithmetic
+    class Mod : public Arithmetic
     {
       public:
-        Mod(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        Mod(Expression lhs, Expression rhs) : Arithmetic(std::move(lhs), std::move(rhs))
         {
             // TODO
         }
@@ -17,6 +17,7 @@ namespace voila::ast
         [[nodiscard]] bool is_mod() const final;
 
         Mod *as_mod() final;
-        void print(std::ostream &ostream) const final;
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
     };
 } // namespace voila::ast

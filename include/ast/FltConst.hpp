@@ -1,5 +1,6 @@
 #pragma once
 #include "Const.hpp"
+#include "ASTVisitor.hpp"
 namespace voila::ast
 {
     class FltConst : public Const
@@ -12,7 +13,11 @@ namespace voila::ast
         FltConst *as_float() final;
 
         [[nodiscard]] std::string type2string() const final;
+
         void print(std::ostream &ostream) const final;
+
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
 
         const double val;
     };

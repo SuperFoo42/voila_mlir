@@ -1,7 +1,7 @@
 #pragma once
 #include "Aggregation.hpp"
 #include "Expression.hpp"
-
+#include "ASTVisitor.hpp"
 namespace voila::ast
 {
     class AggrMax : public Aggregation
@@ -14,6 +14,7 @@ namespace voila::ast
         AggrMax *as_aggr_max() final;
 
         [[nodiscard]] std::string type2string() const final;
-        void print(std::ostream &ostream) const final;
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
     };
 } // namespace voila::ast

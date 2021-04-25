@@ -14,8 +14,15 @@ namespace voila::ast
     {
         return true;
     }
-    void Loop::print(std::ostream &ostream) const
+    void Loop::print(std::ostream &) const
     {
-        ostream << "loop";
+    }
+    void Loop::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void Loop::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

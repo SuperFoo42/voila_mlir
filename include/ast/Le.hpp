@@ -1,14 +1,14 @@
 #pragma once
-#include "BinaryOP.hpp"
 #include "Comparison.hpp"
 #include "Expression.hpp"
+#include "ASTVisitor.hpp"
 
 namespace voila::ast
 {
-    class Le : public BinaryOP<Expression>, public Comparison
+    class Le : public Comparison
     {
       public:
-        Le(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        Le(Expression lhs, Expression rhs) : Comparison(std::move(lhs), std::move(rhs))
         {
             // TODO
         }
@@ -18,6 +18,7 @@ namespace voila::ast
         [[nodiscard]] bool is_le() const final;
 
         Le *as_le() final;
-        void print(std::ostream &ostream) const final;
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
     };
 } // namespace voila::ast

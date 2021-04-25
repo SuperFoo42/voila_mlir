@@ -18,4 +18,13 @@ namespace voila::ast
     {
         ostream << std::to_string(val);
     }
+
+    void FltConst::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void FltConst::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
+    }
 } // namespace voila::ast

@@ -1,5 +1,5 @@
 #include "ast/Fun.hpp"
-
+#include "ast/ASTVisitor.hpp"
 #include <utility>
 
 namespace voila::ast
@@ -23,11 +23,14 @@ namespace voila::ast
     }
     void Fun::print(std::ostream &o) const
     {
-        o << name << "(";
-        for (const auto &arg : args)
-        {
-            o << arg << ",";
-        }
-        o << ")";
+        o << name << "(" << fmt::format("{}", fmt::join(args, ", ")) << ")";
+    }
+    void Fun::visit(ASTVisitor &visitor) const
+    {
+        visitor(*this);
+    }
+    void Fun::visit(ASTVisitor &visitor)
+    {
+        visitor(*this);
     }
 } // namespace voila::ast

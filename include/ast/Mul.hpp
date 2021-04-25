@@ -1,13 +1,13 @@
 #pragma once
 #include "Arithmetic.hpp"
-#include "BinaryOP.hpp"
 #include "Expression.hpp"
+#include "ASTVisitor.hpp"
 namespace voila::ast
 {
-    class Mul : public BinaryOP<Expression>, public Arithmetic
+    class Mul : public Arithmetic
     {
       public:
-        Mul(Expression lhs, Expression rhs) : BinaryOP<Expression>(lhs, rhs)
+        Mul(Expression lhs, Expression rhs) : Arithmetic(std::move(lhs), std::move(rhs))
         {
             // TODO
         }
@@ -16,6 +16,7 @@ namespace voila::ast
         [[nodiscard]] bool is_mul() const final;
 
         Mul *as_mul() final;
-        void print(std::ostream &ostream) const final;
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
     };
 } // namespace voila::ast

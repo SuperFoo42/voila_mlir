@@ -1,6 +1,7 @@
 #pragma once
 #include "Expression.hpp"
 #include "IExpression.hpp"
+#include "ASTVisitor.hpp"
 namespace voila::ast
 {
     class Ref : public IExpression
@@ -16,6 +17,8 @@ namespace voila::ast
 
         void print(std::ostream &o) const final;
 
-        // TODO: Expression ref;
+        Expression ref;
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
     };
 } // namespace voila::ast

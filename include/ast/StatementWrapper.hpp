@@ -2,6 +2,7 @@
 #include "Expression.hpp"
 #include "IStatement.hpp"
 #include "Statement.hpp"
+#include "ASTVisitor.hpp"
 
 #include <optional>
 #include <utility>
@@ -24,8 +25,10 @@ namespace voila::ast
 
         std::optional<Expression> as_expression() final;
 
-      private:
         void print(std::ostream &ostream) const final;
+
+        void visit(ASTVisitor &visitor) const final;
+        void visit(ASTVisitor &visitor) final;
 
       public:
         Expression expr;
