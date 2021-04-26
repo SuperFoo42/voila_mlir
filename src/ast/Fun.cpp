@@ -4,8 +4,8 @@
 
 namespace voila::ast
 {
-    Fun::Fun(std::string fun, std::vector<std::string> args, std::vector<Statement> exprs) :
-        ASTNode(), name{std::move(fun)}, args{std::move(args)}, body{std::move(exprs)}
+    Fun::Fun(const Location loc, std::string fun, std::vector<std::string> args, std::vector<Statement> exprs) :
+        ASTNode(loc), name{std::move(fun)}, args{std::move(args)}, body{std::move(exprs)}
     {
         // TODO: check function, deduce argument types and register function
     }

@@ -36,13 +36,15 @@ namespace voila::ast
     class TupleGet;
     class TupleCreate;
     class Expression;
+    class Predicate;
 
     class IExpression : public ASTNode
     {
       public:
+        explicit IExpression(const Location loc) : ASTNode(loc) {}
         ~IExpression() override = default;
 
-        virtual void predicate(Expression expr);
+        virtual void predicate(Expression);
 
         // type checks
         [[nodiscard]] bool is_expr() const final;
@@ -107,6 +109,8 @@ namespace voila::ast
 
         [[nodiscard]] virtual bool is_tuple_create() const;
 
+        [[nodiscard]] virtual bool is_predicate() const;
+
         // casts
         virtual IExpression *as_expr();
 
@@ -165,5 +169,7 @@ namespace voila::ast
         virtual Ref *as_reference();
 
         virtual TupleCreate *as_tuple_create();
+
+        virtual Predicate *as_predicate();
     };
 } // namespace voila::ast

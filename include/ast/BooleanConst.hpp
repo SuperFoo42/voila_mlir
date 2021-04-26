@@ -6,7 +6,7 @@ namespace voila::ast
     class BooleanConst : public Const
     {
       public:
-        explicit BooleanConst(const bool val) : Const(), val{val} {}
+        explicit BooleanConst(const Location loc, const bool val) : Const(loc), val{val} {}
 
         [[nodiscard]] bool is_bool() const final;
 

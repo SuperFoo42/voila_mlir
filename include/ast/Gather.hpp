@@ -1,15 +1,16 @@
 #pragma once
-#include <utility>
-
-#include "Expression.hpp"
 #include "ASTVisitor.hpp"
+#include "Expression.hpp"
+
+#include <utility>
 
 namespace voila::ast
 {
     class Gather : public IExpression
     {
       public:
-        Gather(Expression lhs, Expression rhs) : column{std::move(lhs)}, idxs{std::move(rhs)}
+        Gather(const Location loc, Expression lhs, Expression rhs) :
+            IExpression(loc), column{std::move(lhs)}, idxs{std::move(rhs)}
         {
             // TODO
         }

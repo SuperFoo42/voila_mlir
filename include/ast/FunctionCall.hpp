@@ -10,7 +10,7 @@ namespace voila::ast
     class FunctionCall : public IStatement
     {
       public:
-        FunctionCall(std::string fun, std::vector<std::string> args);
+        FunctionCall(Location loc, std::string fun, std::vector<std::string> args);
 
         [[nodiscard]] bool is_function_call() const final;
 

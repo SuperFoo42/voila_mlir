@@ -7,7 +7,7 @@ namespace voila::ast
     class Geq : public Comparison
     {
       public:
-        Geq(Expression lhs, Expression rhs) : Comparison(std::move(lhs), std::move(rhs))
+        Geq(const Location loc, Expression lhs, Expression rhs) : Comparison(loc, std::move(lhs), std::move(rhs))
         {
             // TODO
         }

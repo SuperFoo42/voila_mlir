@@ -5,10 +5,10 @@
 #include "Expression.hpp"
 namespace voila::ast
 {
-    class Comparison : virtual public IExpression
+    class Comparison : public IExpression
     {
       public:
-        Comparison(Expression lhs, Expression rhs) : lhs{std::move(lhs)}, rhs{std::move(rhs)} {}
+        Comparison(const Location loc, Expression lhs, Expression rhs) : IExpression(loc), lhs{std::move(lhs)}, rhs{std::move(rhs)} {}
         [[nodiscard]] bool is_comparison() const final;
 
         Comparison *as_comparison() final;

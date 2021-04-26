@@ -9,7 +9,8 @@ namespace voila::ast
     class And : public Logical
     {
       public:
-        And(Expression lhs, Expression rhs) : lhs{std::move(lhs)}, rhs{std::move(rhs)}
+        And(const Location loc, Expression lhs, Expression rhs) :
+            Logical(loc), lhs{std::move(lhs)}, rhs{std::move(rhs)}
         {
             // TODO
         }

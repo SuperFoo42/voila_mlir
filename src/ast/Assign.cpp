@@ -1,9 +1,11 @@
+#include <utility>
+
 #include "ast/Assign.hpp"
 
 namespace voila::ast
 {
-    Assign::Assign(std::string dest, Expression expr) :
-        IStatement(), dest{std::move(dest)}, expr{std::move(expr)}, pred{std::nullopt}
+    Assign::Assign(const Location loc, std::string dest, Expression expr) :
+        IStatement(loc), dest{std::move(dest)}, expr{std::move(expr)}, pred{std::nullopt}
     {
         // TODO: find dest variable and look for conflicts
     }
@@ -17,7 +19,10 @@ namespace voila::ast
     }
     void Assign::predicate(Expression expression)
     {
-        pred = expression;
+        if (expression.is_predicate())
+            pred = expression;
+        else
+            throw std::invalid_argument("Expression is no predicate");
     }
     void Assign::print(std::ostream &ostream) const
     {

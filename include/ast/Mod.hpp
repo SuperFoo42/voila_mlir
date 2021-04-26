@@ -7,7 +7,7 @@ namespace voila::ast
     class Mod : public Arithmetic
     {
       public:
-        Mod(Expression lhs, Expression rhs) : Arithmetic(std::move(lhs), std::move(rhs))
+        Mod(Location loc, Expression lhs, Expression rhs) : Arithmetic(loc, std::move(lhs), std::move(rhs))
         {
             // TODO
         }

@@ -7,7 +7,7 @@ namespace voila::ast
     class IntConst : public Const
     {
       public:
-        explicit IntConst(const std::intmax_t val) : Const(), val{val} {}
+        explicit IntConst(Location  loc, const std::intmax_t val) : Const(loc), val{val} {}
 
         [[nodiscard]] bool is_integer() const final;
 

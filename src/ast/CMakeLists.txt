@@ -47,6 +47,7 @@ add_library(voila_ast
         TupleGet.cpp
         Write.cpp
         Assign.cpp
+        Predicate.cpp
         DotVisualizer.cpp)
 
 set_property(TARGET voila_ast PROPERTY INTERPROCEDURAL_OPTIMIZATION True)

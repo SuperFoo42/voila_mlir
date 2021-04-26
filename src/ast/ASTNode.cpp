@@ -37,4 +37,10 @@ namespace voila::ast
     {
         visitor(*this);
     }
+    Location ASTNode::get_location() const
+    {
+        return loc;
+    }
+    ASTNode::ASTNode(const Location loc) : loc(loc) {}
+    ASTNode::ASTNode() = default;
 } // namespace voila::ast

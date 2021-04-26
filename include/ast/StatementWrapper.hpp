@@ -17,7 +17,7 @@ namespace voila::ast
     class StatementWrapper : public IStatement
     {
       public:
-        explicit StatementWrapper(Expression expr);
+        explicit StatementWrapper(Location loc, Expression expr);
 
         [[nodiscard]] std::string type2string() const final;
 

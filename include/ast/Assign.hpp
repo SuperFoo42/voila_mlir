@@ -1,6 +1,7 @@
 #pragma once
 #include "Expression.hpp"
 #include "IStatement.hpp"
+#include "Predicate.hpp"
 
 #include <optional>
 #include <utility>
@@ -12,7 +13,7 @@ namespace voila::ast
     class Assign : public IStatement
     {
       public:
-        Assign(std::string dest, Expression expr);
+        Assign(Location loc, std::string dest, Expression expr);
 
         [[nodiscard]] bool is_assignment() const final;
 
@@ -27,8 +28,8 @@ namespace voila::ast
 
         void print(std::ostream &ostream) const final;
 
-        void visit(ASTVisitor &visitor);
-        void visit(ASTVisitor &visitor) const;
+        void visit(ASTVisitor &visitor) final;
+        void visit(ASTVisitor &visitor) const final;
       public:
         std::string dest;
         Expression expr;

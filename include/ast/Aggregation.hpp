@@ -9,7 +9,7 @@ namespace voila::ast
     class Aggregation : public IStatement
     {
       public:
-        Aggregation(Expression col, Expression idxs) : IStatement(), src{std::move(col)}, idxs{std::move(idxs)} {}
+        Aggregation(const Location loc, Expression col, Expression idxs) : IStatement(loc), src{std::move(col)}, idxs{std::move(idxs)} {}
         ~Aggregation() override = default;
 
         [[nodiscard]] bool is_aggr() const final;

@@ -11,7 +11,7 @@ namespace voila::ast
     class Emit : public IStatement
     {
       public:
-        explicit Emit(Expression expr) : IStatement(), expr{std::move(expr)} {}
+        explicit Emit(Location loc, Expression expr) : IStatement(loc), expr{std::move(expr)} {}
 
         [[nodiscard]] bool is_emit() const final;
 

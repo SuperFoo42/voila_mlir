@@ -6,7 +6,7 @@ namespace voila::ast
     class FltConst : public Const
     {
       public:
-        explicit FltConst(const double val) : Const(), val{val} {}
+        explicit FltConst(const Location loc, const double val) : Const(loc), val{val} {}
 
         [[nodiscard]] bool is_float() const final;
 

@@ -8,7 +8,7 @@ namespace voila::ast
     class Neq : public Comparison
     {
       public:
-        Neq(Expression lhs, Expression rhs) : Comparison(std::move(lhs), std::move(rhs))
+        Neq(const Location loc, Expression lhs, Expression rhs) : Comparison(loc, std::move(lhs), std::move(rhs))
         { // TODO
         }
         [[nodiscard]] std::string type2string() const final;

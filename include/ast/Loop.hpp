@@ -11,7 +11,7 @@ namespace voila::ast
     class Loop : public IStatement
     {
       public:
-        Loop(Expression pred, std::vector<Statement> stms) : IStatement(), pred{std::move(pred)}, stms{std::move(stms)}
+        Loop(const Location loc, Expression pred, std::vector<Statement> stms) : IStatement(loc), pred{std::move(pred)}, stms{std::move(stms)}
         {
         }
 

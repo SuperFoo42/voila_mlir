@@ -13,7 +13,7 @@ namespace voila::ast
     class Main : public Fun
     {
       public:
-        Main(std::vector<std::string> args, std::vector<Statement> exprs);
+        Main(Location loc, std::vector<std::string> args, std::vector<Statement> exprs);
 
         Main() = default;
         Main(Main &) = default;

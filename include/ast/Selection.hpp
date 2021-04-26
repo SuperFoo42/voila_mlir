@@ -1,13 +1,13 @@
 #pragma once
-#include "Expression.hpp"
 #include "ASTVisitor.hpp"
+#include "Expression.hpp"
 namespace voila::ast
 {
     class Selection : public IExpression
     {
       public:
         Expression param;
-        explicit Selection(Expression expr) : param(std::move(expr))
+        explicit Selection(const Location loc, Expression expr) : IExpression(loc), param(std::move(expr))
         {
             // TODO
         }

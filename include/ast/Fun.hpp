@@ -12,13 +12,15 @@ namespace voila::ast
     {
       public:
 
-        Fun(std::string fun, std::vector<std::string> args, std::vector<Statement> exprs);
+        Fun(Location loc, std::string fun, std::vector<std::string> args, std::vector<Statement> exprs);
         Fun() = default;
         Fun(Fun &) = default;
         Fun(const Fun &) = default;
         Fun(Fun &&) = default;
 
         Fun &operator=(const Fun &) = default;
+
+        ~Fun() override = default;
 
         [[nodiscard]] bool is_function_definition() const override;
 

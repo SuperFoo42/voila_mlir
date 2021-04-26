@@ -89,6 +89,9 @@ namespace voila::ast
 
         [[nodiscard]] bool is_reference() const;
 
+        [[nodiscard]] bool is_predicate() const;
+
+
         // casts
         [[nodiscard]] IExpression *as_expr() const;
 
@@ -144,7 +147,9 @@ namespace voila::ast
 
         [[nodiscard]] TupleGet *as_tuple_get() const;
 
-        Ref *as_reference();
+        [[nodiscard]] Ref *as_reference();
+
+        [[nodiscard]] Predicate * as_predicate();
 
         [[nodiscard]] std::string type2string() const;
 
@@ -152,6 +157,8 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const;
 
         void predicate(Expression expr);
+
+        Location get_location();
 
         /*TODO: do we need this?
             size_t get_table_column_ref(std::string &tbl_col) const;

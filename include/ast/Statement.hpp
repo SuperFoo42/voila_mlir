@@ -102,5 +102,6 @@ namespace voila::ast
 
             //virtual std::string type2string() const = 0;
             */
+        Location get_location();
     };
 } // namespace voila::ast

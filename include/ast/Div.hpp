@@ -7,7 +7,7 @@ namespace voila::ast
     class Div : public Arithmetic
     {
       public:
-        Div(Expression lhs, Expression rhs) : Arithmetic(std::move(lhs),std::move(rhs))
+        Div(const Location loc, Expression lhs, Expression rhs) : Arithmetic(loc, std::move(lhs),std::move(rhs))
         {
             // TODO
         }

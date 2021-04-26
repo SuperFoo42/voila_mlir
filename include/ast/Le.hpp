@@ -8,7 +8,7 @@ namespace voila::ast
     class Le : public Comparison
     {
       public:
-        Le(Expression lhs, Expression rhs) : Comparison(std::move(lhs), std::move(rhs))
+        Le(const Location loc, Expression lhs, Expression rhs) : Comparison(loc, std::move(lhs), std::move(rhs))
         {
             // TODO
         }

@@ -7,7 +7,7 @@ namespace voila::ast
     class Mul : public Arithmetic
     {
       public:
-        Mul(Expression lhs, Expression rhs) : Arithmetic(std::move(lhs), std::move(rhs))
+        Mul(const Location loc, Expression lhs, Expression rhs) : Arithmetic(loc, std::move(lhs), std::move(rhs))
         {
             // TODO
         }

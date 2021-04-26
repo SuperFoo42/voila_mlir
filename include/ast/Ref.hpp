@@ -7,7 +7,7 @@ namespace voila::ast
     class Ref : public IExpression
     {
       public:
-        explicit Ref(const std::string &var);
+        explicit Ref(Location loc, const std::string &var);
 
         [[nodiscard]] bool is_reference() const final;
 

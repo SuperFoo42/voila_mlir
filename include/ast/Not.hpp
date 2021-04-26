@@ -9,7 +9,8 @@ namespace voila::ast
     class Not : public Logical
     {
       public:
-        explicit Not(Expression expr) : param(std::move(expr))
+        explicit Not(const Location loc,Expression expr) :
+            Logical(loc), param(std::move(expr))
         {
             // TODO
         }

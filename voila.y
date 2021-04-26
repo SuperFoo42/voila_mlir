@@ -117,6 +117,7 @@
 %nterm <ast::Main> main;
 %nterm <ast::Expression> constant;
 %nterm <ast::Expression> pred;
+%nterm <ast::Expression> pred_expr;
 
 %nterm <ast::Statement> effect;
 %nterm <ast::Expression> arithmetic;
@@ -132,42 +133,42 @@ program:
 	| program func { out.push_back($2); }
 	| program main { out.push_back($2); } //TODO: main function is singleton
 
-func: FUNCTION ID LPAREN IDs RPAREN LBRACE stmts RBRACE { $$ = ast::Fun($2, $4, $7); }
+func: FUNCTION ID LPAREN IDs RPAREN LBRACE stmts RBRACE { $$ = ast::Fun(@1+@6,$2, $4, $7); }
 
-main: MAIN LPAREN IDs RPAREN LBRACE stmts RBRACE { $$ = ast::Main($3, $6); }
+main: MAIN LPAREN IDs RPAREN LBRACE stmts RBRACE { $$ = ast::Main(@1+@5,$3, $6); }
 
 stmts:
 	%empty { }
 	| stmts stmt { $$ = $1; $$.push_back($2); }
 
-stmt: expr COLON { $$ = ast::Statement::make<StatementWrapper>($1); }
-	| ID ASSIGN expr COLON { $$ = ast::Statement::make<Assign>($1, $3); }
-	| LOOP pred LBRACE stmts RBRACE { $$ = ast::Statement::make<Loop>($2, $4); }
-	| EMIT expr COLON { $$ = ast::Statement::make<Emit>($2); }
+stmt: expr COLON { $$ = ast::Statement::make<StatementWrapper>(@1,$1); }
+	| ID ASSIGN expr COLON { $$ = ast::Statement::make<Assign>(@2,$1, $3); }
+	| LOOP pred LBRACE stmts RBRACE { $$ = ast::Statement::make<Loop>(@1+@2,$2, $4); }
+	| EMIT expr COLON { $$ = ast::Statement::make<Emit>(@1,$2); }
 	| effect COLON { $$ = $1; }
 	| effect COLON pred { $$ = $1; $$.predicate($3); }
-	| ID LPAREN IDs RPAREN COLON { $$ = ast::Statement::make<FunctionCall>($1, $3); }
+	| ID LPAREN IDs RPAREN COLON { $$ = ast::Statement::make<FunctionCall>(@1+@5,$1, $3); }
 
 	/* aggregate ( result_store, variable with predicate as aggregation filter, vector_to_aggregate) */
 effect :
-	AGGR LPAREN SUM COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrSum>($5, $7); } /* maybe we restrict the expressions to more specialized predicates or tuple get in the parser to safe some correctness check effort later on */
-	| AGGR LPAREN CNT COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrCnt>($5, $7); }
-	| AGGR LPAREN AVG COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrAvg>($5, $7); }
-	| AGGR LPAREN MIN COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrMin>($5, $7); }
-	| AGGR LPAREN MAX COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrMax>($5, $7); }
-	| SCATTER LPAREN ID COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Scatter>($3, $5, $7); } /* dest, idxs with pred, src */
-	| WRITE LPAREN ID COMMA expr COMMA ID RPAREN { $$ = ast::Statement::make<Write>($3, $5, $7); } /* dest, start_idx, src */
+	AGGR LPAREN SUM COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrSum>(@1+@8,$5, $7); } /* maybe we restrict the expressions to more specialized predicates or tuple get in the parser to safe some correctness check effort later on */
+	| AGGR LPAREN CNT COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrCnt>(@1+@8,$5, $7); }
+	| AGGR LPAREN AVG COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrAvg>(@1+@8,$5, $7); }
+	| AGGR LPAREN MIN COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrMin>(@1+@8,$5, $7); }
+	| AGGR LPAREN MAX COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrMax>(@1+@8,$5, $7); }
+	| SCATTER LPAREN ID COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Scatter>(@1+@8,$3, $5, $7); } /* dest, idxs with pred, src */
+	| WRITE LPAREN ID COMMA expr COMMA ID RPAREN { $$ = ast::Statement::make<Write>(@1+@8,$3, $5, $7); } /* dest, start_idx, src */
 
-pred: BAR ID { $$ = Expression::make<Ref>($2); }
+pred: BAR pred_expr { $$ = Expression::make<Predicate>(@2,$2); }
 
 selection:
-	SELECT LPAREN expr RPAREN { $$ = ast::Expression::make<Selection>($3); }
+	SELECT LPAREN expr RPAREN { $$ = ast::Expression::make<Selection>(@1+@4,$3); }
 
 expr: 
 	constant { $$ = $1; }
-	| ID { $$ = ast::Expression::make<Ref>($1); }
-	| ID LBRACKET INT RBRACKET { $$ = ast::Expression::make<TupleGet>($1, $3); }
-	| LPAREN expr_list RPAREN { $$ = ast::Expression::make<TupleCreate>($2); } /* recursive tuples do not look like a good idea */
+	| ID { $$ = ast::Expression::make<Ref>(@1,$1); }
+	| ID LBRACKET INT RBRACKET { $$ = ast::Expression::make<TupleGet>(@2+@4,$1, $3); }
+	| LPAREN expr_list RPAREN { $$ = ast::Expression::make<TupleCreate>(@1+@3,$2); } /* recursive tuples do not look like a good idea */
 	| expr pred { $$ = $1; $$.predicate($2); }
 	| arithmetic {$$ = $1; }
 	| comparison {$$ = $1; }
@@ -175,36 +176,43 @@ expr:
 	| read_op {$$ = $1; }
 	| selection { $$ = $1; }
 
+/* TODO: is this correct/complete? */
+pred_expr:
+    ID { $$ = ast::Expression::make<Ref>(@1,$1); }
+    | comparison {$$ = $1; }
+    | logical {$$ = $1; }
+    | selection { $$ = $1; }
+
 constant:
-	TRUE { $$ = ast::Expression::make<BooleanConst>(true); }
-	| FALSE { $$ = ast::Expression::make<BooleanConst>(false); }
-	| INT { $$ = ast::Expression::make<IntConst>($1); }
-	| FLT { $$ = ast::Expression::make<FltConst>($1); }
-	| STR { $$ = ast::Expression::make<StrConst>($1); }
+	TRUE { $$ = ast::Expression::make<BooleanConst>(@1,true); }
+	| FALSE { $$ = ast::Expression::make<BooleanConst>(@1, false); }
+	| INT { $$ = ast::Expression::make<IntConst>(@1,$1); }
+	| FLT { $$ = ast::Expression::make<FltConst>(@1,$1); }
+	| STR { $$ = ast::Expression::make<StrConst>(@1,$1); }
 
 arithmetic :
-	ADD LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Add>($3, $5); }
-	| SUB LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Sub>($3, $5); }
-	| MUL LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Mul>($3, $5); }
-	| DIV LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Div>($3, $5); }
-	| MOD LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Mod>($3, $5); }
+	ADD LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Add>(@1+@6,$3, $5); }
+	| SUB LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Sub>(@1+@6,$3, $5); }
+	| MUL LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Mul>(@1+@6,$3, $5); }
+	| DIV LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Div>(@1+@6,$3, $5); }
+	| MOD LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Mod>(@1+@6,$3, $5); }
 
 comparison : 
-	EQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Eq>($3, $5); }
-	| NEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Neq>($3, $5); }
-	| LE LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Le>($3, $5); }
-	| LEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Leq>($3, $5); }
-	| GE LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Ge>($3, $5); }
-	| GEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Geq>($3, $5); }
+	EQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Eq>(@1+@6,$3, $5); }
+	| NEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Neq>(@1+@6,$3, $5); }
+	| LE LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Le>(@1+@6,$3, $5); }
+	| LEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Leq>(@1+@6,$3, $5); }
+	| GE LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Ge>(@1+@6,$3, $5); }
+	| GEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Geq>(@1+@6,$3, $5); }
 
 logical:
-	AND LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<And>($3, $5); }
- 	| OR LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Or>($3, $5); }
- 	| NOT LPAREN expr RPAREN {$$ = ast::Expression::make<Not>($3); }
+	AND LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<And>(@1+@6,$3, $5); }
+ 	| OR LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Or>(@1+@6,$3, $5); }
+ 	| NOT LPAREN expr RPAREN {$$ = ast::Expression::make<Not>(@1+@4,$3); }
 
 read_op:
-	GATHER LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Gather>($3, $5); }
-	| READ LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Read>($3, $5); }
+	GATHER LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Gather>(@1+@6,$3, $5); }
+	| READ LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Read>(@1+@6,$3, $5); }
 
 expr_list: 
 	expr { $$ = std::vector<ast::Expression>(); $$.push_back($1);}
@@ -218,7 +226,8 @@ IDs :
 
 void voila::parser::Parser::error(const location& loc, const std::string& msg)
 {
-	std::cerr << loc << ": " << msg << std::endl;
+	std::cerr <<
+	loc << ": " << msg << std::endl;
 	if (lexer.size() == 0) // if token is unknown (no match)
 		lexer.matcher().winput(); // skip character
 }

@@ -132,6 +132,12 @@ namespace voila::ast
     {
         return false;
     }
+
+    bool IExpression::is_predicate() const
+    {
+        return false;
+    }
+
     IExpression *IExpression::as_expr()
     {
         return this;
@@ -245,6 +251,11 @@ namespace voila::ast
         return nullptr;
     }
     TupleCreate *IExpression::as_tuple_create()
+    {
+        return nullptr;
+    }
+
+    Predicate *IExpression::as_predicate()
     {
         return nullptr;
     }

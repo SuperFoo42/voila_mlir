@@ -8,7 +8,7 @@ namespace voila::ast
     class Sub : public Arithmetic
     {
       public:
-        Sub(Expression lhs, Expression rhs) : Arithmetic(std::move(lhs), std::move(rhs))
+        Sub(const Location loc, Expression lhs, Expression rhs) : Arithmetic(loc, std::move(lhs), std::move(rhs))
         {
             // TODO
         }

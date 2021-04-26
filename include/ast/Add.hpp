@@ -9,8 +9,8 @@ namespace voila::ast
     class Add : public Arithmetic
     {
       public:
-        Add(Expression lhs, Expression rhs) :
-            Arithmetic(std::move(lhs), std::move(rhs))
+        Add(const Location loc, Expression lhs, Expression rhs) :
+            Arithmetic(loc, std::move(lhs), std::move(rhs))
         {
             // TODO
         }

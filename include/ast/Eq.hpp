@@ -7,7 +7,7 @@ namespace voila::ast
     class Eq : public Comparison
     {
       public:
-        Eq(Expression lhs, Expression rhs) : Comparison(std::move(lhs), std::move(rhs))
+        Eq(Location loc, Expression lhs, Expression rhs) : Comparison(loc, std::move(lhs), std::move(rhs))
         {
             // TODO
         }

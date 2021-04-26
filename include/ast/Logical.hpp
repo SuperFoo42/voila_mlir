@@ -4,6 +4,9 @@ namespace voila::ast
 {
     class Logical : public IExpression
     {
+      public:
+        explicit Logical(const Location loc) : IExpression(loc){};
+        ~Logical() override = default;
         [[nodiscard]] bool is_logical() const final;
 
         Logical *as_logical() final;

@@ -385,7 +385,8 @@ namespace voila::ast
 
     void DotVisualizer::printVertex(ASTNode &node)
     {
-        *os << fmt::format("n{} [label=<<b>{}</b> <br/>", nodeID, node.type2string());
+        *os << fmt::format("n{} [label=<<b>{} <br/> @", nodeID, node.type2string());
+        *os << *node.get_location().begin.filename << node.get_location() << "</b> <br/>";
         node.print(*os);
         *os << ">]" << std::endl;
     }

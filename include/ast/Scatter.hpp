@@ -11,7 +11,7 @@ namespace voila::ast
     class Scatter : public IStatement
     {
       public:
-        Scatter(std::string dest_col, Expression idxs, Expression src_col);
+        Scatter(Location loc, std::string dest_col, Expression idxs, Expression src_col);
 
         [[nodiscard]] bool is_scatter() const final;
 

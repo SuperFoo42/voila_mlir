@@ -1,5 +1,4 @@
 #include "ast/Expression.hpp"
-
 namespace voila::ast
 {
     std::ostream &operator<<(std::ostream &out, const Expression &t)
@@ -253,5 +252,17 @@ namespace voila::ast
     }
     void Expression::visit(ASTVisitor &visitor) const {
         mImpl->visit(visitor);
+    }
+    Predicate *Expression::as_predicate()
+    {
+        return mImpl->as_predicate();
+    }
+    bool Expression::is_predicate() const
+    {
+        return mImpl->is_predicate();
+    }
+    Location Expression::get_location()
+    {
+        return mImpl->get_location();
     }
 } // namespace voila::ast

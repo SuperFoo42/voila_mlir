@@ -12,7 +12,7 @@ namespace voila::ast
     class Write : public IStatement
     {
       public:
-        Write(std::string dest_col, Expression wpos, std::string src_col);
+        Write(Location loc, std::string dest_col, Expression wpos, std::string src_col);
 
         [[nodiscard]] bool is_write() const final;
 

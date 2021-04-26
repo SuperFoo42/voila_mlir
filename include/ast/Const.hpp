@@ -2,9 +2,10 @@
 #include "IExpression.hpp"
 namespace voila::ast
 {
-    class Const : virtual public IExpression
+    class Const : public IExpression
     {
       public:
+        explicit Const(Location loc) : IExpression(loc) {}
         ~Const() override = default;
 
         [[nodiscard]] bool is_const() const final;

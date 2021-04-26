@@ -2,8 +2,8 @@
 
 namespace voila::ast
 {
-    Main::Main(std::vector<std::string> args, std::vector<Statement> exprs) :
-        Fun("main", std::move(args), std::move(exprs))
+    Main::Main(const Location loc, std::vector<std::string> args, std::vector<Statement> exprs) :
+        Fun(loc, "main", std::move(args), std::move(exprs))
     {
         // TODO register as entry point and check args + exprs
     }

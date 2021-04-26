@@ -9,7 +9,7 @@ namespace voila::ast
     class Or : public Logical
     {
       public:
-        Or(Expression lhs, Expression rhs) : lhs{std::move(lhs)}, rhs{std::move(rhs)}
+        Or(Location loc, Expression lhs, Expression rhs) : Logical(loc), lhs{std::move(lhs)}, rhs{std::move(rhs)}
         {
             // TODO
         }

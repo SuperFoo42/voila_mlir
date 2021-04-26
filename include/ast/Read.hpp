@@ -8,7 +8,8 @@ namespace voila::ast
     class Read : public IExpression
     {
       public:
-        Read(Expression lhs, Expression rhs) : column{std::move(lhs)}, idx{std::move(rhs)}
+        Read(Location loc, Expression lhs, Expression rhs) :
+            IExpression(loc), column{std::move(lhs)}, idx{std::move(rhs)}
         {
             // TODO
         }

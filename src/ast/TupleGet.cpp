@@ -2,7 +2,7 @@
 
 namespace voila::ast
 {
-    TupleGet::TupleGet(std::string exp, const intmax_t idx) : IExpression(), expr{std::move(exp)}, idx{idx}
+    TupleGet::TupleGet(const Location loc, std::string exp, const intmax_t idx) : IExpression(loc), expr{std::move(exp)}, idx{idx}
     {
         // TODO: check expr tuple and idx in range
     }

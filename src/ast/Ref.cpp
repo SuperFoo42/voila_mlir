@@ -2,7 +2,7 @@
 
 namespace voila::ast
 {
-    Ref::Ref(const std::string &var) : IExpression()
+    Ref::Ref(const  Location loc, const std::string &var) : IExpression(loc)
     {
         (void)var;
         // TODO find reference or error

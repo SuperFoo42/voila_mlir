@@ -17,5 +17,6 @@ namespace voila::ast
         return true;
     }
     void Arithmetic::print(std::ostream &) const {}
-    Arithmetic::Arithmetic(Expression lhs, Expression rhs) : lhs {std::move(lhs)}, rhs{std::move(rhs)} {}
+    Arithmetic::Arithmetic(const Location loc, Expression lhs, Expression rhs) :
+        IExpression(loc), lhs {std::move(lhs)}, rhs{std::move(rhs)} {}
 } // namespace voila::ast

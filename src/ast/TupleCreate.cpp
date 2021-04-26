@@ -10,7 +10,7 @@ namespace voila::ast
     {
         return "tuple create";
     }
-    TupleCreate::TupleCreate(std::vector<Expression> tupleElems) : IExpression(), elems{std::move(tupleElems)} {}
+    TupleCreate::TupleCreate(const Location loc, std::vector<Expression> tupleElems) : IExpression(loc), elems{std::move(tupleElems)} {}
     void TupleCreate::print(std::ostream &) const {}
     void TupleCreate::visit(ASTVisitor &visitor) const
     {

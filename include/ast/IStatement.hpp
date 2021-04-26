@@ -20,10 +20,13 @@ namespace voila::ast
     class Emit;
     class Loop;
     class StatementWrapper;
+    class Predicate;
 
     class IStatement : public ASTNode
     {
       public:
+        explicit IStatement(const Location loc) :
+            ASTNode(loc) {};
         ~IStatement() override = default;
 
         virtual void predicate(Expression);

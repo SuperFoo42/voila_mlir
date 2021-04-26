@@ -10,8 +10,8 @@ namespace voila::ast
     {
         return this;
     }
-    FunctionCall::FunctionCall(std::string fun, std::vector<std::string> args) :
-        IStatement(), fun{std::move(fun)}, args{std::move(args)}
+    FunctionCall::FunctionCall(const Location loc, std::string fun, std::vector<std::string> args) :
+        IStatement(loc), fun{std::move(fun)}, args{std::move(args)}
     {
         // TODO: lookup function definition and check if all arguments match and have references
     }

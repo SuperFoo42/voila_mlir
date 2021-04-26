@@ -8,7 +8,7 @@ namespace voila::ast
     class StrConst : public Const
     {
       public:
-        explicit StrConst(std::string val) : Const(), val{std::move(val)} {}
+        explicit StrConst(const Location loc, std::string val) : Const(loc), val{std::move(val)} {}
 
         [[nodiscard]] bool is_string() const final;
 

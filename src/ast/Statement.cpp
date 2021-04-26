@@ -124,7 +124,13 @@ namespace voila::ast
     {
         mImpl->predicate(std::move(expr));
     }
-    void Statement::visit(ASTVisitor &visitor) const {
+    void Statement::visit(ASTVisitor &visitor) const
+    {
         mImpl->visit(visitor);
+    }
+
+    Location Statement::get_location()
+    {
+        return mImpl->get_location();
     }
 } // namespace voila::ast

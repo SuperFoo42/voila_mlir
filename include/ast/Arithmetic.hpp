@@ -7,7 +7,7 @@ namespace voila::ast
     class Arithmetic : public IExpression
     {
       public:
-        Arithmetic(Expression lhs, Expression rhs);
+        Arithmetic(Location loc, Expression lhs, Expression rhs);
         ~Arithmetic() override = default;
 
         [[nodiscard]] bool is_arithmetic() const final;
