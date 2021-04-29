@@ -39,3 +39,4 @@
 #include "ast/TupleGet.hpp"
 #include "ast/Write.hpp"
 #include "ast/Predicate.hpp"
+#include "ast/Variable.hpp"

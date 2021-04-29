@@ -45,6 +45,8 @@ namespace voila::ast
     class ASTNode;
     class Fun;
     class Main;
+    class Comparison;
+    class Variable;
 
     class ASTVisitor
     {
@@ -81,6 +83,7 @@ namespace voila::ast
         virtual void operator()(const Or &) {}
         virtual void operator()(const Not &) {}
         virtual void operator()(const Logical &) {}
+        virtual void operator()(const Comparison &) {}
         virtual void operator()(const IntConst &) {}
         virtual void operator()(const BooleanConst &) {}
         virtual void operator()(const FltConst &) {}
@@ -93,50 +96,7 @@ namespace voila::ast
         virtual void operator()(const Fun &) {}
         virtual void operator()(const Main &) {}
         virtual void operator()(const Selection &) {}
-
-        virtual void operator()(ASTNode&){}
-        virtual void operator()(Aggregation &) {}
-        virtual void operator()(AggrSum &) {}
-        virtual void operator()(AggrCnt &) {}
-        virtual void operator()(AggrMin &) {}
-        virtual void operator()(AggrMax &) {}
-        virtual void operator()(AggrAvg &) {}
-        virtual void operator()(Write &) {}
-        virtual void operator()(Scatter &) {}
-        virtual void operator()(FunctionCall &) {}
-        virtual void operator()(Assign &) {}
-        virtual void operator()(Emit &) {}
-        virtual void operator()(Loop &) {}
-        virtual void operator()(StatementWrapper &) {}
-        virtual void operator()(Const &) {}
-        virtual void operator()(Add &) {}
-        virtual void operator()(Arithmetic &) {}
-        virtual void operator()(Sub &) {}
-        virtual void operator()(Mul &) {}
-        virtual void operator()(Div &) {}
-        virtual void operator()(Mod &) {}
-        virtual void operator()(Eq &) {}
-        virtual void operator()(Neq &) {}
-        virtual void operator()(Le &) {}
-        virtual void operator()(Ge &) {}
-        virtual void operator()(Leq &) {}
-        virtual void operator()(Geq &) {}
-        virtual void operator()(And &) {}
-        virtual void operator()(Or &) {}
-        virtual void operator()(Not &) {}
-        virtual void operator()(Logical &) {}
-        virtual void operator()(IntConst &) {}
-        virtual void operator()(BooleanConst &) {}
-        virtual void operator()(FltConst &) {}
-        virtual void operator()(StrConst &) {}
-        virtual void operator()(Read &) {}
-        virtual void operator()(Gather &) {}
-        virtual void operator()(Ref &) {}
-        virtual void operator()(TupleGet &) {}
-        virtual void operator()(TupleCreate &) {}
-        virtual void operator()(Fun &) {}
-        virtual void operator()(Main &) {}
-        virtual void operator()(Selection &) {}
+        virtual void operator()(const Variable &) {}
 
     };
 } // namespace voila::ast

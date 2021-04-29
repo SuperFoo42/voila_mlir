@@ -234,7 +234,7 @@ namespace voila::ast
     {
         return mImpl->as_tuple_get();
     }
-    Ref *Expression::as_reference()
+    Ref *Expression::as_reference() const
     {
         return mImpl->as_reference();
     }
@@ -253,7 +253,7 @@ namespace voila::ast
     void Expression::visit(ASTVisitor &visitor) const {
         mImpl->visit(visitor);
     }
-    Predicate *Expression::as_predicate()
+    Predicate *Expression::as_predicate() const
     {
         return mImpl->as_predicate();
     }
@@ -264,5 +264,13 @@ namespace voila::ast
     Location Expression::get_location()
     {
         return mImpl->get_location();
+    }
+    Variable *Expression::as_variable() const
+    {
+        return mImpl->as_variable();
+    }
+    bool Expression::is_variable() const
+    {
+        return mImpl->is_variable();
     }
 } // namespace voila::ast

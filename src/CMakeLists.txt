@@ -6,21 +6,24 @@ CPMAddPackage(
         GITHUB_REPOSITORY fmtlib/fmt
 )
 
-if(fmt_ADDED)
+if (fmt_ADDED)
     # enable c++11 to avoid compilation errors
     set_target_properties(fmt PROPERTIES CXX_STANDARD 20)
-endif()
+endif ()
 
 if (BUILD_DOC AND DOXYGEN_FOUND)
-doxygen_add_docs(docs)
-endif()
+    doxygen_add_docs(docs)
+endif ()
 
 add_subdirectory(ast)
 
 add_library(voila_compiler
-voila_parser.cpp
-voila_lexer.cpp
-)
+        voila_parser.cpp
+        voila_lexer.cpp
+        Program.cpp
+        TypeInferer.cpp
+        DotVisualizer.cpp
+        )
 #TODO: fix libreflex dependency
 target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast ${CMAKE_SOURCE_DIR}/../RE-flex/lib/libreflex.so)
 target_compile_features(voila_compiler PUBLIC cxx_std_20)
@@ -33,6 +36,7 @@ target_compile_options(voila_compiler PUBLIC
         -Wno-c++98-compat
         -Wno-c++98-c++11-c++14-compat
         -Wno-c++98-compat-pedantic)
+
 add_executable(voila
         main.cpp)
 

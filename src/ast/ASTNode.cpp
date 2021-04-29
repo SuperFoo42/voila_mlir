@@ -42,5 +42,16 @@ namespace voila::ast
         return loc;
     }
     ASTNode::ASTNode(const Location loc) : loc(loc) {}
+    bool ASTNode::operator==(const ASTNode &rhs) const
+    {
+        return *loc.begin.filename == *rhs.loc.begin.filename && loc.begin.column == rhs.loc.begin.column &&
+               loc.begin.line == rhs.loc.begin.line && loc.end.filename == rhs.loc.end.filename &&
+               loc.end.column == rhs.loc.end.column && loc.end.line == rhs.loc.end.line;
+    }
+    bool ASTNode::operator!=(const ASTNode &rhs) const
+    {
+        return !(rhs == *this);
+    }
+
     ASTNode::ASTNode() = default;
 } // namespace voila::ast

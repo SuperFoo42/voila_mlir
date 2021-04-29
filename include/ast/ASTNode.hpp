@@ -1,9 +1,12 @@
 #pragma once
+#include "location.hpp"
+
+#include <bit>
+#include <climits>
 #include <cmath>
 #include <cstddef>
 #include <iostream>
 #include <string>
-#include "location.hpp"
 namespace voila::ast
 {
     class ASTVisitor;
@@ -23,9 +26,9 @@ namespace voila::ast
         explicit ASTNode(Location loc);
         ASTNode();
 
-        //ASTNode() = default;
+        // ASTNode() = default;
 
-        Location get_location() const;
+        [[nodiscard]] Location get_location() const;
 
         [[nodiscard]] virtual bool is_expr() const;
 
@@ -38,5 +41,33 @@ namespace voila::ast
         virtual Fun *as_function_definition();
 
         virtual Main *as_main();
+
+        virtual bool operator==(const ASTNode &rhs) const;
+        virtual bool operator!=(const ASTNode &rhs) const;
     };
 } // namespace voila::ast
+
+namespace std
+{
+    inline void hash_combine(std::size_t &) {}
+
+    template<class T, class... Rest>
+    inline void hash_combine(std::size_t &seed, const T &v, Rest... rest)
+    {
+        std::hash<T> hasher;
+        seed ^= std::rotl(hasher(v), sizeof(size_t) * CHAR_BIT / 2);
+        hash_combine(seed, rest...);
+    }
+
+    template<>
+    struct hash<voila::ast::ASTNode>
+    {
+        std::size_t operator()(voila::ast::ASTNode const &node)
+        {
+            std::size_t res = 0;
+            hash_combine(res, *node.loc.begin.filename, *node.loc.end.filename, node.loc.begin.line, node.loc.end.line,
+                         node.loc.begin.column, node.loc.end.column);
+            return res;
+        }
+    };
+} // namespace std

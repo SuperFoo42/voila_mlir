@@ -1,13 +1,14 @@
-#include <utility>
-
 #include "ast/Assign.hpp"
+
+#include <cassert>
+#include <utility>
 
 namespace voila::ast
 {
-    Assign::Assign(const Location loc, std::string dest, Expression expr) :
+    Assign::Assign(const Location loc, Expression dest, Expression expr) :
         IStatement(loc), dest{std::move(dest)}, expr{std::move(expr)}, pred{std::nullopt}
     {
-        // TODO: find dest variable and look for conflicts
+        assert(this->dest.is_variable() || this->dest.is_reference());
     }
     Assign *Assign::as_assignment()
     {
@@ -24,9 +25,9 @@ namespace voila::ast
         else
             throw std::invalid_argument("Expression is no predicate");
     }
-    void Assign::print(std::ostream &ostream) const
+    void Assign::print(std::ostream &) const
     {
-        ostream << dest << " =";
+
     }
 
     void Assign::visit(ASTVisitor &visitor) const
@@ -36,5 +37,9 @@ namespace voila::ast
     void Assign::visit(ASTVisitor &visitor)
     {
         visitor(*this);
+    }
+    std::string Assign::type2string() const
+    {
+        return "assignment";
     }
 } // namespace voila::ast

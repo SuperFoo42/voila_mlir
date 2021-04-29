@@ -12,7 +12,7 @@ namespace voila::ast
     {
       public:
 
-        Fun(Location loc, std::string fun, std::vector<std::string> args, std::vector<Statement> exprs);
+        Fun(Location loc, std::string fun, std::vector<Expression> args, std::vector<Statement> exprs);
         Fun() = default;
         Fun(Fun &) = default;
         Fun(const Fun &) = default;
@@ -33,7 +33,8 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) override;
 
         std::string name;
-        std::vector<std::string> args;
+        std::vector<Expression> args;
         std::vector<Statement> body;
+        std::unordered_map<std::string, Expression> variables;
     };
 } // namespace voila::ast

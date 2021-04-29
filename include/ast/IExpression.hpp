@@ -37,6 +37,7 @@ namespace voila::ast
     class TupleCreate;
     class Expression;
     class Predicate;
+    class Variable;
 
     class IExpression : public ASTNode
     {
@@ -111,6 +112,8 @@ namespace voila::ast
 
         [[nodiscard]] virtual bool is_predicate() const;
 
+        [[nodiscard]] virtual bool is_variable() const;
+
         // casts
         virtual IExpression *as_expr();
 
@@ -171,5 +174,7 @@ namespace voila::ast
         virtual TupleCreate *as_tuple_create();
 
         virtual Predicate *as_predicate();
+
+        virtual Variable *as_variable();
     };
 } // namespace voila::ast

@@ -259,4 +259,12 @@ namespace voila::ast
     {
         return nullptr;
     }
+    bool IExpression::is_variable() const
+    {
+        return false;
+    }
+    Variable *IExpression::as_variable()
+    {
+        return nullptr;
+    }
 } // namespace voila::ast

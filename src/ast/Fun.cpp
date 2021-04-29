@@ -4,7 +4,7 @@
 
 namespace voila::ast
 {
-    Fun::Fun(const Location loc, std::string fun, std::vector<std::string> args, std::vector<Statement> exprs) :
+    Fun::Fun(const Location loc, std::string fun, std::vector<Expression> args, std::vector<Statement> exprs) :
         ASTNode(loc), name{std::move(fun)}, args{std::move(args)}, body{std::move(exprs)}
     {
         // TODO: check function, deduce argument types and register function
@@ -23,7 +23,10 @@ namespace voila::ast
     }
     void Fun::print(std::ostream &o) const
     {
-        o << name << "(" << fmt::format("{}", fmt::join(args, ", ")) << ")";
+        o << name << "(";
+        for (auto &arg : args)
+            o << arg << ",";
+        o << ")";
     }
     void Fun::visit(ASTVisitor &visitor) const
     {

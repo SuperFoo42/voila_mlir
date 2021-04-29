@@ -1,10 +1,11 @@
 #include "ast/Ref.hpp"
+#include "ast/Expression.hpp"
+#include "ast/Variable.hpp"
 
 namespace voila::ast
 {
-    Ref::Ref(const  Location loc, const std::string &var) : IExpression(loc)
+    Ref::Ref(const Location loc, Expression var) : IExpression(loc), ref{std::move(var)}
     {
-        (void)var;
         // TODO find reference or error
     }
     bool Ref::is_reference() const
@@ -19,8 +20,9 @@ namespace voila::ast
     {
         return this;
     }
-    void Ref::print(std::ostream &) const
+    void Ref::print(std::ostream &ostream) const
     {
+        ostream << ref.as_variable()->var;
     }
 
     void Ref::visit(ASTVisitor &visitor) const

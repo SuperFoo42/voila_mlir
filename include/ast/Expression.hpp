@@ -91,6 +91,8 @@ namespace voila::ast
 
         [[nodiscard]] bool is_predicate() const;
 
+        [[nodiscard]] bool is_variable() const;
+
 
         // casts
         [[nodiscard]] IExpression *as_expr() const;
@@ -147,9 +149,11 @@ namespace voila::ast
 
         [[nodiscard]] TupleGet *as_tuple_get() const;
 
-        [[nodiscard]] Ref *as_reference();
+        [[nodiscard]] Ref *as_reference() const;
 
-        [[nodiscard]] Predicate * as_predicate();
+        [[nodiscard]] Predicate * as_predicate() const;
+
+        [[nodiscard]] Variable *as_variable() const;
 
         [[nodiscard]] std::string type2string() const;
 

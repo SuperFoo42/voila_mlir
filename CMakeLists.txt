@@ -25,23 +25,16 @@ add_definitions(${TBB_DEFINITIONS})
 
 include(CheckSymbolExists)
 
-CHECK_SYMBOL_EXISTS(mmap "sys/mman.h" HAVE_POSIX_MMAP)
-CHECK_SYMBOL_EXISTS(mremap "sys/mman.h" HAVE_LINUX_MREMAP)
-CHECK_SYMBOL_EXISTS(sysconf "unistd.h" HAVE_POSIX_SYSCONF)
-CHECK_SYMBOL_EXISTS(MAP_POPULATE "sys/mman.h" HAVE_LINUX_MAP_POPULATE)
-
 find_package(Threads REQUIRED)
 
-find_package(BISON)
+find_package(BISON REQUIRED)
 
-BISON_TARGET(VoilaParser voila.y ${CMAKE_CURRENT_SOURCE_DIR}/src/voila_parser.cpp
-             DEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/include/voila_parser.hpp)
 
 #TODO: add reflex call to generate lexer for grammar
 CPMAddPackage(
   NAME reflex
   GITHUB_REPOSITORY Genivia/RE-flex
-  GIT_TAG v3.0.2
+  GIT_TAG v3.0.3
 )
 if(reflex_ADDED)
   add_library(reflex INTERFACE IMPORTED)

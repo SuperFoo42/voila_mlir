@@ -48,10 +48,10 @@ add_library(voila_ast
         Write.cpp
         Assign.cpp
         Predicate.cpp
-        DotVisualizer.cpp)
+        Variable.cpp)
 
 set_property(TARGET voila_ast PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-target_link_libraries(voila_ast fmt)
+target_link_libraries(voila_ast fmt magic_enum)
 target_compile_features(voila_ast PUBLIC cxx_std_20)
 target_compile_options(voila_ast PUBLIC
         -Wpedantic

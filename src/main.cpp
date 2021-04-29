@@ -1,28 +1,28 @@
 #include "ParsingError.hpp"
+#include "Program.hpp"
 #include "voila_lexer.hpp"
 #include "voila_parser.hpp"
 
-#include <ast/DotVisualizer.hpp>
 #include <cstdlib>
 #include <cxxopts.hpp>
 #include <filesystem>
 #include <fmt/core.h>
 #include <fstream>
-std::vector<Fun> parse(const std::string &file)
+voila::Program parse(const std::string &file)
 {
     if (!std::filesystem::is_regular_file(std::filesystem::path(file)))
     {
         throw std::invalid_argument("invalid file");
     }
-    std::vector<Fun> funcs;
+    voila::Program prog;
     std::ifstream fst(file, std::ios::in);
 
     if (fst.is_open())
     {
         voila::lexer::Lexer lexer(fst); // read file, decode UTF-8/16/32 format
-        lexer.filename = file;        // the filename to display with error locations
+        lexer.filename = file;          // the filename to display with error locations
 
-        voila::parser::Parser parser(lexer, funcs);
+        voila::parser::Parser parser(lexer, prog);
         if (parser() != 0)
             throw ParsingError();
         fst.close();
@@ -32,19 +32,9 @@ std::vector<Fun> parse(const std::string &file)
         std::cout << fmt::format("failed to open {}", file) << std::endl;
     }
 
-    return funcs;
+    return prog;
 }
 
-void asts_to_dot(const std::string &outFileName, std::vector<Fun> &funcs)
-{
-    for (auto &func : funcs)
-    {
-        DotVisualizer vis(func);
-        std::ofstream out(outFileName+"."+func.name+".dot", std::ios::out);
-        out << vis;
-        out.close();
-    }
-}
 int main(int argc, char *argv[])
 {
     cxxopts::Options options("VOILA compiler", "");
@@ -63,10 +53,10 @@ int main(int argc, char *argv[])
             exit(EXIT_SUCCESS);
         }
 
-        auto funcs = parse(cmd["f"].as<std::string>());
+        auto prog = parse(cmd["f"].as<std::string>());
         if (cmd.count("a"))
         {
-            asts_to_dot(cmd["f"].as<std::string>(), funcs);
+            prog.to_dot(cmd["f"].as<std::string>());
         }
     }
     catch (const cxxopts::OptionException &e)

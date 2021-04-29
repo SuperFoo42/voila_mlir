@@ -10,7 +10,7 @@ namespace voila::ast
     class FunctionCall : public IStatement
     {
       public:
-        FunctionCall(Location loc, std::string fun, std::vector<std::string> args);
+        FunctionCall(Location loc, std::string fun, std::vector<Expression> args);
 
         [[nodiscard]] bool is_function_call() const final;
 
@@ -23,6 +23,6 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) final;
 
         std::string fun;
-        std::vector<std::string> args;
+        std::vector<Expression> args;
     };
 } // namespace voila::ast
