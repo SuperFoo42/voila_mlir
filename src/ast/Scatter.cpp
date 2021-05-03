@@ -2,7 +2,7 @@
 
 namespace voila::ast
 {
-    Scatter::Scatter(const Location loc, std::string dest_col, Expression idxs, Expression src_col) :
+    Scatter::Scatter(const Location loc, Expression src_col, Expression dest_col, Expression idxs) :
         IStatement(loc), dest{std::move(dest_col)}, idxs{std::move(idxs)}, src{std::move(src_col)}
     {
     }

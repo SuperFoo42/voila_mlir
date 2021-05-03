@@ -60,51 +60,51 @@ namespace voila::ast
     {
         return mImpl->is_aggr_avg();
     }
-    IStatement *Statement::as_stmt()
+    IStatement *Statement::as_stmt() const
     {
         return mImpl->as_stmt();
     }
-    Aggregation *Statement::as_aggr()
+    Aggregation *Statement::as_aggr() const
     {
         return mImpl->as_aggr();
     }
-    Loop *Statement::as_loop()
+    Loop *Statement::as_loop() const
     {
         return mImpl->as_loop();
     }
-    Assign *Statement::as_assignment()
+    Assign *Statement::as_assignment() const
     {
         return mImpl->as_assignment();
     }
-    Emit *Statement::as_emit()
+    Emit *Statement::as_emit() const
     {
         return mImpl->as_emit();
     }
-    Scatter *Statement::as_scatter()
+    Scatter *Statement::as_scatter() const
     {
         return mImpl->as_scatter();
     }
-    Write *Statement::as_write()
+    Write *Statement::as_write() const
     {
         return mImpl->as_write();
     }
-    AggrSum *Statement::as_aggr_sum()
+    AggrSum *Statement::as_aggr_sum() const
     {
         return mImpl->as_aggr_sum();
     }
-    AggrCnt *Statement::as_aggr_cnt()
+    AggrCnt *Statement::as_aggr_cnt() const
     {
         return mImpl->as_aggr_cnt();
     }
-    AggrMin *Statement::as_aggr_min()
+    AggrMin *Statement::as_aggr_min() const
     {
         return mImpl->as_aggr_min();
     }
-    AggrMax *Statement::as_aggr_max()
+    AggrMax *Statement::as_aggr_max() const
     {
         return mImpl->as_aggr_max();
     }
-    AggrAvg *Statement::as_aggr_avg()
+    AggrAvg *Statement::as_aggr_avg() const
     {
         return mImpl->as_aggr_avg();
     }
@@ -112,7 +112,7 @@ namespace voila::ast
     {
         return mImpl->is_statement_wrapper();
     }
-    std::optional<Expression> Statement::as_expression()
+    std::optional<Expression> Statement::as_expression() const
     {
         return mImpl->as_expression();
     }
@@ -120,10 +120,16 @@ namespace voila::ast
     {
         mImpl->visit(visitor);
     }
-    void Statement::predicate(Expression expr)
+    void Statement::set_predicate(Expression expr)
     {
-        mImpl->predicate(std::move(expr));
+        mImpl->set_predicate(std::move(expr));
     }
+
+    std::optional<Expression> Statement::get_predicate()
+    {
+        return mImpl->get_predicate();
+    }
+
     void Statement::visit(ASTVisitor &visitor) const
     {
         mImpl->visit(visitor);

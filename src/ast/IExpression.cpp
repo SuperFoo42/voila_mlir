@@ -4,10 +4,16 @@
 
 namespace voila::ast
 {
-    void IExpression::predicate(Expression)
+    void IExpression::set_predicate(Expression)
     {
         throw PredicationUnsupportedException(fmt::format("Predication not supported for: {}.", type2string()));
     }
+
+    std::optional<Expression> IExpression::get_predicate()
+    {
+        throw PredicationUnsupportedException(fmt::format("Predication not supported for: {}.", type2string()));
+    }
+
     bool IExpression::is_expr() const
     {
         return true;

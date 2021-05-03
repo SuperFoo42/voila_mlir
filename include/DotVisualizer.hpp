@@ -2,6 +2,7 @@
 #include "ast/ASTVisitor.hpp"
 #include "ASTNodes.hpp"
 #include "TypeInferer.hpp"
+#include "Type.hpp"
 #include <fmt/core.h>
 #include <iostream>
 #include <utility>
@@ -14,10 +15,10 @@ namespace voila::ast
         Fun &to_dot;
         std::ostream *os;
         size_t nodeID;
-        std::optional<TypeInferer> inferer;
+        const std::optional<std::reference_wrapper<TypeInferer>> inferer;
 
       public:
-        explicit DotVisualizer(Fun &start, std::optional<TypeInferer> inferer = std::nullopt) : to_dot{start}, os{nullptr}, nodeID{0}, inferer{std::move(inferer)} {}
+        explicit DotVisualizer(Fun &start, const std::optional<std::reference_wrapper<TypeInferer>> &inferer = std::nullopt) : to_dot{start}, os{nullptr}, nodeID{0}, inferer{inferer} {}
         void operator()(const AggrSum &sum) final;
         void operator()(const AggrCnt &cnt) final;
         void operator()(const AggrMin &min) final;
@@ -67,7 +68,17 @@ namespace voila::ast
             *os << fmt::format("n{} [label=<<b>{} <br/>", nodeID, node.type2string());
             if (infer_type && inferer.has_value())
             {
-                *os << inferer->get_type(node) << "<br/>";
+                const auto &type = inferer->get().get_type(node);
+                //FIXME: broken overload resolution
+                try
+                {
+                    *os << dynamic_cast<const FunctionType &>(type);
+                }
+                catch (std::exception &ignored)
+                {
+                    *os << type;
+                }
+                *os << "<br/>";
             }
             *os << "@" << *node.get_location().begin.filename << node.get_location() << "</b> <br/>";
             node.print(*os);

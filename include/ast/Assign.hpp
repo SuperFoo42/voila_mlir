@@ -21,7 +21,8 @@ namespace voila::ast
 
         [[nodiscard]] std::string type2string() const final;
 
-        void predicate(Expression expression) final;
+        void set_predicate(Expression expression) final;
+        std::optional<Expression> get_predicate() final;
 
         void print(std::ostream &ostream) const final;
 

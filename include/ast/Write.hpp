@@ -1,18 +1,18 @@
 
 #pragma once
+#include "ASTVisitor.hpp"
 #include "Expression.hpp"
 #include "IStatement.hpp"
 
 #include <utility>
 #include <vector>
-#include "ASTVisitor.hpp"
 
 namespace voila::ast
 {
     class Write : public IStatement
     {
       public:
-        Write(Location loc, std::string dest_col, Expression wpos, std::string src_col);
+        Write(Location loc, Expression src_col, Expression dest_col, Expression wpos);
 
         [[nodiscard]] bool is_write() const final;
 
@@ -23,9 +23,9 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        std::string dest;
+        Expression dest;
         Expression start;
-        std::string src;
+        Expression src;
     };
 
 } // namespace voila::ast

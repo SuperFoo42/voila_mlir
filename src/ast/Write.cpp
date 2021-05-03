@@ -2,7 +2,7 @@
 
 namespace voila::ast
 {
-    Write::Write(const Location loc, std::string dest_col, Expression wpos, std::string src_col) :
+    Write::Write(const Location loc, Expression src_col, Expression dest_col, Expression wpos) :
         IStatement(loc), dest{std::move(dest_col)}, start{std::move(wpos)}, src{std::move(src_col)}
     {
     }

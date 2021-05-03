@@ -7,7 +7,8 @@ namespace voila::ast
     {
       public:
         Expression param;
-        explicit Selection(const Location loc, Expression expr) : IExpression(loc), param(std::move(expr))
+        Expression pred;
+        explicit Selection(const Location loc, Expression expr, Expression pred) : IExpression(loc), param(std::move(expr)), pred(std::move(pred))
         {
             // TODO
         }

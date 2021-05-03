@@ -11,7 +11,7 @@ namespace voila::ast
     class TupleGet : public IExpression
     {
       public:
-        TupleGet(Location loc, std::string exp, intmax_t idx);
+        TupleGet(Location loc, Expression exp, intmax_t idx);
 
         [[nodiscard]] bool is_tuple_get() const final;
 
@@ -20,7 +20,7 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        std::string expr;
-        intmax_t idx;
+        Expression expr;
+        std::intmax_t idx;
     };
 } // namespace voila::ast

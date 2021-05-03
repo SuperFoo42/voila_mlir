@@ -103,7 +103,7 @@ namespace voila::ast
     void DotVisualizer::operator()(const Loop &loop)
     {
         const auto id = nodeID;
-        printVertex(loop);
+        printVertex<false>(loop);
 
         for (const auto &stmt : loop.stms)
         {
@@ -328,13 +328,16 @@ namespace voila::ast
         }
     }
 
-
-    void DotVisualizer::operator()(const Selection &create) {
+    void DotVisualizer::operator()(const Selection &create)
+    {
         const auto id = nodeID;
         printVertex(create);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
         create.param.visit(*this);
+
+        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        create.pred.visit(*this);
     }
 
     void DotVisualizer::operator()(const StatementWrapper &wrapper)
@@ -358,7 +361,6 @@ namespace voila::ast
         }
     }
 
-    // FIXME: never called, instead Fun is called
     void DotVisualizer::operator()(const Main &fun)
     {
         const auto id = nodeID;

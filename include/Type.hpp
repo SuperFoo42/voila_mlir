@@ -44,7 +44,6 @@ namespace voila
     class Type
     {
       public:
-
         [[maybe_unused]] size_t typeID;
         [[maybe_unused]] DataType t;
         [[maybe_unused]] Arity ar;
@@ -53,7 +52,7 @@ namespace voila
         explicit Type(size_t tID, DataType t = DataType::UNKNOWN, Arity ar = Arity()) : typeID(tID), t(t), ar{ar} {}
         friend std::ostream &operator<<(std::ostream &os, const Type &type)
         {
-            os << fmt::format("T{}:{}[", type.typeID,  std::string(magic_enum::enum_name(type.t)));
+            os << fmt::format("T{}:{}[", type.typeID, std::string(magic_enum::enum_name(type.t)));
             os << type.ar << "]";
             return os;
         }
@@ -61,16 +60,23 @@ namespace voila
 
     class FunctionType : public Type
     {
-        [[maybe_unused]] std::vector<Type> paramTypeIDs;
-        [[maybe_unused]] std::vector<DataType> paramTypes;
-        [[maybe_unused]] std::vector<Arity> paramArity;
+        std::vector<size_t> paramTypeIds;
 
       public:
-        explicit FunctionType(size_t tID, DataType t = DataType::UNKNOWN, Arity ar = Arity()) : Type(tID, t,ar) {}
+        explicit FunctionType(size_t tID,
+                              std::vector<size_t> paramTypeIds = {},
+                              DataType t = DataType::UNKNOWN,
+                              Arity ar = Arity()) :
+            Type(tID, t, ar), paramTypeIds{std::move(paramTypeIds)}
+        {
+        }
 
         friend std::ostream &operator<<(std::ostream &os, const FunctionType &type)
         {
-            os << "return typeID: " << type.typeID << " type: " << magic_enum::enum_name(type.t) << " arity: " << type.ar;
+            os << fmt::format("T{}:{}[", type.typeID, std::string(magic_enum::enum_name(type.t)));
+            os << type.ar << "](";
+            os << fmt::format("T{}", fmt::join(type.paramTypeIds, ", T"));
+            os << ")";
             return os;
         }
     };

@@ -246,9 +246,9 @@ namespace voila::ast
     {
         mImpl->visit(visitor);
     }
-    void Expression::predicate(Expression expr)
+    void Expression::set_predicate(Expression expr)
     {
-        mImpl->predicate(std::move(expr));
+        mImpl->set_predicate(std::move(expr));
     }
     void Expression::visit(ASTVisitor &visitor) const {
         mImpl->visit(visitor);
@@ -272,5 +272,10 @@ namespace voila::ast
     bool Expression::is_variable() const
     {
         return mImpl->is_variable();
+    }
+
+    std::optional<Expression> Expression::get_predicate() const
+    {
+        return mImpl->get_predicate();
     }
 } // namespace voila::ast

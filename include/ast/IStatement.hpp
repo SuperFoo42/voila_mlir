@@ -29,7 +29,8 @@ namespace voila::ast
             ASTNode(loc) {};
         ~IStatement() override = default;
 
-        virtual void predicate(Expression);
+        virtual void set_predicate(Expression);
+        virtual std::optional<Expression> get_predicate();
 
         // type checks
         [[nodiscard]] bool is_stmt() const final;

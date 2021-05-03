@@ -58,40 +58,40 @@ namespace voila::ast
 
         [[nodiscard]] bool is_aggr_avg() const;
         // type conversions
-        IStatement *as_stmt();
+        [[nodiscard]] IStatement *as_stmt() const;
 
-        Aggregation *as_aggr();
+        [[nodiscard]] Aggregation *as_aggr() const;
 
-        Loop *as_loop();
+        [[nodiscard]] Loop *as_loop() const;
 
-        Assign *as_assignment();
+        [[nodiscard]] Assign *as_assignment() const;
 
-        Emit *as_emit();
+        [[nodiscard]] Emit *as_emit() const;
 
-        FunctionCall *as_function_call();
+        [[nodiscard]] FunctionCall *as_function_call() const;
 
-        Scatter *as_scatter();
+        [[nodiscard]] Scatter *as_scatter() const;
 
-        Write *as_write();
+        [[nodiscard]] Write *as_write() const;
 
-        AggrSum *as_aggr_sum();
+        [[nodiscard]] AggrSum *as_aggr_sum() const;
 
-        AggrCnt *as_aggr_cnt();
+        [[nodiscard]] AggrCnt *as_aggr_cnt() const;
 
-        AggrMin *as_aggr_min();
+        [[nodiscard]] AggrMin *as_aggr_min() const;
 
-        AggrMax *as_aggr_max();
+        [[nodiscard]] AggrMax *as_aggr_max() const;
 
-        AggrAvg *as_aggr_avg();
+        [[nodiscard]] AggrAvg *as_aggr_avg() const;
 
         [[nodiscard]] bool is_statement_wrapper() const;
 
-        std::optional<Expression> as_expression();
+        [[nodiscard]] std::optional<Expression> as_expression() const;
 
         void visit(ASTVisitor &visitor);
         void visit(ASTVisitor &visitor) const;
 
-        void predicate(Expression expr);
+        void set_predicate(Expression expr);
 
         /*TODO: do we need this?
             size_t get_table_column_ref(std::string &tbl_col) const;
@@ -103,5 +103,6 @@ namespace voila::ast
             //virtual std::string type2string() const = 0;
             */
         Location get_location();
+        std::optional<Expression> get_predicate();
     };
 } // namespace voila::ast

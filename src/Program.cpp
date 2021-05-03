@@ -18,7 +18,7 @@ namespace voila
     {
         for (auto &func : functions)
         {
-            DotVisualizer vis(*func, inferer);
+            DotVisualizer vis(*func, std::optional<std::reference_wrapper<TypeInferer>>(inferer));
             std::ofstream out(fname + "." + func->name+".dot", std::ios::out);
             out << vis;
             out.close();

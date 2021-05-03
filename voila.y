@@ -148,7 +148,7 @@ stmt: expr COLON { $$ = ast::Statement::make<StatementWrapper>(@1,$1); }
 	| LOOP pred LBRACE stmts RBRACE { $$ = ast::Statement::make<Loop>(@1+@2,$2, $4); out.infer_type($$); }
 	| EMIT expr COLON { $$ = ast::Statement::make<Emit>(@1,$2); out.infer_type($$); }
 	| effect COLON { $$ = $1; }
-	| effect COLON pred { $$ = $1; $$.predicate($3); }
+	| effect COLON pred { $$ = $1; $$.set_predicate($3); }
 	| ID LPAREN var_list RPAREN COLON { $$ = ast::Statement::make<FunctionCall>(@1+@5,$1, $3); }
 
 var: ID {$$ = out.has_var($1) ? ast::Expression::make<Ref>(@1, out.get_var($1)) : ast::Expression::make<Variable>(@1, $1); if ($$.is_variable()){ out.add_var($$);}; out.infer_type($$); };
@@ -160,20 +160,20 @@ effect :
 	| AGGR LPAREN AVG COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrAvg>(@1+@8,$5, $7); }
 	| AGGR LPAREN MIN COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrMin>(@1+@8,$5, $7); }
 	| AGGR LPAREN MAX COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrMax>(@1+@8,$5, $7); }
-	| SCATTER LPAREN ID COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Scatter>(@1+@8,$3, $5, $7); } /* dest, idxs with pred, src */
-	| WRITE LPAREN ID COMMA expr COMMA ID RPAREN { $$ = ast::Statement::make<Write>(@1+@8,$3, $5, $7); } /* dest, start_idx, src */
+	| SCATTER LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Scatter>(@1+@8,$3, $5, $7); } /* dest, idxs with pred, src */
+	| WRITE LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Write>(@1+@8,$3, $5, $7); } /* src, dest, start_idx */
 
 pred: BAR pred_expr { $$ = Expression::make<Predicate>(@2,$2); out.infer_type($$); }
 
 selection:
-	SELECT LPAREN expr RPAREN { $$ = ast::Expression::make<Selection>(@1+@4,$3); }
+	SELECT LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Selection>(@1+@4,$3, $5); }
 
 expr: 
 	constant { $$ = $1; }
-	| ID { $$ = ast::Expression::make<Ref>(@1,out.get_var($1)); }
-	| ID LBRACKET INT RBRACKET { $$ = ast::Expression::make<TupleGet>(@2+@4,$1, $3); }
+	| ID { $$ = ast::Expression::make<Ref>(@1,out.get_var($1)); out.infer_type($$); }
+	| var LBRACKET INT RBRACKET { $$ = ast::Expression::make<TupleGet>(@2+@4,$1, $3); assert($1.is_reference()); }
 	| LPAREN expr_list RPAREN { $$ = ast::Expression::make<TupleCreate>(@1+@3,$2); } /* recursive tuples do not look like a good idea */
-	| expr pred { $$ = $1; $$.predicate($2); out.infer_type($$); }
+	| expr pred { $$ = $1; $$.set_predicate($2); out.infer_type($$); }
 	| arithmetic {$$ = $1; out.infer_type($$); }
 	| comparison {$$ = $1; out.infer_type($$); }
 	| logical {$$ = $1; }
@@ -185,7 +185,6 @@ pred_expr:
     ID { $$ = ast::Expression::make<Ref>(@1,out.get_var($1)); }
     | comparison {$$ = $1; }
     | logical {$$ = $1; }
-    | selection { $$ = $1; }
 
 constant:
 	TRUE { $$ = ast::Expression::make<BooleanConst>(@1,true); out.infer_type($$); }

@@ -18,13 +18,19 @@ namespace voila::ast
     {
         return true;
     }
-    void Assign::predicate(Expression expression)
+    void Assign::set_predicate(Expression expression)
     {
         if (expression.is_predicate())
             pred = expression;
         else
             throw std::invalid_argument("Expression is no predicate");
     }
+
+    std::optional<Expression> Assign::get_predicate()
+    {
+        return pred;
+    }
+
     void Assign::print(std::ostream &) const
     {
 

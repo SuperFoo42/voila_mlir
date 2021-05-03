@@ -45,7 +45,9 @@ namespace voila::ast
         explicit IExpression(const Location loc) : ASTNode(loc) {}
         ~IExpression() override = default;
 
-        virtual void predicate(Expression);
+        virtual void set_predicate(Expression);
+
+        virtual std::optional<Expression> get_predicate();
 
         // type checks
         [[nodiscard]] bool is_expr() const final;

@@ -1,7 +1,8 @@
 main(x,y)
 {
-    add(123, 456);
-    and(true, false);
+    add(123, 456.0);
+    x = and(true, false);
+    select(42, x);
 }
 
 def foo(x)

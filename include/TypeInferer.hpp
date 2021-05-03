@@ -9,25 +9,11 @@ namespace voila
 {
     class TypeInferer : public ast::ASTVisitor
     {
-        size_t typeCnt;
-        std::unordered_map<const ast::ASTNode *, Type> types;
-
-
-        Type unify(Type t1, Type t2);
-        static DataType convert(DataType, DataType);
-
-        static bool compatible(DataType, DataType);
-
-        /**
-         * Check whether first type is convertible to second type
-         * @param t1 Type to convert
-         * @param t2 destination type
-         * @return
-         */
-        static bool convertible(DataType t1, DataType t2);
+        std::unordered_map<const ast::ASTNode *, size_t> typeIDs;
+        std::vector<std::unique_ptr<Type>> types;
 
       public:
-        TypeInferer() : typeCnt{0}, types{} {}
+        //TypeInferer() : typeIDs{}, types{} {}
 
         void operator()(const ast::Aggregation &aggregation) final;
         void operator()(const ast::Write &write) final;
@@ -72,6 +58,37 @@ namespace voila
         void operator()(const ast::Or &anOr) final;
         void operator()(const ast::Not &aNot) final;
 
-        Type &get_type(const ast::ASTNode &node);
+        Type &get_type(const ast::ASTNode &node) const;
+
+        Type &get_type(const ast::Expression &node) const;
+
+        Type &get_type(const ast::Statement &node) const;
+
+      private:
+        void unify(const ast::ASTNode &t1, const ast::ASTNode &t2);
+        void unify(const ast::Expression &t1, const ast::Expression &t2);
+        void unify(const ast::Statement &t1, const ast::Statement &t2);
+
+        static DataType convert(DataType, DataType);
+
+        static bool compatible(DataType, DataType);
+
+        /**
+         * Check whether first type is convertible to second type
+         * @param t1 Type to convert
+         * @param t2 destination type
+         * @return
+         */
+        static bool convertible(DataType t1, DataType t2);
+
+        void insertNewType(const ast::ASTNode &node, DataType t, Arity ar);
+        void
+        insertNewFuncType(const ast::ASTNode &node, std::vector<size_t> typeParamIDs, DataType returnT, Arity returnAr);
+
+        size_t get_type_id(const ast::Expression &node);
+        size_t get_type_id(const ast::Statement &node);
+        size_t get_type_id(const ast::ASTNode &node);
+        void unify(const ast::ASTNode &t1, const ast::Statement &t2);
+        void unify(const ast::ASTNode &t1, const ast::Expression &t2);
     };
 } // namespace voila

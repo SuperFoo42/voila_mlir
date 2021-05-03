@@ -160,7 +160,9 @@ namespace voila::ast
         void visit(ASTVisitor &visitor);
         void visit(ASTVisitor &visitor) const;
 
-        void predicate(Expression expr);
+        void set_predicate(Expression expr);
+
+        std::optional<Expression> get_predicate() const;
 
         Location get_location();
 
