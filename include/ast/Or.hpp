@@ -22,7 +22,7 @@ namespace voila::ast
 
         Expression lhs, rhs;
 
-        void visit(ASTVisitor &visitor);
-        void visit(ASTVisitor &visitor) const;
+        void visit(ASTVisitor &visitor) final;
+        void visit(ASTVisitor &visitor) const final;
     };
 } // namespace voila::ast

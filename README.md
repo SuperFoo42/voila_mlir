@@ -8,9 +8,10 @@ Brief description
 - RE/flex
 - gcc >= 9 / clang >= 8
 - ninja
-- llvm
 - Doxygen
 
+## Requirements
+In order to build the compiler, you have to at least fulfill the requirements to build llvm, which requires at least 10GB of free disk sapace and 4GB of free RAM.
 
 ## Setup
 For setup run:

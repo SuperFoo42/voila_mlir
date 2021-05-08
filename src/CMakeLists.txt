@@ -40,7 +40,7 @@ target_compile_options(voila_compiler PUBLIC
 add_executable(voila
         main.cpp)
 
-target_link_libraries(voila voila_compiler cxxopts fmt reflex ${CMAKE_SOURCE_DIR}/../RE-flex/lib/libreflex.so)
+target_link_libraries(voila voila_compiler cxxopts fmt reflex)
 target_compile_options(voila PUBLIC
         -Wpedantic
         -Wall
@@ -48,7 +48,8 @@ target_compile_options(voila PUBLIC
         -Werror
         -Wno-c++98-compat
         -Wno-c++98-c++11-c++14-compat
-        -Wno-c++98-compat-pedantic)
+        -Wno-c++98-compat-pedantic
+        -Wno-suggest-override)
 target_compile_features(voila PUBLIC cxx_std_20)
 set_property(TARGET voila PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 
