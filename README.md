@@ -1,6 +1,6 @@
 # VOILA
 
-Brief description
+Out of tree MLIR dialect for adaptive reprogramming database queries.
 
 ## Dependencies
 - cmake >= 3.11
@@ -23,7 +23,7 @@ For setup run:
 The configuration script invokes cmake, creates a subdirectory called `build` and configures the project. To build the project:
 ```
 cd build
-ninja
+cmake --build
 ```
 
 All further is TBD
