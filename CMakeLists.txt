@@ -53,6 +53,10 @@ include_directories(${PROJECT_BINARY_DIR}/include)
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
+#enable rtti and exceptions for our project
+set(LLVM_REQUIRES_RTTI 1)
+set(LLVM_ENABLE_EH 1)
+
 if (BUILD_DOC)
 find_package(Doxygen
              REQUIRED dot
@@ -72,7 +76,6 @@ include(CheckSymbolExists)
 find_package(Threads REQUIRED)
 
 find_package(BISON REQUIRED)
-
 
 #TODO: add reflex call to generate lexer for grammar
 CPMAddPackage(
@@ -99,6 +102,7 @@ endif()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_subdirectory(src)
+add_subdirectory(include)
 if (BUILD_TEST)
 add_subdirectory(tests)
 endif()

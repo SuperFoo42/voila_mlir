@@ -7,7 +7,7 @@ CPMAddPackage(
 )
 
 if (fmt_ADDED)
-    # enable c++11 to avoid compilation errors
+    # enable c++20 to avoid compilation errors
     set_target_properties(fmt PROPERTIES CXX_STANDARD 20)
 endif ()
 
@@ -16,6 +16,15 @@ if (BUILD_DOC AND DOXYGEN_FOUND)
 endif ()
 
 add_subdirectory(ast)
+add_subdirectory(mlir)
+add_subdirectory(compiler)
+
+#FIXME
+#execute_process(COMMAND ${BISON_EXECUTABLE} -d -t ${CMAKE_SOURCE_DIR}/voila.y)
+
+#execute_process(
+#        COMMAND ${reflex_SOURCE_DIR}/bin/reflex -d --fast --bison-complete --bison-locations --namespace=voila::lexer --lexer=Lexer --header-file=${CMAKE_SOURCE_DIR}/include/voila_lexer.hpp −−graphs-file=lexer.gv -o ${CMAKE_SOURCE_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/voila.lex
+#)
 
 add_library(voila_compiler
         voila_parser.cpp
@@ -24,8 +33,8 @@ add_library(voila_compiler
         TypeInferer.cpp
         DotVisualizer.cpp
         )
-#TODO: fix libreflex dependency
-target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast ${CMAKE_SOURCE_DIR}/../RE-flex/lib/libreflex.so)
+
+target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast ${reflex_SOURCE_DIR}/lib/libreflex.a)
 target_compile_features(voila_compiler PUBLIC cxx_std_20)
 set_property(TARGET voila_compiler PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 target_compile_options(voila_compiler PUBLIC
@@ -36,20 +45,4 @@ target_compile_options(voila_compiler PUBLIC
         -Wno-c++98-compat
         -Wno-c++98-c++11-c++14-compat
         -Wno-c++98-compat-pedantic)
-
-add_executable(voila
-        main.cpp)
-
-target_link_libraries(voila voila_compiler cxxopts fmt reflex)
-target_compile_options(voila PUBLIC
-        -Wpedantic
-        -Wall
-        -Wextra
-        -Werror
-        -Wno-c++98-compat
-        -Wno-c++98-c++11-c++14-compat
-        -Wno-c++98-compat-pedantic
-        -Wno-suggest-override)
-target_compile_features(voila PUBLIC cxx_std_20)
-set_property(TARGET voila PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 
