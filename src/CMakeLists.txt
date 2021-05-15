@@ -33,10 +33,10 @@ add_library(voila_compiler
         TypeInferer.cpp
         DotVisualizer.cpp
         )
-
+set_property(TARGET voila_compiler PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast ${reflex_SOURCE_DIR}/lib/libreflex.a)
 target_compile_features(voila_compiler PUBLIC cxx_std_20)
-set_property(TARGET voila_compiler PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+#set_property(TARGET voila_compiler PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 target_compile_options(voila_compiler PUBLIC
         -Wpedantic
         -Wall

@@ -2,6 +2,14 @@
 #include "Program.hpp"
 #include "voila_lexer.hpp"
 #include "voila_parser.hpp"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
+#include "mlir/IR/Dialect.h"
+#include "mlir/InitAllDialects.h"
+#include "mlir/InitAllPasses.h"
+#pragma GCC diagnostic pop
+#include "mlir/VoilaDialect.h"
 
 #include <cstdlib>
 #include <cxxopts.hpp>
@@ -37,6 +45,12 @@ voila::Program parse(const std::string &file)
 
 int main(int argc, char *argv[])
 {
+    mlir::registerAllPasses();
+    mlir::DialectRegistry registry;
+    registry.insert<mlir::voila::VoilaDialect>();
+    registry.insert<mlir::StandardOpsDialect>();
+    //registerAllDialects(registry);
+
     cxxopts::Options options("VOILA compiler", "");
 
     options.add_options()("h, help", "Show help")(

@@ -1,4 +1,7 @@
-include "mlir/Interfaces/SideEffectInterfaces.td"
+#ifndef VOILA_DIALECT
+#define VOILA_DIALECT
+
+include "mlir/IR/OpBase.td"
 
 def Voila_Dialect : Dialect {
     let name = "voila";
@@ -10,3 +13,9 @@ def Voila_Dialect : Dialect {
 
     let cppNamespace = "::mlir::voila";
 }
+
+//base operation definition
+class Voila_Op<string mnemonic, list<OpTrait> traits = []> :
+    Op<Voila_Dialect, mnemonic, traits>;
+
+#endif // VOILA_DIALECT

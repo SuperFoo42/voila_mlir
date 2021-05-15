@@ -16,4 +16,4 @@ add_lit_testsuite(check-voila "Running the standalone regression tests"
         )
 set_target_properties(check-voila PROPERTIES FOLDER "Tests")
 
-add_lit_testsuites(VOILA ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ${VOILA_TEST_DEPENDS})
+#add_lit_testsuites(VOILA ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ${VOILA_TEST_DEPENDS})

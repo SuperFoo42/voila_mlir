@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 
 project(voila_mlir LANGUAGES CXX C)
-
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 
 include(cmake/CPM.cmake)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
@@ -9,23 +9,28 @@ option(BUILD_DOC "Build documentation" ON)
 option(BUILD_TEST "Build tests" ON)
 option(BUILD_BENCH "Build benchmarks" ON)
 
-
+find_program(CCACHE_FOUND ccache)
+if(CCACHE_FOUND)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+endif(CCACHE_FOUND)
+# contains a bug, in SymbolInterfaces.td, variable concept is used, but a reserved keyword, rename
 CPMAddPackage(
         NAME llvm
         GITHUB_REPOSITORY llvm/llvm-project
-        GIT_TAG llvmorg-12.0.0
+        GIT_TAG release/12.x
         DOWNLOAD_ONLY
 )
 
 message(STATUS "build llvm")
 
 execute_process(
-        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON
+        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True -DLLVM_ENABLE_LTO="Thin"
         WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
 )
 
 execute_process(
-        COMMAND ${CMAKE_COMMAND} --build ${llvm_BINARY_DIR}
+        COMMAND ${CMAKE_COMMAND} --build ${llvm_BINARY_DIR} -j 12
 )
 
 set(MLIR_DIR "${llvm_BINARY_DIR}/lib/cmake/mlir/")
@@ -56,6 +61,8 @@ add_definitions(${LLVM_DEFINITIONS})
 #enable rtti and exceptions for our project
 set(LLVM_REQUIRES_RTTI 1)
 set(LLVM_ENABLE_EH 1)
+set(LLVM_ENABLE_RTTI True)
+set(LLVM_ENABLE_LTO "On")
 
 if (BUILD_DOC)
 find_package(Doxygen
@@ -64,7 +71,7 @@ find_package(Doxygen
 endif()
 #Enable sanitizers globally
 add_compile_options(-fsanitize=address -fsanitize=undefined)
-add_link_options(-fsanitize=address -fsanitize=undefined)
+add_link_options(-fsanitize=address -fsanitize=undefined -fuse-ld=lld) #need to use lld, for some reason ld complains about invalid symbols.
 
 find_package(TBB)
 include_directories(${TBB_INCLUDE_DIRS})
@@ -96,7 +103,7 @@ if(reflex_ADDED)
   )
   add_library(reflex INTERFACE IMPORTED)
   target_include_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/include")
-  target_link_directories(reflex INTERFACE ${reflex_SOURCE_DIR}/lib/)
+  target_link_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/lib")
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)

@@ -1,20 +1,19 @@
-set(LLVM_LINK_COMPONENTS
-        Support
-        )
-
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
+
 set(LIBS
         ${dialect_libs}
         ${conversion_libs}
         MLIROptLib
         MLIRVoila
+        MLIRParser
+        MLIRPass
+        MLIRSupport
         voila_compiler
         cxxopts
         fmt
         reflex
         )
-
 
 add_llvm_executable(voila
         main.cpp)
@@ -33,6 +32,6 @@ target_compile_features(voila PUBLIC cxx_std_20)
 llvm_update_compile_flags(voila)
 
 set_property(TARGET voila PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-target_link_libraries(voila PRIVATE voila_compiler cxxopts fmt reflex ${LIBS})
+target_link_libraries(voila PRIVATE ${LIBS})
 
 mlir_check_all_link_libraries(voila)
