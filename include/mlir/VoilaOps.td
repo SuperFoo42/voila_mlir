@@ -180,6 +180,21 @@ def OrOp : Voila_Op<"or",[NoSideEffect, SameOperandsAndResultType]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
+def NotOp : Voila_Op<"not",[NoSideEffect, SameOperandsAndResultType]> {
+let summary = "element-wise not operation";
+let description = [{
+The "bot" operation performs element-wise not on a tensor.
+}];
+
+let arguments = (ins I1Tensor:$value);
+let results = (outs I1Tensor);
+
+// Specify a parser and printer method.
+//let parser = [{ return ::parseBinaryOp(parser, result); }];
+//let printer = [{ return ::printBinaryOp(p, *this); }];
+}
+
+
 def EqOp : Voila_Op<"eq",[NoSideEffect]> {
   let summary = "element-wise equality comparison operation";
   let description = [{
@@ -270,4 +285,124 @@ def GeqOp : Voila_Op<"geq",[NoSideEffect]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
+def ReadOp : Voila_Op<"read",[NoSideEffect]> {
+let summary = "read elements from column";
+let description = [{
+The "read" operation loads data from "column" starting at "index".
+The start index is expected to be within "column" bounds.
+}];
+
+let arguments = (ins AnyUnrankedMemRef:$column, Index:$index);
+let results = (outs AnyTensor);
+
+// Specify a parser and printer method.
+//let parser = [{ return ::parseBinaryOp(parser, result); }];
+//let printer = [{ return ::printBinaryOp(p, *this); }];
+}
+
+def GatherOp : Voila_Op<"gather",[NoSideEffect]> {
+let summary = "read elements from column";
+let description = [{
+The "gather" operation loads data from "column" at "indexes".
+The start "indexes" are expected to be within "column" bounds and the shape "indexes" is smaller than "column".
+}];
+
+let arguments = (ins AnyUnrankedMemRef:$column, IndexTensor:$indexes);
+let results = (outs AnyTensor);
+
+// Specify a parser and printer method.
+//let parser = [{ return ::parseBinaryOp(parser, result); }];
+//let printer = [{ return ::printBinaryOp(p, *this); }];
+}
+
+def WriteOp : Voila_Op<"write",[NoSideEffect]> {
+let summary = "write elements to column";
+let description = [{
+The "write" operation writes data from "src" to "dest" starting from "start_idx".
+The "start_idx" is expected to be within "column" bounds.
+}];
+
+let arguments = (ins AnyTensor:$src, AnyUnrankedMemRef:$dest ,Index:$start_idx);
+let results = (outs AnyTensor);
+
+// Specify a parser and printer method.
+//let parser = [{ return ::parseBinaryOp(parser, result); }];
+//let printer = [{ return ::printBinaryOp(p, *this); }];
+}
+
+def ScatterOp : Voila_Op<"scatter",[NoSideEffect]> {
+let summary = "scatter elements to column";
+let description = [{
+The "scatter" operation writes data at "idxs" from "src" from to "dest".
+The "idxs" are expected to be within "dest" bounds and the shape smaller than src.
+}];
+
+let arguments = (ins AnyTensor:$src, AnyUnrankedMemRef:$dest ,IndexTensor:$idxs);
+let results = (outs AnyTensor);
+
+// Specify a parser and printer method.
+//let parser = [{ return ::parseBinaryOp(parser, result); }];
+//let printer = [{ return ::printBinaryOp(p, *this); }];
+}
+
+def SelectOp : Voila_Op<"select",[NoSideEffect]> {
+let summary = "filter elements where pred matches";
+let description = [{
+The "select" operation returns the "values" where "pred" is true.
+The "pred" is expected to have the same shape as "values".
+}];
+
+let arguments = (ins AnyTensor:$values ,I1Tensor:$pred);
+let results = (outs AnyTensor);
+
+// Specify a parser and printer method.
+//let parser = [{ return ::parseBinaryOp(parser, result); }];
+//let printer = [{ return ::printBinaryOp(p, *this); }];
+}
+
+def EmitOp : Voila_Op<"emit", [NoSideEffect,
+                                 Terminator]> {
+  let summary = "emit operation";
+  let description = [{
+    The "emit" operation represents a return operation within a function.
+    The operation takes an optional tensor operand and produces no results.
+    The operand is passed to the calling function.
+  }];
+
+  // The return operation takes an optional input operand to return. This
+  // value must match the return type of the enclosing function.
+  let arguments = (ins AnyTensor:$input);
+
+
+/*
+  // Allow building a ReturnOp with no return operand.
+  let builders = [
+    OpBuilder<(ins), [{ build($_builder, $_state, llvm::None); }]>
+  ];
+
+  // Provide extra utility definitions on the c++ operation class definition.
+  let extraClassDeclaration = [{
+    bool hasOperand() { return getNumOperands() != 0; }
+  }];
+
+  // Invoke a static verify method to verify this return operation.
+  let verifier = [{ return ::verify(*this); }];
+*/
+}
+
+def GenericCallOp : Voila_Op<"generic_call"> {
+  let summary = "generic call operation";
+  let description = [{
+    Generic calls represent calls to a user defined function that needs to
+    be specialized for the shape of its arguments. The callee name is attached
+    as a symbol reference via an attribute. The arguments list must match the
+    arguments expected by the callee.
+}];
+  // The generic call operation takes a symbol reference attribute as the
+  // callee, and inputs for the call.
+  let arguments = (ins SymbolRefAttr:$callee, Variadic<AnyTensor>:$inputs);
+
+}
+
+/* TODO: ops for loops and aggregations*/
 #endif // STANDALONE_OPS

@@ -31,7 +31,6 @@ target_compile_options(voila PUBLIC
 target_compile_features(voila PUBLIC cxx_std_20)
 llvm_update_compile_flags(voila)
 
-set_property(TARGET voila PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 target_link_libraries(voila PRIVATE ${LIBS})
 
 mlir_check_all_link_libraries(voila)

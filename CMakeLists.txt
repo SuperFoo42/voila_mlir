@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.14)
 
 project(voila_mlir LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
@@ -9,29 +9,39 @@ option(BUILD_DOC "Build documentation" ON)
 option(BUILD_TEST "Build tests" ON)
 option(BUILD_BENCH "Build benchmarks" ON)
 
+# check LTO support
+include(CheckIPOSupported)
+check_ipo_supported(RESULT LTO_SUPPORT OUTPUT error)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION LTO_SUPPORT)
+
+# check PIE support
+include(CheckPIESupported)
+check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT LANGUAGES C CXX)
+set(CMAKE_POSITION_INDEPENDENT_CODE PIE_SUPPORT)
+
 find_program(CCACHE_FOUND ccache)
-if(CCACHE_FOUND)
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
-endif(CCACHE_FOUND)
-# contains a bug, in SymbolInterfaces.td, variable concept is used, but a reserved keyword, rename
+if (CCACHE_FOUND)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+endif (CCACHE_FOUND)
+
 CPMAddPackage(
         NAME llvm
         GITHUB_REPOSITORY llvm/llvm-project
-        GIT_TAG release/12.x
+        GIT_TAG main
         DOWNLOAD_ONLY
 )
 
-message(STATUS "build llvm")
-
-execute_process(
-        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True -DLLVM_ENABLE_LTO="Thin"
-        WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
-)
-
-execute_process(
-        COMMAND ${CMAKE_COMMAND} --build ${llvm_BINARY_DIR} -j 12
-)
+if (llvm_ADDED)
+    execute_process(
+            COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True -DLLVM_ENABLE_LTO="On"
+            WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
+    )
+    message(STATUS "build llvm")
+    execute_process(
+            COMMAND ${CMAKE_COMMAND} --build ${llvm_BINARY_DIR} -j 8
+    )
+endif ()
 
 set(MLIR_DIR "${llvm_BINARY_DIR}/lib/cmake/mlir/")
 set(LLVM_EXTERNAL_LIT "${llvm_BINARY_DIR}/build/bin/llvm-lit")
@@ -65,10 +75,11 @@ set(LLVM_ENABLE_RTTI True)
 set(LLVM_ENABLE_LTO "On")
 
 if (BUILD_DOC)
-find_package(Doxygen
-             REQUIRED dot
-             OPTIONAL_COMPONENTS mscgen dia)
-endif()
+    find_package(Doxygen
+            REQUIRED dot
+            OPTIONAL_COMPONENTS mscgen dia)
+endif ()
+
 #Enable sanitizers globally
 add_compile_options(-fsanitize=address -fsanitize=undefined)
 add_link_options(-fsanitize=address -fsanitize=undefined -fuse-ld=lld) #need to use lld, for some reason ld complains about invalid symbols.
@@ -86,33 +97,29 @@ find_package(BISON REQUIRED)
 
 #TODO: add reflex call to generate lexer for grammar
 CPMAddPackage(
-  NAME reflex
-  GITHUB_REPOSITORY Genivia/RE-flex
-  GIT_TAG v3.0.3
+        NAME reflex
+        GITHUB_REPOSITORY Genivia/RE-flex
+        GIT_TAG v3.0.3
 )
-
-if(reflex_ADDED)
-  execute_process(
-          COMMAND sh ./clean.sh
-          WORKING_DIRECTORY ${reflex_SOURCE_DIR}
-  )
-
-  execute_process(
-          COMMAND sh ./build.sh
-          WORKING_DIRECTORY ${reflex_SOURCE_DIR}
-  )
-  add_library(reflex INTERFACE IMPORTED)
-  target_include_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/include")
-  target_link_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/lib")
-endif()
-
+if (reflex_ADDED)
+    execute_process(
+            COMMAND sh ./clean.sh
+            WORKING_DIRECTORY ${reflex_SOURCE_DIR}
+    )
+    execute_process(COMMAND sh ./build.sh
+            WORKING_DIRECTORY ${reflex_SOURCE_DIR}
+            )
+    add_library(reflex INTERFACE IMPORTED)
+    target_include_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/include")
+    target_link_libraries(reflex INTERFACE "${reflex_SOURCE_DIR}/lib/libreflex.a")
+endif ()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_subdirectory(src)
 add_subdirectory(include)
 if (BUILD_TEST)
-add_subdirectory(tests)
-endif()
+    add_subdirectory(tests)
+endif ()
 if (BUILD_BENCH)
-add_subdirectory(benchmark)
-endif()
+    add_subdirectory(benchmark)
+endif ()

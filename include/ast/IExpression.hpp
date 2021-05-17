@@ -2,7 +2,7 @@
 
 #include "ASTNode.hpp"
 #include "PredicationUnsupportedException.hpp"
-
+#include <optional>
 #include <fmt/core.h>
 
 namespace voila::ast

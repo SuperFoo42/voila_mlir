@@ -6,8 +6,17 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
 #include "mlir/IR/Dialect.h"
+#include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
+#include "mlir/Pass/Pass.h"
+#include "mlir/Pass/PassManager.h"
+#include "mlir/Support/FileUtilities.h"
+#include "mlir/Support/MlirOptMain.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Support/InitLLVM.h"
+#include "llvm/Support/SourceMgr.h"
+#include "llvm/Support/ToolOutputFile.h"
 #pragma GCC diagnostic pop
 #include "mlir/VoilaDialect.h"
 
@@ -49,7 +58,9 @@ int main(int argc, char *argv[])
     mlir::DialectRegistry registry;
     registry.insert<mlir::voila::VoilaDialect>();
     registry.insert<mlir::StandardOpsDialect>();
-    //registerAllDialects(registry);
+    registerAllDialects(registry);
+    mlir::registerMLIRContextCLOptions();
+
 
     cxxopts::Options options("VOILA compiler", "");
 
@@ -80,5 +91,5 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    return EXIT_SUCCESS;
+    return failed(mlir::MlirOptMain(argc, argv, "Voila optimizer driver\n", registry));
 }

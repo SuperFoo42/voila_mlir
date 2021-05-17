@@ -22,9 +22,11 @@ add_subdirectory(compiler)
 #FIXME
 #execute_process(COMMAND ${BISON_EXECUTABLE} -d -t ${CMAKE_SOURCE_DIR}/voila.y)
 
-#execute_process(
-#        COMMAND ${reflex_SOURCE_DIR}/bin/reflex -d --fast --bison-complete --bison-locations --namespace=voila::lexer --lexer=Lexer --header-file=${CMAKE_SOURCE_DIR}/include/voila_lexer.hpp −−graphs-file=lexer.gv -o ${CMAKE_SOURCE_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/voila.lex
-#)
+add_custom_command(
+        DEPENDS ${CMAKE_SOURCE_DIR}/voila.lex
+        COMMAND ${reflex_SOURCE_DIR}/bin/reflex -d --fast --bison-complete --bison-locations --namespace=voila::lexer --lexer=Lexer --header-file=${CMAKE_SOURCE_DIR}/include/voila_lexer.hpp −−graphs-file=lexer.gv -o ${CMAKE_SOURCE_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/voila.lex
+        OUTPUT ${CMAKE_SOURCE_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/include/voila_lexer.hpp
+)
 
 add_library(voila_compiler
         voila_parser.cpp
@@ -32,11 +34,11 @@ add_library(voila_compiler
         Program.cpp
         TypeInferer.cpp
         DotVisualizer.cpp
+        MLIRGenerator.cpp
         )
-set_property(TARGET voila_compiler PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast ${reflex_SOURCE_DIR}/lib/libreflex.a)
+
+target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast reflex)
 target_compile_features(voila_compiler PUBLIC cxx_std_20)
-#set_property(TARGET voila_compiler PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 target_compile_options(voila_compiler PUBLIC
         -Wpedantic
         -Wall

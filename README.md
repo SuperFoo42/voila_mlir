@@ -7,6 +7,7 @@ Out of tree MLIR dialect for adaptive reprogramming database queries.
 - cmake >= 3.11
 - bison >= 3.2
 - gcc >= 9 / clang >= 8
+- lld
 - ninja
 - Doxygen?
 - python
@@ -15,7 +16,7 @@ Out of tree MLIR dialect for adaptive reprogramming database queries.
 ## Requirements
 
 In order to build the compiler, you have to at least fulfill the requirements to build llvm, which requires at least
-10GB of free disk sapace and 8GB of free RAM.
+10GB of free disk space and 8GB of free RAM.
 
 ## Setup
 
