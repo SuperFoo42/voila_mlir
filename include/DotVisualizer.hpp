@@ -17,6 +17,29 @@ namespace voila::ast
         size_t nodeID;
         const std::optional<std::reference_wrapper<TypeInferer>> inferer;
 
+        template <bool infer_type = true>
+        void printVertex(const ASTNode &node)
+        {
+            *os << fmt::format("n{} [label=<<b>{} <br/>", nodeID, node.type2string());
+            if (infer_type && inferer.has_value())
+            {
+                const auto &type = inferer->get().get_type(node);
+                //FIXME: broken overload resolution
+                try
+                {
+                    *os << dynamic_cast<const FunctionType &>(type);
+                }
+                catch (std::exception &ignored)
+                {
+                    *os << type;
+                }
+                *os << "<br/>";
+            }
+            *os << "@" << node.get_location() << "</b> <br/>";
+            node.print(*os);
+            *os << ">]" << std::endl;
+        }
+
       public:
         explicit DotVisualizer(Fun &start, const std::optional<std::reference_wrapper<TypeInferer>> &inferer = std::nullopt) : to_dot{start}, os{nullptr}, nodeID{0}, inferer{inferer} {}
         void operator()(const AggrSum &sum) final;
@@ -60,29 +83,5 @@ namespace voila::ast
         void operator()(const Variable &var) final;
 
         friend std::ostream &operator<<(std::ostream &out, DotVisualizer &t);
-
-      private:
-        template <bool infer_type = true>
-        void printVertex(const ASTNode &node)
-        {
-            *os << fmt::format("n{} [label=<<b>{} <br/>", nodeID, node.type2string());
-            if (infer_type && inferer.has_value())
-            {
-                const auto &type = inferer->get().get_type(node);
-                //FIXME: broken overload resolution
-                try
-                {
-                    *os << dynamic_cast<const FunctionType &>(type);
-                }
-                catch (std::exception &ignored)
-                {
-                    *os << type;
-                }
-                *os << "<br/>";
-            }
-            *os << "@" << *node.get_location().begin.filename << node.get_location() << "</b> <br/>";
-            node.print(*os);
-            *os << ">]" << std::endl;
-        }
     };
 } // namespace voila::ast

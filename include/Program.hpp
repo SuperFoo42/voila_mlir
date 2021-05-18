@@ -3,16 +3,23 @@
 #include "TypeInferer.hpp"
 #include "ast/Fun.hpp"
 
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 namespace voila
 {
     using namespace ast;
     class Program
     {
-        std::vector<std::unique_ptr<Fun>> functions;
-        TypeInferer inferer;
+
         std::unordered_map<std::string, Expression> func_vars;
 
       public:
+        std::vector<std::unique_ptr<Fun>> functions;
+        TypeInferer inferer;
+
         Program() = default;
 
         void add_func(Fun *f)

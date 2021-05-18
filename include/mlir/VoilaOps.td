@@ -401,8 +401,7 @@ def GenericCallOp : Voila_Op<"generic_call"> {
   // The generic call operation takes a symbol reference attribute as the
   // callee, and inputs for the call.
   let arguments = (ins SymbolRefAttr:$callee, Variadic<AnyTensor>:$inputs);
-
 }
 
 /* TODO: ops for loops and aggregations*/
-#endif // STANDALONE_OPS
+#endif // VOILA_OPS
