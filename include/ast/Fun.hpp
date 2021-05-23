@@ -35,6 +35,7 @@ namespace voila::ast
         std::string name;
         std::vector<Expression> args;
         std::vector<Statement> body;
+        std::optional<Statement> result;
         std::unordered_map<std::string, Expression> variables;
     };
 } // namespace voila::ast

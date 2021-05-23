@@ -57,6 +57,14 @@ namespace voila
         types.push_back(std::make_unique<FunctionType>(types.size(), std::move(typeParamIDs), returnT, returnAr));
     }
 
+    void TypeInferer::insertNewFuncType(const ast::ASTNode &node,
+                                        std::vector<size_t> typeParamIDs,
+                                        const size_t returnTypeID)
+    {
+        typeIDs.try_emplace(&node, types.size());
+        types.push_back(std::make_unique<FunctionType>(types.size(), std::move(typeParamIDs), types.at(returnTypeID)->t, types.at(returnTypeID)->ar));
+    }
+
     size_t TypeInferer::get_type_id(const ast::Expression &node)
     {
         try
@@ -275,7 +283,7 @@ namespace voila
     void TypeInferer::operator()(const ast::Emit &emit)
     {
         //TODO
-        ASTVisitor::operator()(emit);
+        typeIDs.try_emplace(&emit, get_type_id(emit.expr));
     }
 
     void TypeInferer::operator()(const ast::Loop &loop)
@@ -375,7 +383,10 @@ namespace voila
         std::transform(
             fun.args.begin(), fun.args.end(),
             std::back_inserter(argIds), [&](const auto &elem) -> auto { return get_type_id(elem); });
-        insertNewFuncType(fun, argIds);
+        if (fun.result.has_value())
+            insertNewFuncType(fun, argIds, get_type_id(*fun.result));
+        else
+            insertNewFuncType(fun, argIds, DataType::VOID);
     }
 
     void TypeInferer::operator()(const ast::Main &main)
@@ -384,7 +395,10 @@ namespace voila
         std::transform(
             main.args.begin(), main.args.end(),
             std::back_inserter(argIds), [&](const auto &elem) -> auto { return get_type_id(elem); });
-        insertNewFuncType(main, argIds);
+        if (main.result.has_value())
+            insertNewFuncType(main, argIds, get_type_id(*main.result));
+        else
+            insertNewFuncType(main, argIds, DataType::VOID);
     }
 
     void TypeInferer::operator()(const ast::Selection &selection)

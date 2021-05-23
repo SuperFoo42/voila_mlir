@@ -90,5 +90,6 @@ namespace voila
         size_t get_type_id(const ast::ASTNode &node);
         void unify(const ast::ASTNode &t1, const ast::Statement &t2);
         void unify(const ast::ASTNode &t1, const ast::Expression &t2);
+        void insertNewFuncType(const ast::ASTNode &node, std::vector<size_t> typeParamIDs, const size_t returnTypeID);
     };
 } // namespace voila

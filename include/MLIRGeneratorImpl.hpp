@@ -7,14 +7,15 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
-#include "mlir/VoilaOps.h"
+#include "VariableAlreadyDeclaredException.hpp"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Verifier.h"
-#include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/VoilaOps.h"
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopedHashTable.h"
@@ -46,16 +47,15 @@ namespace voila::mlir
         ::mlir::Type convert(Type t);
 
         // TODO: is this correct?
-        ::mlir::LogicalResult declare(llvm::StringRef var, ::mlir::Value value)
+        void declare(llvm::StringRef var, ::mlir::Value value)
         {
             (void)module;
             if (symbolTable.count(var))
-                return ::mlir::failure();
+                throw VariableAlreadyDeclaredException();
             symbolTable.insert(var, value);
-            return ::mlir::success();
         }
 
-        ::mlir::LogicalResult mlirGenBody(const std::vector<Statement> &block);
+        void mlirGenBody(const std::vector<Statement> &block);
 
         result_variant visitor_gen(const Statement &node);
 

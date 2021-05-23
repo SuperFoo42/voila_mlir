@@ -1,5 +1,8 @@
 #include "MLIRGenerator.hpp"
+
 #include "MLIRGeneratorImpl.hpp"
+#include "MlirModuleVerificationError.hpp"
+#include "MlirGenerationException.hpp"
 namespace voila
 {
     using mlir::MLIRGeneratorImpl;
@@ -16,7 +19,7 @@ namespace voila
             auto genRes = generatorImpl.getValue();
             // TODO: error handling
             if (std::holds_alternative<std::monostate>(genRes))
-                return nullptr;
+                throw MLIRGenerationException();
             assert(std::holds_alternative<::mlir::FuncOp>(genRes));
             module.push_back(std::get<::mlir::FuncOp>(genRes));
         }
@@ -26,8 +29,7 @@ namespace voila
         // have on the Toy operations.
         if (failed(::mlir::verify(module)))
         {
-            module.emitError("module verification error");
-            return nullptr;
+            throw MLIRModuleVerificationError();
         }
 
         return module;

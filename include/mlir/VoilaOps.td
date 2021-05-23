@@ -96,75 +96,74 @@ BoolConstOp::build($_builder, $_state, RankedTensorType::get({}, $_builder.getI1
   //let verifier = [{ return ::verify(*this); }];
 }
 
-def AddOp : Voila_Op<"add",[NoSideEffect, SameOperandsAndResultType]> {
+def AddOp : Voila_Op<"add",[NoSideEffect]> {
   let summary = "element-wise addition operation";
   let description = [{
     The "add" operation performs element-wise addition between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[AnyInteger, AnyFloat]>:$lhs, AnyFloat:$rhs);
-  let results = (outs AnyTensor);
-
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$rhs);
+let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def SubOp : Voila_Op<"sub",[NoSideEffect, SameOperandsAndResultType]> {
+def SubOp : Voila_Op<"sub",[NoSideEffect]> {
   let summary = "element-wise subtraction operation";
   let description = [{
     The "sub" operation performs element-wise subtraction between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[AnyInteger, AnyFloat]>:$lhs, AnyFloat:$rhs);
-  let results = (outs AnyTensor);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$rhs);
+let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def MulOp : Voila_Op<"mul",[NoSideEffect, SameOperandsAndResultType]> {
+def MulOp : Voila_Op<"mul",[NoSideEffect]> {
   let summary = "element-wise multiplication operation";
   let description = [{
     The "mul" operation performs element-wise multiplication between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[AnyInteger, AnyFloat]>:$lhs, AnyFloat:$rhs);
-  let results = (outs AnyTensor);
+  let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$rhs);
+  let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def DivOp : Voila_Op<"div",[NoSideEffect, SameOperandsAndResultType]> {
+def DivOp : Voila_Op<"div",[NoSideEffect]> {
   let summary = "element-wise division operation";
   let description = [{
     The "div" operation performs element-wise division between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[AnyInteger, AnyFloat]>:$lhs, AnyFloat:$rhs);
-  let results = (outs AnyTensor);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$rhs);
+let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def ModOp : Voila_Op<"mod",[NoSideEffect, SameOperandsAndResultType]> {
+def ModOp : Voila_Op<"mod",[NoSideEffect]> {
   let summary = "element-wise modulo operation";
   let description = [{
     The "mod" operation performs element-wise modulo between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[AnyInteger, AnyFloat]>:$lhs, AnyFloat:$rhs);
-  let results = (outs AnyTensor);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$rhs);
+let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
