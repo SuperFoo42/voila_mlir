@@ -24,15 +24,18 @@ namespace voila::ast
             if (infer_type && inferer.has_value())
             {
                 const auto &type = inferer->get().get_type(node);
-                //FIXME: broken overload resolution
-                try
-                {
-                    *os << dynamic_cast<const FunctionType &>(type);
-                }
-                catch (std::exception &ignored)
+                //FIXME: overload does not work, need dynamic cast
+                const auto res = dynamic_cast<const FunctionType*>(&type);
+                if (!res)
                 {
                     *os << type;
                 }
+                else
+
+                {
+                    *os << *res;
+                }
+
                 *os << "<br/>";
             }
             *os << "@" << node.get_location() << "</b> <br/>";

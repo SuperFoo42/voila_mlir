@@ -39,6 +39,16 @@ namespace voila
         {
             return !(rhs == *this);
         }
+
+        bool is_undef()
+        {
+            return undef;
+        }
+
+        size_t get_size()
+        {
+            return arity;
+        }
     };
 
     class Type

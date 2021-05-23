@@ -12,7 +12,7 @@ option(BUILD_BENCH "Build benchmarks" ON)
 # check LTO support
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTO_SUPPORT OUTPUT error)
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION LTO_SUPPORT)
+#set(CMAKE_INTERPROCEDURAL_OPTIMIZATION LTO_SUPPORT)
 
 # check PIE support
 include(CheckPIESupported)
@@ -32,16 +32,14 @@ CPMAddPackage(
         DOWNLOAD_ONLY
 )
 
-if (llvm_ADDED)
     execute_process(
-            COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True -DLLVM_ENABLE_LTO="On"
+           COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True
             WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
     )
     message(STATUS "build llvm")
     execute_process(
-            COMMAND ${CMAKE_COMMAND} --build ${llvm_BINARY_DIR} -j 8
+            COMMAND ${CMAKE_COMMAND} --build ${llvm_BINARY_DIR}
     )
-endif ()
 
 set(MLIR_DIR "${llvm_BINARY_DIR}/lib/cmake/mlir/")
 set(LLVM_EXTERNAL_LIT "${llvm_BINARY_DIR}/build/bin/llvm-lit")

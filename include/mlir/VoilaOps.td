@@ -15,15 +15,19 @@ def IntConstOp : Voila_Op<"integer constant", [NoSideEffect]> {
   }];
 
   // The constant operation takes an attribute as the only input.
-  let arguments = (ins I64:$value);
+  let arguments = (ins I64Attr:$value);
 
   // The constant operation returns a single value of TensorType.
   let results = (outs I64Tensor);
 
-  // Specify a parser and printer method.
-  //let parser = [{ return ::parseConstantOp(parser, result); }];
-  //let printer = [{ return ::print(p, *this); }];
-
+let builders = [
+OpBuilder<(ins "mlir::IntegerAttr":$value), [{
+build($_builder, $_state, value.getType(), value);
+}]>,
+OpBuilder<(ins "long":$value), [{
+    IntConstOp::build($_builder, $_state, RankedTensorType::get({}, $_builder.getI64Type()), $_builder.getI64IntegerAttr(value));
+}]>
+];
 
   // Invoke a static verify method to verify this constant operation.
   //let verifier = [{ return ::verify(*this); }];
@@ -39,7 +43,7 @@ def FltConstOp : Voila_Op<"float constant", [NoSideEffect]> {
   }];
 
   // The constant operation takes an attribute as the only input.
-  let arguments = (ins F64:$value);
+  let arguments = (ins F64Attr:$value);
 
   // The constant operation returns a single value of TensorType.
   let results = (outs F64Tensor);
@@ -47,6 +51,15 @@ def FltConstOp : Voila_Op<"float constant", [NoSideEffect]> {
   // Specify a parser and printer method.
   //let parser = [{ return ::parseConstantOp(parser, result); }];
   //let printer = [{ return ::print(p, *this); }];
+
+let builders = [
+OpBuilder<(ins "mlir::FloatAttr":$value), [{
+build($_builder, $_state, value.getType(), value);
+}]>,
+OpBuilder<(ins "double":$value), [{
+    FltConstOp::build($_builder, $_state, RankedTensorType::get({}, $_builder.getF64Type()), $_builder.getF64FloatAttr(value));
+}]>
+];
 
   // Invoke a static verify method to verify this constant operation.
   //let verifier = [{ return ::verify(*this); }];
@@ -62,11 +75,19 @@ def BoolConstOp : Voila_Op<"bool constant", [NoSideEffect]> {
   }];
 
   // The constant operation takes an attribute as the only input.
-  let arguments = (ins I1:$value);
+  let arguments = (ins I1Attr:$value);
 
   // The constant operation returns a single value of TensorType.
   let results = (outs I1Tensor);
 
+let builders = [
+OpBuilder<(ins "mlir::IntegerAttr":$value), [{
+build($_builder, $_state, value.getType(), value);
+}]>,
+OpBuilder<(ins "bool":$value), [{
+BoolConstOp::build($_builder, $_state, RankedTensorType::get({}, $_builder.getI1Type()), $_builder.getIntegerAttr($_builder.getI1Type(), value));
+}]>
+];
   // Specify a parser and printer method.
   //let parser = [{ return ::parseConstantOp(parser, result); }];
   //let printer = [{ return ::print(p, *this); }];
@@ -360,7 +381,7 @@ let results = (outs AnyTensor);
 //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def EmitOp : Voila_Op<"emit", [NoSideEffect,
+def EmitOp : Voila_Op<"emit", [NoSideEffect,HasParent<"FuncOp">,
                                  Terminator]> {
   let summary = "emit operation";
   let description = [{
@@ -371,9 +392,15 @@ def EmitOp : Voila_Op<"emit", [NoSideEffect,
 
   // The return operation takes an optional input operand to return. This
   // value must match the return type of the enclosing function.
-  let arguments = (ins AnyTensor:$input);
+  let arguments = (ins Variadic<AnyTensor>:$input);
 
+let extraClassDeclaration = [{
+bool hasOperand() { return getNumOperands() != 0; }
+}];
 
+let builders = [
+OpBuilder<(ins), [{ build($_builder, $_state, llvm::None); }]>
+];
 /*
   // Allow building a ReturnOp with no return operand.
   let builders = [
@@ -381,9 +408,6 @@ def EmitOp : Voila_Op<"emit", [NoSideEffect,
   ];
 
   // Provide extra utility definitions on the c++ operation class definition.
-  let extraClassDeclaration = [{
-    bool hasOperand() { return getNumOperands() != 0; }
-  }];
 
   // Invoke a static verify method to verify this return operation.
   let verifier = [{ return ::verify(*this); }];
@@ -401,6 +425,15 @@ def GenericCallOp : Voila_Op<"generic_call"> {
   // The generic call operation takes a symbol reference attribute as the
   // callee, and inputs for the call.
   let arguments = (ins SymbolRefAttr:$callee, Variadic<AnyTensor>:$inputs);
+  let results = (outs Variadic<AnyTensor>);
+let builders = [
+OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments), [{
+    // Generic call always returns nothing initially
+    //$_state.addTypes(UnrankedTensorType::get($-builder.getF64Type()));
+    $_state.addOperands(arguments);
+    $_state.addAttribute("callee", $_builder.getSymbolRefAttr(callee));
+}]>
+];
 }
 
 /* TODO: ops for loops and aggregations*/

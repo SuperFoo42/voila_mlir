@@ -20,13 +20,17 @@ add_subdirectory(mlir)
 add_subdirectory(compiler)
 
 #FIXME
-#execute_process(COMMAND ${BISON_EXECUTABLE} -d -t ${CMAKE_SOURCE_DIR}/voila.y)
+#add_custom_command(
+#        DEPENDS ${CMAKE_SOURCE_DIR}/voila.y
+#        COMMAND ${BISON_EXECUTABLE} -d -t ${CMAKE_SOURCE_DIR}/voila.y
+#        OUTPUT ${CMAKE_SOURCE_DIR}/src/voila_parser.cpp ${CMAKE_SOURCE_DIR}/include/voila_parser.hpp ${CMAKE_SOURCE_DIR}/include/location.hpp
+#        )
 
-add_custom_command(
-        DEPENDS ${CMAKE_SOURCE_DIR}/voila.lex
-        COMMAND ${reflex_SOURCE_DIR}/bin/reflex -d --fast --bison-complete --bison-locations --namespace=voila::lexer --lexer=Lexer --header-file=${CMAKE_SOURCE_DIR}/include/voila_lexer.hpp −−graphs-file=lexer.gv -o ${CMAKE_SOURCE_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/voila.lex
-        OUTPUT ${CMAKE_SOURCE_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/include/voila_lexer.hpp
-)
+#add_custom_command(
+#        DEPENDS ${CMAKE_SOURCE_DIR}/voila.lex
+#        COMMAND ${reflex_SOURCE_DIR}/bin/reflex -d --fast --bison-complete --bison-locations --namespace=voila::lexer --lexer=Lexer --header-file=${CMAKE_SOURCE_DIR}/include/voila_lexer.hpp −−graphs-file=lexer.gv -o ${CMAKE_SOURCE_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/voila.lex
+#        OUTPUT ${CMAKE_SOURCE_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/include/voila_lexer.hpp
+#)
 
 add_library(voila_compiler
         voila_parser.cpp
@@ -35,6 +39,7 @@ add_library(voila_compiler
         TypeInferer.cpp
         DotVisualizer.cpp
         MLIRGenerator.cpp
+        MLIRGeneratorImpl.cpp
         )
 
 target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast reflex)
