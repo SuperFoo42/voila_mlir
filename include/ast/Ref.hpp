@@ -1,19 +1,19 @@
 #pragma once
+#include "ASTVisitor.hpp"
 #include "Expression.hpp"
 #include "IExpression.hpp"
-#include "ASTVisitor.hpp"
 namespace voila::ast
 {
     class Ref : public IExpression
     {
       public:
-        explicit Ref(Location loc, const Expression ref);
+        explicit Ref(Location loc, Expression ref);
 
         [[nodiscard]] bool is_reference() const final;
 
         [[nodiscard]] std::string type2string() const override;
 
-        Ref *as_reference() final;
+        const Ref *as_reference() const final;
 
         void print(std::ostream &o) const final;
 

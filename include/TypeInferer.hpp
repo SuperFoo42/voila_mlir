@@ -91,5 +91,6 @@ namespace voila
         void unify(const ast::ASTNode &t1, const ast::Statement &t2);
         void unify(const ast::ASTNode &t1, const ast::Expression &t2);
         void insertNewFuncType(const ast::ASTNode &node, std::vector<size_t> typeParamIDs, const size_t returnTypeID);
+        void unify(const ast::ASTNode *t1, const ast::ASTNode *t2);
     };
 } // namespace voila

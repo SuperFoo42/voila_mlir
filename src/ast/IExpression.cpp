@@ -252,7 +252,7 @@ namespace voila::ast
     {
         return nullptr;
     }
-    Ref *IExpression::as_reference()
+    const Ref *IExpression::as_reference() const
     {
         return nullptr;
     }

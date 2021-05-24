@@ -4,7 +4,7 @@
 
 namespace voila::ast
 {
-    Ref::Ref(const Location loc, Expression var) : IExpression(loc), ref{std::move(var)}
+    Ref::Ref(const Location loc, const Expression var) : IExpression(loc), ref{std::move(var)}
     {
         // TODO find reference or error
     }
@@ -16,7 +16,7 @@ namespace voila::ast
     {
         return "reference";
     }
-    Ref *Ref::as_reference()
+    const Ref *Ref::as_reference() const
     {
         return this;
     }

@@ -44,7 +44,7 @@ namespace voila::mlir
         ::mlir::Type getType(const ASTNode &node);
 
         // TODO: implement
-        ::mlir::Type convert(Type t);
+        ::mlir::Type convert(const Type &t);
 
         // TODO: is this correct?
         void declare(llvm::StringRef var, ::mlir::Value value)

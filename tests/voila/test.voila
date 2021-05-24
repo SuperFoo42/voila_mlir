@@ -6,6 +6,7 @@ main(x,y)
     emit x;
 }
 
+# this is a comment
 def foo(x)
 {
     x = true;

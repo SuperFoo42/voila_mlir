@@ -98,7 +98,8 @@ namespace voila::mlir
         auto lhs = visitor_gen(add.lhs);
         auto rhs = visitor_gen(add.rhs);
 
-        result = builder.create<::mlir::voila::AddOp>(location, getType(add),std::get<Value>(lhs), std::get<Value>(rhs));
+        result =
+            builder.create<::mlir::voila::AddOp>(location, getType(add), std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Sub &sub)
@@ -107,7 +108,8 @@ namespace voila::mlir
         auto lhs = visitor_gen(sub.lhs);
         auto rhs = visitor_gen(sub.rhs);
 
-        result = builder.create<::mlir::voila::AddOp>(location, getType(sub),std::get<Value>(lhs), std::get<Value>(rhs));
+        result =
+            builder.create<::mlir::voila::AddOp>(location, getType(sub), std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Mul &mul)
@@ -116,7 +118,8 @@ namespace voila::mlir
         auto lhs = visitor_gen(mul.lhs);
         auto rhs = visitor_gen(mul.rhs);
 
-        result = builder.create<::mlir::voila::AddOp>(location, getType(mul),std::get<Value>(lhs), std::get<Value>(rhs));
+        result =
+            builder.create<::mlir::voila::AddOp>(location, getType(mul), std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Div &div)
@@ -125,7 +128,8 @@ namespace voila::mlir
         auto lhs = visitor_gen(div.lhs);
         auto rhs = visitor_gen(div.rhs);
 
-        result = builder.create<::mlir::voila::AddOp>(location, getType(div),std::get<Value>(lhs), std::get<Value>(rhs));
+        result =
+            builder.create<::mlir::voila::AddOp>(location, getType(div), std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Mod &mod)
@@ -134,7 +138,8 @@ namespace voila::mlir
         auto lhs = visitor_gen(mod.lhs);
         auto rhs = visitor_gen(mod.rhs);
 
-        result = builder.create<::mlir::voila::AddOp>(location, getType(mod),std::get<Value>(lhs), std::get<Value>(rhs));
+        result =
+            builder.create<::mlir::voila::AddOp>(location, getType(mod), std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Eq &eq)
@@ -384,7 +389,7 @@ namespace voila::mlir
         return convert(astType);
     }
 
-    ::mlir::Type MLIRGeneratorImpl::convert(Type t)
+    ::mlir::Type MLIRGeneratorImpl::convert(const Type &t)
     {
         switch (t.t)
         {
@@ -441,18 +446,9 @@ namespace voila::mlir
         ScopedHashTableScope<StringRef, Value> var_scope(symbolTable);
         for (auto &stmt : block)
         {
-            // Specific handling for variable declarations and return statement.
-            // These can only appear in block list and not in nested expressions.
-            if (stmt.is_assignment())
-            {
-                visitor_gen(stmt);
-            }
-            else if (stmt.is_emit())
-            {
-                visitor_gen(stmt);
-            }
-            else
-                visitor_gen(stmt);
+            // TODO: Specific handling for variable declarations and return statement.
+
+            visitor_gen(stmt);
         }
     }
 

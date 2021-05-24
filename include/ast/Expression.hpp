@@ -149,7 +149,7 @@ namespace voila::ast
 
         [[nodiscard]] TupleGet *as_tuple_get() const;
 
-        [[nodiscard]] Ref *as_reference() const;
+        [[nodiscard]] const Ref *as_reference() const;
 
         [[nodiscard]] Predicate * as_predicate() const;
 

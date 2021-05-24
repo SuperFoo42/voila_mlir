@@ -171,7 +171,7 @@ namespace voila::ast
 
         virtual TupleGet *as_tuple_get();
 
-        virtual Ref *as_reference();
+        virtual const Ref *as_reference() const;
 
         virtual TupleCreate *as_tuple_create();
 

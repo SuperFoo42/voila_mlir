@@ -234,7 +234,7 @@ namespace voila::ast
     {
         return mImpl->as_tuple_get();
     }
-    Ref *Expression::as_reference() const
+    const Ref *Expression::as_reference() const
     {
         return mImpl->as_reference();
     }

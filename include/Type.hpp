@@ -40,12 +40,12 @@ namespace voila
             return !(rhs == *this);
         }
 
-        bool is_undef()
+        bool is_undef() const
         {
             return undef;
         }
 
-        size_t get_size()
+        size_t get_size() const
         {
             return arity;
         }

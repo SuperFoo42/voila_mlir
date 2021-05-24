@@ -62,14 +62,18 @@ namespace voila
                                         const size_t returnTypeID)
     {
         typeIDs.try_emplace(&node, types.size());
-        types.push_back(std::make_unique<FunctionType>(types.size(), std::move(typeParamIDs), types.at(returnTypeID)->t, types.at(returnTypeID)->ar));
+        types.push_back(std::make_unique<FunctionType>(types.size(), std::move(typeParamIDs), types.at(returnTypeID)->t,
+                                                       types.at(returnTypeID)->ar));
     }
 
     size_t TypeInferer::get_type_id(const ast::Expression &node)
     {
         try
         {
-            return typeIDs.at(node.as_expr());
+            if (node.is_reference())
+                return typeIDs.at(node.as_reference()->ref.as_expr());
+            else
+                return typeIDs.at(node.as_expr());
         }
         catch (std::out_of_range &)
         {
@@ -93,7 +97,10 @@ namespace voila
     {
         try
         {
-            return typeIDs.at(&node);
+            if (dynamic_cast<const ast::Ref *>(&node))
+                return typeIDs.at(dynamic_cast<const ast::Ref *>(&node)->ref.as_expr());
+            else
+                return typeIDs.at(&node);
         }
         catch (std::out_of_range &)
         {
@@ -103,9 +110,12 @@ namespace voila
 
     Type &TypeInferer::get_type(const ast::Expression &node) const
     {
+        ast::IExpression *tmp = node.as_expr();
+        if (node.is_reference()) // resolve reference
+            tmp = node.as_reference()->ref.as_expr();
         try
         {
-            return *types.at(typeIDs.at(node.as_expr()));
+            return *types.at(typeIDs.at(tmp));
         }
         catch (std::out_of_range &)
         {
@@ -129,7 +139,10 @@ namespace voila
     {
         try
         {
-            return *types.at(typeIDs.at(&node));
+            if (dynamic_cast<const ast::Ref *>(&node))
+                return *types.at(typeIDs.at(dynamic_cast<const ast::Ref *>(&node)->ref.as_expr()));
+            else
+                return *types.at(typeIDs.at(&node));
         }
         catch (std::out_of_range &)
         {
@@ -170,59 +183,85 @@ namespace voila
 
     void TypeInferer::unify(const ast::ASTNode &t1, const ast::ASTNode &t2)
     {
-        // TODO
-        typeIDs.emplace(&t1, get_type_id(t2));
+        const ast::ASTNode *tmp1 = &t1,*tmp2 = &t2;
+        if (dynamic_cast<const ast::Ref *>(&t1))
+        {
+            tmp1 = dynamic_cast<const ast::Ref *>(&t1)->ref.as_expr();
+        }
+        if (dynamic_cast<const ast::Ref *>(&t2))
+        {
+            tmp2 = dynamic_cast<const ast::Ref *>(&t2)->ref.as_expr();
+        }
+        unify(tmp1, tmp2);
     }
 
     void TypeInferer::unify(const ast::ASTNode &t1, const ast::Expression &t2)
     {
+        if (t2.is_reference())
+            unify(&t1, t2.as_reference()->ref.as_expr());
+        else
+            unify(&t1, t2.as_expr());
+    }
+
+    void TypeInferer::unify(const ast::ASTNode *t1, const ast::ASTNode *t2)
+    {
         // TODO
-        typeIDs.emplace(&t1, get_type_id(t2));
+        if (typeIDs.contains(t1) && !typeIDs.contains(t2))
+        {
+            typeIDs.emplace(t2, get_type_id(*t1));
+        }
+        else if (!typeIDs.contains(t1) && typeIDs.contains(t2))
+        {
+            typeIDs.emplace(t1, get_type_id(*t2));
+        }
+        else if (typeIDs.contains(t1) && typeIDs.contains(t2))
+        {
+            if (convertible(types[typeIDs[t1]]->t, types[typeIDs[t2]]->t))
+            {
+                typeIDs[t1] = typeIDs[t2];
+            }
+            else if (convertible(types[typeIDs[t2]]->t, types[typeIDs[t1]]->t))
+            {
+                typeIDs[t2] = typeIDs[t1];
+            }
+            else
+            {
+                throw IncompatibleTypesException();
+            }
+        }
+        else
+        {
+            throw TypeNotInferedException();
+        }
     }
 
     void TypeInferer::unify(const ast::ASTNode &t1, const ast::Statement &t2)
     {
-        // TODO
-        if (!typeIDs.contains(&t1))
-        {
-            typeIDs.emplace(&t1, get_type_id(t2));
-        }
+        if (dynamic_cast<const ast::Ref *>(&t1))
+            typeIDs.insert_or_assign(dynamic_cast<const ast::Ref *>(&t1)->ref.as_expr(), get_type_id(t2));
         else
-        {
-            // TODO: type checking
-            typeIDs[&t1] = get_type_id(t2);
-        }
+            typeIDs.insert_or_assign(&t1, get_type_id(t2));
     }
 
     void TypeInferer::unify(const ast::Expression &t1, const ast::Expression &t2)
     {
-        if (!typeIDs.contains(t1.as_expr()))
-        {
-            typeIDs.emplace(t1.as_expr(), get_type_id(t2));
-        }
-        else
-        {
-            // TODO: type checking
-            typeIDs[t1.as_expr()] = get_type_id(t2);
-        }
+        auto *tmp1 = t1.as_expr();
+        auto *tmp2 = t2.as_expr();
+        if (t1.is_reference())
+            tmp1 = t1.as_reference()->ref.as_expr();
+        if (t2.is_reference())
+            tmp2 = t2.as_reference()->ref.as_expr();
+        unify(tmp1, tmp2);
     }
 
     void TypeInferer::unify(const ast::Statement &t1, const ast::Statement &t2)
     {
-        if (!typeIDs.contains(t1.as_stmt()))
-        {
-            typeIDs.emplace(t1.as_stmt(), get_type_id(t2));
-        }
-        else
-        {
-            // TODO: type checking
-            typeIDs[t1.as_stmt()] = get_type_id(t2);
-        }
+        unify(t1.as_stmt(), t2.as_stmt());
     }
 
     void TypeInferer::operator()(const ast::Aggregation &aggregation)
     {
-        //TODO
+        // TODO
         ASTVisitor::operator()(aggregation);
     }
 
@@ -268,21 +307,23 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Assign &assign)
     {
-        assert(assign.expr.as_expr());
+        assert(assign.expr.is_expr());
 
-        if (assign.dest.is_reference() && !compatible(get_type(assign.dest).t, get_type(assign.expr).t))
+        if (assign.dest.is_reference() &&
+            !compatible(get_type(assign.dest.as_reference()->ref).t, get_type(assign.expr).t))
         {
             throw IncompatibleTypesException();
         }
 
         unify(assign.dest, assign.expr);
 
-        insertNewFuncType(assign, {get_type_id(assign.dest), get_type_id(assign.expr)}, DataType::VOID);
+        insertNewFuncType(assign, {get_type_id(assign.dest.as_reference()->ref), get_type_id(assign.expr)},
+                          DataType::VOID);
     }
 
     void TypeInferer::operator()(const ast::Emit &emit)
     {
-        //TODO
+        // TODO
         typeIDs.try_emplace(&emit, get_type_id(emit.expr));
     }
 
@@ -360,9 +401,9 @@ namespace voila
         insertNewFuncType(gather, {get_type_id(gather.column), get_type_id(gather.idxs)}, DataType::VOID);
     }
 
-    void TypeInferer::operator()(const ast::Ref &param)
+    void TypeInferer::operator()(const ast::Ref &)
     {
-        unify(param, param.ref);
+        // do not infer type, just act as a wrapper around variable
     }
 
     void TypeInferer::operator()(const ast::TupleGet &)
@@ -379,6 +420,7 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Fun &fun)
     {
+        // TODO: clear infered types at start of new function?
         std::vector<size_t> argIds;
         std::transform(
             fun.args.begin(), fun.args.end(),

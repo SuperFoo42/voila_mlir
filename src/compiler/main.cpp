@@ -131,5 +131,6 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    return failed(mlir::MlirOptMain(argc, argv, "Voila optimizer driver\n", registry));
+    return EXIT_SUCCESS;
+    //return failed(mlir::MlirOptMain(argc, argv, "Voila optimizer driver\n", registry));
 }
