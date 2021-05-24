@@ -121,7 +121,10 @@ int main(int argc, char *argv[])
             if (!res)
                 return EXIT_FAILURE;
 
-            res->dump();
+            std::error_code ec;
+            llvm::raw_fd_ostream os(cmd["f"].as<std::string>()+".mlir", ec, llvm::sys::fs::OF_None);
+            res->print(os);
+            os.flush();
         }
     }
     catch (const cxxopts::OptionException &e)
