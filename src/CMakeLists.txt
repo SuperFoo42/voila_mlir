@@ -42,7 +42,7 @@ add_library(voila_compiler
         MLIRGeneratorImpl.cpp
         )
 
-target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast reflex)
+target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast voila_lowering reflex)
 target_compile_features(voila_compiler PUBLIC cxx_std_20)
 target_compile_options(voila_compiler PUBLIC
         -Wpedantic

@@ -11,3 +11,5 @@ add_mlir_dialect_library(MLIRVoila
         LINK_LIBS PUBLIC
         MLIRIR
         )
+
+add_subdirectory(lowering)

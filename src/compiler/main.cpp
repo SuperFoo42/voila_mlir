@@ -1,8 +1,9 @@
+#include "MLIRGenerator.hpp"
 #include "ParsingError.hpp"
 #include "Program.hpp"
 #include "voila_lexer.hpp"
-#include "MLIRGenerator.hpp"
 #include "voila_parser.hpp"
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
@@ -10,20 +11,12 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/Pass/PassManager.h"
-#include "mlir/Support/FileUtilities.h"
-#include "mlir/Support/MlirOptMain.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/InitLLVM.h"
-#include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/ToolOutputFile.h"
+#include <mlir/Pass/PassManager.h>
 #pragma GCC diagnostic pop
 #include "mlir/VoilaDialect.h"
-#include "MLIRGenerator.hpp"
-
+#include "mlir/lowering/VoilaToAffineLoweringPass.hpp"
 #include <cstdlib>
-#include <cstdio>
 #include <cxxopts.hpp>
 #include <filesystem>
 #include <fmt/core.h>
@@ -64,13 +57,20 @@ int main(int argc, char *argv[])
     registerAllDialects(registry);
     mlir::registerMLIRContextCLOptions();
 
-
     cxxopts::Options options("VOILA compiler", "");
 
-    options.add_options()("h, help", "Show help")
-        ("f,file", "File name", cxxopts::value<std::string>())
-            ("a, plot-ast", "Generate dot file of AST", cxxopts::value<bool>()->default_value("false"))
-            ("d, dump-mlir", "Dump intermediate voila", cxxopts::value<bool>()->default_value("false"));
+    options.add_options()("h, help", "Show help")(
+        "f, file", "File name",
+        cxxopts::value<std::string>()) ("a, plot-ast", "Generate dot file of AST",
+                                        cxxopts::value<bool>()->default_value(
+                                            "false")) ("O,opt", "Enable optimization passes",
+                                                       cxxopts::value<bool>()->default_value(
+                                                           "true")) ("d, dump-mlir", "Dump intermediate voila",
+                                                                     cxxopts::value<bool>()->default_value(
+                                                                         "false")) ("l, dump-lowered",
+                                                                                    "Dump lowered mlir",
+                                                                                    cxxopts::value<bool>()
+                                                                                        ->default_value("false"));
 
     try
     {
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
         if (fst.is_open())
         {
             lexer = voila::lexer::Lexer(fst); // read file, decode UTF-8/16/32 format
-            lexer.filename = file;          // the filename to display with error locations
+            lexer.filename = file;            // the filename to display with error locations
 
             voila::parser::Parser parser(lexer, prog);
             if (parser() != 0)
@@ -105,25 +105,56 @@ int main(int argc, char *argv[])
             std::cout << fmt::format("failed to open {}", file) << std::endl;
         }
 
-
         if (cmd.count("a"))
         {
             prog.to_dot(cmd["f"].as<std::string>());
         }
 
+        mlir::MLIRContext context;
+        // Load our Dialect in this MLIR Context.
+        context.getOrLoadDialect<mlir::voila::VoilaDialect>();
+        auto module = voila::MLIRGenerator::mlirGen(context, prog);
+
+        if (!module)
+            return EXIT_FAILURE;
+
         if (cmd.count("d"))
         {
-            mlir::MLIRContext context;
-            // Load our Dialect in this MLIR Context.
-            context.getOrLoadDialect<mlir::voila::VoilaDialect>();
-            auto res = voila::MLIRGenerator::mlirGen(context, prog);
-
-            if (!res)
-                return EXIT_FAILURE;
-
             std::error_code ec;
-            llvm::raw_fd_ostream os(cmd["f"].as<std::string>()+".mlir", ec, llvm::sys::fs::OF_None);
-            res->print(os);
+            llvm::raw_fd_ostream os(cmd["f"].as<std::string>() + ".mlir", ec, llvm::sys::fs::OF_None);
+            module->print(os);
+            os.flush();
+        }
+
+        ::mlir::PassManager pm(&context);
+        // Apply any generic pass manager command line options and run the pipeline.
+        applyPassManagerCLOptions(pm);
+        pm.addPass(mlir::createInlinerPass()); // TODO
+        ::mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
+        // Now that there is only one function, we can infer the shapes of each of
+        // the operations.
+        // optPM.addPass(voila::mlir::createShapeInferencePass()); // TODO
+        optPM.addPass(mlir::createCanonicalizerPass());
+        optPM.addPass(mlir::createCSEPass());
+
+        // Partially lower the toy dialect with a few cleanups afterwards.
+        optPM.addPass(voila::mlir::createLowerToAffinePass());
+        optPM.addPass(mlir::createCanonicalizerPass());
+        optPM.addPass(mlir::createCSEPass());
+
+        if (cmd.count("O"))
+        {
+            optPM.addPass(mlir::createLoopFusionPass());
+            optPM.addPass(mlir::createMemRefDataFlowOptPass());
+        }
+        if (mlir::failed(pm.run(*module)))
+            return EXIT_FAILURE;
+
+        if (cmd.count("l"))
+        {
+            std::error_code ec;
+            llvm::raw_fd_ostream os(cmd["f"].as<std::string>() + ".lowered..mlir", ec, llvm::sys::fs::OF_None);
+            module->print(os);
             os.flush();
         }
     }
@@ -135,5 +166,5 @@ int main(int argc, char *argv[])
     }
 
     return EXIT_SUCCESS;
-    //return failed(mlir::MlirOptMain(argc, argv, "Voila optimizer driver\n", registry));
+    // return failed(mlir::MlirOptMain(argc, argv, "Voila optimizer driver\n", registry));
 }
