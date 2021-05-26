@@ -20,8 +20,8 @@ def IntConstOp : Voila_Op<"integer constant", [NoSideEffect,ConstantLike]> {
   let arguments = (ins I64Attr:$value);
 
   // The constant operation returns a single value of TensorType.
-  //TODO: 1DTensorOf<[I64]>
-  let results = (outs I64Tensor);
+  //TODO:
+  let results = (outs 1DTensorOf<[I64]>);
 
 let builders = [
 OpBuilder<(ins "mlir::IntegerAttr":$value), [{
@@ -49,7 +49,7 @@ def FltConstOp : Voila_Op<"float constant", [NoSideEffect,ConstantLike]> {
   let arguments = (ins F64Attr:$value);
 
   // The constant operation returns a single value of TensorType.
-  let results = (outs F64Tensor);
+  let results = (outs 1DTensorOf<[F64]>);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseConstantOp(parser, result); }];
@@ -81,7 +81,7 @@ def BoolConstOp : Voila_Op<"bool constant", [NoSideEffect,ConstantLike]> {
   let arguments = (ins I1Attr:$value);
 
   // The constant operation returns a single value of TensorType.
-  let results = (outs I1Tensor);
+  let results = (outs 1DTensorOf<[I1]>);
 
 let builders = [
 OpBuilder<(ins "mlir::IntegerAttr":$value), [{

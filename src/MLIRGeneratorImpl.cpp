@@ -266,17 +266,17 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const IntConst &aConst)
     {
-        result = builder.create<::mlir::voila::IntConstOp>(loc(aConst.get_location()), aConst.val);
+        result = builder.create<::mlir::voila::IntConstOp>(loc(aConst.get_location()), ::mlir::RankedTensorType::get(-1,builder.getI64Type()), aConst.val);
     }
 
     void MLIRGeneratorImpl::operator()(const BooleanConst &aConst)
     {
-        result = builder.create<::mlir::voila::BoolConstOp>(loc(aConst.get_location()), aConst.val);
+        result = builder.create<::mlir::voila::BoolConstOp>(loc(aConst.get_location()),::mlir::RankedTensorType::get(-1,builder.getI1Type()), aConst.val);
     }
 
     void MLIRGeneratorImpl::operator()(const FltConst &aConst)
     {
-        result = builder.create<::mlir::voila::FltConstOp>(loc(aConst.get_location()), aConst.val);
+        result = builder.create<::mlir::voila::FltConstOp>(loc(aConst.get_location()),::mlir::RankedTensorType::get(-1,builder.getF64Type()), builder.getF64FloatAttr(aConst.val));
     }
 
     void MLIRGeneratorImpl::operator()(const StrConst &)

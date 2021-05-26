@@ -110,5 +110,7 @@ namespace voila::mlir::lowering
     using SubFOpLowering = BinaryOpLowering<::mlir::voila::MulOp, ::mlir::SubFOp>;
     using MulIOpLowering = BinaryOpLowering<::mlir::voila::MulOp, ::mlir::MulIOp>;
     using MulFOpLowering = BinaryOpLowering<::mlir::voila::MulOp, ::mlir::MulFOp>;
+    using AndOpLowering = BinaryOpLowering<::mlir::voila::AndOp, ::mlir::AndOp>;
+    using OrOpLowering = BinaryOpLowering<::mlir::voila::OrOp, ::mlir::OrOp>;
 
 } // namespace voila::mlir::lowering

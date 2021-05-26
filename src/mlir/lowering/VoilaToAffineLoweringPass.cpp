@@ -27,11 +27,10 @@ void voila::mlir::lowering::VoilaToAffineLoweringPass::runOnFunction()
     // a partial lowering, we explicitly mark the Toy operations that don't want
     // to lower, `toy.print`, as `legal`.
     target.addIllegalDialect<::mlir::voila::VoilaDialect>();
-
     // Now that the conversion target has been defined, we just need to provide
     // the set of patterns that will lower the Toy operations.
     RewritePatternSet patterns(&getContext());
-    patterns.add<AddFOpLowering, IntConstOpLowering, FltConstOpLowering, BoolConstOpLowering, EmitOpLowering>(&getContext());
+    patterns.add<IntConstOpLowering, FltConstOpLowering, BoolConstOpLowering, EmitOpLowering, AndOpLowering>(&getContext());
 
     // With the target and rewrite patterns defined, we can now attempt the
     // conversion. The conversion will signal failure if any of our `illegal`

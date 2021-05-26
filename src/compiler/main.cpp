@@ -129,23 +129,23 @@ int main(int argc, char *argv[])
         ::mlir::PassManager pm(&context);
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(pm);
-        pm.addPass(mlir::createInlinerPass());
+        //pm.addPass(mlir::createInlinerPass());
         ::mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
         // Now that there is only one function, we can infer the shapes of each of
         // the operations.
         // optPM.addPass(voila::mlir::createShapeInferencePass()); // TODO
-        optPM.addPass(mlir::createCanonicalizerPass());
-        optPM.addPass(mlir::createCSEPass());
+        //optPM.addPass(mlir::createCanonicalizerPass());
+        //optPM.addPass(mlir::createCSEPass());
 
         // Partially lower the toy dialect with a few cleanups afterwards.
         optPM.addPass(voila::mlir::createLowerToAffinePass());
-        optPM.addPass(mlir::createCanonicalizerPass());
-        optPM.addPass(mlir::createCSEPass());
+        //optPM.addPass(mlir::createCanonicalizerPass());
+        //optPM.addPass(mlir::createCSEPass());
 
         if (cmd.count("O"))
         {
-            optPM.addPass(mlir::createLoopFusionPass());
-            optPM.addPass(mlir::createMemRefDataFlowOptPass());
+            //optPM.addPass(mlir::createLoopFusionPass());
+            //optPM.addPass(mlir::createMemRefDataFlowOptPass());
         }
         if (mlir::failed(pm.run(*module)))
             return EXIT_FAILURE;
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
         if (cmd.count("l"))
         {
             std::error_code ec;
-            llvm::raw_fd_ostream os(cmd["f"].as<std::string>() + ".lowered..mlir", ec, llvm::sys::fs::OF_None);
+            llvm::raw_fd_ostream os(cmd["f"].as<std::string>() + ".lowered.mlir", ec, llvm::sys::fs::OF_None);
             module->print(os);
             os.flush();
         }

@@ -37,7 +37,3 @@ namespace voila::mlir
         materializeCallConversion(OpBuilder &builder, Value input, Type resultType, Location conversionLoc) const final;
     };
 } // namespace voila::mlir
-namespace voila::mlir
-{
-    std::unique_ptr<::mlir::Pass> createShapeInferencePass();
-}
