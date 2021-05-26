@@ -1,10 +1,10 @@
-main(x,y)
+main(y)
 {
     add(123, 456.0);
-    x = and(true, false);
-    select(42, x);
-    #foo(x);
-    emit x;
+    y = and(true, false);
+    select(42, y);
+    #foo(y);
+    emit y;
 }
 
 # this is a comment

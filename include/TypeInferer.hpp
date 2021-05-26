@@ -64,6 +64,8 @@ namespace voila
 
         Type &get_type(const ast::Statement &node) const;
 
+        void set_arity(const ast::ASTNode *const node, const size_t ar);
+        void set_type(const ast::ASTNode *const node, const DataType type);
       private:
         void unify(const ast::ASTNode &t1, const ast::ASTNode &t2);
         void unify(const ast::Expression &t1, const ast::Expression &t2);
@@ -90,7 +92,7 @@ namespace voila
         size_t get_type_id(const ast::ASTNode &node);
         void unify(const ast::ASTNode &t1, const ast::Statement &t2);
         void unify(const ast::ASTNode &t1, const ast::Expression &t2);
-        void insertNewFuncType(const ast::ASTNode &node, std::vector<size_t> typeParamIDs, const size_t returnTypeID);
+        void insertNewFuncType(const ast::ASTNode &node, std::vector<size_t> typeParamIDs, size_t returnTypeID);
         void unify(const ast::ASTNode *t1, const ast::ASTNode *t2);
     };
 } // namespace voila

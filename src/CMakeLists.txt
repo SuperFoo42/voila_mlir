@@ -41,7 +41,8 @@ add_library(voila_compiler
         MLIRGenerator.cpp
         MLIRGeneratorImpl.cpp
         VoilaInlinerInterface.cpp
-        )
+        ShapeInferencePass.cpp
+        ShapeInferenceInterface.cpp)
 
 target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast voila_lowering reflex)
 target_compile_features(voila_compiler PUBLIC cxx_std_20)

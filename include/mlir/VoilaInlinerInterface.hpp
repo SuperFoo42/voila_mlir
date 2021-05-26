@@ -5,8 +5,9 @@
 #include <mlir/Transforms/InliningUtils.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/Pass/Pass.h>
-#pragma GCC diagnostic pop
 #include "VoilaOps.h"
+#pragma GCC diagnostic pop
+
 
 namespace voila::mlir
 {

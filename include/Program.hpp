@@ -45,5 +45,7 @@ namespace voila
         Expression get_var(const std::string& var_name);
 
         bool has_var(const std::string& var_name);
+        void set_main_args_shape(const std::unordered_map<std::string, size_t> &shapes);
+        void set_main_args_type(const std::unordered_map<std::string, DataType> &types);
     };
 } // namespace voila

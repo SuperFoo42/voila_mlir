@@ -5,10 +5,16 @@ set(LIBS
         ${dialect_libs}
         ${conversion_libs}
         MLIROptLib
+        MLIRCastInterfaces
+        MLIRCallInterfaces
+        MLIRSideEffectInterfaces
+        MLIRAnalysis
         MLIRVoila
-        MLIRParser
         MLIRPass
         MLIRSupport
+        MLIRIR
+        MLIRParser
+        MLIRTransforms
         voila_compiler
         cxxopts
         fmt
@@ -16,7 +22,8 @@ set(LIBS
         )
 
 add_llvm_executable(voila
-        main.cpp)
+        main.cpp
+        )
 
 target_compile_options(voila PUBLIC
         -Wpedantic

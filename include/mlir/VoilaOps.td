@@ -6,6 +6,7 @@ include "mlir/IR/OpBase.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/CastInterfaces.td"
+include "mlir/ShapeInferenceInterface.td"
 
 def IntConstOp : Voila_Op<"integer constant", [NoSideEffect,ConstantLike]> {
   // Provide a summary and description for this operation. This can be used to
@@ -100,7 +101,7 @@ BoolConstOp::build($_builder, $_state, RankedTensorType::get({}, $_builder.getI1
 }
 
 //TODO: SameOperandsAndResultShape,Elementwise,Vectorizable
-def AddOp : Voila_Op<"add",[NoSideEffect]> {
+def AddOp : Voila_Op<"add",[NoSideEffect, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise addition operation";
   let description = [{
     The "add" operation performs element-wise addition between two tensors.
@@ -122,7 +123,7 @@ def SubOp : Voila_Op<"sub",[NoSideEffect]> {
   }];
 
 let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$rhs);
-let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
+let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$result);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];

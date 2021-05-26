@@ -2,7 +2,7 @@
 
 #include "IncompatibleTypesException.hpp"
 #include "NonMatchingArityException.hpp"
-#include "TypeNotInferedException.hpp"
+#include "NotInferedException.hpp"
 #include "ast/Arithmetic.hpp"
 
 namespace voila
@@ -77,7 +77,7 @@ namespace voila
         }
         catch (std::out_of_range &)
         {
-            throw TypeNotInferedException();
+            throw NotInferedException();
         }
     }
 
@@ -89,7 +89,7 @@ namespace voila
         }
         catch (std::out_of_range &)
         {
-            throw TypeNotInferedException();
+            throw NotInferedException();
         }
     }
 
@@ -104,7 +104,7 @@ namespace voila
         }
         catch (std::out_of_range &)
         {
-            throw TypeNotInferedException();
+            throw NotInferedException();
         }
     }
 
@@ -119,7 +119,7 @@ namespace voila
         }
         catch (std::out_of_range &)
         {
-            throw TypeNotInferedException();
+            throw NotInferedException();
         }
     }
 
@@ -131,7 +131,7 @@ namespace voila
         }
         catch (std::out_of_range &)
         {
-            throw TypeNotInferedException();
+            throw NotInferedException();
         }
     }
 
@@ -146,7 +146,7 @@ namespace voila
         }
         catch (std::out_of_range &)
         {
-            throw TypeNotInferedException();
+            throw NotInferedException();
         }
     }
 
@@ -231,7 +231,7 @@ namespace voila
         }
         else
         {
-            throw TypeNotInferedException();
+            throw NotInferedException();
         }
     }
 
@@ -598,5 +598,15 @@ namespace voila
         }
 
         insertNewType(aNot, DataType::BOOL);
+    }
+
+    void TypeInferer::set_arity(const ast::ASTNode *const node, const size_t ar)
+    {
+        types.at(typeIDs.at(node))->ar = Arity(ar);
+    }
+
+    void TypeInferer::set_type(const ast::ASTNode *const node, const DataType type)
+    {
+        types.at(typeIDs.at(node))->t = type;
     }
 } // namespace voila

@@ -2,7 +2,7 @@
 #include "ASTNodes.hpp"
 #include "Program.hpp"
 
-#include <TypeNotInferedException.hpp>
+#include <NotInferedException.hpp>
 #include <variant>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"

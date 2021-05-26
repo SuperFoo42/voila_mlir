@@ -322,7 +322,9 @@ namespace voila::mlir
 
         // generic function, the return type will be inferred later.
         // Arguments type are uniformly unranked tensors.
-        llvm::SmallVector<::mlir::Type> arg_types(fun.args.size(), getType(fun));
+
+        llvm::SmallVector<::mlir::Type> arg_types;
+        std::transform(fun.args.begin(), fun.args.end(), std::back_inserter(arg_types),[&](const auto &t) -> auto {return getType(*t.as_expr());});
         auto func_type = builder.getFunctionType(arg_types, llvm::None);
         auto function = ::mlir::FuncOp::create(location, fun.name, func_type);
         assert(function);

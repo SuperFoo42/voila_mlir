@@ -40,14 +40,19 @@ namespace voila
             return !(rhs == *this);
         }
 
-        bool is_undef() const
+        [[nodiscard]] bool is_undef() const
         {
             return undef;
         }
 
-        size_t get_size() const
+        [[nodiscard]] size_t get_size() const
         {
             return arity;
+        }
+
+        explicit Arity(const size_t i) {
+            arity = i;
+            undef = false;
         }
     };
 
@@ -70,8 +75,6 @@ namespace voila
 
     class FunctionType : public Type
     {
-        std::vector<size_t> paramTypeIds;
-
       public:
         explicit FunctionType(size_t tID,
                               std::vector<size_t> paramTypeIds = {},
@@ -89,5 +92,6 @@ namespace voila
             os << ")";
             return os;
         }
+        std::vector<size_t> paramTypeIds;
     };
 } // namespace voila
