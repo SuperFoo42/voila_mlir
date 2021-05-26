@@ -4,6 +4,7 @@
 include "VoilaDialect.td"
 include "mlir/IR/OpBase.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
+include "mlir/Interfaces/CallInterfaces.td"
 
 def IntConstOp : Voila_Op<"integer constant", [NoSideEffect,ConstantLike]> {
   // Provide a summary and description for this operation. This can be used to
@@ -415,7 +416,7 @@ OpBuilder<(ins), [{ build($_builder, $_state, llvm::None); }]>
 */
 }
 
-def GenericCallOp : Voila_Op<"generic_call"> {
+def GenericCallOp : Voila_Op<"generic_call", [DeclareOpInterfaceMethods<CallOpInterface>]> {
   let summary = "generic call operation";
   let description = [{
     Generic calls represent calls to a user defined function that needs to

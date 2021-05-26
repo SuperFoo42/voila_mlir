@@ -13,3 +13,14 @@
 
 #define GET_OP_CLASSES
 #include "mlir/VoilaOps.cpp.inc"
+
+
+/// Return the callee of the generic call operation, this is required by the
+/// call interface.
+mlir::CallInterfaceCallable mlir::voila::GenericCallOp::getCallableForCallee() {
+    return callee();
+}
+
+/// Get the argument operands to the called function, this is required by the
+/// call interface.
+mlir::Operation::operand_range mlir::voila::GenericCallOp::getArgOperands() { return inputs(); }

@@ -40,6 +40,7 @@ add_library(voila_compiler
         DotVisualizer.cpp
         MLIRGenerator.cpp
         MLIRGeneratorImpl.cpp
+        VoilaInlinerInterface.cpp
         )
 
 target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast voila_lowering reflex)

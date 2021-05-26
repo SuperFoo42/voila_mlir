@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
         ::mlir::PassManager pm(&context);
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(pm);
-        pm.addPass(mlir::createInlinerPass()); // TODO
+        pm.addPass(mlir::createInlinerPass());
         ::mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
         // Now that there is only one function, we can infer the shapes of each of
         // the operations.
