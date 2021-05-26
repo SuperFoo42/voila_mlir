@@ -24,3 +24,15 @@ mlir::CallInterfaceCallable mlir::voila::GenericCallOp::getCallableForCallee() {
 /// Get the argument operands to the called function, this is required by the
 /// call interface.
 mlir::Operation::operand_range mlir::voila::GenericCallOp::getArgOperands() { return inputs(); }
+
+bool mlir::voila::CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+    if (inputs.size() != 1 || outputs.size() != 1)
+        return false;
+    // The inputs must be Tensors with the same element type.
+    auto input = inputs.front().dyn_cast<TensorType>();
+    auto output = outputs.front().dyn_cast<TensorType>();
+    if (!input || !output || input.getElementType() != output.getElementType())
+        return false;
+    // The shape is required to match if both types are ranked.
+    return !input.hasRank() || !output.hasRank() || input == output;
+}
