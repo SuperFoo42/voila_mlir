@@ -85,6 +85,9 @@ namespace voila
     {
         try
         {
+            if (node.is_statement_wrapper())
+                return typeIDs.at(node.as_statement_wrapper()->expr.as_expr());
+            else
             return typeIDs.at(node.as_stmt());
         }
         catch (std::out_of_range &)
@@ -127,6 +130,9 @@ namespace voila
     {
         try
         {
+            if (node.is_statement_wrapper())
+                return *types.at(typeIDs.at(node.as_statement_wrapper()->expr.as_expr()));
+            else
             return *types.at(typeIDs.at(node.as_stmt()));
         }
         catch (std::out_of_range &)
@@ -183,7 +189,7 @@ namespace voila
 
     void TypeInferer::unify(const ast::ASTNode &t1, const ast::ASTNode &t2)
     {
-        const ast::ASTNode *tmp1 = &t1,*tmp2 = &t2;
+        const ast::ASTNode *tmp1 = &t1, *tmp2 = &t2;
         if (dynamic_cast<const ast::Ref *>(&t1))
         {
             tmp1 = dynamic_cast<const ast::Ref *>(&t1)->ref.as_expr();
@@ -234,6 +240,24 @@ namespace voila
             throw NotInferedException();
         }
     }
+
+    void TypeInferer::unify(const ast::Expression &t1, const ast::Statement &t2)
+    {
+        ast::ASTNode * tmp;
+        if (t2.is_statement_wrapper())
+        {
+            tmp = t2.as_statement_wrapper()->expr.as_expr();
+        }
+        else
+        {
+            tmp = t2.as_stmt();
+        }
+        if (t1.is_reference())
+            typeIDs.insert_or_assign(t1.as_reference()->ref.as_expr(), get_type_id(*tmp));
+        else
+            typeIDs.insert_or_assign(t1.as_expr(), get_type_id(*tmp));
+    }
+
 
     void TypeInferer::unify(const ast::ASTNode &t1, const ast::Statement &t2)
     {
@@ -307,7 +331,7 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Assign &assign)
     {
-        assert(assign.expr.is_expr());
+        assert(assign.expr.is_function_call() || assign.expr.is_statement_wrapper());
 
         if (assign.dest.is_reference() &&
             !compatible(get_type(assign.dest.as_reference()->ref).t, get_type(assign.expr).t))
@@ -315,9 +339,12 @@ namespace voila
             throw IncompatibleTypesException();
         }
 
-        unify(assign.dest, assign.expr);
+        if (assign.expr.is_statement_wrapper())
+            unify(assign.dest, assign.expr.as_statement_wrapper()->expr);
+        else
+            unify(assign.dest, assign.expr);
 
-        insertNewFuncType(assign, {get_type_id(assign.dest.as_reference()->ref), get_type_id(assign.expr)},
+        insertNewFuncType(assign, {get_type_id(assign.dest), get_type_id(assign.expr)},
                           DataType::VOID);
     }
 

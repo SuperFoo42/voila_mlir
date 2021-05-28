@@ -49,25 +49,33 @@ namespace voila::mlir
     void MLIRGeneratorImpl::operator()(const FunctionCall &call)
     {
         auto location = loc(call.get_location());
-        SmallVector<Value, 4> operands;
+        SmallVector<Value> operands;
         for (auto &expr : call.args)
         {
             auto arg = visitor_gen(expr);
             operands.push_back(std::get<Value>(arg));
         }
-
-        result = builder.create<::mlir::voila::GenericCallOp>(location, call.fun, operands);
+        //TODO: allow more than only a single return type
+        result = builder.create<::mlir::voila::GenericCallOp>(location, call.fun, operands, funcTable.at(call.fun).getType().getResult(0));
     }
 
     void MLIRGeneratorImpl::operator()(const Assign &assign)
     {
-        // TODO
-        auto var = visitor_gen(assign.dest);
-        (void) var;
+        // TODO: SSA?
+        // visitor_gen(assign.dest);
+        auto res = visitor_gen(assign.expr);
+        result = res;
+        auto value = std::get<Value>(res);
 
-        mlir::Value value = std::get<Value>(visitor_gen(assign.expr));
-
-        result = value;
+        // assign value to variable
+        if (assign.dest.is_reference())
+        {
+            symbolTable.insert(assign.dest.as_reference()->ref.as_variable()->var, value);
+        }
+        else
+        {
+            symbolTable.insert(assign.dest.as_variable()->var, value);
+        }
     }
 
     void MLIRGeneratorImpl::operator()(const Emit &emit)
@@ -89,7 +97,8 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const StatementWrapper &wrapper)
     {
-        result = visitor_gen(wrapper.expr);
+        // forward to expr
+        wrapper.expr.visit(*this);
     }
 
     void MLIRGeneratorImpl::operator()(const Add &add)
@@ -145,115 +154,91 @@ namespace voila::mlir
     void MLIRGeneratorImpl::operator()(const Eq &eq)
     {
         auto location = loc(eq.get_location());
-        SmallVector<Value, 2> operands;
         SmallVector<::mlir::Type, 2> operandTypes;
-        auto lhs = visitor_gen(eq.lhs);
-        operands.push_back(std::get<Value>(lhs));
-        operandTypes.push_back(std::get<Value>(lhs).getType());
-        auto rhs = visitor_gen(eq.rhs);
-        operands.push_back(std::get<Value>(rhs));
-        operandTypes.push_back(std::get<Value>(rhs).getType());
+        auto lhs = std::get<Value>(visitor_gen(eq.lhs));
+        operandTypes.push_back(lhs.getType());
+        auto rhs = std::get<Value>(visitor_gen(eq.rhs));
+        operandTypes.push_back(rhs.getType());
 
-        result = builder.create<::mlir::voila::EqOp>(location, operandTypes, operands);
+        result = builder.create<::mlir::voila::EqOp>(location, operandTypes, lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Neq &neq)
     {
         auto location = loc(neq.get_location());
-        SmallVector<Value, 2> operands;
         SmallVector<::mlir::Type, 2> operandTypes;
-        auto lhs = visitor_gen(neq.lhs);
-        operands.push_back(std::get<Value>(lhs));
-        operandTypes.push_back(std::get<Value>(lhs).getType());
-        auto rhs = visitor_gen(neq.rhs);
-        operands.push_back(std::get<Value>(rhs));
-        operandTypes.push_back(std::get<Value>(rhs).getType());
+        auto lhs = std::get<Value>(visitor_gen(neq.lhs));
+        operandTypes.push_back(lhs.getType());
+        auto rhs = std::get<Value>(visitor_gen(neq.rhs));
+        operandTypes.push_back(rhs.getType());
 
-        result = builder.create<::mlir::voila::NeqOp>(location, operandTypes, operands);
+        result = builder.create<::mlir::voila::NeqOp>(location, operandTypes, lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Le &le)
     {
         auto location = loc(le.get_location());
-        SmallVector<Value, 2> operands;
         SmallVector<::mlir::Type, 2> operandTypes;
-        auto lhs = visitor_gen(le.lhs);
-        operands.push_back(std::get<Value>(lhs));
-        operandTypes.push_back(std::get<Value>(lhs).getType());
-        auto rhs = visitor_gen(le.rhs);
-        operands.push_back(std::get<Value>(rhs));
-        operandTypes.push_back(std::get<Value>(rhs).getType());
+        auto lhs = std::get<Value>(visitor_gen(le.lhs));
+        operandTypes.push_back(lhs.getType());
+        auto rhs = std::get<Value>(visitor_gen(le.rhs));
+        operandTypes.push_back(rhs.getType());
 
-        result = builder.create<::mlir::voila::LeOp>(location, operandTypes, operands);
+        result = builder.create<::mlir::voila::LeOp>(location, operandTypes, lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Ge &ge)
     {
         auto location = loc(ge.get_location());
-        SmallVector<Value, 2> operands;
         SmallVector<::mlir::Type, 2> operandTypes;
-        auto lhs = visitor_gen(ge.lhs);
-        operands.push_back(std::get<Value>(lhs));
-        operandTypes.push_back(std::get<Value>(lhs).getType());
-        auto rhs = visitor_gen(ge.rhs);
-        operands.push_back(std::get<Value>(rhs));
-        operandTypes.push_back(std::get<Value>(rhs).getType());
+        auto lhs = std::get<Value>(visitor_gen(ge.lhs));
+        operandTypes.push_back(lhs.getType());
+        auto rhs = std::get<Value>(visitor_gen(ge.rhs));
+        operandTypes.push_back(rhs.getType());
 
-        result = builder.create<::mlir::voila::GeOp>(location, operandTypes, operands);
+        result = builder.create<::mlir::voila::GeOp>(location, operandTypes, lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Leq &leq)
     {
         auto location = loc(leq.get_location());
-        SmallVector<Value, 2> operands;
         SmallVector<::mlir::Type, 2> operandTypes;
-        auto lhs = visitor_gen(leq.lhs);
-        operands.push_back(std::get<Value>(lhs));
-        operandTypes.push_back(std::get<Value>(lhs).getType());
-        auto rhs = visitor_gen(leq.rhs);
-        operands.push_back(std::get<Value>(rhs));
-        operandTypes.push_back(std::get<Value>(rhs).getType());
+        auto lhs = std::get<Value>(visitor_gen(leq.lhs));
+        operandTypes.push_back(lhs.getType());
+        auto rhs = std::get<Value>(visitor_gen(leq.rhs));
+        operandTypes.push_back(rhs.getType());
 
-        result = builder.create<::mlir::voila::LeqOp>(location, operandTypes, operands);
+        result = builder.create<::mlir::voila::LeqOp>(location, operandTypes, lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Geq &geq)
     {
         auto location = loc(geq.get_location());
-        SmallVector<Value, 2> operands;
         SmallVector<::mlir::Type, 2> operandTypes;
-        auto lhs = visitor_gen(geq.lhs);
-        operandTypes.push_back(std::get<Value>(lhs).getType());
-        operands.push_back(std::get<Value>(lhs));
-        auto rhs = visitor_gen(geq.rhs);
-        operands.push_back(std::get<Value>(rhs));
-        operandTypes.push_back(std::get<Value>(rhs).getType());
+        auto lhs = std::get<Value>(visitor_gen(geq.lhs));
+        operandTypes.push_back(lhs.getType());
+        auto rhs = std::get<Value>(visitor_gen(geq.rhs));
+        operandTypes.push_back(rhs.getType());
 
-        result = builder.create<::mlir::voila::GeqOp>(location, operandTypes, operands);
+        result = builder.create<::mlir::voila::GeqOp>(location, operandTypes, lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const And &anAnd)
     {
         auto location = loc(anAnd.get_location());
-        SmallVector<Value, 2> operands;
-        auto lhs = visitor_gen(anAnd.lhs);
-        operands.push_back(std::get<Value>(lhs));
-        auto rhs = visitor_gen(anAnd.rhs);
-        operands.push_back(std::get<Value>(rhs));
+        auto lhs = std::get<Value>(visitor_gen(anAnd.lhs));
+        auto rhs = std::get<Value>(visitor_gen(anAnd.rhs));
 
-        result = builder.create<::mlir::voila::AndOp>(location, operands);
+        result = builder.create<::mlir::voila::AndOp>(location, lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Or &anOr)
     {
         auto location = loc(anOr.get_location());
-        SmallVector<Value, 2> operands;
-        auto lhs = visitor_gen(anOr.lhs);
-        operands.push_back(std::get<Value>(lhs));
-        auto rhs = visitor_gen(anOr.rhs);
-        operands.push_back(std::get<Value>(rhs));
+        auto lhs = std::get<Value>(visitor_gen(anOr.lhs));
+        auto rhs = std::get<Value>(visitor_gen(anOr.rhs));
 
-        result = builder.create<::mlir::voila::OrOp>(location, operands);
+        result = builder.create<::mlir::voila::OrOp>(location, lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Not &aNot)
@@ -266,17 +251,21 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const IntConst &aConst)
     {
-        result = builder.create<::mlir::voila::IntConstOp>(loc(aConst.get_location()), ::mlir::RankedTensorType::get(-1,builder.getI64Type()), aConst.val);
+        result = builder.create<::mlir::voila::IntConstOp>(
+            loc(aConst.get_location()), ::mlir::RankedTensorType::get(-1, builder.getI64Type()), aConst.val);
     }
 
     void MLIRGeneratorImpl::operator()(const BooleanConst &aConst)
     {
-        result = builder.create<::mlir::voila::BoolConstOp>(loc(aConst.get_location()),::mlir::RankedTensorType::get(-1,builder.getI1Type()), aConst.val);
+        result = builder.create<::mlir::voila::BoolConstOp>(
+            loc(aConst.get_location()), ::mlir::RankedTensorType::get(-1, builder.getI1Type()), aConst.val);
     }
 
     void MLIRGeneratorImpl::operator()(const FltConst &aConst)
     {
-        result = builder.create<::mlir::voila::FltConstOp>(loc(aConst.get_location()),::mlir::RankedTensorType::get(-1,builder.getF64Type()), builder.getF64FloatAttr(aConst.val));
+        result = builder.create<::mlir::voila::FltConstOp>(loc(aConst.get_location()),
+                                                           ::mlir::RankedTensorType::get(-1, builder.getF64Type()),
+                                                           builder.getF64FloatAttr(aConst.val));
     }
 
     void MLIRGeneratorImpl::operator()(const StrConst &)
@@ -296,12 +285,13 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const Ref &param)
     {
-        if (auto variable = symbolTable.lookup(param.ref.as_variable()->var))
+        if (symbolTable.count(param.ref.as_variable()->var))
         {
+            auto variable = symbolTable.lookup(param.ref.as_variable()->var);
             result = variable;
             return;
         }
-        emitError(loc(param.get_location()), "error: unknown variable '") << param.ref.as_variable()->var << "'";
+        throw MLIRGenerationException();
     }
 
     void MLIRGeneratorImpl::operator()(const TupleGet &)
@@ -324,9 +314,12 @@ namespace voila::mlir
         // Arguments type are uniformly unranked tensors.
 
         llvm::SmallVector<::mlir::Type> arg_types;
-        std::transform(fun.args.begin(), fun.args.end(), std::back_inserter(arg_types),[&](const auto &t) -> auto {return getType(*t.as_expr());});
+        std::transform(
+            fun.args.begin(), fun.args.end(),
+            std::back_inserter(arg_types), [&](const auto &t) -> auto { return getType(*t.as_expr()); });
         auto func_type = builder.getFunctionType(arg_types, llvm::None);
         auto function = ::mlir::FuncOp::create(location, fun.name, func_type);
+        funcTable.emplace(fun.name, function);
         assert(function);
 
         auto &entryBlock = *function.addEntryBlock();
@@ -379,10 +372,10 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const Variable &variable)
     {
-        // TODO
-        result = builder.create<::mlir::tensor::FromElementsOp>(loc(variable.get_location()), ::mlir::ValueRange());
         // Register the value in the symbol table.
-        declare(variable.var, std::get<Value>(result));
+        // TODO: SSA
+        declare(variable.var, nullptr);
+        result = symbolTable.lookup(variable.var);
     }
 
     ::mlir::Type MLIRGeneratorImpl::getType(const ASTNode &node)
@@ -456,7 +449,7 @@ namespace voila::mlir
 
     MLIRGeneratorImpl::result_variant MLIRGeneratorImpl::visitor_gen(const Expression &node)
     {
-        auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, inferer);
+        auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable,inferer);
         node.visit(visitor);
         if (std::holds_alternative<std::monostate>(visitor.result))
             throw MLIRGenerationException();
@@ -465,7 +458,7 @@ namespace voila::mlir
 
     MLIRGeneratorImpl::result_variant MLIRGeneratorImpl::visitor_gen(const Statement &node)
     {
-        auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, inferer);
+        auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable,inferer);
         node.visit(visitor);
         if (std::holds_alternative<std::monostate>(visitor.result))
             throw MLIRGenerationException();

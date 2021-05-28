@@ -1,19 +1,20 @@
 #pragma once
+#include "ASTVisitor.hpp"
 #include "Expression.hpp"
 #include "IStatement.hpp"
 #include "Predicate.hpp"
+#include "Statement.hpp"
 
 #include <optional>
 #include <utility>
 #include <vector>
-#include "ASTVisitor.hpp"
 
 namespace voila::ast
 {
     class Assign : public IStatement
     {
       public:
-        Assign(Location loc, Expression dest, Expression expr);
+        Assign(Location loc, Expression dest, Statement expr);
 
         [[nodiscard]] bool is_assignment() const final;
 
@@ -30,7 +31,7 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
       public:
         Expression dest;
-        Expression expr;
+        Statement expr;
         std::optional<Expression> pred;
     };
 

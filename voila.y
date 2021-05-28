@@ -112,6 +112,7 @@
 %nterm <std::vector<ast::Expression>> expr_list;
 %nterm <std::vector<ast::Fun>> program;
 %nterm <ast::Statement> stmt;
+%nterm <ast::Statement> function_call;
 %nterm <ast::Expression> expr;
 %nterm <ast::Fun *> func;
 %nterm <ast::Main *> main;
@@ -144,12 +145,15 @@ stmts:
 	| stmts stmt { $$ = $1; $$.push_back($2); }
 
 stmt: expr COLON { $$ = ast::Statement::make<StatementWrapper>(@1,$1); }
-	| var ASSIGN expr COLON { $$ = ast::Statement::make<Assign>(@2,$1, $3); out.infer_type($$); }
+    | var ASSIGN function_call COLON { $$ = ast::Statement::make<Assign>(@2,$1, $3); out.infer_type($$); }
+	| var ASSIGN expr COLON { $$ = ast::Statement::make<Assign>(@2,$1, ast::Statement::make<StatementWrapper>(@3,$3)); out.infer_type($$); }
 	| LOOP pred LBRACE stmts RBRACE { $$ = ast::Statement::make<Loop>(@1+@2,$2, $4); out.infer_type($$); }
 	| EMIT expr COLON { $$ = ast::Statement::make<Emit>(@1,$2); out.infer_type($$); }
 	| effect COLON { $$ = $1; }
 	| effect COLON pred { $$ = $1; $$.set_predicate($3); }
-	| ID LPAREN var_list RPAREN COLON { $$ = ast::Statement::make<FunctionCall>(@1+@5,$1, $3); }
+	| function_call COLON { $$ = $1; }
+
+function_call: ID LPAREN var_list RPAREN { $$ = ast::Statement::make<FunctionCall>(@1+@4,$1, $3); out.infer_type($$); }
 
 var: ID {$$ = out.has_var($1) ? ast::Expression::make<Ref>(@1, out.get_var($1)) : ast::Expression::make<Variable>(@1, $1); if ($$.is_variable()){ out.add_var($$);}; out.infer_type($$); };
 
@@ -170,7 +174,7 @@ selection:
 
 expr: 
 	constant { $$ = $1; }
-	| ID { $$ = ast::Expression::make<Ref>(@1,out.get_var($1)); out.infer_type($$); }
+	| var
 	| var LBRACKET INT RBRACKET { $$ = ast::Expression::make<TupleGet>(@2+@4,$1, $3); assert($1.is_reference()); }
 	| LPAREN expr_list RPAREN { $$ = ast::Expression::make<TupleCreate>(@1+@3,$2); } /* recursive tuples do not look like a good idea */
 	| expr pred { $$ = $1; $$.set_predicate($2); out.infer_type($$); }

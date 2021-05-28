@@ -53,3 +53,96 @@ void mlir::voila::AddOp::inferShapes()
         getResult().setType(rhs().getType());
     }
 }
+
+void mlir::voila::SubOp::inferShapes()
+{
+    if (lhs().getType().isF64())
+    {
+        getResult().setType(lhs().getType());
+    }
+    else
+    {
+        getResult().setType(rhs().getType());
+    }
+}
+
+void mlir::voila::MulOp::inferShapes()
+{
+    if (lhs().getType().isF64())
+    {
+        getResult().setType(lhs().getType());
+    }
+    else
+    {
+        getResult().setType(rhs().getType());
+    }
+}
+
+void mlir::voila::DivOp::inferShapes()
+{
+    if (lhs().getType().isF64())
+    {
+        getResult().setType(lhs().getType());
+    }
+    else
+    {
+        getResult().setType(rhs().getType());
+    }
+}
+
+void mlir::voila::ModOp::inferShapes()
+{
+    if (lhs().getType().isF64())
+    {
+        getResult().setType(lhs().getType());
+    }
+    else
+    {
+        getResult().setType(rhs().getType());
+    }
+}
+
+void mlir::voila::AndOp::inferShapes()
+{
+    getResult().setType(lhs().getType());
+}
+
+void mlir::voila::OrOp::inferShapes()
+{
+    getResult().setType(lhs().getType());
+}
+
+void mlir::voila::NotOp::inferShapes()
+{
+    getResult().setType(value().getType());
+}
+
+void mlir::voila::EqOp::inferShapes()
+{
+    getResult().setType(lhs().getType());
+}
+
+void mlir::voila::NeqOp::inferShapes()
+{
+    getResult().setType(lhs().getType());
+}
+
+void mlir::voila::LeOp::inferShapes()
+{
+    getResult().setType(lhs().getType());
+}
+
+void mlir::voila::LeqOp::inferShapes()
+{
+    getResult().setType(lhs().getType());
+}
+
+void mlir::voila::GeOp::inferShapes()
+{
+    getResult().setType(lhs().getType());
+}
+
+void mlir::voila::GeqOp::inferShapes()
+{
+    getResult().setType(lhs().getType());
+}

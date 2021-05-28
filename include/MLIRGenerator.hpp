@@ -17,6 +17,7 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopedHashTable.h"
 #include "llvm/Support/raw_ostream.h"
+#include "mlir/VoilaOps.h"
 #pragma GCC diagnostic pop
 namespace voila
 {
@@ -27,6 +28,7 @@ namespace voila
         ::mlir::OpBuilder builder;
         ::mlir::ModuleOp module;
         llvm::ScopedHashTable<llvm::StringRef, mlir::Value> symbolTable;
+        std::unordered_map<std::string, ::mlir::FuncOp> funcTable;
 
         explicit MLIRGenerator(::mlir::MLIRContext &ctx);
 

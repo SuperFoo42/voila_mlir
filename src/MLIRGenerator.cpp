@@ -14,7 +14,7 @@ namespace voila
 
         for (const auto &f : program.functions)
         {
-            auto generatorImpl = MLIRGeneratorImpl(builder, module, symbolTable, program.inferer);
+            auto generatorImpl = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, program.inferer);
             generatorImpl(*f);
             auto genRes = generatorImpl.getValue();
             // TODO: error handling

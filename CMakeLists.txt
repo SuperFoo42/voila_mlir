@@ -97,7 +97,7 @@ find_package(BISON REQUIRED)
 CPMAddPackage(
         NAME reflex
         GITHUB_REPOSITORY Genivia/RE-flex
-        GIT_TAG v3.0.2
+        GIT_TAG v3.0.4
 )
 if (reflex_ADDED)
     execute_process(

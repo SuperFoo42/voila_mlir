@@ -1,15 +1,15 @@
-main(y)
-{
-    add(123, 456.0);
-    y = and(true, false);
-    select(42, y);
-    #foo(y);
-    emit y;
-}
-
 # this is a comment
 def foo(x)
 {
     x = true;
     emit x;
+}
+
+main(y)
+{
+    add(123, 456.0);
+    y = and(true, false);
+    select(42, y);
+    z = foo(y);
+    emit z;
 }

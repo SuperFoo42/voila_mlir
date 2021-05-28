@@ -61,6 +61,8 @@ namespace voila::ast
 
         [[nodiscard]] virtual bool is_statement_wrapper() const;
 
+        [[nodiscard]] virtual StatementWrapper *as_statement_wrapper();
+
         // type conversions
         virtual IStatement *as_stmt();
 

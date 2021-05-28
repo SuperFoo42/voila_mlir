@@ -27,4 +27,8 @@ namespace voila::ast
     {
         visitor(*this);
     }
+    StatementWrapper *StatementWrapper::as_statement_wrapper()
+    {
+        return this;
+    }
 } // namespace voila::ast

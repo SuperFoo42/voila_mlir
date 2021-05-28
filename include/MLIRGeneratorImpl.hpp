@@ -28,14 +28,14 @@ namespace voila::mlir
         ::mlir::OpBuilder &builder;
         ::mlir::ModuleOp &module;
         llvm::ScopedHashTable<llvm::StringRef, ::mlir::Value> &symbolTable;
+        std::unordered_map<std::string, ::mlir::FuncOp> &funcTable;
         const TypeInferer &inferer;
         using result_variant = std::variant<std::monostate,
-            ::mlir::ModuleOp,
-            ::mlir::Value,
-            ::mlir::Type,
-            ::mlir::LogicalResult,
-            ::mlir::FuncOp,
-                                                ::mlir::voila::GenericCallOp>;
+                                            ::mlir::ModuleOp,
+                                            ::mlir::Value,
+                                            ::mlir::Type,
+                                            ::mlir::LogicalResult,
+                                            ::mlir::FuncOp>;
         result_variant result;
 
         // helper functions to map ast types to mlir
@@ -49,7 +49,7 @@ namespace voila::mlir
         // TODO: is this correct?
         void declare(llvm::StringRef var, ::mlir::Value value)
         {
-            (void)module;
+            (void) module;
             if (symbolTable.count(var))
                 throw VariableAlreadyDeclaredException();
             symbolTable.insert(var, value);
@@ -65,8 +65,9 @@ namespace voila::mlir
         MLIRGeneratorImpl(::mlir::OpBuilder &builder,
                           ::mlir::ModuleOp &module,
                           ::llvm::ScopedHashTable<llvm::StringRef, ::mlir::Value> &symbolTable,
+                          std::unordered_map<std::string, ::mlir::FuncOp> &funcTable,
                           const TypeInferer &inferer) :
-            builder{builder}, module{module}, symbolTable{symbolTable}, inferer{inferer}, result{}
+            builder{builder}, module{module}, symbolTable{symbolTable}, funcTable{funcTable}, inferer{inferer}, result{}
         {
             (void) module;
         }
@@ -115,6 +116,5 @@ namespace voila::mlir
         void operator()(const Main &main) override;
         void operator()(const Selection &selection) override;
         void operator()(const Variable &variable) override;
-
     };
 } // namespace voila::mlir

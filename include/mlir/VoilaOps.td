@@ -8,7 +8,7 @@ include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/CastInterfaces.td"
 include "mlir/ShapeInferenceInterface.td"
 
-def IntConstOp : Voila_Op<"integer constant", [NoSideEffect,ConstantLike]> {
+def IntConstOp : Voila_Op<"integer constant", [NoSideEffect]> {
   // Provide a summary and description for this operation. This can be used to
   // auto-generate documentation of the operations within our dialect.
   let summary = "integer constant";
@@ -37,7 +37,7 @@ OpBuilder<(ins "long":$value), [{
   //let verifier = [{ return ::verify(*this); }];
 }
 
-def FltConstOp : Voila_Op<"float constant", [NoSideEffect,ConstantLike]> {
+def FltConstOp : Voila_Op<"float constant", [NoSideEffect]> {
   // Provide a summary and description for this operation. This can be used to
   // auto-generate documentation of the operations within our dialect.
   let summary = "float constant";
@@ -69,7 +69,7 @@ OpBuilder<(ins "double":$value), [{
   //let verifier = [{ return ::verify(*this); }];
 }
 
-def BoolConstOp : Voila_Op<"bool constant", [NoSideEffect,ConstantLike]> {
+def BoolConstOp : Voila_Op<"bool constant", [NoSideEffect]> {
   // Provide a summary and description for this operation. This can be used to
   // auto-generate documentation of the operations within our dialect.
   let summary = "bool constant";
@@ -115,7 +115,7 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def SubOp : Voila_Op<"sub",[NoSideEffect]> {
+def SubOp : Voila_Op<"sub",[NoSideEffect, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise subtraction operation";
   let description = [{
     The "sub" operation performs element-wise subtraction between two tensors.
@@ -130,7 +130,7 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$r
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def MulOp : Voila_Op<"mul",[NoSideEffect]> {
+def MulOp : Voila_Op<"mul",[NoSideEffect, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise multiplication operation";
   let description = [{
     The "mul" operation performs element-wise multiplication between two tensors.
@@ -145,7 +145,7 @@ def MulOp : Voila_Op<"mul",[NoSideEffect]> {
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def DivOp : Voila_Op<"div",[NoSideEffect]> {
+def DivOp : Voila_Op<"div",[NoSideEffect, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise division operation";
   let description = [{
     The "div" operation performs element-wise division between two tensors.
@@ -160,7 +160,7 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def ModOp : Voila_Op<"mod",[NoSideEffect]> {
+def ModOp : Voila_Op<"mod",[NoSideEffect, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise modulo operation";
   let description = [{
     The "mod" operation performs element-wise modulo between two tensors.
@@ -175,7 +175,7 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def AndOp : Voila_Op<"and",[NoSideEffect, SameOperandsAndResultType,Elementwise,SameOperandsAndResultShape,Vectorizable]> {
+def AndOp : Voila_Op<"and",[NoSideEffect, SameOperandsAndResultType,Elementwise,SameOperandsAndResultShape,Vectorizable, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise and operation";
   let description = [{
     The "and" operation performs element-wise and between two tensors.
@@ -190,7 +190,7 @@ def AndOp : Voila_Op<"and",[NoSideEffect, SameOperandsAndResultType,Elementwise,
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def OrOp : Voila_Op<"or",[NoSideEffect, SameOperandsAndResultType,SameOperandsAndResultShape,Elementwise,Vectorizable]> {
+def OrOp : Voila_Op<"or",[NoSideEffect, SameOperandsAndResultType,SameOperandsAndResultShape,Elementwise,Vectorizable, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise or operation";
   let description = [{
     The "or" operation performs element-wise or between two tensors.
@@ -205,7 +205,7 @@ def OrOp : Voila_Op<"or",[NoSideEffect, SameOperandsAndResultType,SameOperandsAn
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def NotOp : Voila_Op<"not",[NoSideEffect, SameOperandsAndResultType,SameOperandsAndResultShape,Elementwise,Vectorizable]> {
+def NotOp : Voila_Op<"not",[NoSideEffect, SameOperandsAndResultType,SameOperandsAndResultShape,Elementwise,Vectorizable,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
 let summary = "element-wise not operation";
 let description = [{
 The "bot" operation performs element-wise not on a tensor.
@@ -220,7 +220,7 @@ let results = (outs I1Tensor);
 }
 
 
-def EqOp : Voila_Op<"eq",[NoSideEffect,Elementwise,Vectorizable]> {
+def EqOp : Voila_Op<"eq",[NoSideEffect,Elementwise,Vectorizable,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise equality comparison operation";
   let description = [{
     The "eq" operation performs element-wise equality comparison between two tensors.
@@ -235,7 +235,7 @@ def EqOp : Voila_Op<"eq",[NoSideEffect,Elementwise,Vectorizable]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def NeqOp : Voila_Op<"neq",[NoSideEffect,Elementwise,Vectorizable]> {
+def NeqOp : Voila_Op<"neq",[NoSideEffect,Elementwise,Vectorizable,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise inequality comparison operation";
   let description = [{
     The "neq" operation performs element-wise inequality comparison between two tensors.
@@ -250,7 +250,7 @@ def NeqOp : Voila_Op<"neq",[NoSideEffect,Elementwise,Vectorizable]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def LeOp : Voila_Op<"le",[NoSideEffect,Elementwise,Vectorizable]> {
+def LeOp : Voila_Op<"le",[NoSideEffect,Elementwise,Vectorizable,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise less comparison operation";
   let description = [{
     The "le" operation performs element-wise less comparison between two tensors.
@@ -265,7 +265,7 @@ def LeOp : Voila_Op<"le",[NoSideEffect,Elementwise,Vectorizable]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def LeqOp : Voila_Op<"leq",[NoSideEffect,Elementwise,Vectorizable]> {
+def LeqOp : Voila_Op<"leq",[NoSideEffect,Elementwise,Vectorizable,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise less-equal comparison operation";
   let description = [{
     The "leq" operation performs element-wise less-equal comparison between two tensors.
@@ -280,7 +280,7 @@ def LeqOp : Voila_Op<"leq",[NoSideEffect,Elementwise,Vectorizable]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def GeOp : Voila_Op<"ge",[NoSideEffect,Elementwise,Vectorizable]> {
+def GeOp : Voila_Op<"ge",[NoSideEffect,Elementwise,Vectorizable,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise greater comparison operation";
   let description = [{
     The "ge" operation performs element-wise greater comparison between two tensors.
@@ -295,7 +295,7 @@ def GeOp : Voila_Op<"ge",[NoSideEffect,Elementwise,Vectorizable]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def GeqOp : Voila_Op<"geq",[NoSideEffect,Elementwise,Vectorizable]> {
+def GeqOp : Voila_Op<"geq",[NoSideEffect,Elementwise,Vectorizable,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise greater-equal comparison operation";
   let description = [{
     The "geq" operation performs element-wise greater-equal comparison between two tensors.
@@ -429,13 +429,19 @@ def GenericCallOp : Voila_Op<"generic_call", [DeclareOpInterfaceMethods<CallOpIn
   // The generic call operation takes a symbol reference attribute as the
   // callee, and inputs for the call.
   let arguments = (ins SymbolRefAttr:$callee, Variadic<AnyTensor>:$inputs);
-  let results = (outs Variadic<AnyTensor>);
+  let results = (outs AnyTensor);
 let builders = [
 OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments), [{
     // Generic call always returns nothing initially
-    //$_state.addTypes(UnrankedTensorType::get($-builder.getF64Type()));
+    $_state.addTypes(llvm::None);
     $_state.addOperands(arguments);
     $_state.addAttribute("callee", $_builder.getSymbolRefAttr(callee));
+}]>,
+OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments, "Type":$res_type), [{
+// Generic call always returns nothing initially
+$_state.addTypes(res_type);
+$_state.addOperands(arguments);
+$_state.addAttribute("callee", $_builder.getSymbolRefAttr(callee));
 }]>
 ];
 }

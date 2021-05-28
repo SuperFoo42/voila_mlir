@@ -139,4 +139,8 @@ namespace voila::ast
     {
         return mImpl->get_location();
     }
+    StatementWrapper *Statement::as_statement_wrapper() const
+    {
+        return mImpl->as_statement_wrapper();
+    }
 } // namespace voila::ast

@@ -85,6 +85,7 @@ namespace voila::ast
         [[nodiscard]] AggrAvg *as_aggr_avg() const;
 
         [[nodiscard]] bool is_statement_wrapper() const;
+        [[nodiscard]] StatementWrapper * as_statement_wrapper() const;
 
         [[nodiscard]] std::optional<Expression> as_expression() const;
 

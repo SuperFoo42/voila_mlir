@@ -23,12 +23,15 @@ namespace voila::mlir
 
         // Populate the worklist with the operations that need shape inference:
         // these are operations that return a dynamic shape.
+        ::mlir::Operation *emitOp = nullptr;
         llvm::SmallPtrSet<mlir::Operation *, 16> opWorklist;
         f.walk(
             [&](mlir::Operation *op)
             {
                 if (returnsDynamicShape(op))
                     opWorklist.insert(op);
+                if (dyn_cast<::mlir::voila::EmitOp>(op))
+                    emitOp = op;
             });
 
         // Iterate on the operations in the worklist until all operations have been
@@ -62,10 +65,24 @@ namespace voila::mlir
             f.emitError("Shape inference failed, ") << opWorklist.size() << " operations couldn't be inferred\n";
             signalPassFailure();
         }
+
+        //infer function return type from emit op
+        if (!f.getType().getResults().empty())
+        {
+            assert(emitOp);
+            assert(f.getType().getResults().size() == emitOp->getOperands().size());
+            f.setType(
+                FunctionType::get(&this->getContext(), f.getType().getInputs(), emitOp->getOperands().getTypes()));
+        }
+        else
+        {
+            f.setType(
+                FunctionType::get(&this->getContext(), f.getType().getInputs(), nullptr));
+        }
     }
 
     std::unique_ptr<::mlir::Pass> createShapeInferencePass()
     {
         return std::make_unique<ShapeInferencePass>();
     }
-} // namespace mlir::voila
+} // namespace voila::mlir

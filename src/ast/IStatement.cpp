@@ -68,6 +68,10 @@ namespace voila::ast
     {
         return false;
     }
+    [[nodiscard]] StatementWrapper *IStatement::as_statement_wrapper()
+    {
+        return nullptr;
+    }
     IStatement *IStatement::as_stmt()
     {
         return this;

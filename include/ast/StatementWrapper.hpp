@@ -23,6 +23,8 @@ namespace voila::ast
 
         [[nodiscard]] bool is_statement_wrapper() const final;
 
+        [[nodiscard]] StatementWrapper *as_statement_wrapper() final;
+
         std::optional<Expression> as_expression() final;
 
         void print(std::ostream &ostream) const final;

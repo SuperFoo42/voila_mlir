@@ -142,11 +142,11 @@ int main(int argc, char *argv[])
         // Now that there is only one function, we can infer the shapes of each of
         // the operations.
         optPM.addPass(voila::mlir::createShapeInferencePass()); // TODO
-        optPM.addPass(mlir::createCanonicalizerPass());
-        optPM.addPass(mlir::createCSEPass());
+        //optPM.addPass(mlir::createCanonicalizerPass());
+        //optPM.addPass(mlir::createCSEPass());
 
         // Partially lower the toy dialect with a few cleanups afterwards.
-        optPM.addPass(voila::mlir::createLowerToAffinePass());
+        //optPM.addPass(voila::mlir::createLowerToAffinePass());
         // optPM.addPass(mlir::createCanonicalizerPass());
         // optPM.addPass(mlir::createCSEPass());
 
