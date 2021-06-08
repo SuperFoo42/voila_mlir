@@ -11,13 +11,13 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/InitAllDialects.h"
 #include "mlir/InitAllPasses.h"
+#include "mlir/ShapeInferencePass.hpp"
+#include "mlir/VoilaDialect.h"
+#include "mlir/lowering/VoilaToAffineLoweringPass.hpp"
 
 #include "llvm/Support/ToolOutputFile.h"
 
 #include <mlir/Pass/PassManager.h>
-#include "mlir/ShapeInferencePass.hpp"
-#include "mlir/VoilaDialect.h"
-#include "mlir/lowering/VoilaToAffineLoweringPass.hpp"
 #pragma GCC diagnostic pop
 
 #include <cstdlib>
@@ -137,23 +137,30 @@ int main(int argc, char *argv[])
         ::mlir::PassManager pm(&context);
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(pm);
-         pm.addPass(mlir::createInlinerPass());
+        pm.addPass(mlir::createInlinerPass());
         ::mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
+
         // Now that there is only one function, we can infer the shapes of each of
         // the operations.
-        optPM.addPass(voila::mlir::createShapeInferencePass()); // TODO
-        //optPM.addPass(mlir::createCanonicalizerPass());
-        //optPM.addPass(mlir::createCSEPass());
+        optPM.addPass(voila::mlir::createShapeInferencePass()); // TODO: more inference?
+        optPM.addPass(mlir::createCanonicalizerPass());
+        optPM.addPass(mlir::createCSEPass());
 
-        // Partially lower the toy dialect with a few cleanups afterwards.
-        //optPM.addPass(voila::mlir::createLowerToAffinePass());
-        // optPM.addPass(mlir::createCanonicalizerPass());
-        // optPM.addPass(mlir::createCSEPass());
+        // Partially lower voila to affine with a few cleanups
+        optPM.addPass(voila::mlir::createLowerToAffinePass());
+        optPM.addPass(mlir::createCanonicalizerPass());
+        optPM.addPass(mlir::createCSEPass());
 
+        // bufferization passes
+        pm.addPass(mlir::createTensorConstantBufferizePass());
+        optPM.addPass(mlir::createTensorBufferizePass());
+        optPM.addPass(mlir::createStdBufferizePass());
+        pm.addPass(mlir::createFuncBufferizePass());
+        optPM.addPass(mlir::createFinalizingBufferizePass());
         if (cmd.count("O"))
         {
-            // optPM.addPass(mlir::createLoopFusionPass());
-            // optPM.addPass(mlir::createMemRefDataFlowOptPass());
+             optPM.addPass(mlir::createLoopFusionPass());
+             optPM.addPass(mlir::createMemRefDataFlowOptPass());
         }
         if (mlir::failed(pm.run(*module)))
             return EXIT_FAILURE;

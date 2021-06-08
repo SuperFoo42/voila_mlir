@@ -1,8 +1,10 @@
 #include "mlir/lowering/VoilaToAffineLoweringPass.hpp"
 
-#include "mlir/lowering/ConstOpLowering.hpp"
 #include "mlir/lowering/ArithmeticOpLowering.hpp"
+#include "mlir/lowering/ComparisonOpLowering.hpp"
+#include "mlir/lowering/ConstOpLowering.hpp"
 #include "mlir/lowering/EmitOpLowering.hpp"
+#include "mlir/lowering/LogicalOpLowering.hpp"
 
 void voila::mlir::lowering::VoilaToAffineLoweringPass::runOnFunction()
 {
@@ -30,13 +32,26 @@ void voila::mlir::lowering::VoilaToAffineLoweringPass::runOnFunction()
     // Now that the conversion target has been defined, we just need to provide
     // the set of patterns that will lower the Toy operations.
     RewritePatternSet patterns(&getContext());
-    patterns.add<IntConstOpLowering, FltConstOpLowering, BoolConstOpLowering, EmitOpLowering, AndOpLowering>(&getContext());
+    // constant lowerings
+    patterns.add<BoolConstOpLowering, IntConstOpLowering, FltConstOpLowering>(&getContext());
+    // logical lowerings
+    patterns.add<AndOpLowering, OrOpLowering>(&getContext());
+    // arithmetic lowerings
+    patterns.add<AddIOpLowering, AddFOpLowering, SubIOpLowering, SubFOpLowering, MulFOpLowering, MulIOpLowering,
+                 DivFOpLowering, ModFOpLowering>(&getContext());
+    // comparison lowerings
+    patterns.add<EqIOpLowering, EqFOpLowering, NeqIOpLowering, NeqFOpLowering, LeIOpLowering, LeFOpLowering,
+                 LeqIOpLowering, LeqFOpLowering, GeIOpLowering, GeFOpLowering, GeqIOpLowering, GeqFOpLowering>(
+        &getContext());
+
+    patterns.add<EmitOpLowering>(&getContext());
 
     // With the target and rewrite patterns defined, we can now attempt the
     // conversion. The conversion will signal failure if any of our `illegal`
     // operations were not converted successfully.
     if (failed(applyPartialConversion(getFunction(), target, std::move(patterns))))
         signalPassFailure();
+    function->dump();
 }
 
 /// Create a pass for lowering operations in the `Affine` and `Std` dialects.

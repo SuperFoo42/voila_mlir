@@ -8,8 +8,9 @@ def foo(x)
 main(y)
 {
     add(123, 456.0);
-    y = and(true, false);
+    f = foo(y);
+    y = and(f, false); #TODO: y is tensor and not lowered
     select(42, y);
     z = foo(y);
-    emit z;
+    emit and(y,z);
 }

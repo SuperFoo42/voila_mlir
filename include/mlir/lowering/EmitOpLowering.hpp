@@ -19,7 +19,20 @@ namespace voila::mlir::lowering
         {
             // lower to std::return
             // here we should only have to deal with the emit of the main function, since all other uses should have been inlined
-            rewriter.replaceOpWithNewOp<::mlir::ReturnOp>(op, op.getOperands());
+            SmallVector<::mlir::Value> ops;
+            for (auto o : op.getOperands())
+            {
+                if (o.getType().isa<TensorType>())
+                {
+                    ops.push_back(rewriter.create<memref::TensorLoadOp>(op->getLoc(), o.getType(), o));
+                }
+                else
+                {
+                    ops.push_back(o);
+                }
+            }
+
+            rewriter.replaceOpWithNewOp<::mlir::ReturnOp>(op, ops);
 
             return success();
         }

@@ -1,5 +1,6 @@
 #pragma once
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Linalg//IR/LinalgOps.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Pass/Pass.h"
@@ -17,56 +18,33 @@ namespace voila::mlir::lowering
     template<class ConstOp>
     class ConstOpLowering : public OpRewritePattern<ConstOp>
     {
-        /// Convert the given TensorType into the corresponding MemRefType.
-        static MemRefType convertTensorToMemRef(TensorType type)
-        {
-            assert(type.hasRank() && "expected only ranked shapes");
-            return MemRefType::get(type.getShape(), type.getElementType());
-        }
-
-        /// Insert an allocation and deallocation for the given MemRefType.
-        static Value insertAllocAndDealloc(MemRefType type, Location loc, PatternRewriter &rewriter)
-        {
-            auto alloc = rewriter.create<memref::AllocOp>(loc, type);
-
-            // Make sure to allocate at the beginning of the block.
-            auto *parentBlock = alloc->getBlock();
-            alloc->moveBefore(&parentBlock->front());
-
-            // Make sure to deallocate this alloc at the end of the block. This should be fine
-            // as voila functions have no control flow.
-            auto dealloc = rewriter.create<memref::DeallocOp>(loc, alloc);
-            dealloc->moveBefore(&parentBlock->back());
-            return alloc;
-        }
       public:
         using OpRewritePattern<ConstOp>::OpRewritePattern;
 
         LogicalResult matchAndRewrite(ConstOp op, PatternRewriter &rewriter) const final
         {
             auto constantValue = op.value();
-            auto loc = op.getLoc();
 
-            // When lowering the constant operation, we allocate and assign the constant
-            // values to a corresponding memref allocation.
-            auto tensorType = op.getType().template cast<TensorType>();
-            auto memRefType = convertTensorToMemRef(tensorType);
-            auto alloc = insertAllocAndDealloc(memRefType, loc, rewriter);
+            Attribute valAttr;
+            if constexpr (std::is_same_v<ConstOp, IntConstOp>)
+            {
+                valAttr = rewriter.getI64IntegerAttr(constantValue);
+            }
+            else if constexpr (std::is_same_v<ConstOp, FltConstOp>)
+            {
+                valAttr = rewriter.getF64FloatAttr(constantValue.convertToDouble());
+            }
+            else if constexpr (std::is_same_v<ConstOp, BoolConstOp>)
+            {
+                valAttr = IntegerAttr::get(rewriter.getI1Type(), constantValue);
+            }
+            else
+            {
+                return failure();
+            }
 
-            // We will be generating constant indices up-to the largest dimension.
-            // Create these constants up-front to avoid large amounts of redundant
-            // operations.
-            auto valueShape = memRefType.getShape();
-            assert(!valueShape.empty());
-            SmallVector<Value, 1> indices;
+            rewriter.template replaceOpWithNewOp<ConstantOp>(op,valAttr);
 
-            // TODO: in future maybe also AffineVectorStoreOp
-            auto cv =  rewriter.create<ConstantOp>(loc, DenseElementsAttr::get(tensorType, constantValue));
-            rewriter.create<AffineStoreOp>(loc, cv, alloc,
-                                           llvm::makeArrayRef(indices));
-            indices.push_back(rewriter.create<ConstantIndexOp>(loc, 0));
-            // Replace this operation with the generated alloc.
-            rewriter.replaceOp(op, alloc);
             return success();
         }
     };

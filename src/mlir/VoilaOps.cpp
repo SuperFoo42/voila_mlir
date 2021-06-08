@@ -104,6 +104,16 @@ void mlir::voila::ModOp::inferShapes()
 
 void mlir::voila::AndOp::inferShapes()
 {
+    //back propagate partially known shapes
+/*
+    const auto lhs_size = lhs().getType().dyn_cast<RankedTensorType>().getShape().front();
+    const auto rhs_size = lhs().getType().dyn_cast<RankedTensorType>().getShape().front();
+    if (rhs_size < 0 && lhs_size >= 0)
+        rhs().setType(RankedTensorType::get(lhs_size, IntegerType::get(lhs().getType().getContext(), 1)));
+    if (lhs_size < 0 && rhs_size >= 0)
+        lhs().setType(RankedTensorType::get(rhs_size, IntegerType::get(rhs().getType().getContext(), 1)));
+*/
+
     getResult().setType(lhs().getType());
 }
 

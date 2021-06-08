@@ -14,7 +14,7 @@ namespace voila::mlir
     static bool returnsDynamicShape(Operation *op)
     {
         return llvm::any_of(op->getResultTypes(),
-                            [](::mlir::Type resultType) { return !resultType.isa<RankedTensorType>(); });
+                            [](::mlir::Type resultType) { return !(resultType.isa<RankedTensorType>() && !resultType.dyn_cast<RankedTensorType>().hasStaticShape()); });
     }
 
     void ShapeInferencePass::runOnFunction()

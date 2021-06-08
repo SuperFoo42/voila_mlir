@@ -32,14 +32,14 @@ CPMAddPackage(
         DOWNLOAD_ONLY
 )
 
-    #execute_process(
-    #       COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True
-    #        WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
-    #)
-    #message(STATUS "build llvm")
-    #execute_process(
-    #        COMMAND ${CMAKE_COMMAND} --build ${llvm_BINARY_DIR}
-    #)
+execute_process(
+        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True
+        WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
+)
+message(STATUS "build llvm")
+execute_process(
+        COMMAND ${CMAKE_COMMAND} --build ${llvm_BINARY_DIR}
+)
 
 set(MLIR_DIR "${llvm_BINARY_DIR}/lib/cmake/mlir/")
 set(LLVM_EXTERNAL_LIT "${llvm_BINARY_DIR}/build/bin/llvm-lit")
@@ -97,7 +97,7 @@ find_package(BISON REQUIRED)
 CPMAddPackage(
         NAME reflex
         GITHUB_REPOSITORY Genivia/RE-flex
-        GIT_TAG v3.0.4
+        GIT_TAG v3.0.5
 )
 if (reflex_ADDED)
     execute_process(
@@ -107,7 +107,7 @@ if (reflex_ADDED)
     execute_process(COMMAND sh ./build.sh
             WORKING_DIRECTORY ${reflex_SOURCE_DIR}
             )
-    add_library(reflex INTERFACE IMPORTED)
+    add_library(reflex INTERFACE IMPORTED include/mlir/lowering/LogicalOpLowering.hpp)
     target_include_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/include")
     target_link_libraries(reflex INTERFACE "${reflex_SOURCE_DIR}/lib/libreflex.a")
 endif ()
