@@ -51,7 +51,7 @@ void voila::mlir::lowering::VoilaToAffineLoweringPass::runOnFunction()
     // operations were not converted successfully.
     if (failed(applyPartialConversion(getFunction(), target, std::move(patterns))))
         signalPassFailure();
-    function->dump();
+    //function->dump();
 }
 
 /// Create a pass for lowering operations in the `Affine` and `Std` dialects.

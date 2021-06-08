@@ -14,6 +14,7 @@
 #include "mlir/ShapeInferencePass.hpp"
 #include "mlir/VoilaDialect.h"
 #include "mlir/lowering/VoilaToAffineLoweringPass.hpp"
+#include "mlir/lowering/VoilaToLLVMLoweringPass.hpp"
 
 #include "llvm/Support/ToolOutputFile.h"
 
@@ -26,21 +27,21 @@
 #include <fmt/core.h>
 #include <fstream>
 
-voila::Program parse(const std::string &file)
+::voila::Program parse(const std::string &file)
 {
     if (!std::filesystem::is_regular_file(std::filesystem::path(file)))
     {
         throw std::invalid_argument("invalid file");
     }
-    voila::Program prog;
+    ::voila::Program prog;
     std::ifstream fst(file, std::ios::in);
 
     if (fst.is_open())
     {
-        voila::lexer::Lexer lexer(fst); // read file, decode UTF-8/16/32 format
+        ::voila::lexer::Lexer lexer(fst); // read file, decode UTF-8/16/32 format
         lexer.filename = file;          // the filename to display with error locations
 
-        voila::parser::Parser parser(lexer, prog);
+        ::voila::parser::Parser parser(lexer, prog);
         if (parser() != 0)
             throw ParsingError();
     }
@@ -91,16 +92,16 @@ int main(int argc, char *argv[])
         {
             throw std::invalid_argument("invalid file");
         }
-        voila::Program prog;
-        voila::lexer::Lexer lexer;
+        ::voila::Program prog;
+        ::voila::lexer::Lexer lexer;
         std::ifstream fst(file, std::ios::in);
 
         if (fst.is_open())
         {
-            lexer = voila::lexer::Lexer(fst); // read file, decode UTF-8/16/32 format
+            lexer = ::voila::lexer::Lexer(fst); // read file, decode UTF-8/16/32 format
             lexer.filename = file;            // the filename to display with error locations
 
-            voila::parser::Parser parser(lexer, prog);
+            ::voila::parser::Parser parser(lexer, prog);
             if (parser() != 0)
                 throw ParsingError();
         }
@@ -121,7 +122,7 @@ int main(int argc, char *argv[])
         mlir::MLIRContext context;
         // Load our Dialect in this MLIR Context.
         context.getOrLoadDialect<mlir::voila::VoilaDialect>();
-        auto module = voila::MLIRGenerator::mlirGen(context, prog);
+        auto module = ::voila::MLIRGenerator::mlirGen(context, prog);
 
         if (!module)
             return EXIT_FAILURE;
@@ -139,15 +140,14 @@ int main(int argc, char *argv[])
         applyPassManagerCLOptions(pm);
         pm.addPass(mlir::createInlinerPass());
         ::mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
-
         // Now that there is only one function, we can infer the shapes of each of
         // the operations.
-        optPM.addPass(voila::mlir::createShapeInferencePass()); // TODO: more inference?
+        optPM.addPass(::voila::mlir::createShapeInferencePass()); // TODO: more inference?
         optPM.addPass(mlir::createCanonicalizerPass());
         optPM.addPass(mlir::createCSEPass());
 
         // Partially lower voila to affine with a few cleanups
-        optPM.addPass(voila::mlir::createLowerToAffinePass());
+        optPM.addPass(::voila::mlir::createLowerToAffinePass());
         optPM.addPass(mlir::createCanonicalizerPass());
         optPM.addPass(mlir::createCSEPass());
 
@@ -156,15 +156,21 @@ int main(int argc, char *argv[])
         optPM.addPass(mlir::createTensorBufferizePass());
         optPM.addPass(mlir::createStdBufferizePass());
         pm.addPass(mlir::createFuncBufferizePass());
-        optPM.addPass(mlir::createFinalizingBufferizePass());
+        //optPM.addPass(mlir::createFinalizingBufferizePass());
         if (cmd.count("O"))
         {
-             optPM.addPass(mlir::createLoopFusionPass());
-             optPM.addPass(mlir::createMemRefDataFlowOptPass());
+            optPM.addPass(mlir::createLoopFusionPass());
+            optPM.addPass(mlir::createMemRefDataFlowOptPass());
         }
-        if (mlir::failed(pm.run(*module)))
-            return EXIT_FAILURE;
 
+        pm.addPass(mlir::createLowerToLLVMPass());
+
+        if (mlir::failed(pm.run(*module)))
+        {
+            module->dump();
+            return EXIT_FAILURE;
+        }
+        module->dump();
         if (cmd.count("l"))
         {
             std::error_code ec;

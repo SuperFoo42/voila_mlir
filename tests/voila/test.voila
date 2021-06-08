@@ -9,7 +9,7 @@ main(y)
 {
     add(123, 456.0);
     f = foo(y);
-    y = and(f, false); #TODO: y is tensor and not lowered
+    y = and(f, false);
     select(42, y);
     z = foo(y);
     emit and(y,z);

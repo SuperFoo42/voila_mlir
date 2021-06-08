@@ -20,7 +20,8 @@ namespace voila::mlir
     void ShapeInferencePass::runOnFunction()
     {
         auto f = getFunction();
-
+        if (f.getName() != "main")
+            f->remove(); //all functions should be inlined and can be removed //FIXME: own pass, or can we force inlining pass to delete inlined functions
         // Populate the worklist with the operations that need shape inference:
         // these are operations that return a dynamic shape.
         ::mlir::Operation *emitOp = nullptr;
