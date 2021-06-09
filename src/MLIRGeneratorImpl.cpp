@@ -3,6 +3,8 @@
 #include "MlirGenerationException.hpp"
 #include "NotImplementedException.hpp"
 
+#include <mlir/IR/BuiltinTypes.h>
+
 namespace voila::mlir
 {
     using namespace ast;
@@ -55,8 +57,9 @@ namespace voila::mlir
             auto arg = visitor_gen(expr);
             operands.push_back(std::get<Value>(arg));
         }
-        //TODO: allow more than only a single return type
-        result = builder.create<::mlir::voila::GenericCallOp>(location, call.fun, operands, funcTable.at(call.fun).getType().getResult(0));
+        // TODO: allow more than only a single return type
+        result = builder.create<::mlir::voila::GenericCallOp>(location, call.fun, operands,
+                                                              funcTable.at(call.fun).getType().getResult(0));
     }
 
     void MLIRGeneratorImpl::operator()(const Assign &assign)
@@ -157,7 +160,8 @@ namespace voila::mlir
         auto lhs = std::get<Value>(visitor_gen(eq.lhs));
         auto rhs = std::get<Value>(visitor_gen(eq.rhs));
 
-        result = builder.create<::mlir::voila::EqOp>(location, ::mlir::RankedTensorType::get(-1,builder.getI1Type()), lhs, rhs);
+        result = builder.create<::mlir::voila::EqOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
+                                                     lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Neq &neq)
@@ -166,7 +170,8 @@ namespace voila::mlir
         auto lhs = std::get<Value>(visitor_gen(neq.lhs));
         auto rhs = std::get<Value>(visitor_gen(neq.rhs));
 
-        result = builder.create<::mlir::voila::NeqOp>(location, ::mlir::RankedTensorType::get(-1,builder.getI1Type()), lhs, rhs);
+        result = builder.create<::mlir::voila::NeqOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
+                                                      lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Le &le)
@@ -175,7 +180,8 @@ namespace voila::mlir
         auto lhs = std::get<Value>(visitor_gen(le.lhs));
         auto rhs = std::get<Value>(visitor_gen(le.rhs));
 
-        result = builder.create<::mlir::voila::LeOp>(location, ::mlir::RankedTensorType::get(-1,builder.getI1Type()), lhs, rhs);
+        result = builder.create<::mlir::voila::LeOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
+                                                     lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Ge &ge)
@@ -184,7 +190,8 @@ namespace voila::mlir
         auto lhs = std::get<Value>(visitor_gen(ge.lhs));
         auto rhs = std::get<Value>(visitor_gen(ge.rhs));
 
-        result = builder.create<::mlir::voila::GeOp>(location, ::mlir::RankedTensorType::get(-1,builder.getI1Type()), lhs, rhs);
+        result = builder.create<::mlir::voila::GeOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
+                                                     lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Leq &leq)
@@ -193,7 +200,8 @@ namespace voila::mlir
         auto lhs = std::get<Value>(visitor_gen(leq.lhs));
         auto rhs = std::get<Value>(visitor_gen(leq.rhs));
 
-        result = builder.create<::mlir::voila::LeqOp>(location, ::mlir::RankedTensorType::get(-1,builder.getI1Type()), lhs, rhs);
+        result = builder.create<::mlir::voila::LeqOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
+                                                      lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Geq &geq)
@@ -202,7 +210,8 @@ namespace voila::mlir
         auto lhs = std::get<Value>(visitor_gen(geq.lhs));
         auto rhs = std::get<Value>(visitor_gen(geq.rhs));
 
-        result = builder.create<::mlir::voila::GeqOp>(location, ::mlir::RankedTensorType::get(-1,builder.getI1Type()), lhs, rhs);
+        result = builder.create<::mlir::voila::GeqOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
+                                                      lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const And &anAnd)
@@ -210,7 +219,8 @@ namespace voila::mlir
         auto location = loc(anAnd.get_location());
         auto lhs = std::get<Value>(visitor_gen(anAnd.lhs));
         auto rhs = std::get<Value>(visitor_gen(anAnd.rhs));
-        result = builder.create<::mlir::voila::AndOp>(location, ::mlir::RankedTensorType::get(-1,builder.getI1Type()),lhs, rhs);
+        result = builder.create<::mlir::voila::AndOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
+                                                      lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Or &anOr)
@@ -218,7 +228,8 @@ namespace voila::mlir
         auto location = loc(anOr.get_location());
         auto lhs = std::get<Value>(visitor_gen(anOr.lhs));
         auto rhs = std::get<Value>(visitor_gen(anOr.rhs));
-        result = builder.create<::mlir::voila::OrOp>(location, ::mlir::RankedTensorType::get(-1,builder.getI1Type()),lhs, rhs);
+        result = builder.create<::mlir::voila::OrOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
+                                                     lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Not &aNot)
@@ -226,26 +237,27 @@ namespace voila::mlir
         auto location = loc(aNot.get_location());
         auto param = visitor_gen(aNot.param);
 
-        result = builder.create<::mlir::voila::NotOp>(location, ::mlir::RankedTensorType::get(-1,builder.getI1Type()),std::get<Value>(param));
+        result = builder.create<::mlir::voila::NotOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
+                                                      std::get<Value>(param));
     }
 
-    void MLIRGeneratorImpl::operator()(const IntConst &aConst)
+    void MLIRGeneratorImpl::operator()(const IntConst &intConst)
     {
         result = builder.create<::mlir::voila::IntConstOp>(
-            loc(aConst.get_location()), ::mlir::RankedTensorType::get(-1, builder.getI64Type()), aConst.val);
+            loc(intConst.get_location()), ::mlir::RankedTensorType::get(1, builder.getI64Type()), intConst.val);
     }
 
-    void MLIRGeneratorImpl::operator()(const BooleanConst &aConst)
+    void MLIRGeneratorImpl::operator()(const BooleanConst &booleanConst)
     {
         result = builder.create<::mlir::voila::BoolConstOp>(
-            loc(aConst.get_location()), ::mlir::RankedTensorType::get(-1, builder.getI1Type()), aConst.val);
+            loc(booleanConst.get_location()), ::mlir::RankedTensorType::get(1, builder.getI1Type()), booleanConst.val);
     }
 
-    void MLIRGeneratorImpl::operator()(const FltConst &aConst)
+    void MLIRGeneratorImpl::operator()(const FltConst &fltConst)
     {
-        result = builder.create<::mlir::voila::FltConstOp>(loc(aConst.get_location()),
-                                                           ::mlir::RankedTensorType::get(-1, builder.getF64Type()),
-                                                           builder.getF64FloatAttr(aConst.val));
+        result = builder.create<::mlir::voila::FltConstOp>(loc(fltConst.get_location()),
+                                                           ::mlir::RankedTensorType::get(1, builder.getF64Type()),
+                                                           builder.getF64FloatAttr(fltConst.val));
     }
 
     void MLIRGeneratorImpl::operator()(const StrConst &)
@@ -429,7 +441,7 @@ namespace voila::mlir
 
     MLIRGeneratorImpl::result_variant MLIRGeneratorImpl::visitor_gen(const Expression &node)
     {
-        auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable,inferer);
+        auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, inferer);
         node.visit(visitor);
         if (std::holds_alternative<std::monostate>(visitor.result))
             throw MLIRGenerationException();
@@ -438,7 +450,7 @@ namespace voila::mlir
 
     MLIRGeneratorImpl::result_variant MLIRGeneratorImpl::visitor_gen(const Statement &node)
     {
-        auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable,inferer);
+        auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, inferer);
         node.visit(visitor);
         if (std::holds_alternative<std::monostate>(visitor.result))
             throw MLIRGenerationException();

@@ -4,6 +4,7 @@
 #include "mlir/lowering/ComparisonOpLowering.hpp"
 #include "mlir/lowering/ConstOpLowering.hpp"
 #include "mlir/lowering/EmitOpLowering.hpp"
+#include "mlir/lowering/SelectOpLowering.hpp"
 #include "mlir/lowering/LogicalOpLowering.hpp"
 
 void voila::mlir::lowering::VoilaToAffineLoweringPass::runOnFunction()
@@ -44,14 +45,19 @@ void voila::mlir::lowering::VoilaToAffineLoweringPass::runOnFunction()
                  LeqIOpLowering, LeqFOpLowering, GeIOpLowering, GeFOpLowering, GeqIOpLowering, GeqFOpLowering>(
         &getContext());
 
-    patterns.add<EmitOpLowering>(&getContext());
+    patterns.add<EmitOpLowering>(&getContext(), function);
+    patterns.add<SelectOpLowering>(&getContext());
 
     // With the target and rewrite patterns defined, we can now attempt the
     // conversion. The conversion will signal failure if any of our `illegal`
     // operations were not converted successfully.
     if (failed(applyPartialConversion(getFunction(), target, std::move(patterns))))
         signalPassFailure();
-    //function->dump();
+
+    //match function return type after emit lowering
+    //FIXME: this is only a workaround, there must be a more clean way to achieve bufferization for function return
+    auto newType = FunctionType::get(&getContext(), function.getType().getInputs(), function.body().back().back().getOperandTypes());
+    function.setType(newType);
 }
 
 /// Create a pass for lowering operations in the `Affine` and `Std` dialects.

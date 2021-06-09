@@ -103,9 +103,9 @@ namespace voila::mlir
         void operator()(const And &anAnd) override;
         void operator()(const Or &anOr) override;
         void operator()(const Not &aNot) override;
-        void operator()(const IntConst &aConst) override;
-        void operator()(const BooleanConst &aConst) override;
-        void operator()(const FltConst &aConst) override;
+        void operator()(const IntConst &intConst) override;
+        void operator()(const BooleanConst &booleanConst) override;
+        void operator()(const FltConst &fltConst) override;
         void operator()(const StrConst &aConst) override;
         void operator()(const Read &read) override;
         void operator()(const Gather &gather) override;

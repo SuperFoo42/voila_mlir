@@ -13,7 +13,11 @@ namespace voila::mlir::lowering
 {
     struct EmitOpLowering : public OpRewritePattern<::mlir::voila::EmitOp>
     {
-        using OpRewritePattern<::mlir::voila::EmitOp>::OpRewritePattern;
+        FuncOp &function;
+
+        EmitOpLowering(MLIRContext *ctx, FuncOp &function) :
+            OpRewritePattern<::mlir::voila::EmitOp>(ctx), function{function} {}
+        //using OpRewritePattern<::mlir::voila::EmitOp>::OpRewritePattern;
 
         LogicalResult matchAndRewrite(::mlir::voila::EmitOp op, PatternRewriter &rewriter) const final
         {
@@ -22,18 +26,10 @@ namespace voila::mlir::lowering
             SmallVector<::mlir::Value> ops;
             for (auto o : op.getOperands())
             {
-                if (o.getType().isa<TensorType>())
-                {
-                    ops.push_back(rewriter.create<memref::TensorLoadOp>(op->getLoc(), o.getType(), o));
-                }
-                else
-                {
                     ops.push_back(o);
-                }
             }
 
             rewriter.replaceOpWithNewOp<::mlir::ReturnOp>(op, ops);
-
             return success();
         }
     };

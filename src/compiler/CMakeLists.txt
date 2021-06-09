@@ -15,6 +15,11 @@ set(LIBS
         MLIRIR
         MLIRParser
         MLIRTransforms
+        MLIRExecutionEngine
+        MLIRIR
+        MLIRLLVMIR
+        MLIRLLVMToLLVMIRTranslation
+        MLIRTargetLLVMIRExport
         voila_compiler
         cxxopts
         fmt

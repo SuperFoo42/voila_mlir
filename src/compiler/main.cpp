@@ -7,18 +7,30 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
-#include "mlir/IR/Dialect.h"
-#include "mlir/IR/MLIRContext.h"
-#include "mlir/InitAllDialects.h"
-#include "mlir/InitAllPasses.h"
-#include "mlir/ShapeInferencePass.hpp"
-#include "mlir/VoilaDialect.h"
-#include "mlir/lowering/VoilaToAffineLoweringPass.hpp"
-#include "mlir/lowering/VoilaToLLVMLoweringPass.hpp"
-
-#include "llvm/Support/ToolOutputFile.h"
+#include <mlir/IR/Dialect.h>
+#include <mlir/IR/MLIRContext.h>
+#include <mlir/InitAllDialects.h>
+#include <mlir/InitAllPasses.h>
+#include <mlir/ShapeInferencePass.hpp>
+#include <mlir/VoilaDialect.h>
+#include <mlir/lowering/VoilaToAffineLoweringPass.hpp>
+#include <mlir/lowering/VoilaToLLVMLoweringPass.hpp>
+#include <mlir/ExecutionEngine/ExecutionEngine.h>
+#include <mlir/ExecutionEngine/OptUtils.h>
+#include <mlir/IR/AsmState.h>
 
 #include <mlir/Pass/PassManager.h>
+
+#include <mlir/Pass/Pass.h>
+#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
+#include <mlir/Target/LLVMIR/Export.h>
+#include <mlir/Transforms/Passes.h>
+
+#include <llvm/IR/Module.h>
+#include <llvm/Support/ErrorOr.h>
+#include <llvm/Support/SourceMgr.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/raw_ostream.h>
 #pragma GCC diagnostic pop
 
 #include <cstdlib>
@@ -39,7 +51,7 @@
     if (fst.is_open())
     {
         ::voila::lexer::Lexer lexer(fst); // read file, decode UTF-8/16/32 format
-        lexer.filename = file;          // the filename to display with error locations
+        lexer.filename = file;            // the filename to display with error locations
 
         ::voila::parser::Parser parser(lexer, prog);
         if (parser() != 0)
@@ -99,7 +111,7 @@ int main(int argc, char *argv[])
         if (fst.is_open())
         {
             lexer = ::voila::lexer::Lexer(fst); // read file, decode UTF-8/16/32 format
-            lexer.filename = file;            // the filename to display with error locations
+            lexer.filename = file;              // the filename to display with error locations
 
             ::voila::parser::Parser parser(lexer, prog);
             if (parser() != 0)
@@ -156,26 +168,80 @@ int main(int argc, char *argv[])
         optPM.addPass(mlir::createTensorBufferizePass());
         optPM.addPass(mlir::createStdBufferizePass());
         pm.addPass(mlir::createFuncBufferizePass());
-        //optPM.addPass(mlir::createFinalizingBufferizePass());
-        if (cmd.count("O"))
-        {
-            optPM.addPass(mlir::createLoopFusionPass());
-            optPM.addPass(mlir::createMemRefDataFlowOptPass());
-        }
 
-        pm.addPass(mlir::createLowerToLLVMPass());
+        // optPM.addPass(mlir::createBufferDeallocationPass());
 
         if (mlir::failed(pm.run(*module)))
         {
             module->dump();
             return EXIT_FAILURE;
         }
-        module->dump();
+        else
+        {
+            module->dump();
+        }
+        // FIXME: properly apply passes
+        ::mlir::PassManager secondpm(&context);
+        // Apply any generic pass manager command line options and run the pipeline.
+        applyPassManagerCLOptions(secondpm);
+        ::mlir::OpPassManager &secondOptPM = secondpm.nest<mlir::FuncOp>();
+        // optPM.addPass(mlir::createCanonicalizerPass());
+        // optPM.addPass(mlir::createCSEPass());
+
+        // optPM.addPass(mlir::createAffineLoopNormalizePass());
+        // optPM.addPass(mlir::createAffineLoopInvariantCodeMotionPass());
+        if (cmd.count("O"))
+        {
+            secondOptPM.addPass(mlir::createBufferHoistingPass());
+            secondOptPM.addPass(mlir::createMemRefDataFlowOptPass());
+            secondOptPM.addPass(mlir::createLoopFusionPass());
+            secondOptPM.addPass(mlir::createLoopCoalescingPass());
+            secondOptPM.addPass(mlir::createAffineParallelizePass());
+        }
+        secondOptPM.addPass(mlir::createFinalizingBufferizePass());
+        secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
+
+        if (mlir::failed(secondpm.run(*module)))
+        {
+            module->dump();
+            return EXIT_FAILURE;
+        }
+        else
+        {
+            module->dump();
+        }
+
+        //lower to llvm
+        mlir::registerLLVMDialectTranslation(*module->getContext());
+
+        // Convert the module to LLVM IR in a new LLVM IR context.
+        llvm::LLVMContext llvmContext;
+        auto llvmModule = mlir::translateModuleToLLVMIR(*module, llvmContext);
+        if (!llvmModule) {
+            llvm::errs() << "Failed to emit LLVM IR\n";
+            return -1;
+        }
+
+        // Initialize LLVM targets.
+        llvm::InitializeNativeTarget();
+        llvm::InitializeNativeTargetAsmPrinter();
+        mlir::ExecutionEngine::setupTargetTriple(llvmModule.get());
+
+        /// Optionally run an optimization pipeline over the llvm module.
+        auto optPipeline = mlir::makeOptimizingTransformer(
+            /*optLevel=*/cmd.count("O") ? 3 : 0, /*sizeLevel=*/0,
+            /*targetMachine=*/nullptr);
+        if (auto err = optPipeline(llvmModule.get())) {
+            llvm::errs() << "Failed to optimize LLVM IR " << err << "\n";
+            return -1;
+        }
+        llvm::errs() << *llvmModule << "\n";
+
         if (cmd.count("l"))
         {
             std::error_code ec;
-            llvm::raw_fd_ostream os(cmd["f"].as<std::string>() + ".lowered.mlir", ec, llvm::sys::fs::OF_None);
-            module->print(os);
+            llvm::raw_fd_ostream os(cmd["f"].as<std::string>() + ".llvm", ec, llvm::sys::fs::OF_None);
+            llvmModule->print(os, nullptr);
             os.flush();
         }
     }

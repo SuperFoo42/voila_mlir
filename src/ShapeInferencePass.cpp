@@ -1,4 +1,5 @@
 #include "mlir/ShapeInferencePass.hpp"
+#include <algorithm>
 namespace voila::mlir
 {
     using namespace ::mlir;
@@ -21,8 +22,11 @@ namespace voila::mlir
     {
         auto f = getFunction();
         if (f.getName() != "main")
-            f->remove(); //all functions should be inlined and can be removed //FIXME: own pass, or can we force inlining pass to delete inlined functions
-        // Populate the worklist with the operations that need shape inference:
+        {
+            f->remove(); // all functions should be inlined and can be removed //FIXME: own pass, or can we force inlining pass to delete inlined functions
+            return;
+        }
+            // Populate the worklist with the operations that need shape inference:
         // these are operations that return a dynamic shape.
         ::mlir::Operation *emitOp = nullptr;
         llvm::SmallPtrSet<mlir::Operation *, 16> opWorklist;
@@ -54,10 +58,8 @@ namespace voila::mlir
             {
                 shapeOp.inferShapes();
             }
-            else
-            {
+            else if (std::any_of(op->getOperandTypes().begin(),op->getOperandTypes().end(), [](Type t) -> auto {return !t.isa<RankedTensorType>() || !t.cast<TensorType>().hasStaticShape();}))
                 throw NotInferedException();
-            }
         }
 
         // If the operation worklist isn't empty, this indicates a failure.
