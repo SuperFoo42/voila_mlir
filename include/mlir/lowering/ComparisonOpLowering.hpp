@@ -13,47 +13,44 @@
 
 namespace voila::mlir::lowering
 {
-    using namespace ::mlir;
-    using namespace ::mlir::voila;
-
-    using LoopIterationFn = function_ref<Value(OpBuilder &rewriter, ValueRange memRefOperands, ValueRange loopIvs)>;
+    using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs)>;
 
     template<typename CmpOp, typename LoweredBinaryOp>
-    class ComparisonOpLowering : public ConversionPattern
+    class ComparisonOpLowering : public ::mlir::ConversionPattern
     {
         static constexpr auto getCmpPred()
         {
-            if constexpr (std::is_same_v<LoweredBinaryOp, CmpIOp>)
+            if constexpr (std::is_same_v<LoweredBinaryOp, ::mlir::CmpIOp>)
             {
-                if constexpr (std::is_same_v<CmpOp, EqOp>)
-                    return CmpIPredicate::eq;
-                else if constexpr (std::is_same_v<CmpOp, NeqOp>)
-                    return CmpIPredicate::ne;
-                else if constexpr (std::is_same_v<CmpOp, LeOp>)
-                    return CmpIPredicate::slt;
-                else if constexpr (std::is_same_v<CmpOp, LeqOp>)
-                    return CmpIPredicate::sle;
-                else if constexpr (std::is_same_v<CmpOp, GeqOp>)
-                    return CmpIPredicate::sge;
-                else if constexpr (std::is_same_v<CmpOp, GeOp>)
-                    return CmpIPredicate::sgt;
+                if constexpr (std::is_same_v<CmpOp, ::mlir::voila::EqOp>)
+                    return ::mlir::CmpIPredicate::eq;
+                else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::NeqOp>)
+                    return ::mlir::CmpIPredicate::ne;
+                else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeOp>)
+                    return ::mlir::CmpIPredicate::slt;
+                else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeqOp>)
+                    return ::mlir::CmpIPredicate::sle;
+                else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeqOp>)
+                    return ::mlir::CmpIPredicate::sge;
+                else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeOp>)
+                    return ::mlir::CmpIPredicate::sgt;
                 else
                     throw std::logic_error("Sth. went wrong");
             }
-            else if constexpr (std::is_same_v<LoweredBinaryOp, CmpFOp>)
+            else if constexpr (std::is_same_v<LoweredBinaryOp, ::mlir::CmpFOp>)
             {
-                if constexpr (std::is_same_v<CmpOp, EqOp>)
-                    return CmpFPredicate::OEQ;
-                else if constexpr (std::is_same_v<CmpOp, NeqOp>)
-                    return CmpFPredicate::ONE;
-                else if constexpr (std::is_same_v<CmpOp, LeOp>)
-                    return CmpFPredicate::OLT;
-                else if constexpr (std::is_same_v<CmpOp, LeqOp>)
-                    return CmpFPredicate::OLE;
-                else if constexpr (std::is_same_v<CmpOp, GeqOp>)
-                    return CmpFPredicate::OGE;
-                else if constexpr (std::is_same_v<CmpOp, GeOp>)
-                    return CmpFPredicate::OGT;
+                if constexpr (std::is_same_v<CmpOp, ::mlir::voila::EqOp>)
+                    return ::mlir::CmpFPredicate::OEQ;
+                else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::NeqOp>)
+                    return ::mlir::CmpFPredicate::ONE;
+                else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeOp>)
+                    return ::mlir::CmpFPredicate::OLT;
+                else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeqOp>)
+                    return ::mlir::CmpFPredicate::OLE;
+                else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeqOp>)
+                    return ::mlir::CmpFPredicate::OGE;
+                else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeOp>)
+                    return ::mlir::CmpFPredicate::OGT;
                 else
                     throw std::logic_error("Sth. went wrong");
             }
@@ -62,18 +59,18 @@ namespace voila::mlir::lowering
         }
 
         /// Convert the given TensorType into the corresponding MemRefType.
-        static MemRefType convertTensorToMemRef(TensorType type)
+        static ::mlir::MemRefType convertTensorToMemRef(::mlir::TensorType type)
         {
             assert(type.hasRank() && "expected only ranked shapes");
-            return MemRefType::get(type.getShape(), type.getElementType());
+            return ::mlir::MemRefType::get(type.getShape(), type.getElementType());
         }
 
         /// Insert an allocation and deallocation for the given MemRefType.
-        static Value insertAllocAndDealloc(MemRefType type, Location loc, PatternRewriter &rewriter)
+        static ::mlir::Value insertAllocAndDealloc(::mlir::MemRefType type, ::mlir::Location loc, ::mlir::PatternRewriter &rewriter)
         {
             // TODO: get dynamic size of memref
-            auto allocSize = rewriter.template create<ConstantIndexOp>(loc, 0);
-            auto alloc = rewriter.create<memref::AllocOp>(loc, type, Value(allocSize));
+            auto allocSize = rewriter.template create<::mlir::ConstantIndexOp>(loc, 0);
+            auto alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type, ::mlir::Value(allocSize));
 
             // Make sure to allocate at the beginning of the block.
             auto *parentBlock = alloc->getBlock();
@@ -81,7 +78,7 @@ namespace voila::mlir::lowering
             allocSize->moveBefore(alloc);
             // Make sure to deallocate this alloc at the end of the block. This should be fine
             // as voila functions have no control flow.
-            auto dealloc = rewriter.create<memref::DeallocOp>(loc, alloc);
+            auto dealloc = rewriter.create<::mlir::memref::DeallocOp>(loc, alloc);
             dealloc->moveBefore(&parentBlock->back());
             return alloc;
         }
@@ -92,9 +89,9 @@ namespace voila::mlir::lowering
         /// induction variables for the iteration. It returns a value to store at the
         /// current index of the iteration.
         static void
-        lowerOpToLoops(Operation *op, ValueRange operands, PatternRewriter &rewriter, LoopIterationFn processIteration)
+        lowerOpToLoops(::mlir::Operation *op, ::mlir::ValueRange operands, ::mlir::PatternRewriter &rewriter, LoopIterationFn processIteration)
         {
-            auto tensorType = (*op->result_type_begin()).template dyn_cast<TensorType>();
+            auto tensorType = (*op->result_type_begin()).template dyn_cast<::mlir::TensorType>();
             auto loc = op->getLoc();
 
             // Insert an allocation and deallocation for the result of this operation.
@@ -109,13 +106,13 @@ namespace voila::mlir::lowering
             llvm::SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), 0);
             llvm::SmallVector<int64_t, 4> steps(tensorType.getRank(), 1);
             buildAffineLoopNest(rewriter, loc, lowerBounds, tensorType.getShape(), steps,
-                                [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs)
+                                [&](::mlir::OpBuilder &nestedBuilder, ::mlir::Location loc, ::mlir::ValueRange ivs)
                                 {
                                     // Call the processing function with the rewriter, the memref operands,
                                     // and the loop induction variables. This function will return the value
                                     // to store at the current index.
-                                    Value valueToStore = processIteration(nestedBuilder, operands, ivs);
-                                    nestedBuilder.create<AffineStoreOp>(loc, valueToStore, alloc, ivs);
+                                  ::mlir::Value valueToStore = processIteration(nestedBuilder, operands, ivs);
+                                    nestedBuilder.create<::mlir::AffineStoreOp>(loc, valueToStore, alloc, ivs);
                                 });
 
             // Replace this operation with the generated alloc.
@@ -123,43 +120,43 @@ namespace voila::mlir::lowering
         }
 
       public:
-        explicit ComparisonOpLowering(MLIRContext *ctx) : ConversionPattern(CmpOp::getOperationName(), 1, ctx) {}
+        explicit ComparisonOpLowering(::mlir::MLIRContext *ctx) : ConversionPattern(CmpOp::getOperationName(), 1, ctx) {}
 
-        LogicalResult
-        matchAndRewrite(Operation *op, llvm::ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const final
+        ::mlir::LogicalResult
+        matchAndRewrite(::mlir::Operation *op, llvm::ArrayRef<::mlir::Value> operands, ::mlir::ConversionPatternRewriter &rewriter) const final
         {
             auto loc = op->getLoc();
             lowerOpToLoops(
                 op, operands, rewriter,
-                [loc](OpBuilder &builder, ValueRange memRefOperands, ValueRange loopIvs)
+                [loc](::mlir::OpBuilder &builder, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs)
                 {
                     // Generate an adaptor for the remapped operands of the BinaryOp. This
                     // allows for using the nice named accessors that are generated by the
                     // ODS.
                     typename CmpOp::Adaptor binaryAdaptor(memRefOperands);
 
-                    if (binaryAdaptor.lhs().getType().template isa<MemRefType>() &&
-                        binaryAdaptor.rhs().getType().template isa<MemRefType>())
+                    if (binaryAdaptor.lhs().getType().template isa<::mlir::MemRefType>() &&
+                        binaryAdaptor.rhs().getType().template isa<::mlir::MemRefType>())
                     {
                         // Generate loads for the element of 'lhs' and 'rhs' at the inner
                         // loop.
-                        auto loadedLhs = builder.create<AffineLoadOp>(loc, binaryAdaptor.lhs(), loopIvs);
-                        auto loadedRhs = builder.create<AffineLoadOp>(loc, binaryAdaptor.rhs(), loopIvs);
+                        auto loadedLhs = builder.create<::mlir::AffineLoadOp>(loc, binaryAdaptor.lhs(), loopIvs);
+                        auto loadedRhs = builder.create<::mlir::AffineLoadOp>(loc, binaryAdaptor.rhs(), loopIvs);
 
                         // Create the binary operation performed on the loaded values.
 
                         return builder.create<LoweredBinaryOp>(loc, getCmpPred(), loadedLhs, loadedRhs);
                     }
-                    else if (binaryAdaptor.lhs().getType().template isa<MemRefType>())
+                    else if (binaryAdaptor.lhs().getType().template isa<::mlir::MemRefType>())
                     {
-                        auto loadedLhs = builder.create<AffineLoadOp>(loc, binaryAdaptor.lhs(), loopIvs);
+                        auto loadedLhs = builder.create<::mlir::AffineLoadOp>(loc, binaryAdaptor.lhs(), loopIvs);
                         // Create the binary operation performed on the loaded values.
 
                         return builder.create<LoweredBinaryOp>(loc, getCmpPred(), loadedLhs, binaryAdaptor.rhs());
                     }
-                    else if (binaryAdaptor.rhs().getType().template isa<MemRefType>())
+                    else if (binaryAdaptor.rhs().getType().template isa<::mlir::MemRefType>())
                     {
-                        auto loadedRhs = builder.create<AffineLoadOp>(loc, binaryAdaptor.rhs(), loopIvs);
+                        auto loadedRhs = builder.create<::mlir::AffineLoadOp>(loc, binaryAdaptor.rhs(), loopIvs);
 
                         // Create the binary operation performed on the loaded values.
 
@@ -173,21 +170,21 @@ namespace voila::mlir::lowering
                                                                binaryAdaptor.rhs());
                     }
                 });
-            return success();
+            return ::mlir::success();
         }
     };
 
-    using EqIOpLowering = ComparisonOpLowering<EqOp, ::mlir::CmpIOp>;
-    using NeqIOpLowering = ComparisonOpLowering<NeqOp, ::mlir::CmpIOp>;
-    using LeIOpLowering = ComparisonOpLowering<LeOp, ::mlir::CmpIOp>;
-    using LeqIOpLowering = ComparisonOpLowering<LeqOp, ::mlir::CmpIOp>;
-    using GeIOpLowering = ComparisonOpLowering<GeOp, ::mlir::CmpIOp>;
-    using GeqIOpLowering = ComparisonOpLowering<GeqOp, ::mlir::CmpIOp>;
+    using EqIOpLowering = ComparisonOpLowering<::mlir::voila::EqOp, ::mlir::CmpIOp>;
+    using NeqIOpLowering = ComparisonOpLowering<::mlir::voila::NeqOp, ::mlir::CmpIOp>;
+    using LeIOpLowering = ComparisonOpLowering<::mlir::voila::LeOp, ::mlir::CmpIOp>;
+    using LeqIOpLowering = ComparisonOpLowering<::mlir::voila::LeqOp, ::mlir::CmpIOp>;
+    using GeIOpLowering = ComparisonOpLowering<::mlir::voila::GeOp, ::mlir::CmpIOp>;
+    using GeqIOpLowering = ComparisonOpLowering<::mlir::voila::GeqOp, ::mlir::CmpIOp>;
 
-    using EqFOpLowering = ComparisonOpLowering<EqOp, ::mlir::CmpFOp>;
-    using NeqFOpLowering = ComparisonOpLowering<NeqOp, ::mlir::CmpFOp>;
-    using LeFOpLowering = ComparisonOpLowering<LeOp, ::mlir::CmpFOp>;
-    using LeqFOpLowering = ComparisonOpLowering<LeqOp, ::mlir::CmpFOp>;
-    using GeFOpLowering = ComparisonOpLowering<GeOp, ::mlir::CmpFOp>;
-    using GeqFOpLowering = ComparisonOpLowering<GeqOp, ::mlir::CmpFOp>;
+    using EqFOpLowering = ComparisonOpLowering<::mlir::voila::EqOp, ::mlir::CmpFOp>;
+    using NeqFOpLowering = ComparisonOpLowering<::mlir::voila::NeqOp, ::mlir::CmpFOp>;
+    using LeFOpLowering = ComparisonOpLowering<::mlir::voila::LeOp, ::mlir::CmpFOp>;
+    using LeqFOpLowering = ComparisonOpLowering<::mlir::voila::LeqOp, ::mlir::CmpFOp>;
+    using GeFOpLowering = ComparisonOpLowering<::mlir::voila::GeOp, ::mlir::CmpFOp>;
+    using GeqFOpLowering = ComparisonOpLowering<::mlir::voila::GeqOp, ::mlir::CmpFOp>;
 } // namespace voila::mlir::lowering

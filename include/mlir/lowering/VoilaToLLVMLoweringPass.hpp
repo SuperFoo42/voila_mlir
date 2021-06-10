@@ -14,15 +14,13 @@
 
 #include "llvm/ADT/Sequence.h"
 
-using namespace mlir;
-
 namespace voila::mlir::lowering
 {
-    struct VoilaToLLVMLoweringPass : public PassWrapper<VoilaToLLVMLoweringPass, OperationPass<ModuleOp>>
+    struct VoilaToLLVMLoweringPass : public ::mlir::PassWrapper<VoilaToLLVMLoweringPass, ::mlir::OperationPass<::mlir::ModuleOp>>
     {
-        void getDependentDialects(DialectRegistry &registry) const override
+        void getDependentDialects(::mlir::DialectRegistry &registry) const override
         {
-            registry.insert<LLVM::LLVMDialect, scf::SCFDialect>();
+            registry.insert<::mlir::LLVM::LLVMDialect, ::mlir::scf::SCFDialect>();
         }
         void runOnOperation() final;
     };

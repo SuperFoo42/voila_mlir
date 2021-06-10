@@ -7,7 +7,10 @@
 #include "mlir/lowering/SelectOpLowering.hpp"
 #include "mlir/lowering/LogicalOpLowering.hpp"
 
-void voila::mlir::lowering::VoilaToAffineLoweringPass::runOnFunction()
+using namespace mlir;
+using namespace ::voila::mlir;
+using namespace ::voila::mlir::lowering;
+void VoilaToAffineLoweringPass::runOnFunction()
 {
     auto function = getFunction();
 
@@ -60,8 +63,11 @@ void voila::mlir::lowering::VoilaToAffineLoweringPass::runOnFunction()
     function.setType(newType);
 }
 
-/// Create a pass for lowering operations in the `Affine` and `Std` dialects.
-std::unique_ptr<::mlir::Pass> voila::mlir::createLowerToAffinePass()
+namespace voila::mlir
 {
-    return std::make_unique<voila::mlir::lowering::VoilaToAffineLoweringPass>();
-}
+    /// Create a pass for lowering operations in the `Affine` and `Std` dialects.
+    std::unique_ptr<Pass> createLowerToAffinePass()
+    {
+        return std::make_unique<VoilaToAffineLoweringPass>();
+    }
+} // namespace ::voila::mlir

@@ -12,44 +12,41 @@
 
 namespace voila::mlir::lowering
 {
-    using namespace ::mlir;
-    using namespace ::mlir::voila;
-
     template<class ConstOp>
-    class ConstOpLowering : public OpRewritePattern<ConstOp>
+    class ConstOpLowering : public ::mlir::OpRewritePattern<ConstOp>
     {
       public:
-        using OpRewritePattern<ConstOp>::OpRewritePattern;
+        using ::mlir::OpRewritePattern<ConstOp>::OpRewritePattern;
 
-        LogicalResult matchAndRewrite(ConstOp op, PatternRewriter &rewriter) const final
+        ::mlir::LogicalResult matchAndRewrite(ConstOp op, ::mlir::PatternRewriter &rewriter) const final
         {
             auto constantValue = op.value();
 
-            Attribute valAttr;
-            if constexpr (std::is_same_v<ConstOp, IntConstOp>)
+            ::mlir::Attribute valAttr;
+            if constexpr (std::is_same_v<ConstOp, ::mlir::voila::IntConstOp>)
             {
                 valAttr = rewriter.getI64IntegerAttr(constantValue);
             }
-            else if constexpr (std::is_same_v<ConstOp, FltConstOp>)
+            else if constexpr (std::is_same_v<ConstOp, ::mlir::voila::FltConstOp>)
             {
                 valAttr = rewriter.getF64FloatAttr(constantValue.convertToDouble());
             }
-            else if constexpr (std::is_same_v<ConstOp, BoolConstOp>)
+            else if constexpr (std::is_same_v<ConstOp, ::mlir::voila::BoolConstOp>)
             {
-                valAttr = IntegerAttr::get(rewriter.getI1Type(), constantValue);
+                valAttr = ::mlir::IntegerAttr::get(rewriter.getI1Type(), constantValue);
             }
             else
             {
-                return failure();
+                return ::mlir::failure();
             }
 
-            rewriter.template replaceOpWithNewOp<ConstantOp>(op,valAttr);
+            rewriter.template replaceOpWithNewOp<::mlir::ConstantOp>(op,valAttr);
 
-            return success();
+            return ::mlir::success();
         }
     };
 
-    using IntConstOpLowering = ConstOpLowering<IntConstOp>;
-    using FltConstOpLowering = ConstOpLowering<FltConstOp>;
-    using BoolConstOpLowering = ConstOpLowering<BoolConstOp>;
+    using IntConstOpLowering = ConstOpLowering<::mlir::voila::IntConstOp>;
+    using FltConstOpLowering = ConstOpLowering<::mlir::voila::FltConstOp>;
+    using BoolConstOpLowering = ConstOpLowering<::mlir::voila::BoolConstOp>;
 } // namespace voila::mlir::lowering

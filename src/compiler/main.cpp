@@ -38,14 +38,16 @@
 #include <filesystem>
 #include <fmt/core.h>
 #include <fstream>
+#include "MLIRGenerationError.hpp"
 
-::voila::Program parse(const std::string &file)
+//TODO: throwing away the lexer/parser leads to deletion of locations and subsequently lookup of invalid memory
+std::unique_ptr<::voila::Program> parse(const std::string &file)
 {
     if (!std::filesystem::is_regular_file(std::filesystem::path(file)))
     {
         throw std::invalid_argument("invalid file");
     }
-    ::voila::Program prog;
+    auto prog = std::make_unique<::voila::Program>();
     std::ifstream fst(file, std::ios::in);
 
     if (fst.is_open())
@@ -53,9 +55,9 @@
         ::voila::lexer::Lexer lexer(fst); // read file, decode UTF-8/16/32 format
         lexer.filename = file;            // the filename to display with error locations
 
-        ::voila::parser::Parser parser(lexer, prog);
+        ::voila::parser::Parser parser(lexer, *prog);
         if (parser() != 0)
-            throw ParsingError();
+            throw ::voila::ParsingError();
     }
     else
     {
@@ -87,7 +89,11 @@ int main(int argc, char *argv[])
                                                                          "false")) ("l, dump-lowered",
                                                                                     "Dump lowered mlir",
                                                                                     cxxopts::value<bool>()
-                                                                                        ->default_value("false"));
+                                                                                        ->default_value("false"))
+                                                                                            ("j, jit",
+                                                                                             "jit compile and run code",
+                                                                                             cxxopts::value<bool>()
+                                                                                                 ->default_value("false"));
 
     try
     {
@@ -104,7 +110,7 @@ int main(int argc, char *argv[])
         {
             throw std::invalid_argument("invalid file");
         }
-        ::voila::Program prog;
+        auto prog = std::make_unique<::voila::Program>();
         ::voila::lexer::Lexer lexer;
         std::ifstream fst(file, std::ios::in);
 
@@ -113,9 +119,9 @@ int main(int argc, char *argv[])
             lexer = ::voila::lexer::Lexer(fst); // read file, decode UTF-8/16/32 format
             lexer.filename = file;              // the filename to display with error locations
 
-            ::voila::parser::Parser parser(lexer, prog);
+            ::voila::parser::Parser parser(lexer, *prog);
             if (parser() != 0)
-                throw ParsingError();
+                throw ::voila::ParsingError();
         }
         else
         {
@@ -124,125 +130,39 @@ int main(int argc, char *argv[])
 
         if (cmd.count("a"))
         {
-            prog.to_dot(cmd["f"].as<std::string>());
+            prog->to_dot(cmd["f"].as<std::string>());
         }
 
         // TODO:
-        prog.set_main_args_shape(std::unordered_map<std::string, size_t>(
+        prog->set_main_args_shape(std::unordered_map<std::string, size_t>(
             {std::pair<std::string, size_t>("x", 1), std::pair<std::string, size_t>("y", 1)}));
 
-        mlir::MLIRContext context;
-        // Load our Dialect in this MLIR Context.
-        context.getOrLoadDialect<mlir::voila::VoilaDialect>();
-        auto module = ::voila::MLIRGenerator::mlirGen(context, prog);
-
-        if (!module)
-            return EXIT_FAILURE;
+        //generate mlir
+        prog->generateMLIR();
 
         if (cmd.count("d"))
         {
-            std::error_code ec;
-            llvm::raw_fd_ostream os(cmd["f"].as<std::string>() + ".mlir", ec, llvm::sys::fs::OF_None);
-            module->print(os);
-            os.flush();
+            prog->printMLIR(cmd["f"].as<std::string>());
         }
 
-        ::mlir::PassManager pm(&context);
-        // Apply any generic pass manager command line options and run the pipeline.
-        applyPassManagerCLOptions(pm);
-        pm.addPass(mlir::createInlinerPass());
-        ::mlir::OpPassManager &optPM = pm.nest<mlir::FuncOp>();
-        // Now that there is only one function, we can infer the shapes of each of
-        // the operations.
-        optPM.addPass(::voila::mlir::createShapeInferencePass()); // TODO: more inference?
-        optPM.addPass(mlir::createCanonicalizerPass());
-        optPM.addPass(mlir::createCSEPass());
-
-        // Partially lower voila to affine with a few cleanups
-        optPM.addPass(::voila::mlir::createLowerToAffinePass());
-        optPM.addPass(mlir::createCanonicalizerPass());
-        optPM.addPass(mlir::createCSEPass());
-
-        // bufferization passes
-        pm.addPass(mlir::createTensorConstantBufferizePass());
-        optPM.addPass(mlir::createTensorBufferizePass());
-        optPM.addPass(mlir::createStdBufferizePass());
-        pm.addPass(mlir::createFuncBufferizePass());
-
-        // optPM.addPass(mlir::createBufferDeallocationPass());
-
-        if (mlir::failed(pm.run(*module)))
-        {
-            module->dump();
-            return EXIT_FAILURE;
-        }
-        else
-        {
-            module->dump();
-        }
-        // FIXME: properly apply passes
-        ::mlir::PassManager secondpm(&context);
-        // Apply any generic pass manager command line options and run the pipeline.
-        applyPassManagerCLOptions(secondpm);
-        ::mlir::OpPassManager &secondOptPM = secondpm.nest<mlir::FuncOp>();
-        // optPM.addPass(mlir::createCanonicalizerPass());
-        // optPM.addPass(mlir::createCSEPass());
-
-        // optPM.addPass(mlir::createAffineLoopNormalizePass());
-        // optPM.addPass(mlir::createAffineLoopInvariantCodeMotionPass());
-        if (cmd.count("O"))
-        {
-            secondOptPM.addPass(mlir::createBufferHoistingPass());
-            secondOptPM.addPass(mlir::createMemRefDataFlowOptPass());
-            secondOptPM.addPass(mlir::createLoopFusionPass());
-            secondOptPM.addPass(mlir::createLoopCoalescingPass());
-            secondOptPM.addPass(mlir::createAffineParallelizePass());
-        }
-        secondOptPM.addPass(mlir::createFinalizingBufferizePass());
-        secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
-
-        if (mlir::failed(secondpm.run(*module)))
-        {
-            module->dump();
-            return EXIT_FAILURE;
-        }
-        else
-        {
-            module->dump();
-        }
+        //lower mlir
+        prog->lowerMLIR(cmd.count("O"));
 
         //lower to llvm
-        mlir::registerLLVMDialectTranslation(*module->getContext());
-
-        // Convert the module to LLVM IR in a new LLVM IR context.
-        llvm::LLVMContext llvmContext;
-        auto llvmModule = mlir::translateModuleToLLVMIR(*module, llvmContext);
-        if (!llvmModule) {
-            llvm::errs() << "Failed to emit LLVM IR\n";
-            return -1;
-        }
-
-        // Initialize LLVM targets.
-        llvm::InitializeNativeTarget();
-        llvm::InitializeNativeTargetAsmPrinter();
-        mlir::ExecutionEngine::setupTargetTriple(llvmModule.get());
-
-        /// Optionally run an optimization pipeline over the llvm module.
-        auto optPipeline = mlir::makeOptimizingTransformer(
-            /*optLevel=*/cmd.count("O") ? 3 : 0, /*sizeLevel=*/0,
-            /*targetMachine=*/nullptr);
-        if (auto err = optPipeline(llvmModule.get())) {
-            llvm::errs() << "Failed to optimize LLVM IR " << err << "\n";
-            return -1;
-        }
-        llvm::errs() << *llvmModule << "\n";
+        prog->convertToLLVM(cmd.count("O"));
 
         if (cmd.count("l"))
         {
-            std::error_code ec;
-            llvm::raw_fd_ostream os(cmd["f"].as<std::string>() + ".llvm", ec, llvm::sys::fs::OF_None);
-            llvmModule->print(os, nullptr);
-            os.flush();
+            prog->printLLVM(cmd["f"].as<std::string>());
+        }
+
+        //run in jit
+        if (cmd.count("r"))
+        {
+            //TODO: replace dummy buffer
+            auto *arg = new uint64_t[4];
+            prog->runJIT(arg, cmd.count("O"));
+            delete[] arg;
         }
     }
     catch (const cxxopts::OptionException &e)

@@ -15,9 +15,7 @@
 
 namespace voila::mlir
 {
-    using namespace ::mlir;
-
-    class ShapeInferencePass : public PassWrapper<ShapeInferencePass, FunctionPass>
+    class ShapeInferencePass : public ::mlir::PassWrapper<ShapeInferencePass, ::mlir::FunctionPass>
     {
 
 

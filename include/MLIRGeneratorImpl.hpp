@@ -23,7 +23,7 @@
 #pragma GCC diagnostic pop
 namespace voila::mlir
 {
-    class MLIRGeneratorImpl : public ASTVisitor
+    class MLIRGeneratorImpl : public ast::ASTVisitor
     {
         ::mlir::OpBuilder &builder;
         ::mlir::ModuleOp &module;
@@ -39,9 +39,9 @@ namespace voila::mlir
         result_variant result;
 
         // helper functions to map ast types to mlir
-        ::mlir::Location loc(Location loc);
+        ::mlir::Location loc(ast::Location loc);
 
-        ::mlir::Type getType(const ASTNode &node);
+        ::mlir::Type getType(const ast::ASTNode &node);
 
         // TODO: implement
         ::mlir::Type convert(const Type &t);
@@ -51,15 +51,15 @@ namespace voila::mlir
         {
             (void) module;
             if (symbolTable.count(var))
-                throw VariableAlreadyDeclaredException();
+                throw ast::VariableAlreadyDeclaredException();
             symbolTable.insert(var, value);
         }
 
-        void mlirGenBody(const std::vector<Statement> &block);
+        void mlirGenBody(const std::vector<ast::Statement> &block);
 
-        result_variant visitor_gen(const Statement &node);
+        result_variant visitor_gen(const ast::Statement &node);
 
-        result_variant visitor_gen(const Expression &node);
+        result_variant visitor_gen(const ast::Expression &node);
 
       public:
         MLIRGeneratorImpl(::mlir::OpBuilder &builder,
@@ -77,44 +77,44 @@ namespace voila::mlir
             return result;
         }
 
-        void operator()(const AggrSum &sum) override;
-        void operator()(const AggrCnt &cnt) override;
-        void operator()(const AggrMin &min) override;
-        void operator()(const AggrMax &max) override;
-        void operator()(const AggrAvg &avg) override;
-        void operator()(const Write &write) override;
-        void operator()(const Scatter &scatter) override;
-        void operator()(const FunctionCall &call) override;
-        void operator()(const Assign &assign) override;
-        void operator()(const Emit &emit) override;
-        void operator()(const Loop &loop) override;
-        void operator()(const StatementWrapper &wrapper) override;
-        void operator()(const Add &add) override;
-        void operator()(const Sub &sub) override;
-        void operator()(const Mul &mul) override;
-        void operator()(const Div &div) override;
-        void operator()(const Mod &mod) override;
-        void operator()(const Eq &eq) override;
-        void operator()(const Neq &neq) override;
-        void operator()(const Le &le) override;
-        void operator()(const Ge &ge) override;
-        void operator()(const Leq &leq) override;
-        void operator()(const Geq &geq) override;
-        void operator()(const And &anAnd) override;
-        void operator()(const Or &anOr) override;
-        void operator()(const Not &aNot) override;
-        void operator()(const IntConst &intConst) override;
-        void operator()(const BooleanConst &booleanConst) override;
-        void operator()(const FltConst &fltConst) override;
-        void operator()(const StrConst &aConst) override;
-        void operator()(const Read &read) override;
-        void operator()(const Gather &gather) override;
-        void operator()(const Ref &param) override;
-        void operator()(const TupleGet &get) override;
-        void operator()(const TupleCreate &create) override;
-        void operator()(const Fun &fun) override;
-        void operator()(const Main &main) override;
-        void operator()(const Selection &selection) override;
-        void operator()(const Variable &variable) override;
+        void operator()(const ast::AggrSum &sum) override;
+        void operator()(const ast::AggrCnt &cnt) override;
+        void operator()(const ast::AggrMin &min) override;
+        void operator()(const ast::AggrMax &max) override;
+        void operator()(const ast::AggrAvg &avg) override;
+        void operator()(const ast::Write &write) override;
+        void operator()(const ast::Scatter &scatter) override;
+        void operator()(const ast::FunctionCall &call) override;
+        void operator()(const ast::Assign &assign) override;
+        void operator()(const ast::Emit &emit) override;
+        void operator()(const ast::Loop &loop) override;
+        void operator()(const ast::StatementWrapper &wrapper) override;
+        void operator()(const ast::Add &add) override;
+        void operator()(const ast::Sub &sub) override;
+        void operator()(const ast::Mul &mul) override;
+        void operator()(const ast::Div &div) override;
+        void operator()(const ast::Mod &mod) override;
+        void operator()(const ast::Eq &eq) override;
+        void operator()(const ast::Neq &neq) override;
+        void operator()(const ast::Le &le) override;
+        void operator()(const ast::Ge &ge) override;
+        void operator()(const ast::Leq &leq) override;
+        void operator()(const ast::Geq &geq) override;
+        void operator()(const ast::And &anAnd) override;
+        void operator()(const ast::Or &anOr) override;
+        void operator()(const ast::Not &aNot) override;
+        void operator()(const ast::IntConst &intConst) override;
+        void operator()(const ast::BooleanConst &booleanConst) override;
+        void operator()(const ast::FltConst &fltConst) override;
+        void operator()(const ast::StrConst &aConst) override;
+        void operator()(const ast::Read &read) override;
+        void operator()(const ast::Gather &gather) override;
+        void operator()(const ast::Ref &param) override;
+        void operator()(const ast::TupleGet &get) override;
+        void operator()(const ast::TupleCreate &create) override;
+        void operator()(const ast::Fun &fun) override;
+        void operator()(const ast::Main &main) override;
+        void operator()(const ast::Selection &selection) override;
+        void operator()(const ast::Variable &variable) override;
     };
 } // namespace voila::mlir

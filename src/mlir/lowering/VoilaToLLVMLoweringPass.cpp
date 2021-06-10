@@ -18,7 +18,7 @@ namespace
 
 namespace voila::mlir::lowering
 {
-    using namespace mlir;
+    using namespace ::mlir;
         void VoilaToLLVMLoweringPass::runOnOperation()
     {
         // The first thing to define is the conversion target. This will define the

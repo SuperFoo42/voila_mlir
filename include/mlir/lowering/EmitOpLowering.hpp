@@ -11,26 +11,26 @@
 
 namespace voila::mlir::lowering
 {
-    struct EmitOpLowering : public OpRewritePattern<::mlir::voila::EmitOp>
+    struct EmitOpLowering : public ::mlir::OpRewritePattern<::mlir::voila::EmitOp>
     {
-        FuncOp &function;
+        ::mlir::FuncOp &function;
 
-        EmitOpLowering(MLIRContext *ctx, FuncOp &function) :
-            OpRewritePattern<::mlir::voila::EmitOp>(ctx), function{function} {}
+        EmitOpLowering(::mlir::MLIRContext *ctx, ::mlir::FuncOp &function) :
+            ::mlir::OpRewritePattern<::mlir::voila::EmitOp>(ctx), function{function} {}
         //using OpRewritePattern<::mlir::voila::EmitOp>::OpRewritePattern;
 
-        LogicalResult matchAndRewrite(::mlir::voila::EmitOp op, PatternRewriter &rewriter) const final
+        ::mlir::LogicalResult matchAndRewrite(::mlir::voila::EmitOp op, ::mlir::PatternRewriter &rewriter) const final
         {
             // lower to std::return
             // here we should only have to deal with the emit of the main function, since all other uses should have been inlined
-            SmallVector<::mlir::Value> ops;
+            ::mlir::SmallVector<::mlir::Value> ops;
             for (auto o : op.getOperands())
             {
                     ops.push_back(o);
             }
 
             rewriter.replaceOpWithNewOp<::mlir::ReturnOp>(op, ops);
-            return success();
+            return ::mlir::success();
         }
     };
 } // namespace voila::mlir::lowering

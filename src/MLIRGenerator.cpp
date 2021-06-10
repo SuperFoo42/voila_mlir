@@ -5,6 +5,7 @@
 #include "MlirGenerationException.hpp"
 namespace voila
 {
+    using namespace ast;
     using mlir::MLIRGeneratorImpl;
     ::mlir::OwningModuleRef MLIRGenerator::generate(const Program &program)
     {

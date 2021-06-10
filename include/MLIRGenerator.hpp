@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ASTNodes.hpp"
-#include "Program.hpp"
 
 #include <variant>
 #pragma GCC diagnostic push
@@ -21,7 +20,7 @@
 #pragma GCC diagnostic pop
 namespace voila
 {
-    using namespace ast;
+    class Program;
 
     class MLIRGenerator
     {

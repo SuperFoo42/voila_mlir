@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-namespace voila::ast
+namespace voila
 {
     class ParsingError : virtual public std::runtime_error
     {
