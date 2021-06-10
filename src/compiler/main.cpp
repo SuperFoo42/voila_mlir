@@ -1,4 +1,3 @@
-#include "MLIRGenerator.hpp"
 #include "ParsingError.hpp"
 #include "Program.hpp"
 #include "voila_lexer.hpp"
@@ -11,26 +10,8 @@
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/InitAllDialects.h>
 #include <mlir/InitAllPasses.h>
-#include <mlir/ShapeInferencePass.hpp>
 #include <mlir/VoilaDialect.h>
 #include <mlir/lowering/VoilaToAffineLoweringPass.hpp>
-#include <mlir/lowering/VoilaToLLVMLoweringPass.hpp>
-#include <mlir/ExecutionEngine/ExecutionEngine.h>
-#include <mlir/ExecutionEngine/OptUtils.h>
-#include <mlir/IR/AsmState.h>
-
-#include <mlir/Pass/PassManager.h>
-
-#include <mlir/Pass/Pass.h>
-#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
-#include <mlir/Target/LLVMIR/Export.h>
-#include <mlir/Transforms/Passes.h>
-
-#include <llvm/IR/Module.h>
-#include <llvm/Support/ErrorOr.h>
-#include <llvm/Support/SourceMgr.h>
-#include <llvm/Support/TargetSelect.h>
-#include <llvm/Support/raw_ostream.h>
 #pragma GCC diagnostic pop
 
 #include <cstdlib>
@@ -38,7 +19,7 @@
 #include <filesystem>
 #include <fmt/core.h>
 #include <fstream>
-#include "MLIRGenerationError.hpp"
+#include <spdlog/spdlog.h>
 
 //TODO: throwing away the lexer/parser leads to deletion of locations and subsequently lookup of invalid memory
 std::unique_ptr<::voila::Program> parse(const std::string &file)
@@ -78,22 +59,13 @@ int main(int argc, char *argv[])
 
     cxxopts::Options options("VOILA compiler", "");
 
-    options.add_options()("h, help", "Show help")(
-        "f, file", "File name",
-        cxxopts::value<std::string>()) ("a, plot-ast", "Generate dot file of AST",
-                                        cxxopts::value<bool>()->default_value(
-                                            "false")) ("O,opt", "Enable optimization passes",
-                                                       cxxopts::value<bool>()->default_value(
-                                                           "true")) ("d, dump-mlir", "Dump intermediate voila",
-                                                                     cxxopts::value<bool>()->default_value(
-                                                                         "false")) ("l, dump-lowered",
-                                                                                    "Dump lowered mlir",
-                                                                                    cxxopts::value<bool>()
-                                                                                        ->default_value("false"))
-                                                                                            ("j, jit",
-                                                                                             "jit compile and run code",
-                                                                                             cxxopts::value<bool>()
-                                                                                                 ->default_value("false"));
+    options.add_options()("h, help", "Show help")("f, file", "File name",cxxopts::value<std::string>())
+                        ("a, plot-ast", "Generate dot file of AST", cxxopts::value<bool>()->default_value("false"))
+                        ("O,opt", "Enable optimization passes", cxxopts::value<bool>()->default_value("true"))
+                        ("d, dump-mlir", "Dump intermediate voila", cxxopts::value<bool>()->default_value("false"))
+                        ("l, dump-lowered","Dump lowered mlir", cxxopts::value<bool>()->default_value("false"))
+                        ("j, jit", "jit compile and run code", cxxopts::value<bool>()->default_value("false"))
+                        ("v, verbose", "show more info", cxxopts::value<bool>()->default_value("false"));
 
     try
     {
@@ -105,6 +77,16 @@ int main(int argc, char *argv[])
             exit(EXIT_SUCCESS);
         }
 
+        if (cmd.count("v"))
+        {
+            spdlog::set_level(spdlog::level::debug);
+        }
+        else
+        {
+            spdlog::set_level(spdlog::level::warn);
+        }
+
+        spdlog::debug("Start parsing input file");
         const auto file = cmd["f"].as<std::string>();
         if (!std::filesystem::is_regular_file(std::filesystem::path(file)))
         {
@@ -132,11 +114,12 @@ int main(int argc, char *argv[])
         {
             prog->to_dot(cmd["f"].as<std::string>());
         }
+        spdlog::debug("Finished parsing input file");
 
         // TODO:
         prog->set_main_args_shape(std::unordered_map<std::string, size_t>(
             {std::pair<std::string, size_t>("x", 1), std::pair<std::string, size_t>("y", 1)}));
-
+        spdlog::debug("Start mlir generation");
         //generate mlir
         prog->generateMLIR();
 
@@ -144,10 +127,12 @@ int main(int argc, char *argv[])
         {
             prog->printMLIR(cmd["f"].as<std::string>());
         }
-
+        spdlog::debug("Finished mlir generation");
+        spdlog::debug("Start mlir lowering");
         //lower mlir
         prog->lowerMLIR(cmd.count("O"));
-
+        spdlog::debug("Finished mlir lowering");
+        spdlog::debug("Start mlir to llvm conversion");
         //lower to llvm
         prog->convertToLLVM(cmd.count("O"));
 
@@ -155,14 +140,16 @@ int main(int argc, char *argv[])
         {
             prog->printLLVM(cmd["f"].as<std::string>());
         }
-
+        spdlog::debug("Finished mlir to llvm conversion");
         //run in jit
-        if (cmd.count("r"))
+        if (cmd.count("j"))
         {
+            spdlog::debug("Running program");
             //TODO: replace dummy buffer
             auto *arg = new uint64_t[4];
             prog->runJIT(arg, cmd.count("O"));
             delete[] arg;
+            spdlog::debug("Finished Running program");
         }
     }
     catch (const cxxopts::OptionException &e)

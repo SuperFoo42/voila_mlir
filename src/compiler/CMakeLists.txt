@@ -24,6 +24,7 @@ set(LIBS
         cxxopts
         fmt
         reflex
+        spdlog
         )
 
 add_llvm_executable(voila

@@ -1,5 +1,7 @@
 CPMAddPackage("gh:Neargye/magic_enum@0.7.2")
 CPMAddPackage("gh:jarro2783/cxxopts@2.2.1")
+CPMAddPackage("gh:gabime/spdlog@1.8.5")
+
 CPMAddPackage(
         NAME fmt
         GIT_TAG 7.1.3
@@ -44,7 +46,7 @@ add_library(voila_compiler
         ShapeInferencePass.cpp
         ShapeInferenceInterface.cpp)
 
-target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast voila_lowering reflex)
+target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast voila_lowering reflex spdlog)
 target_compile_features(voila_compiler PUBLIC cxx_std_20)
 target_compile_options(voila_compiler PUBLIC
         -Wpedantic

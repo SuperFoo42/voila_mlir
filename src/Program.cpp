@@ -3,10 +3,35 @@
 #include "MainFunctionNotFoundException.hpp"
 
 #include <fstream>
+#include <llvm/IR/AssemblyAnnotationWriter.h>
+#include <spdlog/spdlog.h>
+
 namespace voila
 {
     using namespace ast;
     using namespace ::mlir;
+
+    static std::string MLIRModuleToString(OwningModuleRef &module)
+    {
+        std::error_code ec;
+        std::string res = "";
+        llvm::raw_string_ostream os(res);
+        module->print(os);
+        os.flush();
+        return res;
+    }
+
+    static std::string LLVMModuleToString(llvm::Module &module)
+    {
+        std::error_code ec;
+        std::string res = "";
+        llvm::raw_string_ostream os(res);
+        llvm::AssemblyAnnotationWriter aw;
+        module.print(os, &aw);
+        os.flush();
+        return res;
+    }
+
     void Program::infer_type(const Expression &node)
     {
         node.visit(inferer);
@@ -123,7 +148,6 @@ namespace voila
         registerLLVMDialectTranslation(*mlirModule->getContext());
 
         // Convert the module to LLVM IR in a new LLVM IR context.
-        llvm::LLVMContext llvmContext;
         llvmModule = translateModuleToLLVMIR(*mlirModule, llvmContext);
         if (!llvmModule)
         {
@@ -144,13 +168,14 @@ namespace voila
             throw err; //TODO: rethrow with other exception
         }
         //TODO:
-        llvm::errs() << *llvmModule << "\n";
+        spdlog::debug(LLVMModuleToString(*llvmModule));
     }
     void Program::printLLVM(const std::string &filename)
     {
         std::error_code ec;
         llvm::raw_fd_ostream os(filename + ".llvm", ec, llvm::sys::fs::OF_None);
-        llvmModule->print(os, nullptr);
+        llvm::AssemblyAnnotationWriter aw;
+        llvmModule->print(os, &aw);
         os.flush();
     }
     void Program::printMLIR(const std::string &filename)
@@ -160,6 +185,7 @@ namespace voila
         mlirModule->print(os);
         os.flush();
     }
+
     void Program::lowerMLIR(bool optimize)
     {
         ::mlir::PassManager pm(&context);
@@ -187,7 +213,8 @@ namespace voila
         // optPM.addPass(mlir::createBufferDeallocationPass());
 
         auto state = pm.run(*mlirModule);
-        mlirModule->dump(); //TODO: verbose mode
+        spdlog::debug(MLIRModuleToString(mlirModule));
+
         if (failed(state))
         {
             throw MLIRLoweringError();
@@ -215,7 +242,7 @@ namespace voila
         secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
 
         state = secondpm.run(*mlirModule);
-        mlirModule->dump(); //TODO: verbose mode
+        spdlog::debug(MLIRModuleToString(mlirModule));
         if (failed(state))
         {
             throw MLIRLoweringError();
@@ -230,6 +257,7 @@ namespace voila
 
         if (!mlirModule)
             throw ::voila::MLIRGenerationError();
+        spdlog::debug(MLIRModuleToString(mlirModule));
         return mlirModule;
     }
 } // namespace voila

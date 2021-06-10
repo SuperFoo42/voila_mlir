@@ -49,14 +49,12 @@ namespace voila
         ::mlir::OwningModuleRef mlirModule;
         std::unique_ptr<llvm::Module> llvmModule;
         ::mlir::MLIRContext context;
+        llvm::LLVMContext llvmContext;
 
       public:
         const ::mlir::MLIRContext &getMLIRContext() const;
 
-      public:
         const ::mlir::OwningModuleRef &getMLIRModule() const;
-
-      public:
         std::vector<std::unique_ptr<ast::Fun>> functions;
         TypeInferer inferer;
 
