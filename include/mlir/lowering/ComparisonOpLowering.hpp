@@ -13,11 +13,13 @@
 
 namespace voila::mlir::lowering
 {
-    using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs)>;
+
 
     template<typename CmpOp, typename LoweredBinaryOp>
     class ComparisonOpLowering : public ::mlir::ConversionPattern
     {
+        using LoopIterationFn = ::mlir::function_ref<
+            ::mlir::Value(::mlir::OpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs)>;
         static constexpr auto getCmpPred()
         {
             if constexpr (std::is_same_v<LoweredBinaryOp, ::mlir::CmpIOp>)
@@ -57,8 +59,7 @@ namespace voila::mlir::lowering
             else
                 throw std::logic_error("Sth. went wrong");
         }
-
-        /// Convert the given TensorType into the corresponding MemRefType.
+/// Convert the given TensorType into the corresponding MemRefType.
         static ::mlir::MemRefType convertTensorToMemRef(::mlir::TensorType type)
         {
             assert(type.hasRank() && "expected only ranked shapes");
@@ -66,20 +67,24 @@ namespace voila::mlir::lowering
         }
 
         /// Insert an allocation and deallocation for the given MemRefType.
-        static ::mlir::Value insertAllocAndDealloc(::mlir::MemRefType type, ::mlir::Location loc, ::mlir::PatternRewriter &rewriter)
+        static ::mlir::Value insertAllocAndDealloc(::mlir::MemRefType type, ::mlir::Value dynamicMemref, ::mlir::Location loc, ::mlir::PatternRewriter &rewriter)
         {
-            // TODO: get dynamic size of memref
-            auto allocSize = rewriter.template create<::mlir::ConstantIndexOp>(loc, 0);
-            auto alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type, ::mlir::Value(allocSize));
+            //This has to be located before the loop and after participating ops
+            ::mlir::memref::AllocOp alloc;
+            if (dynamicMemref.getType().dyn_cast<::mlir::TensorType>().isDynamicDim(0))
+            {
+                auto allocSize = rewriter.create<::mlir::memref::DimOp>(loc, dynamicMemref, 0);
+                alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type, ::mlir::Value(allocSize));
 
-            // Make sure to allocate at the beginning of the block.
-            auto *parentBlock = alloc->getBlock();
-            alloc->moveBefore(&parentBlock->front());
-            allocSize->moveBefore(alloc);
-            // Make sure to deallocate this alloc at the end of the block. This should be fine
-            // as voila functions have no control flow.
-            auto dealloc = rewriter.create<::mlir::memref::DeallocOp>(loc, alloc);
-            dealloc->moveBefore(&parentBlock->back());
+            }
+            else
+            {
+                auto allocSize = rewriter.create<::mlir::ConstantIndexOp>(
+                    loc, dynamicMemref.getType().dyn_cast<::mlir::TensorType>().getDimSize(0));
+                alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type, ::mlir::Value(allocSize));
+            }
+
+            // buffer deallocation instructions are added in the buffer deallocation pass
             return alloc;
         }
 
@@ -96,34 +101,64 @@ namespace voila::mlir::lowering
 
             // Insert an allocation and deallocation for the result of this operation.
             auto memRefType = convertTensorToMemRef(tensorType);
-            auto alloc = insertAllocAndDealloc(memRefType, loc, rewriter);
+
+            ::mlir::Value tensorOp;
+            for (auto operand : op->getOperands())
+            {
+                if (operand.getType().template isa<::mlir::TensorType>() || operand.getType().template isa<::mlir::MemRefType>())
+                {
+                    tensorOp = operand;
+                    break;
+                }
+            }
+
+            auto alloc = insertAllocAndDealloc(memRefType,tensorOp, loc, rewriter);
 
             // Create a nest of affine loops, with one loop per dimension of the shape.
             // The buildAffineLoopNest function takes a callback that is used to construct
             // the body of the innermost loop given a builder, a location and a range of
             // loop induction variables.
 
-            llvm::SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), 0);
-            llvm::SmallVector<int64_t, 4> steps(tensorType.getRank(), 1);
-            buildAffineLoopNest(rewriter, loc, lowerBounds, tensorType.getShape(), steps,
+            auto lb = rewriter.template create<::mlir::ConstantIndexOp>(loc, 0);
+            llvm::SmallVector<::mlir::Value> lowerBounds(tensorType.getRank(), lb);
+            llvm::SmallVector<::mlir::Value> upperBounds;
+
+            //find first tensor operand and use its result type
+            //TODO: this does not look like a clean solution
+
+            for (auto dim = 0; dim <tensorOp.getType().template dyn_cast<::mlir::TensorType>().getRank(); ++dim)
+            {
+                if (tensorOp.getType().template dyn_cast<::mlir::TensorType>().isDynamicDim(dim))
+                {
+                    upperBounds.push_back(rewriter.template create<::mlir::memref::DimOp>(loc, tensorOp, dim));
+                }
+                else
+                {
+                    upperBounds.push_back(rewriter.template create<::mlir::ConstantIndexOp>(loc, tensorOp.getType().template dyn_cast<::mlir::TensorType>().getDimSize(dim)));
+                }
+            }
+
+            llvm::SmallVector<int64_t> steps(tensorType.getRank(), 1);
+
+            buildAffineLoopNest(rewriter, loc, lowerBounds, upperBounds, steps,
                                 [&](::mlir::OpBuilder &nestedBuilder, ::mlir::Location loc, ::mlir::ValueRange ivs)
                                 {
-                                    // Call the processing function with the rewriter, the memref operands,
-                                    // and the loop induction variables. This function will return the value
-                                    // to store at the current index.
+                                  // Call the processing function with the rewriter, the memref operands,
+                                  // and the loop induction variables. This function will return the value
+                                  // to store at the current index.
                                   ::mlir::Value valueToStore = processIteration(nestedBuilder, operands, ivs);
-                                    nestedBuilder.create<::mlir::AffineStoreOp>(loc, valueToStore, alloc, ivs);
+                                  nestedBuilder.create<::mlir::AffineStoreOp>(loc, valueToStore, alloc, ivs);
                                 });
 
             // Replace this operation with the generated alloc.
             rewriter.replaceOp(op, alloc);
         }
-
       public:
         explicit ComparisonOpLowering(::mlir::MLIRContext *ctx) : ConversionPattern(CmpOp::getOperationName(), 1, ctx) {}
 
-        ::mlir::LogicalResult
-        matchAndRewrite(::mlir::Operation *op, llvm::ArrayRef<::mlir::Value> operands, ::mlir::ConversionPatternRewriter &rewriter) const final
+        ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
+                                              llvm::ArrayRef<::mlir::Value> operands,
+                                              ::mlir::ConversionPatternRewriter &rewriter) const final
         {
             auto loc = op->getLoc();
             lowerOpToLoops(
@@ -145,14 +180,16 @@ namespace voila::mlir::lowering
 
                         // Create the binary operation performed on the loaded values.
 
-                        return builder.create<LoweredBinaryOp>(loc, getCmpPred(), loadedLhs, loadedRhs);
+                        return builder.create<LoweredBinaryOp>(loc, loadedLhs.getType(), getCmpPred(), loadedLhs,
+                                                               loadedRhs);
                     }
                     else if (binaryAdaptor.lhs().getType().template isa<::mlir::MemRefType>())
                     {
                         auto loadedLhs = builder.create<::mlir::AffineLoadOp>(loc, binaryAdaptor.lhs(), loopIvs);
                         // Create the binary operation performed on the loaded values.
 
-                        return builder.create<LoweredBinaryOp>(loc, getCmpPred(), loadedLhs, binaryAdaptor.rhs());
+                        return builder.create<LoweredBinaryOp>(loc, binaryAdaptor.rhs().getType(), getCmpPred(),
+                                                               loadedLhs, binaryAdaptor.rhs());
                     }
                     else if (binaryAdaptor.rhs().getType().template isa<::mlir::MemRefType>())
                     {
@@ -160,14 +197,15 @@ namespace voila::mlir::lowering
 
                         // Create the binary operation performed on the loaded values.
 
-                        return builder.create<LoweredBinaryOp>(loc, getCmpPred(), binaryAdaptor.lhs(), loadedRhs);
+                        return builder.create<LoweredBinaryOp>(loc, binaryAdaptor.lhs().getType(), getCmpPred(),
+                                                               binaryAdaptor.lhs(), loadedRhs);
                     }
                     else
                     {
                         // Create the binary operation performed on the loaded values.
 
-                        return builder.create<LoweredBinaryOp>(loc, getCmpPred(), binaryAdaptor.lhs(),
-                                                               binaryAdaptor.rhs());
+                        return builder.create<LoweredBinaryOp>(loc, binaryAdaptor.lhs().getType(), getCmpPred(),
+                                                               binaryAdaptor.lhs(), binaryAdaptor.rhs());
                     }
                 });
             return ::mlir::success();

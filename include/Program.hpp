@@ -1,11 +1,11 @@
 #pragma once
 #include "DotVisualizer.hpp"
-#include "MLIRGenerationError.hpp"
-#include "MLIRLoweringError.hpp"
 #include "JITInvocationError.hpp"
 #include "LLVMGenerationError.hpp"
 #include "LLVMOptimizationError.hpp"
+#include "MLIRGenerationError.hpp"
 #include "MLIRGenerator.hpp"
+#include "MLIRLoweringError.hpp"
 #include "TypeInferer.hpp"
 #include "ast/Fun.hpp"
 
@@ -46,10 +46,10 @@ namespace voila
     class Program
     {
         std::unordered_map<std::string, ast::Expression> func_vars;
-        ::mlir::OwningModuleRef mlirModule;
-        std::unique_ptr<llvm::Module> llvmModule;
         ::mlir::MLIRContext context;
         llvm::LLVMContext llvmContext;
+        ::mlir::OwningModuleRef mlirModule;
+        std::unique_ptr<llvm::Module> llvmModule;
 
       public:
         const ::mlir::MLIRContext &getMLIRContext() const;
@@ -57,8 +57,11 @@ namespace voila
         const ::mlir::OwningModuleRef &getMLIRModule() const;
         std::vector<std::unique_ptr<ast::Fun>> functions;
         TypeInferer inferer;
+        const bool debug;
 
-        Program() = default;
+        explicit Program(bool debug = false) :
+            func_vars(), context(), llvmContext(), mlirModule(), llvmModule(), functions(), inferer(), debug{debug} {};
+        ~Program() = default;
 
         void add_func(ast::Fun *f)
         {
@@ -78,7 +81,7 @@ namespace voila
 
         void convertToLLVM(bool optimize);
 
-        void runJIT(void *args, bool optimize);
+        void runJIT(bool optimize);
 
         void printMLIR(const std::string &filename);
 

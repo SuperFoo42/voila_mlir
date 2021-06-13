@@ -58,7 +58,7 @@ namespace voila::mlir
             {
                 shapeOp.inferShapes();
             }
-            else if (std::any_of(op->getOperandTypes().begin(),op->getOperandTypes().end(), [](Type t) -> auto {return !t.isa<RankedTensorType>() || !t.cast<TensorType>().hasStaticShape();}))
+            else if (std::any_of(op->getOperandTypes().begin(),op->getOperandTypes().end(), [](Type t) -> auto {return !t.isa<RankedTensorType>() && !t.cast<TensorType>().hasStaticShape();}))
                 throw NotInferedException();
         }
 

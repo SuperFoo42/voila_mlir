@@ -9,21 +9,13 @@
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/VoilaDialect.h"
 #include "mlir/VoilaOps.h"
-
+#include "mlir/Dialect/SCF/SCF.h"
 #include "llvm/ADT/Sequence.h"
 namespace voila::mlir::lowering
 {
-    using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs)>;
-
     class SelectOpLowering : public ::mlir::ConversionPattern
     {
-        /// Convert the given TensorType into the corresponding MemRefType.
-        static ::mlir::MemRefType convertTensorToMemRef(::mlir::TensorType type);
-
-        /// Insert an allocation and deallocation for the given MemRefType.
-        static ::mlir::Value
-        insertAllocAndDealloc(::mlir::MemRefType type, ::mlir::Location loc, ::mlir::PatternRewriter &rewriter);
-
+        using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs, ::mlir::Value iter_var, ::mlir::Value dest)>;
         /// This defines the function type used to process an iteration of a lowered
         /// loop. It takes as input an OpBuilder, an range of memRefOperands
         /// corresponding to the operands of the input operation, and the range of loop

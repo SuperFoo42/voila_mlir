@@ -26,7 +26,7 @@ void VoilaToAffineLoweringPass::runOnFunction()
     // We define the specific operations, or dialects, that are legal targets for
     // this lowering. In our case, we are lowering to a combination of the
     // `Affine`, `MemRef` and `Standard` dialects.
-    target.addLegalDialect<AffineDialect, memref::MemRefDialect, StandardOpsDialect>();
+    target.addLegalDialect<AffineDialect, memref::MemRefDialect, StandardOpsDialect, scf::SCFDialect>();
 
     // We also define the dialect as Illegal so that the conversion will fail
     // if any of these operations are *not* converted. Given that we actually want

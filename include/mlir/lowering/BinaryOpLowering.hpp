@@ -12,11 +12,10 @@
 #include "llvm/ADT/Sequence.h"
 namespace voila::mlir::lowering
 {
-    using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs)>;
-
-    template<typename BinaryOp, typename LoweredBinaryOp>
+        template<typename BinaryOp, typename LoweredBinaryOp>
     class BinaryOpLowering : public ::mlir::ConversionPattern
     {
+        using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs)>;
         /// Convert the given TensorType into the corresponding MemRefType.
         static ::mlir::MemRefType convertTensorToMemRef(::mlir::TensorType type)
         {
@@ -25,20 +24,24 @@ namespace voila::mlir::lowering
         }
 
         /// Insert an allocation and deallocation for the given MemRefType.
-        static ::mlir::Value insertAllocAndDealloc(::mlir::MemRefType type, ::mlir::Location loc, ::mlir::PatternRewriter &rewriter)
+        static ::mlir::Value insertAllocAndDealloc(::mlir::MemRefType type, ::mlir::Value dynamicMemref, ::mlir::Location loc, ::mlir::PatternRewriter &rewriter)
         {
-            // TODO: get dynamic size of memref
-            auto allocSize = rewriter.template create<::mlir::ConstantIndexOp>(loc, 0);
-            auto alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type, ::mlir::Value(allocSize));
+            //This has to be located before the loop and after participating ops
+            ::mlir::memref::AllocOp alloc;
+            if (dynamicMemref.getType().dyn_cast<::mlir::TensorType>().isDynamicDim(0))
+            {
+                auto allocSize = rewriter.create<::mlir::memref::DimOp>(loc, dynamicMemref, 0);
+                alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type, ::mlir::Value(allocSize));
 
-            // Make sure to allocate at the beginning of the block.
-            auto *parentBlock = alloc->getBlock();
-            alloc->moveBefore(&parentBlock->front());
-            allocSize->moveBefore(alloc);
-            // Make sure to deallocate this alloc at the end of the block. This should be fine
-            // as voila functions have no control flow.
-            auto dealloc = rewriter.create<::mlir::memref::DeallocOp>(loc, alloc);
-            dealloc->moveBefore(&parentBlock->back());
+            }
+            else
+            {
+                auto allocSize = rewriter.create<::mlir::ConstantIndexOp>(
+                    loc, dynamicMemref.getType().dyn_cast<::mlir::TensorType>().getDimSize(0));
+                alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type, ::mlir::Value(allocSize));
+            }
+
+            // buffer deallocation instructions are added in the buffer deallocation pass
             return alloc;
         }
 
@@ -55,7 +58,18 @@ namespace voila::mlir::lowering
 
             // Insert an allocation and deallocation for the result of this operation.
             auto memRefType = convertTensorToMemRef(tensorType);
-            auto alloc = insertAllocAndDealloc(memRefType, loc, rewriter);
+
+            ::mlir::Value tensorOp;
+            for (auto operand : op->getOperands())
+            {
+                if (operand.getType().template isa<::mlir::TensorType>() || operand.getType().template isa<::mlir::MemRefType>())
+                {
+                    tensorOp = operand;
+                    break;
+                }
+            }
+
+            auto alloc = insertAllocAndDealloc(memRefType,tensorOp, loc, rewriter);
 
             // Create a nest of affine loops, with one loop per dimension of the shape.
             // The buildAffineLoopNest function takes a callback that is used to construct
@@ -68,17 +82,8 @@ namespace voila::mlir::lowering
 
             //find first tensor operand and use its result type
             //TODO: this does not look like a clean solution
-            ::mlir::Value tensorOp;
-            for (auto operand : op->getOperands())
-            {
-                if (operand.getType().template isa<::mlir::TensorType>() || operand.getType().template isa<::mlir::MemRefType>())
-                {
-                    tensorOp = operand;
-                    break;
-                }
-            }
 
-            for (auto dim = 0; dim < tensorOp.getType().template dyn_cast<::mlir::TensorType>().getRank(); ++dim)
+            for (auto dim = 0; dim <tensorOp.getType().template dyn_cast<::mlir::TensorType>().getRank(); ++dim)
             {
                 if (tensorOp.getType().template dyn_cast<::mlir::TensorType>().isDynamicDim(dim))
                 {

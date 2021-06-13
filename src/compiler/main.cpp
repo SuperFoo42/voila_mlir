@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
         {
             throw std::invalid_argument("invalid file");
         }
-        auto prog = std::make_unique<::voila::Program>();
+        auto prog = std::make_unique<::voila::Program>(); //TODO: cmd.count("v")
         ::voila::lexer::Lexer lexer;
         std::ifstream fst(file, std::ios::in);
 
@@ -117,8 +117,10 @@ int main(int argc, char *argv[])
         spdlog::debug("Finished parsing input file");
 
         // TODO:
+        prog->set_main_args_type(std::unordered_map<std::string, voila::DataType>(
+            {std::pair<std::string, voila::DataType>("x", voila::DataType::INT64), std::pair<std::string, voila::DataType>("y", voila::DataType::INT64)}));
         prog->set_main_args_shape(std::unordered_map<std::string, size_t>(
-            {std::pair<std::string, size_t>("x", 1), std::pair<std::string, size_t>("y", 1)}));
+            {std::pair<std::string, size_t>("x", 100), std::pair<std::string, size_t>("y", 100)}));
         spdlog::debug("Start mlir generation");
         //generate mlir
         prog->generateMLIR();
@@ -145,10 +147,7 @@ int main(int argc, char *argv[])
         if (cmd.count("j"))
         {
             spdlog::debug("Running program");
-            //TODO: replace dummy buffer
-            auto *arg = new uint64_t[4];
-            prog->runJIT(arg, cmd.count("O"));
-            delete[] arg;
+            prog->runJIT(cmd.count("O"));
             spdlog::debug("Finished Running program");
         }
     }

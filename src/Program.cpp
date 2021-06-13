@@ -13,8 +13,7 @@ namespace voila
 
     static std::string MLIRModuleToString(OwningModuleRef &module)
     {
-        std::error_code ec;
-        std::string res = "";
+        std::string res;
         llvm::raw_string_ostream os(res);
         module->print(os);
         os.flush();
@@ -23,8 +22,7 @@ namespace voila
 
     static std::string LLVMModuleToString(llvm::Module &module)
     {
-        std::error_code ec;
-        std::string res = "";
+        std::string res;
         llvm::raw_string_ostream os(res);
         llvm::AssemblyAnnotationWriter aw;
         module.print(os, &aw);
@@ -115,7 +113,7 @@ namespace voila
     {
         return context;
     }
-    void Program::runJIT(void *args, bool optimize)
+    void Program::runJIT(bool optimize)
     {
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
@@ -136,6 +134,13 @@ namespace voila
         auto &engine = maybeEngine.get();
 
         // Invoke the JIT-compiled function.
+        // TODO
+        void *arg = new int64_t[200];
+        void *res = new int64_t[200];
+        SmallVector<void *> args;
+        args.push_back(arg);
+        args.push_back(res);
+
         auto invocationResult = engine->invokePacked("main", args);
         if (invocationResult)
         {
@@ -165,9 +170,9 @@ namespace voila
             /*targetMachine=*/nullptr);
         if (auto err = optPipeline(llvmModule.get()))
         {
-            throw err; //TODO: rethrow with other exception
+            throw err; // TODO: rethrow with other exception
         }
-        //TODO:
+        // TODO:
         spdlog::debug(LLVMModuleToString(*llvmModule));
     }
     void Program::printLLVM(const std::string &filename)
@@ -189,6 +194,11 @@ namespace voila
     void Program::lowerMLIR(bool optimize)
     {
         ::mlir::PassManager pm(&context);
+        if (debug)
+        {
+            pm.enableStatistics();
+            // pm.enableIRPrinting();
+        }
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(pm);
         pm.addPass(createInlinerPass());
@@ -208,9 +218,11 @@ namespace voila
         pm.addPass(createTensorConstantBufferizePass());
         optPM.addPass(createTensorBufferizePass());
         optPM.addPass(createStdBufferizePass());
+        optPM.addPass(createSCFBufferizePass());
         pm.addPass(createFuncBufferizePass());
 
-        // optPM.addPass(mlir::createBufferDeallocationPass());
+        optPM.addPass(createLowerToCFGPass());
+
 
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));
@@ -222,24 +234,48 @@ namespace voila
 
         // FIXME: properly apply passes
         ::mlir::PassManager secondpm(&context);
+        if (debug)
+        {
+            secondpm.enableStatistics();
+            // secondpm.enableIRPrinting();
+        }
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(secondpm);
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
-        // optPM.addPass(mlir::createCanonicalizerPass());
-        // optPM.addPass(mlir::createCSEPass());
+        secondOptPM.addPass(createCanonicalizerPass());
+        secondOptPM.addPass(createCSEPass());
 
-        // optPM.addPass(mlir::createAffineLoopNormalizePass());
-        // optPM.addPass(mlir::createAffineLoopInvariantCodeMotionPass());
+        secondOptPM.addPass(createBufferDeallocationPass());
+        secondOptPM.addPass(createFinalizingBufferizePass());
+        secondOptPM.addPass(createCanonicalizerPass());
+        secondOptPM.addPass(createCSEPass());
         if (optimize)
         {
+            secondOptPM.addPass(createPromoteBuffersToStackPass());
+            secondpm.addPass(createBufferResultsToOutParamsPass());
             secondOptPM.addPass(createBufferHoistingPass());
             secondOptPM.addPass(createMemRefDataFlowOptPass());
+            secondOptPM.addPass(createAffineDataCopyGenerationPass());
+            secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
+            secondOptPM.addPass(createAffineLoopNormalizePass());
             secondOptPM.addPass(createLoopFusionPass());
             secondOptPM.addPass(createLoopCoalescingPass());
+            secondOptPM.addPass(createLoopUnrollPass());
+            secondOptPM.addPass(createLoopUnrollAndJamPass());
             secondOptPM.addPass(createAffineParallelizePass());
+            secondOptPM.addPass(createSuperVectorizePass());
+            secondOptPM.addPass(createSimplifyAffineStructuresPass());
+            secondOptPM.addPass(createForLoopSpecializationPass());
+            secondOptPM.addPass(createParallelLoopFusionPass());
+            secondOptPM.addPass(createParallelLoopSpecializationPass());
+            secondOptPM.addPass(createParallelLoopTilingPass());
+            secondOptPM.addPass(createCanonicalizerPass());
+            secondOptPM.addPass(createCSEPass());
         }
-        secondOptPM.addPass(createFinalizingBufferizePass());
+
         secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
+        secondOptPM.addPass(createCanonicalizerPass());
+        secondOptPM.addPass(createCSEPass());
 
         state = secondpm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));
@@ -253,6 +289,10 @@ namespace voila
     {
         // Load our Dialect in this MLIR Context.
         context.getOrLoadDialect<::mlir::voila::VoilaDialect>();
+        if (debug)
+        {
+            // context.disableMultithreading(); //FIXME: with threading disabled, the program segraults
+        }
         mlirModule = ::voila::MLIRGenerator::mlirGen(context, *this);
 
         if (!mlirModule)
