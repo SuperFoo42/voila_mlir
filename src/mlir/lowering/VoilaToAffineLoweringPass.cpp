@@ -26,7 +26,7 @@ void VoilaToAffineLoweringPass::runOnFunction()
     // We define the specific operations, or dialects, that are legal targets for
     // this lowering.
     target.addLegalDialect<AffineDialect, memref::MemRefDialect, StandardOpsDialect, scf::SCFDialect,
-                           tosa::TosaDialect>();
+                           tosa::TosaDialect, linalg::LinalgDialect>();
 
     // We also define the dialect as Illegal so that the conversion will fail
     // if any of these operations are *not* converted. Given that we actually want
@@ -39,9 +39,9 @@ void VoilaToAffineLoweringPass::runOnFunction()
     // constant lowerings
     patterns.add<AndOpLowering,OrOpLowering,BoolConstOpLowering, IntConstOpLowering, FltConstOpLowering,SelectOpLowering>(&getContext());
     // arithmetic lowerings
-    patterns.add<AddOpLowering, SubOpLowering, MulOpLowering, DivOpLowering>(&getContext());
+    patterns.add<AddIOpLowering, SubIOpLowering, MulIOpLowering, DivFOpLowering>(&getContext());
     // comparison lowerings
-    patterns.add<EqOpLowering, NeqOpLowering, LeOpLowering, LeqOpLowering, GeOpLowering, GeqOpLowering>(&getContext());
+    patterns.add<EqIOpLowering, NeqIOpLowering, LeIOpLowering, LeqIOpLowering, GeIOpLowering, GeqIOpLowering>(&getContext());
 
     patterns.add<EmitOpLowering>(&getContext(), function);
 

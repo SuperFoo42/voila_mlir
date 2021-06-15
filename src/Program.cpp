@@ -214,17 +214,12 @@ namespace voila
 
         optPM.addPass(createCanonicalizerPass());
         optPM.addPass(createCSEPass());
-        optPM.addPass(tosa::createTosaMakeBroadcastablePass());
-        optPM.addPass(tosa::createTosaToLinalgOnTensors());
-        optPM.addPass(tosa::createTosaToSCF());
-        optPM.addPass(tosa::createTosaToStandard());
         // bufferization passes
         pm.addPass(createTensorConstantBufferizePass());
         optPM.addPass(createTensorBufferizePass());
         optPM.addPass(createStdBufferizePass());
         optPM.addPass(createSCFBufferizePass());
         pm.addPass(createFuncBufferizePass());
-
 
 
         auto state = pm.run(*mlirModule);
@@ -245,17 +240,16 @@ namespace voila
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(secondpm);
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
-        secondOptPM.addPass(createBufferDeallocationPass());
+        //secondOptPM.addPass(createBufferDeallocationPass());
         secondOptPM.addPass(createFinalizingBufferizePass());
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
         if (optimize)
         {
             secondOptPM.addPass(createPromoteBuffersToStackPass());
-            secondpm.addPass(createBufferResultsToOutParamsPass());
+            //secondpm.addPass(createBufferResultsToOutParamsPass());
             secondOptPM.addPass(createBufferHoistingPass());
-//secondOptPM.addPass(createMemRefDataFlowOptPass());
-            secondOptPM.addPass(createAffineDataCopyGenerationPass());
+            //secondOptPM.addPass(createAffineDataCopyGenerationPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
             secondOptPM.addPass(createLoopFusionPass());

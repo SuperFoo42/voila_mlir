@@ -67,10 +67,11 @@ void SelectOpLowering::lowerOpToLoops(Operation *op,
     }
 
     // start index for store
-    auto startIdx = rewriter.create<ConstantIndexOp>(loc, 0);
+    SmallVector<Value> iter_args;
+    iter_args.push_back(rewriter.create<ConstantIndexOp>(loc, 0));
 
     auto resultSize = rewriter.create<AffineForOp>(
-        loc, lowerBound, rewriter.getDimIdentityMap(), upperBound, rewriter.getDimIdentityMap(), 1, Value(startIdx),
+        loc, lowerBound, rewriter.getDimIdentityMap(), upperBound, rewriter.getDimIdentityMap(), 1, iter_args,
         [&](OpBuilder &nestedBuilder, ::mlir::Location loc, Value iter_var /*index on which to store selected value*/,
             ValueRange ivs) -> void
         {
@@ -86,8 +87,10 @@ void SelectOpLowering::lowerOpToLoops(Operation *op,
     auto zeroConst = rewriter.create<ConstantIndexOp>(loc, 0);
     SmallVector<Value> indices;
     indices.push_back(zeroConst);
+    SmallVector<Value> sizes;
+    sizes.push_back(resultSize.getResult(0));
     rewriter.create<memref::StoreOp>(loc, resultSize->getResult(0), resSizeMemRef, indices);
-    rewriter.replaceOpWithNewOp<memref::ReshapeOp>(op, alloc.getType(), alloc, resSizeMemRef);
+    rewriter.replaceOpWithNewOp<memref::ReinterpretCastOp>(op, MemRefType::get(-1, alloc.getType().dyn_cast<MemRefType>().getElementType()),alloc, zeroConst, sizes, indices);
 }
 
 LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
@@ -104,11 +107,8 @@ LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
             if (binaryAdaptor.values().getType().isa<::mlir::MemRefType>() &&
                 binaryAdaptor.pred().getType().isa<::mlir::MemRefType>())
             {
-                // FIXME: load has no index
                 auto loadedRhs = builder.create<::mlir::AffineLoadOp>(loc, binaryAdaptor.pred(), loopIvs);
                 // Create the binary operation performed on the loaded values.
-                SmallVector<AffineExpr> conditions;
-                conditions.push_back(builder.getAffineSymbolExpr(0));
                 SmallVector<Value> vals;
                 vals.push_back(builder.create<IndexCastOp>(loc, loadedRhs, builder.getIndexType()));
                 auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), loadedRhs, true);
@@ -130,8 +130,6 @@ LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
             else if (binaryAdaptor.values().getType().isa<::mlir::MemRefType>())
             {
                 // Create the binary operation performed on the loaded values.
-                SmallVector<AffineExpr> conditions;
-                conditions.push_back(builder.getAffineSymbolExpr(0));
                 auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), binaryAdaptor.pred(), true);
                 auto thenBuilder = ifOp.getElseBodyBuilder();
                 auto thenBranch = thenBuilder.create<scf::YieldOp>(loc, iter_var);
@@ -152,8 +150,6 @@ LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
             {
                 auto loadedRhs = builder.create<::mlir::AffineLoadOp>(loc, binaryAdaptor.pred(), loopIvs);
                 // Create the binary operation performed on the loaded values.
-                SmallVector<AffineExpr> conditions;
-                conditions.push_back(builder.getAffineSymbolExpr(0));
                 SmallVector<Value> vals;
                 vals.push_back(builder.create<IndexCastOp>(loc, loadedRhs, builder.getIndexType()));
                 auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), loadedRhs, true);
@@ -175,8 +171,6 @@ LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
             else
             {
                 // Create the binary operation performed on the loaded values.
-                SmallVector<AffineExpr> conditions;
-                conditions.push_back(builder.getAffineSymbolExpr(0));
                 SmallVector<Value> vals;
                 vals.push_back(builder.create<IndexCastOp>(loc, binaryAdaptor.pred(), builder.getIndexType()));
                 auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), binaryAdaptor.pred(), true);
