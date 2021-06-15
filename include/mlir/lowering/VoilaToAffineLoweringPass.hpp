@@ -4,6 +4,9 @@
 
 #include <memory>
 #include <mlir/Dialect/Affine/IR/AffineOps.h>
+#include <mlir/Dialect/Tosa/IR/TosaOps.h>
+#include <mlir/Dialect/SCF/SCF.h>
+#include <mlir/Dialect/Tensor/IR/Tensor.h>
 
 namespace voila::mlir::lowering
 {
@@ -11,7 +14,7 @@ namespace voila::mlir::lowering
     {
         void getDependentDialects(::mlir::DialectRegistry &registry) const override
         {
-            registry.insert<::mlir::AffineDialect, ::mlir::memref::MemRefDialect, ::mlir::StandardOpsDialect>();
+            registry.insert<::mlir::AffineDialect, ::mlir::memref::MemRefDialect, ::mlir::StandardOpsDialect, ::mlir::tosa::TosaDialect, ::mlir::scf::SCFDialect, ::mlir::tensor::TensorDialect>();
         }
         void runOnFunction() final;
     };

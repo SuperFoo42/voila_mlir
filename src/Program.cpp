@@ -191,7 +191,7 @@ namespace voila
         os.flush();
     }
 
-    void Program::lowerMLIR(bool optimize)
+    void Program::lowerMLIR([[maybe_unused]] bool optimize)
     {
         ::mlir::PassManager pm(&context);
         if (debug)
@@ -211,9 +211,13 @@ namespace voila
 
         // Partially lower voila to affine with a few cleanups
         optPM.addPass(::voila::mlir::createLowerToAffinePass());
+
         optPM.addPass(createCanonicalizerPass());
         optPM.addPass(createCSEPass());
-
+        optPM.addPass(tosa::createTosaMakeBroadcastablePass());
+        optPM.addPass(tosa::createTosaToLinalgOnTensors());
+        optPM.addPass(tosa::createTosaToSCF());
+        optPM.addPass(tosa::createTosaToStandard());
         // bufferization passes
         pm.addPass(createTensorConstantBufferizePass());
         optPM.addPass(createTensorBufferizePass());
@@ -221,7 +225,6 @@ namespace voila
         optPM.addPass(createSCFBufferizePass());
         pm.addPass(createFuncBufferizePass());
 
-        optPM.addPass(createLowerToCFGPass());
 
 
         auto state = pm.run(*mlirModule);
@@ -242,9 +245,6 @@ namespace voila
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(secondpm);
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
-        secondOptPM.addPass(createCanonicalizerPass());
-        secondOptPM.addPass(createCSEPass());
-
         secondOptPM.addPass(createBufferDeallocationPass());
         secondOptPM.addPass(createFinalizingBufferizePass());
         secondOptPM.addPass(createCanonicalizerPass());
@@ -254,7 +254,7 @@ namespace voila
             secondOptPM.addPass(createPromoteBuffersToStackPass());
             secondpm.addPass(createBufferResultsToOutParamsPass());
             secondOptPM.addPass(createBufferHoistingPass());
-            secondOptPM.addPass(createMemRefDataFlowOptPass());
+//secondOptPM.addPass(createMemRefDataFlowOptPass());
             secondOptPM.addPass(createAffineDataCopyGenerationPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
@@ -273,6 +273,8 @@ namespace voila
             secondOptPM.addPass(createCSEPass());
         }
 
+        secondOptPM.addPass(createLowerAffinePass());
+        secondOptPM.addPass(createLowerToCFGPass());
         secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());

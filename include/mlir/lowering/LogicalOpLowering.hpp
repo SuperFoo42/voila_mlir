@@ -16,8 +16,8 @@
 
 namespace voila::mlir::lowering
 {
-    using AndOpLowering = BinaryOpLowering<::mlir::voila::AndOp, ::mlir::AndOp>;
-    using OrOpLowering = BinaryOpLowering<::mlir::voila::OrOp, ::mlir::OrOp>;
+    using AndOpLowering = BinaryOpLowering<::mlir::voila::AndOp, ::mlir::tosa::LogicalAndOp>;
+    using OrOpLowering = BinaryOpLowering<::mlir::voila::OrOp, ::mlir::tosa::LogicalOrOp>;
 
     // TODO: not op lowering
 } // namespace voila::mlir::lowering
