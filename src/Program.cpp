@@ -135,8 +135,8 @@ namespace voila
 
         // Invoke the JIT-compiled function.
         // TODO
-        void *arg = new int64_t[200];
-        void *res = new int64_t[200];
+        auto *arg = new int64_t[200]{1};
+        auto *res = new int64_t[200]{2};
         SmallVector<void *> args;
         args.push_back(arg);
         args.push_back(res);

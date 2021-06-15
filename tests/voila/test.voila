@@ -7,11 +7,11 @@ def foo(x)
 
 main(y)
 {
-    add(123, 456.0);
+    add(y, 456.0);
     f = foo(y);
     y = and(f, false);
     z = foo(y);
     g = and(y,z);
-    a = select(1,g);
-    emit a;
+    y = select(2,g);
+    emit y;
 }
