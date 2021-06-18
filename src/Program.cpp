@@ -136,10 +136,13 @@ namespace voila
         // Invoke the JIT-compiled function.
         // TODO
         auto *arg = new int64_t[200]{1};
-        auto *res = new int64_t[200]{2};
+        auto *arg2 = new int64_t[200]{2};
         SmallVector<void *> args;
         args.push_back(arg);
-        args.push_back(res);
+        args.push_back(arg2);
+        args.push_back(arg);
+        args.push_back(arg);
+        args.push_back(arg2);
 
         auto invocationResult = engine->invokePacked("main", args);
         if (invocationResult)
@@ -220,7 +223,6 @@ namespace voila
         optPM.addPass(createStdBufferizePass());
         optPM.addPass(createSCFBufferizePass());
         pm.addPass(createFuncBufferizePass());
-
 
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));

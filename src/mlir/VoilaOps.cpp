@@ -2,14 +2,9 @@
 
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Builders.h"
-#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OpImplementation.h"
-#include "mlir/IR/Verifier.h"
-#include "mlir/Parser.h"
-#include "mlir/Transforms/InliningUtils.h"
 #include "mlir/VoilaDialect.h"
 
 #define GET_OP_CLASSES

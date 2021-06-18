@@ -32,14 +32,14 @@ CPMAddPackage(
         DOWNLOAD_ONLY
 )
 
-#execute_process(
-#        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True
-#        WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
-#)
-#message(STATUS "build llvm")
-#execute_process(
-#        COMMAND ${CMAKE_COMMAND} --build ${llvm_BINARY_DIR}
-#)
+execute_process(
+        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True
+        WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
+)
+message(STATUS "build llvm")
+execute_process(
+        COMMAND ${CMAKE_COMMAND} --build ${llvm_BINARY_DIR}
+)
 
 set(MLIR_DIR "${llvm_BINARY_DIR}/lib/cmake/mlir/")
 set(LLVM_EXTERNAL_LIT "${llvm_BINARY_DIR}/build/bin/llvm-lit")
@@ -79,8 +79,8 @@ if (BUILD_DOC)
 endif ()
 
 #Enable sanitizers globally
-add_compile_options(-fsanitize=address -fsanitize=undefined)
-add_link_options(-fsanitize=address -fsanitize=undefined -fuse-ld=lld) #need to use lld, for some reason ld complains about invalid symbols.
+#add_compile_options(-fsanitize=address -fsanitize=undefined)
+add_link_options(-fuse-ld=lld) #need to use lld, for some reason ld complains about invalid symbols. -fsanitize=address -fsanitize=undefined
 
 find_package(TBB)
 include_directories(${TBB_INCLUDE_DIRS})

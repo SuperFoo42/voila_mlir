@@ -67,21 +67,27 @@ namespace voila::mlir::lowering
         }
 
         /// Insert an allocation and deallocation for the given MemRefType.
-        static ::mlir::Value insertAllocAndDealloc(::mlir::MemRefType type, ::mlir::Value dynamicMemref, ::mlir::Location loc, ::mlir::PatternRewriter &rewriter)
+        static ::mlir::Value insertAllocAndDealloc(::mlir::MemRefType type,
+                                                   ::mlir::Value dynamicMemref,
+                                                   ::mlir::Location loc,
+                                                   ::mlir::PatternRewriter &rewriter)
         {
-            //This has to be located before the loop and after participating ops
+            // This has to be located before the loop and after participating ops
             ::mlir::memref::AllocOp alloc;
-            if (dynamicMemref.getType().dyn_cast<::mlir::TensorType>().isDynamicDim(0))
+            if (type.hasStaticShape())
+            {
+                alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type);
+            }
+            else if (dynamicMemref.getType().dyn_cast<::mlir::TensorType>().isDynamicDim(0))
             {
                 auto allocSize = rewriter.create<::mlir::memref::DimOp>(loc, dynamicMemref, 0);
                 alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type, ::mlir::Value(allocSize));
-
             }
             else
             {
                 auto allocSize = rewriter.create<::mlir::ConstantIndexOp>(
                     loc, dynamicMemref.getType().dyn_cast<::mlir::TensorType>().getDimSize(0));
-                alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type, ::mlir::Value(allocSize));
+                alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type,::mlir::Value(allocSize));
             }
 
             // buffer deallocation instructions are added in the buffer deallocation pass

@@ -6,6 +6,7 @@
 #include "mlir/lowering/EmitOpLowering.hpp"
 #include "mlir/lowering/LogicalOpLowering.hpp"
 #include "mlir/lowering/SelectOpLowering.hpp"
+#include "mlir/lowering/NotOpLowering.hpp"
 
 using namespace mlir;
 using namespace ::voila::mlir;
@@ -37,7 +38,7 @@ void VoilaToAffineLoweringPass::runOnFunction()
     // the set of patterns that will lower the Toy operations.
     RewritePatternSet patterns(&getContext());
     // constant lowerings
-    patterns.add<AndOpLowering,OrOpLowering,BoolConstOpLowering, IntConstOpLowering, FltConstOpLowering,SelectOpLowering>(&getContext());
+    patterns.add<AndOpLowering,OrOpLowering,NotOpLowering,BoolConstOpLowering, IntConstOpLowering, FltConstOpLowering,SelectOpLowering>(&getContext());
     // arithmetic lowerings
     patterns.add<AddIOpLowering, SubIOpLowering, MulIOpLowering, DivFOpLowering>(&getContext());
     // comparison lowerings

@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
         if (cmd.count("v"))
         {
             spdlog::set_level(spdlog::level::debug);
+            ::llvm::DebugFlag = true;
         }
         else
         {

@@ -30,7 +30,7 @@ namespace voila::mlir::lowering
         explicit SelectOpLowering(::mlir::MLIRContext *ctx) : ConversionPattern(::mlir::voila::SelectOp::getOperationName(), 1, ctx) {}
 
         ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                      llvm::ArrayRef<::mlir::Value> operands,
+                                      ::mlir::ArrayRef<::mlir::Value> operands,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final;
     };
 } // namespace voila::mlir::lowerin
