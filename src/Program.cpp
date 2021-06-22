@@ -223,8 +223,11 @@ namespace voila
         optPM.addPass(createStdBufferizePass());
         optPM.addPass(createSCFBufferizePass());
         pm.addPass(createFuncBufferizePass());
-
-        auto state = pm.run(*mlirModule);
+        pm.addPass(createNormalizeMemRefsPass());
+        optPM.addPass(createPipelineDataTransferPass());
+        optPM.addPass(createCanonicalizerPass());
+        optPM.addPass(createCSEPass());
+        auto state =  pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));
 
         if (failed(state))
@@ -242,16 +245,16 @@ namespace voila
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(secondpm);
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
-        //secondOptPM.addPass(createBufferDeallocationPass());
+        // secondOptPM.addPass(createBufferDeallocationPass());
         secondOptPM.addPass(createFinalizingBufferizePass());
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
         if (optimize)
         {
             secondOptPM.addPass(createPromoteBuffersToStackPass());
-            //secondpm.addPass(createBufferResultsToOutParamsPass());
+            // secondpm.addPass(createBufferResultsToOutParamsPass());
             secondOptPM.addPass(createBufferHoistingPass());
-            //secondOptPM.addPass(createAffineDataCopyGenerationPass());
+            // secondOptPM.addPass(createAffineDataCopyGenerationPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
             secondOptPM.addPass(createLoopFusionPass());
@@ -289,7 +292,7 @@ namespace voila
         context.getOrLoadDialect<::mlir::voila::VoilaDialect>();
         if (debug)
         {
-            // context.disableMultithreading(); //FIXME: with threading disabled, the program segraults
+            // context.disableMultithreading(); //FIXME: with threading disabled, the program segfaults
         }
         mlirModule = ::voila::MLIRGenerator::mlirGen(context, *this);
 
@@ -297,5 +300,40 @@ namespace voila
             throw ::voila::MLIRGenerationError();
         spdlog::debug(MLIRModuleToString(mlirModule));
         return mlirModule;
+    }
+    Program &Program::operator<<(const Parameter param)
+    {
+        const auto main = std::find_if(
+            functions.begin(), functions.end(), [](const auto &f) -> auto { return dynamic_cast<Main *>(f.get()); });
+        if (main == functions.end())
+            throw MainFunctionNotFoundException();
+        auto &args = (*main)->args;
+        auto arg = args.at(params.size());
+
+        assert(arg.is_variable());
+        params.push_back(param.data);
+        inferer.set_type(arg.as_expr(), param.type);
+        inferer.set_arity(arg.as_expr(), param.size);
+
+        return *this;
+    }
+
+    std::unique_ptr<void *> Program::operator()()
+    {
+        runJIT(m_optimize);
+        // TODO:
+        return std::make_unique<void *>(nullptr);
+    }
+
+    void Program::add_func(ast::Fun *f)
+    {
+        functions.emplace_back(f);
+        f->variables = std::move(func_vars);
+        func_vars.clear();
+    }
+
+    Parameter make_param(void *data, size_t size, DataType type)
+    {
+        return Parameter(data, size, type);
     }
 } // namespace voila

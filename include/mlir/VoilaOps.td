@@ -319,8 +319,8 @@ The "read" operation loads data from "column" starting at "index".
 The start index is expected to be within "column" bounds.
 }];
 
-let arguments = (ins AnyUnrankedMemRef:$column, Index:$index);
-let results = (outs AnyTensor);
+let arguments = (ins 1DTensorOf<[AnyType]>:$column, 1DTensorOf<[AnySignlessInteger]>:$index);
+let results = (outs 1DTensorOf<[AnyType]>);
 
 // Specify a parser and printer method.
 //let parser = [{ return ::parseBinaryOp(parser, result); }];

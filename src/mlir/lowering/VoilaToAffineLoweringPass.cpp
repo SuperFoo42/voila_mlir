@@ -5,8 +5,9 @@
 #include "mlir/lowering/ConstOpLowering.hpp"
 #include "mlir/lowering/EmitOpLowering.hpp"
 #include "mlir/lowering/LogicalOpLowering.hpp"
-#include "mlir/lowering/SelectOpLowering.hpp"
 #include "mlir/lowering/NotOpLowering.hpp"
+#include "mlir/lowering/SelectOpLowering.hpp"
+#include "mlir/lowering/ReadOpLowering.hpp"
 
 using namespace mlir;
 using namespace ::voila::mlir;
@@ -26,8 +27,8 @@ void VoilaToAffineLoweringPass::runOnFunction()
 
     // We define the specific operations, or dialects, that are legal targets for
     // this lowering.
-    target.addLegalDialect<AffineDialect, memref::MemRefDialect, StandardOpsDialect, scf::SCFDialect,
-                           tosa::TosaDialect, linalg::LinalgDialect>();
+    target.addLegalDialect<AffineDialect, memref::MemRefDialect, StandardOpsDialect, scf::SCFDialect, tosa::TosaDialect,
+                           linalg::LinalgDialect>();
 
     // We also define the dialect as Illegal so that the conversion will fail
     // if any of these operations are *not* converted. Given that we actually want
@@ -37,12 +38,11 @@ void VoilaToAffineLoweringPass::runOnFunction()
     // Now that the conversion target has been defined, we just need to provide
     // the set of patterns that will lower the Toy operations.
     RewritePatternSet patterns(&getContext());
-    // constant lowerings
-    patterns.add<AndOpLowering,OrOpLowering,NotOpLowering,BoolConstOpLowering, IntConstOpLowering, FltConstOpLowering,SelectOpLowering>(&getContext());
-    // arithmetic lowerings
-    patterns.add<AddIOpLowering, SubIOpLowering, MulIOpLowering, DivFOpLowering>(&getContext());
-    // comparison lowerings
-    patterns.add<EqIOpLowering, NeqIOpLowering, LeIOpLowering, LeqIOpLowering, GeIOpLowering, GeqIOpLowering>(&getContext());
+    patterns
+        .add<AndOpLowering, OrOpLowering, NotOpLowering, BoolConstOpLowering, IntConstOpLowering, FltConstOpLowering,
+             SelectOpLowering, ReadOpLowering, AddIOpLowering, SubIOpLowering, MulIOpLowering, DivFOpLowering,
+             EqIOpLowering, NeqIOpLowering, LeIOpLowering, LeqIOpLowering, GeIOpLowering, GeqIOpLowering>(
+            &getContext());
 
     patterns.add<EmitOpLowering>(&getContext(), function);
 

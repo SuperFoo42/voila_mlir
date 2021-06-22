@@ -412,7 +412,7 @@ namespace voila
     {
         if (!compatible(get_type(read.idx).t, DataType::INT64))
             throw IncompatibleTypesException();
-        if (compatible(get_type(read.column).t, DataType::VOID))
+        if (get_type(read.column).t == DataType::VOID)
             throw IncompatibleTypesException();
 
         insertNewFuncType(read, {get_type_id(read.column), get_type_id(read.idx)}, DataType::VOID);

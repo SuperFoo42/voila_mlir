@@ -23,13 +23,13 @@ static ::mlir::Value insertAllocAndDealloc(::mlir::MemRefType type,
     else if (dynamicMemref.getType().dyn_cast<::mlir::TensorType>().isDynamicDim(0))
     {
         auto allocSize = rewriter.create<::mlir::memref::DimOp>(loc, dynamicMemref, 0);
-        alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type, ::mlir::Value(allocSize));
+        alloc = rewriter.create<::mlir::memref::AllocOp>(loc, MemRefType::get(-1, type.getElementType()), ::mlir::Value(allocSize));
     }
     else
     {
         auto allocSize = rewriter.create<::mlir::ConstantIndexOp>(
             loc, dynamicMemref.getType().dyn_cast<::mlir::TensorType>().getDimSize(0));
-        alloc = rewriter.create<::mlir::memref::AllocOp>(loc, type,::mlir::Value(allocSize));
+        alloc = rewriter.create<::mlir::memref::AllocOp>(loc, MemRefType::get(-1, type.getElementType()),::mlir::Value(allocSize));
     }
 
     // buffer deallocation instructions are added in the buffer deallocation pass
@@ -109,11 +109,30 @@ LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
         [loc](OpBuilder &builder, ValueRange memRefOperands, ValueRange loopIvs, Value iter_var, Value dest) -> Value
         {
             ::mlir::voila::SelectOp::Adaptor binaryAdaptor(memRefOperands);
-
-            if (binaryAdaptor.values().getType().isa<::mlir::MemRefType>() &&
-                binaryAdaptor.pred().getType().isa<::mlir::MemRefType>())
+            ::mlir::Value values;
+          ::mlir::Value pred;
+            if (binaryAdaptor.values().getType().isa<TensorType>())
             {
-                auto loadedRhs = builder.create<::mlir::AffineLoadOp>(loc, binaryAdaptor.pred(), loopIvs);
+                values = builder.create<memref::BufferCastOp>(loc, convertTensorToMemRef(binaryAdaptor.values().getType().dyn_cast<TensorType>()), binaryAdaptor.values());
+            }
+            else
+            {
+                values = binaryAdaptor.values();
+            }
+
+          if (binaryAdaptor.pred().getType().isa<TensorType>())
+          {
+              pred = builder.create<memref::BufferCastOp>(loc, convertTensorToMemRef(binaryAdaptor.pred().getType().dyn_cast<TensorType>()), binaryAdaptor.pred());
+          }
+          else
+          {
+              pred = binaryAdaptor.pred();
+          }
+
+            if (values.getType().isa<::mlir::MemRefType>() &&
+                pred.getType().isa<::mlir::MemRefType>())
+            {
+                auto loadedRhs = builder.create<::mlir::AffineLoadOp>(loc, pred, loopIvs);
                 // Create the binary operation performed on the loaded values.
 
                 auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), loadedRhs, true);
@@ -122,7 +141,7 @@ LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
                 thenBuilder.setInsertionPoint(thenBranch);
                 auto elseBuilder = ifOp.getElseBodyBuilder();
                 // value is constant
-                auto valToStore = elseBuilder.create<AffineLoadOp>(loc, binaryAdaptor.values(), loopIvs);
+                auto valToStore = elseBuilder.create<AffineLoadOp>(loc, values, loopIvs);
                 elseBuilder.create<AffineStoreOp>(loc, valToStore, dest, iter_var);
                 auto oneConst = elseBuilder.create<ConstantIndexOp>(loc, 1);
                 SmallVector<Value> res;
@@ -132,16 +151,16 @@ LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
                 elseBuilder.setInsertionPoint(oneConst);
                 return ifOp.getResult(0); // only new index to return
             }
-            else if (binaryAdaptor.values().getType().isa<::mlir::MemRefType>())
+            else if (values.getType().isa<::mlir::MemRefType>())
             {
                 // Create the binary operation performed on the loaded values.
-                auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), binaryAdaptor.pred(), true);
+                auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), pred, true);
                 auto thenBuilder = ifOp.getElseBodyBuilder();
                 auto thenBranch = thenBuilder.create<scf::YieldOp>(loc, iter_var);
                 thenBuilder.setInsertionPoint(thenBranch);
                 auto elseBuilder = ifOp.getThenBodyBuilder();
                 // value is constant
-                auto valToStore = elseBuilder.create<AffineLoadOp>(loc, binaryAdaptor.values(), loopIvs);
+                auto valToStore = elseBuilder.create<AffineLoadOp>(loc, values, loopIvs);
                 elseBuilder.create<AffineStoreOp>(loc, valToStore, dest, iter_var);
                 auto oneConst = elseBuilder.create<ConstantIndexOp>(loc, 1);
                 SmallVector<Value> res;
@@ -151,14 +170,14 @@ LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
                 elseBuilder.setInsertionPoint(oneConst);
                 return ifOp.getResult(0); // only new index to return
             }
-            else if (binaryAdaptor.pred().getType().isa<::mlir::MemRefType>())
+            else if (pred.getType().isa<::mlir::MemRefType>())
             {
-                auto loadedRhs = builder.create<::mlir::AffineLoadOp>(loc, binaryAdaptor.pred(), loopIvs);
+                auto loadedRhs = builder.create<::mlir::AffineLoadOp>(loc, pred, loopIvs);
                 // Create the binary operation performed on the loaded values.
                 auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), loadedRhs, true);
                 auto ifBuilder = ifOp.getThenBodyBuilder();
                 // value is constant
-                auto valToStore = binaryAdaptor.values();
+                auto valToStore = values;
                 ifBuilder.create<AffineStoreOp>(loc, valToStore, dest, iter_var);
                 auto oneConst = ifBuilder.create<ConstantIndexOp>(loc, 1);
                 SmallVector<Value> res;
@@ -174,11 +193,10 @@ LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
             else
             {
                 // Create the binary operation performed on the loaded values.
-                auto loadedRhs = builder.create<::mlir::AffineLoadOp>(loc, binaryAdaptor.pred(), loopIvs);
-                auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), loadedRhs, true);
+                auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), pred, true);
                 auto ifBuilder = ifOp.getThenBodyBuilder();
                 // value is constant
-                auto valToStore = binaryAdaptor.values();
+                auto valToStore = values;
                 ifBuilder.create<AffineStoreOp>(loc, valToStore, dest, iter_var);
                 auto oneConst = ifBuilder.create<ConstantIndexOp>(loc, 1);
                 SmallVector<Value> res;

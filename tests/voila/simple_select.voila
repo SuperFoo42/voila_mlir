@@ -1,0 +1,5 @@
+main(x)
+{
+    z = select(x, false);
+    emit z;
+}

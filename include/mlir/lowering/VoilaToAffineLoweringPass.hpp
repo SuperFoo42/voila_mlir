@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <mlir/Dialect/Affine/IR/AffineOps.h>
+#include <mlir/Dialect/MemRef/IR/MemRef.h>
 #include <mlir/Dialect/Tosa/IR/TosaOps.h>
 #include <mlir/Dialect/SCF/SCF.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>

@@ -43,9 +43,21 @@
 
 namespace voila
 {
+    class Parameter
+    {
+        [[maybe_unused]] void *data;
+        [[maybe_unused]] size_t size;
+        [[maybe_unused]] DataType type;
+        Parameter(void *data, size_t size, DataType type) : data{data}, size{size}, type{type} {}
+      public:
+        friend Parameter make_param(void *, size_t , DataType );
+        friend class Program;
+    };
+
     class Program
     {
         std::unordered_map<std::string, ast::Expression> func_vars;
+        std::vector<void *> params;
         ::mlir::MLIRContext context;
         llvm::LLVMContext llvmContext;
         ::mlir::OwningModuleRef mlirModule;
@@ -58,17 +70,24 @@ namespace voila
         std::vector<std::unique_ptr<ast::Fun>> functions;
         TypeInferer inferer;
         const bool debug;
+        const bool m_optimize;
 
-        explicit Program(bool debug = false) :
-            func_vars(), context(), llvmContext(), mlirModule(), llvmModule(), functions(), inferer(), debug{debug} {};
+        explicit Program(bool debug = false, bool optimize = true) :
+            func_vars(),
+            context(),
+            llvmContext(),
+            mlirModule(),
+            llvmModule(),
+            functions(),
+            inferer(),
+            debug{debug},
+            m_optimize{optimize}
+        {
+        }
+
         ~Program() = default;
 
-        void add_func(ast::Fun *f)
-        {
-            functions.emplace_back(f);
-            f->variables = std::move(func_vars);
-            func_vars.clear();
-        }
+        void add_func(ast::Fun *f);
 
         std::vector<std::unique_ptr<ast::Fun>> &get_funcs()
         {
@@ -81,6 +100,10 @@ namespace voila
 
         void convertToLLVM(bool optimize);
 
+        /**
+         * @Deprecated use () instead
+         * @param shapes
+         */
         void runJIT(bool optimize);
 
         void printMLIR(const std::string &filename);
@@ -98,7 +121,21 @@ namespace voila
         ast::Expression get_var(const std::string &var_name);
 
         bool has_var(const std::string &var_name);
+        /**
+         * @Deprecated use << instead
+         * @param shapes
+         */
         void set_main_args_shape(const std::unordered_map<std::string, size_t> &shapes);
+        /**
+         * @Deprecated use << instead
+         * @param shapes
+         */
         void set_main_args_type(const std::unordered_map<std::string, DataType> &types);
+
+        Program &operator<<(Parameter param);
+
+        std::unique_ptr<void *> operator()();
     };
+
+    Parameter make_param(void *, size_t , DataType );
 } // namespace voila

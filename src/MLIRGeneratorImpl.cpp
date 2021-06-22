@@ -267,7 +267,24 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const Read &read)
     {
-        ASTVisitor::operator()(read);
+        auto location = loc(read.get_location());
+        auto col = std::get<Value>(visitor_gen(read.column));
+        auto idx = std::get<Value>(visitor_gen(read.idx));
+/*        if (!idx.getType().isa<::mlir::TensorType>())
+        {
+            throw MLIRGenerationException("Invalid operand type for idx parameter");
+        }
+        auto idxElemType = idx.getType().dyn_cast<::mlir::TensorType>().getElementType();
+        if (!idxElemType.isa<::mlir::IndexType>())
+        {
+            if (!idxElemType.isa<::mlir::IntegerType>())
+                throw MLIRGenerationException("Invalid operand type for idx parameter");
+            else
+            {
+                idx = builder.create<::mlir::IndexCastOp>(idx.getLoc(), builder.getIndexType(), idx);
+            }
+        }*/
+        result = builder.create<::mlir::voila::ReadOp>(location, col.getType(), col, idx);
     }
 
     void MLIRGeneratorImpl::operator()(const Gather &gather)

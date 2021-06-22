@@ -33,7 +33,7 @@ CPMAddPackage(
 )
 
 execute_process(
-        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True
+        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True -DLLVM_BUILD_TESTS=True
         WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
 )
 message(STATUS "build llvm")
@@ -79,8 +79,8 @@ if (BUILD_DOC)
 endif ()
 
 #Enable sanitizers globally
-#add_compile_options(-fsanitize=address -fsanitize=undefined)
-add_link_options(-fuse-ld=lld) #need to use lld, for some reason ld complains about invalid symbols. -fsanitize=address -fsanitize=undefined
+add_compile_options(-fsanitize=address -fsanitize=undefined)
+add_link_options(-fuse-ld=lld -fsanitize=address -fsanitize=undefined) #need to use lld, for some reason ld complains about invalid symbols.
 
 find_package(TBB)
 include_directories(${TBB_INCLUDE_DIRS})

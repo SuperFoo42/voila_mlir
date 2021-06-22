@@ -7,10 +7,11 @@ def foo(x)
 
 main(y)
 {
+    d = read(y, 1);
     f = foo(y);
     y = and(f, false);
     z = foo(y);
     g = not(and(y,z));
-    y = select(2,g);
+    y = select(d,g);
     emit y;
 }
