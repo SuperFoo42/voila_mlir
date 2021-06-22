@@ -422,7 +422,7 @@ namespace voila
     {
         if (!compatible(get_type(gather.idxs).t, DataType::INT64))
             throw IncompatibleTypesException();
-        if (compatible(get_type(gather.column).t, DataType::VOID))
+        if (get_type(gather.column).t== DataType::VOID)
             throw IncompatibleTypesException();
 
         insertNewFuncType(gather, {get_type_id(gather.column), get_type_id(gather.idxs)}, DataType::VOID);

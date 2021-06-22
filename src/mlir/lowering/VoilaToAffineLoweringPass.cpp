@@ -4,10 +4,11 @@
 #include "mlir/lowering/ComparisonOpLowering.hpp"
 #include "mlir/lowering/ConstOpLowering.hpp"
 #include "mlir/lowering/EmitOpLowering.hpp"
+#include "mlir/lowering/GatherOpLowering.hpp"
 #include "mlir/lowering/LogicalOpLowering.hpp"
 #include "mlir/lowering/NotOpLowering.hpp"
-#include "mlir/lowering/SelectOpLowering.hpp"
 #include "mlir/lowering/ReadOpLowering.hpp"
+#include "mlir/lowering/SelectOpLowering.hpp"
 
 using namespace mlir;
 using namespace ::voila::mlir;
@@ -38,11 +39,10 @@ void VoilaToAffineLoweringPass::runOnFunction()
     // Now that the conversion target has been defined, we just need to provide
     // the set of patterns that will lower the Toy operations.
     RewritePatternSet patterns(&getContext());
-    patterns
-        .add<AndOpLowering, OrOpLowering, NotOpLowering, BoolConstOpLowering, IntConstOpLowering, FltConstOpLowering,
-             SelectOpLowering, ReadOpLowering, AddIOpLowering, SubIOpLowering, MulIOpLowering, DivFOpLowering,
-             EqIOpLowering, NeqIOpLowering, LeIOpLowering, LeqIOpLowering, GeIOpLowering, GeqIOpLowering>(
-            &getContext());
+    patterns.add<AndOpLowering, OrOpLowering, NotOpLowering, BoolConstOpLowering, IntConstOpLowering,
+                 FltConstOpLowering, SelectOpLowering, ReadOpLowering, GatherOpLowering, AddIOpLowering, SubIOpLowering,
+                 MulIOpLowering, DivFOpLowering, EqIOpLowering, NeqIOpLowering, LeIOpLowering, LeqIOpLowering,
+                 GeIOpLowering, GeqIOpLowering>(&getContext());
 
     patterns.add<EmitOpLowering>(&getContext(), function);
 

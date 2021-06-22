@@ -1,0 +1,5 @@
+main(x,y)
+{
+    z = gather(x, y);
+    emit z;
+}

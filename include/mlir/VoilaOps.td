@@ -330,12 +330,12 @@ let results = (outs 1DTensorOf<[AnyType]>);
 def GatherOp : Voila_Op<"gather",[NoSideEffect]> {
 let summary = "read elements from column";
 let description = [{
-The "gather" operation loads data from "column" at "indexes".
-The start "indexes" are expected to be within "column" bounds and the shape "indexes" is smaller than "column".
+The "gather" operation loads data from "column" at "indices".
+The start "indices" are expected to be within "column" bounds and the shape "indices" is smaller than "column".
 }];
 
-let arguments = (ins AnyUnrankedMemRef:$column, IndexTensor:$indexes);
-let results = (outs AnyTensor);
+let arguments = (ins 1DTensorOf<[AnyType]>:$column, 1DTensorOf<[AnySignlessInteger]>:$indices);
+let results = (outs 1DTensorOf<[AnyType]>);
 
 // Specify a parser and printer method.
 //let parser = [{ return ::parseBinaryOp(parser, result); }];

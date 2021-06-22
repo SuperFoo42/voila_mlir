@@ -30,7 +30,6 @@ namespace voila::mlir::lowering
                                               ::mlir::ArrayRef<::mlir::Value> operands,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final
         {
-            // TODO
             ::mlir::voila::ReadOpAdaptor readOpAdaptor(operands);
             ::mlir::SmallVector<::mlir::Value> ops;
             auto loc = op->getLoc();

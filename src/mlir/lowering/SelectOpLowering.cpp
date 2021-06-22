@@ -23,13 +23,15 @@ static ::mlir::Value insertAllocAndDealloc(::mlir::MemRefType type,
     else if (dynamicMemref.getType().dyn_cast<::mlir::TensorType>().isDynamicDim(0))
     {
         auto allocSize = rewriter.create<::mlir::memref::DimOp>(loc, dynamicMemref, 0);
-        alloc = rewriter.create<::mlir::memref::AllocOp>(loc, MemRefType::get(-1, type.getElementType()), ::mlir::Value(allocSize));
+        alloc = rewriter.create<::mlir::memref::AllocOp>(loc, MemRefType::get(-1, type.getElementType()),
+                                                         ::mlir::Value(allocSize));
     }
     else
     {
         auto allocSize = rewriter.create<::mlir::ConstantIndexOp>(
             loc, dynamicMemref.getType().dyn_cast<::mlir::TensorType>().getDimSize(0));
-        alloc = rewriter.create<::mlir::memref::AllocOp>(loc, MemRefType::get(-1, type.getElementType()),::mlir::Value(allocSize));
+        alloc = rewriter.create<::mlir::memref::AllocOp>(loc, MemRefType::get(-1, type.getElementType()),
+                                                         ::mlir::Value(allocSize));
     }
 
     // buffer deallocation instructions are added in the buffer deallocation pass
@@ -96,7 +98,9 @@ void SelectOpLowering::lowerOpToLoops(Operation *op,
     SmallVector<Value> sizes;
     sizes.push_back(resultSize.getResult(0));
     rewriter.create<memref::StoreOp>(loc, resultSize->getResult(0), resSizeMemRef, indices);
-    rewriter.replaceOpWithNewOp<memref::ReinterpretCastOp>(op, MemRefType::get(-1, alloc.getType().dyn_cast<MemRefType>().getElementType()),alloc, zeroConst, sizes, indices);
+    rewriter.replaceOpWithNewOp<memref::ReinterpretCastOp>(
+        op, MemRefType::get(-1, alloc.getType().dyn_cast<MemRefType>().getElementType()), alloc, zeroConst, sizes,
+        indices);
 }
 
 LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
@@ -110,27 +114,30 @@ LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
         {
             ::mlir::voila::SelectOp::Adaptor binaryAdaptor(memRefOperands);
             ::mlir::Value values;
-          ::mlir::Value pred;
+            ::mlir::Value pred;
             if (binaryAdaptor.values().getType().isa<TensorType>())
             {
-                values = builder.create<memref::BufferCastOp>(loc, convertTensorToMemRef(binaryAdaptor.values().getType().dyn_cast<TensorType>()), binaryAdaptor.values());
+                values = builder.create<memref::BufferCastOp>(
+                    loc, convertTensorToMemRef(binaryAdaptor.values().getType().dyn_cast<TensorType>()),
+                    binaryAdaptor.values());
             }
             else
             {
                 values = binaryAdaptor.values();
             }
 
-          if (binaryAdaptor.pred().getType().isa<TensorType>())
-          {
-              pred = builder.create<memref::BufferCastOp>(loc, convertTensorToMemRef(binaryAdaptor.pred().getType().dyn_cast<TensorType>()), binaryAdaptor.pred());
-          }
-          else
-          {
-              pred = binaryAdaptor.pred();
-          }
+            if (binaryAdaptor.pred().getType().isa<TensorType>())
+            {
+                pred = builder.create<memref::BufferCastOp>(
+                    loc, convertTensorToMemRef(binaryAdaptor.pred().getType().dyn_cast<TensorType>()),
+                    binaryAdaptor.pred());
+            }
+            else
+            {
+                pred = binaryAdaptor.pred();
+            }
 
-            if (values.getType().isa<::mlir::MemRefType>() &&
-                pred.getType().isa<::mlir::MemRefType>())
+            if (values.getType().isa<::mlir::MemRefType>() && pred.getType().isa<::mlir::MemRefType>())
             {
                 auto loadedRhs = builder.create<::mlir::AffineLoadOp>(loc, pred, loopIvs);
                 // Create the binary operation performed on the loaded values.
