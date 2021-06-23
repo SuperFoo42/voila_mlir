@@ -15,27 +15,65 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const AggrSum &sum)
     {
-        ASTVisitor::operator()(sum);
+        auto location = loc(sum.get_location());
+
+        mlir::Value expr = std::get<Value>(visitor_gen(sum.src));
+
+        //TODO: cleaner solution
+        ::mlir::Type resType;
+        if (expr.getType().dyn_cast<::mlir::TensorType>().getElementType().isIntOrIndex())
+        {
+            resType = builder.getI64Type();
+        }
+        else if(expr.getType().dyn_cast<::mlir::TensorType>().getElementType().isIntOrFloat())
+        {
+            resType = builder.getF64Type();
+        }
+        else
+        {
+            throw MLIRGenerationException();
+        }
+
+        result = builder.create<::mlir::voila::SumOp>(location, resType ,::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const AggrCnt &cnt)
     {
-        ASTVisitor::operator()(cnt);
+        auto location = loc(cnt.get_location());
+
+        mlir::Value expr = std::get<Value>(visitor_gen(cnt.src));
+
+        result = builder.create<::mlir::voila::SumOp>(location, builder.getI64Type() ,::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const AggrMin &min)
     {
-        ASTVisitor::operator()(min);
+        auto location = loc(min.get_location());
+
+        mlir::Value expr = std::get<Value>(visitor_gen(min.src));
+
+        ::mlir::Type resType = expr.getType().dyn_cast<::mlir::TensorType>().getElementType();
+
+        result = builder.create<::mlir::voila::SumOp>(location, resType ,::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const AggrMax &max)
     {
-        ASTVisitor::operator()(max);
+        auto location = loc(max.get_location());
+
+        mlir::Value expr = std::get<Value>(visitor_gen(max.src));
+        ::mlir::Type resType = expr.getType().dyn_cast<::mlir::TensorType>().getElementType();
+
+        result = builder.create<::mlir::voila::SumOp>(location, resType ,::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const AggrAvg &avg)
     {
-        ASTVisitor::operator()(avg);
+        auto location = loc(avg.get_location());
+
+        mlir::Value expr = std::get<Value>(visitor_gen(avg.src));
+
+        result = builder.create<::mlir::voila::AvgOp>(location, builder.getF64Type() ,::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const Write &write)

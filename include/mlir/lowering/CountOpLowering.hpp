@@ -13,12 +13,12 @@
 
 namespace voila::mlir::lowering
 {
-    struct ReadOpLowering : public ::mlir::ConversionPattern
+    struct CountOpLowering : public ::mlir::ConversionPattern
     {
-        explicit ReadOpLowering(::mlir::MLIRContext *ctx);
+        explicit CountOpLowering(::mlir::MLIRContext *ctx);
 
         ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                              ::mlir::ArrayRef<::mlir::Value> operands,
+                                              llvm::ArrayRef<::mlir::Value> operands,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final;
     };
 } // namespace voila::mlir::lowering

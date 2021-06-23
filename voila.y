@@ -159,11 +159,11 @@ var: ID {$$ = out.has_var($1) ? ast::Expression::make<Ref>(@1, out.get_var($1)) 
 
 	/* aggregate ( result_store, variable with predicate as aggregation filter, vector_to_aggregate) */
 effect :
-	AGGR LPAREN SUM COMMA expr COMMA expr RPAREN { $$ = Statement::make<AggrSum>(@1+@8,$5, $7); } /* maybe we restrict the expressions to more specialized predicates or tuple get in the parser to safe some correctness check effort later on */
-	| AGGR LPAREN CNT COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrCnt>(@1+@8,$5, $7); }
-	| AGGR LPAREN AVG COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrAvg>(@1+@8,$5, $7); }
-	| AGGR LPAREN MIN COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrMin>(@1+@8,$5, $7); }
-	| AGGR LPAREN MAX COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<AggrMax>(@1+@8,$5, $7); }
+	AGGR LPAREN SUM COMMA expr RPAREN { $$ = Statement::make<AggrSum>(@1+@6,$5); } /* maybe we restrict the expressions to more specialized predicates or tuple get in the parser to safe some correctness check effort later on */
+	| AGGR LPAREN CNT COMMA expr RPAREN { $$ = ast::Statement::make<AggrCnt>(@1+@6,$5); }
+	| AGGR LPAREN AVG COMMA expr RPAREN { $$ = ast::Statement::make<AggrAvg>(@1+@6,$5); }
+	| AGGR LPAREN MIN COMMA expr RPAREN { $$ = ast::Statement::make<AggrMin>(@1+@6,$5); }
+	| AGGR LPAREN MAX COMMA expr RPAREN { $$ = ast::Statement::make<AggrMax>(@1+@6,$5); }
 	| SCATTER LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Scatter>(@1+@8,$3, $5, $7); } /* dest, idxs with pred, src */
 	| WRITE LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Write>(@1+@8,$3, $5, $7); } /* src, dest, start_idx */
 

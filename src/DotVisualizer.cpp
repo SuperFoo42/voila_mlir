@@ -8,8 +8,6 @@ namespace voila::ast
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
         sum.src.visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        sum.idxs.visit(*this);
     }
 
     void DotVisualizer::operator()(const AggrCnt &cnt)
@@ -19,8 +17,6 @@ namespace voila::ast
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
         cnt.src.visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        cnt.idxs.visit(*this);
     }
 
     void DotVisualizer::operator()(const AggrMin &min)
@@ -30,8 +26,6 @@ namespace voila::ast
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
         min.src.visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        min.idxs.visit(*this);
     }
 
     void DotVisualizer::operator()(const AggrMax &max)
@@ -41,8 +35,6 @@ namespace voila::ast
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
         max.src.visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        max.idxs.visit(*this);
     }
 
     void DotVisualizer::operator()(const AggrAvg &avg)
@@ -52,8 +44,6 @@ namespace voila::ast
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
         avg.src.visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        avg.idxs.visit(*this);
     }
 
     void DotVisualizer::operator()(const Write &write)

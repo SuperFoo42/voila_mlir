@@ -486,4 +486,53 @@ let results = (outs AnyTensor:$output);
 }
 
 /* TODO: ops aggregations*/
+def MaxOp : Voila_Op<"aggr_max", [NoSideEffect]> {
+let summary = "maximum value reduction operation";
+let description = [{
+//TODO
+}];
+
+let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input);
+let results = (outs AnyTypeOf<[AnyInteger,AnyFloat]>:$output);
+}
+
+def MinOp : Voila_Op<"aggr_min", [NoSideEffect]> {
+let summary = "minimum value reduction operation";
+let description = [{
+//TODO
+}];
+
+let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input);
+let results = (outs AnyTypeOf<[AnyInteger,AnyFloat]>:$output);
+}
+
+def SumOp : Voila_Op<"aggr_sum", [NoSideEffect]> {
+let summary = "sum value reduction operation";
+let description = [{
+//TODO
+}];
+
+let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input);
+let results = (outs AnyTypeOf<[AnyInteger,AnyFloat]>:$output);
+}
+
+def CountOp : Voila_Op<"aggr_count", [NoSideEffect]> {
+let summary = "sum value reduction operation";
+let description = [{
+//TODO
+}];
+
+let arguments = (ins 1DTensorOf<[AnyType]>:$input);
+let results = (outs I64:$output);
+}
+
+def AvgOp : Voila_Op<"aggr_avg", [NoSideEffect]> {
+let summary = "sum value reduction operation";
+let description = [{
+//TODO
+}];
+
+let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input);
+let results = (outs F64:$output);
+}
 #endif // VOILA_OPS
