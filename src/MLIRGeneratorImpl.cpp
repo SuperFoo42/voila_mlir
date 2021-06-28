@@ -19,13 +19,13 @@ namespace voila::mlir
 
         mlir::Value expr = std::get<Value>(visitor_gen(sum.src));
 
-        //TODO: cleaner solution
+        // TODO: cleaner solution
         ::mlir::Type resType;
         if (expr.getType().dyn_cast<::mlir::TensorType>().getElementType().isIntOrIndex())
         {
             resType = builder.getI64Type();
         }
-        else if(expr.getType().dyn_cast<::mlir::TensorType>().getElementType().isIntOrFloat())
+        else if (expr.getType().dyn_cast<::mlir::TensorType>().getElementType().isIntOrFloat())
         {
             resType = builder.getF64Type();
         }
@@ -34,7 +34,7 @@ namespace voila::mlir
             throw MLIRGenerationException();
         }
 
-        result = builder.create<::mlir::voila::SumOp>(location, resType ,::llvm::makeArrayRef(expr));
+        result = builder.create<::mlir::voila::SumOp>(location, resType, ::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const AggrCnt &cnt)
@@ -43,7 +43,7 @@ namespace voila::mlir
 
         mlir::Value expr = std::get<Value>(visitor_gen(cnt.src));
 
-        result = builder.create<::mlir::voila::SumOp>(location, builder.getI64Type() ,::llvm::makeArrayRef(expr));
+        result = builder.create<::mlir::voila::SumOp>(location, builder.getI64Type(), ::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const AggrMin &min)
@@ -54,7 +54,7 @@ namespace voila::mlir
 
         ::mlir::Type resType = expr.getType().dyn_cast<::mlir::TensorType>().getElementType();
 
-        result = builder.create<::mlir::voila::SumOp>(location, resType ,::llvm::makeArrayRef(expr));
+        result = builder.create<::mlir::voila::SumOp>(location, resType, ::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const AggrMax &max)
@@ -64,7 +64,7 @@ namespace voila::mlir
         mlir::Value expr = std::get<Value>(visitor_gen(max.src));
         ::mlir::Type resType = expr.getType().dyn_cast<::mlir::TensorType>().getElementType();
 
-        result = builder.create<::mlir::voila::SumOp>(location, resType ,::llvm::makeArrayRef(expr));
+        result = builder.create<::mlir::voila::SumOp>(location, resType, ::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const AggrAvg &avg)
@@ -73,7 +73,7 @@ namespace voila::mlir
 
         mlir::Value expr = std::get<Value>(visitor_gen(avg.src));
 
-        result = builder.create<::mlir::voila::AvgOp>(location, builder.getF64Type() ,::llvm::makeArrayRef(expr));
+        result = builder.create<::mlir::voila::AvgOp>(location, builder.getF64Type(), ::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const Write &write)
@@ -102,20 +102,19 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const Assign &assign)
     {
-        // TODO: SSA?
-        // visitor_gen(assign.dest);
         auto res = visitor_gen(assign.expr);
         result = res;
         auto value = std::get<Value>(res);
 
         // assign value to variable
-        if (assign.dest.is_reference())
+        if (assign.dest.is_variable())
         {
-            symbolTable.insert(assign.dest.as_reference()->ref.as_variable()->var, value);
+            symbolTable.insert(assign.dest.as_variable()->var, value);
         }
         else
         {
-            symbolTable.insert(assign.dest.as_variable()->var, value);
+            builder.create<::mlir::voila::MoveOp>(
+                value.getLoc(), value, symbolTable.lookup(assign.dest.as_reference()->ref.as_variable()->var));
         }
     }
 
@@ -133,7 +132,21 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const Loop &loop)
     {
-        ASTVisitor::operator()(loop);
+        auto location = loc(loop.get_location());
+        mlir::Value cond = std::get<Value>(visitor_gen(loop.pred));
+
+        auto voilaLoop = builder.create<::mlir::voila::LoopOp>(location, builder.getI1Type(), cond);
+        auto &bodyRegion = voilaLoop.body();
+        bodyRegion.push_back(new ::mlir::Block());
+        ::mlir::Block &bodyBlock = bodyRegion.front();
+        ::mlir::OpBuilder::InsertionGuard guard(builder);
+        builder.setInsertionPointToStart(&bodyBlock);
+        for (const auto &elem : loop.stms)
+        {
+            visitor_gen(elem);
+        }
+
+        result = ::mlir::success();
     }
 
     void MLIRGeneratorImpl::operator()(const StatementWrapper &wrapper)
@@ -301,6 +314,11 @@ namespace voila::mlir
     void MLIRGeneratorImpl::operator()(const StrConst &)
     {
         throw NotImplementedException();
+    }
+
+    void MLIRGeneratorImpl::operator()(const Predicate &pred)
+    {
+        result = std::get<Value>(visitor_gen(pred.expr));
     }
 
     void MLIRGeneratorImpl::operator()(const Read &read)
@@ -501,4 +519,5 @@ namespace voila::mlir
             throw MLIRGenerationException();
         return visitor.result;
     }
+
 } // namespace voila::mlir

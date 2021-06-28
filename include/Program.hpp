@@ -104,7 +104,7 @@ namespace voila
          * @Deprecated use () instead
          * @param shapes
          */
-        void runJIT(bool optimize);
+        void runJIT(bool optimize, std::optional<std::string> objPath);
 
         void printMLIR(const std::string &filename);
 

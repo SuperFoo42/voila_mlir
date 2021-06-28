@@ -47,12 +47,13 @@ namespace voila::ast
     class Main;
     class Comparison;
     class Variable;
+    class Predicate;
 
     class ASTVisitor
     {
       public:
         virtual ~ASTVisitor() = default;
-        virtual void operator()(const ASTNode&){}
+        virtual void operator()(const ASTNode &) {}
         virtual void operator()(const Aggregation &) {}
         virtual void operator()(const AggrSum &) {}
         virtual void operator()(const AggrCnt &) {}
@@ -97,6 +98,6 @@ namespace voila::ast
         virtual void operator()(const Main &) {}
         virtual void operator()(const Selection &) {}
         virtual void operator()(const Variable &) {}
-
+        virtual void operator()(const Predicate &) {}
     };
 } // namespace voila::ast

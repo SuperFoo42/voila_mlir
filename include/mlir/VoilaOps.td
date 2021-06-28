@@ -101,7 +101,7 @@ BoolConstOp::build($_builder, $_state, RankedTensorType::get({}, $_builder.getI1
 }
 
 //TODO: SameOperandsAndResultShape,Elementwise,Vectorizable
-def AddOp : Voila_Op<"add",[NoSideEffect, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+def AddOp : Voila_Op<"add",[NoSideEffect, Commutative,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise addition operation";
   let description = [{
     The "add" operation performs element-wise addition between two tensors.
@@ -130,7 +130,7 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$r
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def MulOp : Voila_Op<"mul",[NoSideEffect, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+def MulOp : Voila_Op<"mul",[NoSideEffect, Commutative,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise multiplication operation";
   let description = [{
     The "mul" operation performs element-wise multiplication between two tensors.
@@ -175,7 +175,7 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def AndOp : Voila_Op<"and",[NoSideEffect,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+def AndOp : Voila_Op<"and",[NoSideEffect,Commutative,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise and operation";
   let description = [{
     The "and" operation performs element-wise and between two tensors.
@@ -192,7 +192,7 @@ def AndOp : Voila_Op<"and",[NoSideEffect,DeclareOpInterfaceMethods<ShapeInferenc
   //TODO: verifyer checking same shape
 }
 
-def OrOp : Voila_Op<"or",[NoSideEffect, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+def OrOp : Voila_Op<"or",[NoSideEffect,Commutative, DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise or operation";
   let description = [{
     The "or" operation performs element-wise or between two tensors.
@@ -222,7 +222,7 @@ let results = (outs I1Tensor);
 }
 
 
-def EqOp : Voila_Op<"eq",[NoSideEffect,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+def EqOp : Voila_Op<"eq",[NoSideEffect,Commutative,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise equality comparison operation";
   let description = [{
     The "eq" operation performs element-wise equality comparison between two tensors.
@@ -237,7 +237,7 @@ def EqOp : Voila_Op<"eq",[NoSideEffect,DeclareOpInterfaceMethods<ShapeInferenceO
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def NeqOp : Voila_Op<"neq",[NoSideEffect,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
+def NeqOp : Voila_Op<"neq",[NoSideEffect,Commutative,DeclareOpInterfaceMethods<ShapeInferenceOpInterface>]> {
   let summary = "element-wise inequality comparison operation";
   let description = [{
     The "neq" operation performs element-wise inequality comparison between two tensors.
@@ -449,22 +449,14 @@ $_state.addAttribute("callee", $_builder.getSymbolRefAttr(callee));
 }
 
 //TODO
-def LoopOp : Voila_Op<"loop"> {
+def LoopOp : Voila_Op<"loop",[NoTerminator]> {
 let summary = "loop operation";
 let description = [{
+    //TODO
 }];
-// The generic call operation takes a symbol reference attribute as the
-// callee, and inputs for the call.
-let arguments = (ins SymbolRefAttr:$callee, Variadic<AnyTensor>:$inputs);
-let results = (outs Variadic<AnyTensor>);
-let builders = [
-OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments), [{
-// Generic call always returns nothing initially
-//$_state.addTypes(UnrankedTensorType::get($-builder.getF64Type()));
-$_state.addOperands(arguments);
-$_state.addAttribute("callee", $_builder.getSymbolRefAttr(callee));
-}]>
-];
+let arguments = (ins I1Tensor:$cond);
+let results = (outs I1); //only needed because we translate this to affine loop with iter_var
+let regions = (region AnyRegion:$body);
 }
 
 def CastOp : Voila_Op<"cast", [
@@ -534,5 +526,14 @@ let description = [{
 
 let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input);
 let results = (outs F64:$output);
+}
+
+def MoveOp : Voila_Op<"move", [SameTypeOperands, SameOperandsShape]> {
+let summary = "move result from one ssa value to other in order to keep track of references";
+let description = [{
+//TODO
+}];
+
+let arguments = (ins AnyType:$input, AnyType:$out);
 }
 #endif // VOILA_OPS

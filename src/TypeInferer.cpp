@@ -86,9 +86,9 @@ namespace voila
         try
         {
             if (node.is_statement_wrapper())
-                return typeIDs.at(node.as_statement_wrapper()->expr.as_expr());
+                return get_type_id(node.as_statement_wrapper()->expr);
             else
-            return typeIDs.at(node.as_stmt());
+                return typeIDs.at(node.as_stmt());
         }
         catch (std::out_of_range &)
         {
@@ -133,7 +133,7 @@ namespace voila
             if (node.is_statement_wrapper())
                 return *types.at(typeIDs.at(node.as_statement_wrapper()->expr.as_expr()));
             else
-            return *types.at(typeIDs.at(node.as_stmt()));
+                return *types.at(typeIDs.at(node.as_stmt()));
         }
         catch (std::out_of_range &)
         {
@@ -243,7 +243,7 @@ namespace voila
 
     void TypeInferer::unify(const ast::Expression &t1, const ast::Statement &t2)
     {
-        ast::ASTNode * tmp;
+        ast::ASTNode *tmp;
         if (t2.is_statement_wrapper())
         {
             tmp = t2.as_statement_wrapper()->expr.as_expr();
@@ -257,7 +257,6 @@ namespace voila
         else
             typeIDs.insert_or_assign(t1.as_expr(), get_type_id(*tmp));
     }
-
 
     void TypeInferer::unify(const ast::ASTNode &t1, const ast::Statement &t2)
     {
@@ -344,8 +343,7 @@ namespace voila
         else
             unify(assign.dest, assign.expr);
 
-        insertNewFuncType(assign, {get_type_id(assign.dest), get_type_id(assign.expr)},
-                          DataType::VOID);
+        insertNewFuncType(assign, {get_type_id(assign.dest), get_type_id(assign.expr)}, DataType::VOID);
     }
 
     void TypeInferer::operator()(const ast::Emit &emit)
@@ -422,7 +420,7 @@ namespace voila
     {
         if (!compatible(get_type(gather.idxs).t, DataType::INT64))
             throw IncompatibleTypesException();
-        if (get_type(gather.column).t== DataType::VOID)
+        if (get_type(gather.column).t == DataType::VOID)
             throw IncompatibleTypesException();
 
         insertNewFuncType(gather, {get_type_id(gather.column), get_type_id(gather.idxs)}, DataType::VOID);
@@ -484,6 +482,22 @@ namespace voila
         }
 
         insertNewFuncType(selection, {get_type_id(selection.param), get_type_id(selection.param)}, type.t);
+    }
+
+    void TypeInferer::operator()(const ast::Predicate &pred)
+    {
+        auto &type = get_type(*pred.expr.as_expr());
+
+        if (!convertible(get_type(pred.expr).t, DataType::BOOL))
+        {
+            throw IncompatibleTypesException();
+        }
+        else
+        {
+            get_type(pred.expr).t = DataType::BOOL;
+        }
+
+        insertNewFuncType(pred, {get_type_id(pred.expr), get_type_id(pred.expr)}, type.t);
     }
 
     void TypeInferer::operator()(const ast::Comparison &comparison)

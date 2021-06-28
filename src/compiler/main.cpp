@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
     options.add_options()("h, help", "Show help")("f, file", "File name",cxxopts::value<std::string>())
                         ("a, plot-ast", "Generate dot file of AST", cxxopts::value<bool>()->default_value("false"))
                         ("O,opt", "Enable optimization passes", cxxopts::value<bool>()->default_value("true"))
+                        ("o,obj", "Dump object code", cxxopts::value<bool>()->default_value("false"))
                         ("d, dump-mlir", "Dump intermediate voila", cxxopts::value<bool>()->default_value("false"))
                         ("l, dump-lowered","Dump lowered mlir", cxxopts::value<bool>()->default_value("false"))
                         ("j, jit", "jit compile and run code", cxxopts::value<bool>()->default_value("false"))
@@ -148,7 +149,10 @@ int main(int argc, char *argv[])
         if (cmd.count("j"))
         {
             spdlog::debug("Running program");
-            prog->runJIT(cmd.count("O"));
+            if (cmd.count("o"))
+                prog->runJIT(cmd.count("O"), cmd["f"].as<std::string>());
+            else
+                prog->runJIT(cmd.count("O"), std::nullopt);
             spdlog::debug("Finished Running program");
         }
     }

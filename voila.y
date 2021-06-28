@@ -117,6 +117,7 @@
 %nterm <ast::Fun *> func;
 %nterm <ast::Main *> main;
 %nterm <ast::Expression> constant;
+%nterm <ast::Expression> bool_constant;
 %nterm <ast::Expression> pred;
 %nterm <ast::Expression> pred_expr;
 %nterm <ast::Expression> var;
@@ -189,13 +190,17 @@ pred_expr:
     ID { $$ = ast::Expression::make<Ref>(@1,out.get_var($1)); }
     | comparison {$$ = $1; }
     | logical {$$ = $1; }
+    | bool_constant { $$= $1; }
 
 constant:
-	TRUE { $$ = ast::Expression::make<BooleanConst>(@1,true); out.infer_type($$); }
-	| FALSE { $$ = ast::Expression::make<BooleanConst>(@1, false); out.infer_type($$); }
+    bool_constant { $$= $1; }
 	| INT { $$ = ast::Expression::make<IntConst>(@1,$1); out.infer_type($$); }
 	| FLT { $$ = ast::Expression::make<FltConst>(@1,$1); out.infer_type($$); }
 	| STR { $$ = ast::Expression::make<StrConst>(@1,$1); out.infer_type($$); }
+
+bool_constant:
+    TRUE { $$ = ast::Expression::make<BooleanConst>(@1,true); out.infer_type($$); }
+    | FALSE { $$ = ast::Expression::make<BooleanConst>(@1, false); out.infer_type($$); }
 
 arithmetic :
 	ADD LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Add>(@1+@6,$3, $5); }

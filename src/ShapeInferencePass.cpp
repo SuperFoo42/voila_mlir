@@ -80,7 +80,7 @@ namespace voila::mlir
         else
         {
             f.setType(
-                FunctionType::get(&this->getContext(), f.getType().getInputs(), nullptr));
+                FunctionType::get(&this->getContext(), f.getType().getInputs(), {}));
         }
     }
 

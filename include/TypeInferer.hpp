@@ -13,7 +13,7 @@ namespace voila
         std::vector<std::unique_ptr<Type>> types;
 
       public:
-        //TypeInferer() : typeIDs{}, types{} {}
+        // TypeInferer() : typeIDs{}, types{} {}
 
         void operator()(const ast::Aggregation &aggregation) final;
         void operator()(const ast::Write &write) final;
@@ -57,6 +57,7 @@ namespace voila
         void operator()(const ast::And &anAnd) final;
         void operator()(const ast::Or &anOr) final;
         void operator()(const ast::Not &aNot) final;
+        void operator()(const ast::Predicate &pred) final;
 
         Type &get_type(const ast::ASTNode &node) const;
 
@@ -66,6 +67,7 @@ namespace voila
 
         void set_arity(const ast::ASTNode *const node, const size_t ar);
         void set_type(const ast::ASTNode *const node, const DataType type);
+
       private:
         void unify(const ast::ASTNode &t1, const ast::ASTNode &t2);
         void unify(const ast::Expression &t1, const ast::Expression &t2);

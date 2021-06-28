@@ -10,4 +10,6 @@ add_library(voila_lowering
         EmitOpLowering.cpp
         NotOpLowering.cpp
         ReadOpLowering.cpp
-        GatherOpLowering.cpp)
+        GatherOpLowering.cpp
+        LoopOpLowering.cpp
+        MoveOpLowering.cpp)

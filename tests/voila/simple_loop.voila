@@ -1,0 +1,7 @@
+main(x)
+{
+    loop | true {
+        x = add(x,1);
+    }
+    emit x;
+}

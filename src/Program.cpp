@@ -113,7 +113,7 @@ namespace voila
     {
         return context;
     }
-    void Program::runJIT(bool optimize)
+    void Program::runJIT(bool optimize, std::optional<std::string> objPath)
     {
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
@@ -129,27 +129,48 @@ namespace voila
 
         // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
         // the module.
-        auto maybeEngine = ExecutionEngine::create(*mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline);
+        auto maybeEngine = ExecutionEngine::create(*mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline, llvm::None,
+                                                   {}, true, true);
         assert(maybeEngine && "failed to construct an execution engine");
-        auto &engine = maybeEngine.get();
-
+        auto engine = std::move(*maybeEngine);
+        auto fn = engine->lookup("main");
+        if (!fn)
+        {
+            throw fn.takeError();
+        };
+        if (objPath.has_value())
+            engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));
         // Invoke the JIT-compiled function.
-        // TODO
-        auto *arg = new int64_t[200]{1};
-        auto *arg2 = new int64_t[200]{2};
+        // can not use new, because it appears that new does not really allocate storage in this case
+        auto *arg = static_cast<uint64_t *>(std::malloc(sizeof(uint64_t) * 100));
+        std::fill_n(arg, 100, 123);
+        auto *arg2 = static_cast<uint64_t *>(std::malloc(sizeof(uint64_t) * 100));
+        std::fill_n(arg2, 100, 2);
+        uint64_t foo = 0;
+        uint64_t bar = 0;
         SmallVector<void *> args;
-        args.push_back(arg);
-        args.push_back(arg2);
-        args.push_back(arg);
-        args.push_back(arg);
-        args.push_back(arg2);
+        // pass pointers to args
+        args.push_back(&arg);
+        args.push_back(&arg2);
+        args.push_back(&foo);
+        args.push_back(&bar);
 
         auto invocationResult = engine->invokePacked("main", args);
+
         if (invocationResult)
         {
             throw JITInvocationError();
         }
+
+        for (auto i = 0; i < 100; ++i)
+        {
+            std::cout << arg[i] << std::endl;
+            std::cout << arg2[i] << std::endl;
+        }
+        std::free(arg);
+        std::free(arg2);
     }
+
     void Program::convertToLLVM(bool optimize)
     {
         // lower to llvm
@@ -178,6 +199,7 @@ namespace voila
         // TODO:
         spdlog::debug(LLVMModuleToString(*llvmModule));
     }
+
     void Program::printLLVM(const std::string &filename)
     {
         std::error_code ec;
@@ -186,6 +208,7 @@ namespace voila
         llvmModule->print(os, &aw);
         os.flush();
     }
+
     void Program::printMLIR(const std::string &filename)
     {
         std::error_code ec;
@@ -227,7 +250,7 @@ namespace voila
         optPM.addPass(createPipelineDataTransferPass());
         optPM.addPass(createCanonicalizerPass());
         optPM.addPass(createCSEPass());
-        auto state =  pm.run(*mlirModule);
+        auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));
 
         if (failed(state))
@@ -245,35 +268,35 @@ namespace voila
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(secondpm);
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
-        // secondOptPM.addPass(createBufferDeallocationPass());
         secondOptPM.addPass(createFinalizingBufferizePass());
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
         if (optimize)
         {
             secondOptPM.addPass(createPromoteBuffersToStackPass());
-            // secondpm.addPass(createBufferResultsToOutParamsPass());
+            secondpm.addPass(createBufferResultsToOutParamsPass());
             secondOptPM.addPass(createBufferHoistingPass());
-            // secondOptPM.addPass(createAffineDataCopyGenerationPass());
+            secondOptPM.addPass(createAffineDataCopyGenerationPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
             secondOptPM.addPass(createLoopFusionPass());
             secondOptPM.addPass(createLoopCoalescingPass());
             secondOptPM.addPass(createLoopUnrollPass());
             secondOptPM.addPass(createLoopUnrollAndJamPass());
-            secondOptPM.addPass(createAffineParallelizePass());
-            secondOptPM.addPass(createSuperVectorizePass());
+            // secondOptPM.addPass(createAffineParallelizePass());
+            // secondOptPM.addPass(createSuperVectorizePass());
             secondOptPM.addPass(createSimplifyAffineStructuresPass());
             secondOptPM.addPass(createForLoopSpecializationPass());
-            secondOptPM.addPass(createParallelLoopFusionPass());
+            /*secondOptPM.addPass(createParallelLoopFusionPass());
             secondOptPM.addPass(createParallelLoopSpecializationPass());
-            secondOptPM.addPass(createParallelLoopTilingPass());
+            secondOptPM.addPass(createParallelLoopTilingPass());*/
             secondOptPM.addPass(createCanonicalizerPass());
             secondOptPM.addPass(createCSEPass());
         }
-
+        secondOptPM.addPass(createBufferDeallocationPass());
         secondOptPM.addPass(createLowerAffinePass());
         secondOptPM.addPass(createLowerToCFGPass());
+
         secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
@@ -320,7 +343,7 @@ namespace voila
 
     std::unique_ptr<void *> Program::operator()()
     {
-        runJIT(m_optimize);
+        runJIT(m_optimize, std::nullopt);
         // TODO:
         return std::make_unique<void *>(nullptr);
     }
