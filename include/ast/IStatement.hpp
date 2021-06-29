@@ -7,12 +7,6 @@
 
 namespace voila::ast
 {
-    class Aggregation;
-    class AggrSum;
-    class AggrCnt;
-    class AggrMin;
-    class AggrMax;
-    class AggrAvg;
     class Write;
     class Scatter;
     class FunctionCall;
@@ -35,8 +29,6 @@ namespace voila::ast
         // type checks
         [[nodiscard]] bool is_stmt() const final;
 
-        [[nodiscard]] virtual bool is_aggr() const;
-
         [[nodiscard]] virtual bool is_loop() const;
 
         [[nodiscard]] virtual bool is_assignment() const;
@@ -49,24 +41,12 @@ namespace voila::ast
 
         [[nodiscard]] virtual bool is_write() const;
 
-        [[nodiscard]] virtual bool is_aggr_sum() const;
-
-        [[nodiscard]] virtual bool is_aggr_cnt() const;
-
-        [[nodiscard]] virtual bool is_aggr_min() const;
-
-        [[nodiscard]] virtual bool is_aggr_max() const;
-
-        [[nodiscard]] virtual bool is_aggr_avg() const;
-
         [[nodiscard]] virtual bool is_statement_wrapper() const;
 
         [[nodiscard]] virtual StatementWrapper *as_statement_wrapper();
 
         // type conversions
         virtual IStatement *as_stmt();
-
-        virtual Aggregation *as_aggr();
 
         virtual Loop *as_loop();
 
@@ -79,16 +59,6 @@ namespace voila::ast
         virtual Scatter *as_scatter();
 
         virtual Write *as_write();
-
-        virtual AggrSum *as_aggr_sum();
-
-        virtual AggrCnt *as_aggr_cnt();
-
-        virtual AggrMin *as_aggr_min();
-
-        virtual AggrMax *as_aggr_max();
-
-        virtual AggrAvg *as_aggr_avg();
 
         virtual std::optional<Expression> as_expression();
     };

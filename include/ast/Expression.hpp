@@ -93,6 +93,17 @@ namespace voila::ast
 
         [[nodiscard]] bool is_variable() const;
 
+        [[nodiscard]] bool is_aggr() const;
+
+        [[nodiscard]] bool is_aggr_sum() const;
+
+        [[nodiscard]] bool is_aggr_cnt() const;
+
+        [[nodiscard]] bool is_aggr_min() const;
+
+        [[nodiscard]] bool is_aggr_max() const;
+
+        [[nodiscard]] bool is_aggr_avg() const;
 
         // casts
         [[nodiscard]] IExpression *as_expr() const;
@@ -154,6 +165,19 @@ namespace voila::ast
         [[nodiscard]] Predicate * as_predicate() const;
 
         [[nodiscard]] Variable *as_variable() const;
+
+
+        [[nodiscard]] Aggregation *as_aggr() const;
+
+        [[nodiscard]] AggrSum *as_aggr_sum() const;
+
+        [[nodiscard]] AggrCnt *as_aggr_cnt() const;
+
+        [[nodiscard]] AggrMin *as_aggr_min() const;
+
+        [[nodiscard]] AggrMax *as_aggr_max() const;
+
+        [[nodiscard]] AggrAvg *as_aggr_avg() const;
 
         [[nodiscard]] std::string type2string() const;
 

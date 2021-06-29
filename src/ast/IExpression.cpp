@@ -273,4 +273,56 @@ namespace voila::ast
     {
         return nullptr;
     }
+
+    bool IExpression::is_aggr() const
+    {
+        return false;
+    }
+
+    bool IExpression::is_aggr_sum() const
+    {
+        return false;
+    }
+    bool IExpression::is_aggr_cnt() const
+    {
+        return false;
+    }
+    bool IExpression::is_aggr_min() const
+    {
+        return false;
+    }
+    bool IExpression::is_aggr_max() const
+    {
+        return false;
+    }
+    bool IExpression::is_aggr_avg() const
+    {
+        return false;
+    }
+
+    Aggregation *IExpression::as_aggr()
+    {
+        return nullptr;
+    }
+
+    AggrSum *IExpression::as_aggr_sum()
+    {
+        return nullptr;
+    }
+    AggrCnt *IExpression::as_aggr_cnt()
+    {
+        return nullptr;
+    }
+    AggrMin *IExpression::as_aggr_min()
+    {
+        return nullptr;
+    }
+    AggrMax *IExpression::as_aggr_max()
+    {
+        return nullptr;
+    }
+    AggrAvg *IExpression::as_aggr_avg()
+    {
+        return nullptr;
+    }
 } // namespace voila::ast

@@ -250,7 +250,8 @@ namespace voila::ast
     {
         mImpl->set_predicate(std::move(expr));
     }
-    void Expression::visit(ASTVisitor &visitor) const {
+    void Expression::visit(ASTVisitor &visitor) const
+    {
         mImpl->visit(visitor);
     }
     Predicate *Expression::as_predicate() const
@@ -277,5 +278,57 @@ namespace voila::ast
     std::optional<Expression> Expression::get_predicate() const
     {
         return mImpl->get_predicate();
+    }
+
+    bool Expression::is_aggr() const
+    {
+        return mImpl->is_aggr();
+    }
+
+    bool Expression::is_aggr_sum() const
+    {
+        return mImpl->is_aggr_sum();
+    }
+    bool Expression::is_aggr_cnt() const
+    {
+        return mImpl->is_aggr_cnt();
+    }
+    bool Expression::is_aggr_min() const
+    {
+        return mImpl->is_aggr_min();
+    }
+    bool Expression::is_aggr_max() const
+    {
+        return mImpl->is_aggr_max();
+    }
+    bool Expression::is_aggr_avg() const
+    {
+        return mImpl->is_aggr_avg();
+    }
+
+    Aggregation *Expression::as_aggr() const
+    {
+        return mImpl->as_aggr();
+    }
+
+    AggrSum *Expression::as_aggr_sum() const
+    {
+        return mImpl->as_aggr_sum();
+    }
+    AggrCnt *Expression::as_aggr_cnt() const
+    {
+        return mImpl->as_aggr_cnt();
+    }
+    AggrMin *Expression::as_aggr_min() const
+    {
+        return mImpl->as_aggr_min();
+    }
+    AggrMax *Expression::as_aggr_max() const
+    {
+        return mImpl->as_aggr_max();
+    }
+    AggrAvg *Expression::as_aggr_avg() const
+    {
+        return mImpl->as_aggr_avg();
     }
 } // namespace voila::ast

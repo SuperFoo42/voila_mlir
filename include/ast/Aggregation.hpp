@@ -6,10 +6,10 @@
 
 namespace voila::ast
 {
-    class Aggregation : public IStatement
+    class Aggregation : public IExpression
     {
       public:
-        Aggregation(const Location loc, Expression col) : IStatement(loc), src{std::move(col)} {}
+        Aggregation(const Location loc, Expression col) : IExpression(loc), src{std::move(col)} {}
         ~Aggregation() override = default;
 
         [[nodiscard]] bool is_aggr() const final;

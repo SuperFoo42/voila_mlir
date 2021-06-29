@@ -163,7 +163,6 @@ namespace voila
             uint64_t x; //?
             uint64_t p1_sizes[1]; //?
             uint64_t p2_sizes[1]; //?
-
         } res{};
         // pass pointers to args
         args.push_back(&arg);
@@ -312,7 +311,7 @@ namespace voila
             secondOptPM.addPass(createCanonicalizerPass());
             secondOptPM.addPass(createCSEPass());
         }
-        secondOptPM.addPass(createBufferDeallocationPass());
+        //secondOptPM.addPass(createBufferDeallocationPass());
         secondOptPM.addPass(createLowerAffinePass());
         secondOptPM.addPass(createLowerToCFGPass());
 

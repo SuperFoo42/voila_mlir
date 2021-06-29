@@ -1,5 +1,5 @@
 main(x)
 {
-    z = aggregation(min, x);
+    z = aggr(min, x);
     emit z;
 }

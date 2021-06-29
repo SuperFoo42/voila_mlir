@@ -38,6 +38,12 @@ namespace voila::ast
     class Expression;
     class Predicate;
     class Variable;
+    class Aggregation;
+    class AggrSum;
+    class AggrCnt;
+    class AggrMin;
+    class AggrMax;
+    class AggrAvg;
 
     class IExpression : public ASTNode
     {
@@ -116,6 +122,18 @@ namespace voila::ast
 
         [[nodiscard]] virtual bool is_variable() const;
 
+        [[nodiscard]] virtual bool is_aggr() const;
+
+        [[nodiscard]] virtual bool is_aggr_sum() const;
+
+        [[nodiscard]] virtual bool is_aggr_cnt() const;
+
+        [[nodiscard]] virtual bool is_aggr_min() const;
+
+        [[nodiscard]] virtual bool is_aggr_max() const;
+
+        [[nodiscard]] virtual bool is_aggr_avg() const;
+
         // casts
         virtual IExpression *as_expr();
 
@@ -171,12 +189,24 @@ namespace voila::ast
 
         virtual TupleGet *as_tuple_get();
 
-        virtual const Ref *as_reference() const;
+        [[nodiscard]] virtual const Ref *as_reference() const;
 
         virtual TupleCreate *as_tuple_create();
 
         virtual Predicate *as_predicate();
 
         virtual Variable *as_variable();
+
+        virtual Aggregation *as_aggr();
+
+        virtual AggrSum *as_aggr_sum();
+
+        virtual AggrCnt *as_aggr_cnt();
+
+        virtual AggrMin *as_aggr_min();
+
+        virtual AggrMax *as_aggr_max();
+
+        virtual AggrAvg *as_aggr_avg();
     };
 } // namespace voila::ast

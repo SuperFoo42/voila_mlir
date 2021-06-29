@@ -34,8 +34,6 @@ namespace voila::ast
 
         [[nodiscard]] bool is_stmt() const;
 
-        [[nodiscard]] bool is_aggr() const;
-
         [[nodiscard]] bool is_loop() const;
 
         [[nodiscard]] bool is_assignment() const;
@@ -48,19 +46,8 @@ namespace voila::ast
 
         [[nodiscard]] bool is_write() const;
 
-        [[nodiscard]] bool is_aggr_sum() const;
-
-        [[nodiscard]] bool is_aggr_cnt() const;
-
-        [[nodiscard]] bool is_aggr_min() const;
-
-        [[nodiscard]] bool is_aggr_max() const;
-
-        [[nodiscard]] bool is_aggr_avg() const;
         // type conversions
         [[nodiscard]] IStatement *as_stmt() const;
-
-        [[nodiscard]] Aggregation *as_aggr() const;
 
         [[nodiscard]] Loop *as_loop() const;
 
@@ -73,16 +60,6 @@ namespace voila::ast
         [[nodiscard]] Scatter *as_scatter() const;
 
         [[nodiscard]] Write *as_write() const;
-
-        [[nodiscard]] AggrSum *as_aggr_sum() const;
-
-        [[nodiscard]] AggrCnt *as_aggr_cnt() const;
-
-        [[nodiscard]] AggrMin *as_aggr_min() const;
-
-        [[nodiscard]] AggrMax *as_aggr_max() const;
-
-        [[nodiscard]] AggrAvg *as_aggr_avg() const;
 
         [[nodiscard]] bool is_statement_wrapper() const;
         [[nodiscard]] StatementWrapper * as_statement_wrapper() const;

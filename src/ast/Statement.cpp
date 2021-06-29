@@ -12,10 +12,7 @@ namespace voila::ast
     {
         return true;
     }
-    bool Statement::is_aggr() const
-    {
-        return mImpl->is_aggr();
-    }
+
     bool Statement::is_loop() const
     {
         return mImpl->is_loop();
@@ -40,34 +37,12 @@ namespace voila::ast
     {
         return mImpl->is_write();
     }
-    bool Statement::is_aggr_sum() const
-    {
-        return mImpl->is_aggr_sum();
-    }
-    bool Statement::is_aggr_cnt() const
-    {
-        return mImpl->is_aggr_cnt();
-    }
-    bool Statement::is_aggr_min() const
-    {
-        return mImpl->is_aggr_min();
-    }
-    bool Statement::is_aggr_max() const
-    {
-        return mImpl->is_aggr_max();
-    }
-    bool Statement::is_aggr_avg() const
-    {
-        return mImpl->is_aggr_avg();
-    }
+
     IStatement *Statement::as_stmt() const
     {
         return mImpl->as_stmt();
     }
-    Aggregation *Statement::as_aggr() const
-    {
-        return mImpl->as_aggr();
-    }
+
     Loop *Statement::as_loop() const
     {
         return mImpl->as_loop();
@@ -88,26 +63,7 @@ namespace voila::ast
     {
         return mImpl->as_write();
     }
-    AggrSum *Statement::as_aggr_sum() const
-    {
-        return mImpl->as_aggr_sum();
-    }
-    AggrCnt *Statement::as_aggr_cnt() const
-    {
-        return mImpl->as_aggr_cnt();
-    }
-    AggrMin *Statement::as_aggr_min() const
-    {
-        return mImpl->as_aggr_min();
-    }
-    AggrMax *Statement::as_aggr_max() const
-    {
-        return mImpl->as_aggr_max();
-    }
-    AggrAvg *Statement::as_aggr_avg() const
-    {
-        return mImpl->as_aggr_avg();
-    }
+
     bool Statement::is_statement_wrapper() const
     {
         return mImpl->is_statement_wrapper();

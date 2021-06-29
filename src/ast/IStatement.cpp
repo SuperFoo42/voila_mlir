@@ -16,10 +16,7 @@ namespace voila::ast
     {
         return true;
     }
-    bool IStatement::is_aggr() const
-    {
-        return false;
-    }
+
     bool IStatement::is_loop() const
     {
         return false;
@@ -44,26 +41,7 @@ namespace voila::ast
     {
         return false;
     }
-    bool IStatement::is_aggr_sum() const
-    {
-        return false;
-    }
-    bool IStatement::is_aggr_cnt() const
-    {
-        return false;
-    }
-    bool IStatement::is_aggr_min() const
-    {
-        return false;
-    }
-    bool IStatement::is_aggr_max() const
-    {
-        return false;
-    }
-    bool IStatement::is_aggr_avg() const
-    {
-        return false;
-    }
+
     bool IStatement::is_statement_wrapper() const
     {
         return false;
@@ -76,10 +54,7 @@ namespace voila::ast
     {
         return this;
     }
-    Aggregation *IStatement::as_aggr()
-    {
-        return nullptr;
-    }
+
     Loop *IStatement::as_loop()
     {
         return nullptr;
@@ -104,26 +79,7 @@ namespace voila::ast
     {
         return nullptr;
     }
-    AggrSum *IStatement::as_aggr_sum()
-    {
-        return nullptr;
-    }
-    AggrCnt *IStatement::as_aggr_cnt()
-    {
-        return nullptr;
-    }
-    AggrMin *IStatement::as_aggr_min()
-    {
-        return nullptr;
-    }
-    AggrMax *IStatement::as_aggr_max()
-    {
-        return nullptr;
-    }
-    AggrAvg *IStatement::as_aggr_avg()
-    {
-        return nullptr;
-    }
+
     std::optional<Expression> IStatement::as_expression()
     {
         return std::nullopt;

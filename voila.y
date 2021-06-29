@@ -93,12 +93,12 @@
 %token SCATTER "scatter"
 %token WRITE "write"
 /* aggregates */
-%token AGGR "aggregation"
+%token AGGR "aggr"
 %token SUM "sum"
 %token CNT "count"
 %token MIN "min"
 %token MAX "max"
-%token AVG "average"
+%token AVG "avg"
 /* TODO hash table ops */
 
 %nonassoc ASSIGN "assignment"
@@ -129,6 +129,7 @@
 %nterm <ast::Expression> selection;
 %nterm <ast::Expression> logical;
 %nterm <ast::Expression> read_op;
+%nterm <ast::Expression> aggregation;
 %start program
 
 %%
@@ -159,14 +160,16 @@ function_call: ID LPAREN var_list RPAREN { $$ = ast::Statement::make<FunctionCal
 var: ID {$$ = out.has_var($1) ? ast::Expression::make<Ref>(@1, out.get_var($1)) : ast::Expression::make<Variable>(@1, $1); if ($$.is_variable()){ out.add_var($$);}; out.infer_type($$); };
 
 	/* aggregate ( result_store, variable with predicate as aggregation filter, vector_to_aggregate) */
-effect :
-	AGGR LPAREN SUM COMMA expr RPAREN { $$ = Statement::make<AggrSum>(@1+@6,$5); } /* maybe we restrict the expressions to more specialized predicates or tuple get in the parser to safe some correctness check effort later on */
-	| AGGR LPAREN CNT COMMA expr RPAREN { $$ = ast::Statement::make<AggrCnt>(@1+@6,$5); }
-	| AGGR LPAREN AVG COMMA expr RPAREN { $$ = ast::Statement::make<AggrAvg>(@1+@6,$5); }
-	| AGGR LPAREN MIN COMMA expr RPAREN { $$ = ast::Statement::make<AggrMin>(@1+@6,$5); }
-	| AGGR LPAREN MAX COMMA expr RPAREN { $$ = ast::Statement::make<AggrMax>(@1+@6,$5); }
-	| SCATTER LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Scatter>(@1+@8,$3, $5, $7); } /* dest, idxs with pred, src */
+effect:
+	SCATTER LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Scatter>(@1+@8,$3, $5, $7); } /* dest, idxs with pred, src */
 	| WRITE LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Write>(@1+@8,$3, $5, $7); } /* src, dest, start_idx */
+
+aggregation:
+    AGGR LPAREN SUM COMMA expr RPAREN { $$ = ast::Expression::make<AggrSum>(@1+@6,$5); } /* maybe we restrict the expressions to more specialized predicates or tuple get in the parser to safe some correctness check effort later on */
+	| AGGR LPAREN CNT COMMA expr RPAREN { $$ = ast::Expression::make<AggrCnt>(@1+@6,$5); }
+	| AGGR LPAREN AVG COMMA expr RPAREN { $$ = ast::Expression::make<AggrAvg>(@1+@6,$5); }
+	| AGGR LPAREN MIN COMMA expr RPAREN { $$ = ast::Expression::make<AggrMin>(@1+@6,$5); }
+	| AGGR LPAREN MAX COMMA expr RPAREN { $$ = ast::Expression::make<AggrMax>(@1+@6,$5); }
 
 pred: BAR pred_expr { $$ = Expression::make<Predicate>(@2,$2); out.infer_type($$); }
 
@@ -184,6 +187,7 @@ expr:
 	| logical {$$ = $1; }
 	| read_op {$$ = $1; out.infer_type($$); }
 	| selection { $$ = $1; out.infer_type($$); }
+	| aggregation {$$ = $1; }
 
 /* TODO: is this correct/complete? */
 pred_expr:
