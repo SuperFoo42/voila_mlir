@@ -113,7 +113,7 @@ namespace voila
     {
         return context;
     }
-    void Program::runJIT(bool optimize, std::optional<std::string> objPath)
+    void Program::runJIT(bool optimize, [[maybe_unused]] std::optional<std::string> objPath)
     {
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
@@ -133,27 +133,45 @@ namespace voila
                                                    {}, true, true);
         assert(maybeEngine && "failed to construct an execution engine");
         auto engine = std::move(*maybeEngine);
-        auto fn = engine->lookup("main");
-        if (!fn)
-        {
-            throw fn.takeError();
-        };
-        if (objPath.has_value())
-            engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));
+        // FIXME: detor of fn results in segfault
+        /*
+                auto fn = engine->lookup("main");
+                if (!fn)
+                {
+                    auto err = fn.takeError();
+                    throw JITInvocationError();
+                };
+        */
+
+        /*if (objPath.has_value())
+            engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));*/
         // Invoke the JIT-compiled function.
         // can not use new, because it appears that new does not really allocate storage in this case
+//WTF: we need to pass all this to function in order to obtain a result
         auto *arg = static_cast<uint64_t *>(std::malloc(sizeof(uint64_t) * 100));
         std::fill_n(arg, 100, 123);
         auto *arg2 = static_cast<uint64_t *>(std::malloc(sizeof(uint64_t) * 100));
-        std::fill_n(arg2, 100, 2);
+        std::fill_n(arg2, 100, 123);
         uint64_t foo = 0;
         uint64_t bar = 0;
+        uint64_t baz = 0;
         SmallVector<void *> args;
+        struct
+        {
+            uint64_t *p1;
+            uint64_t *p2;
+            uint64_t x; //?
+            uint64_t p1_sizes[1]; //?
+            uint64_t p2_sizes[1]; //?
+
+        } res{};
         // pass pointers to args
         args.push_back(&arg);
         args.push_back(&arg2);
         args.push_back(&foo);
         args.push_back(&bar);
+        args.push_back(&baz);
+        args.push_back(&res);
 
         auto invocationResult = engine->invokePacked("main", args);
 
@@ -164,11 +182,12 @@ namespace voila
 
         for (auto i = 0; i < 100; ++i)
         {
-            std::cout << arg[i] << std::endl;
             std::cout << arg2[i] << std::endl;
+            std::cout << res.p1[i] << std::endl;
         }
         std::free(arg);
         std::free(arg2);
+        std::free(res.p1);
     }
 
     void Program::convertToLLVM(bool optimize)
@@ -302,7 +321,7 @@ namespace voila
         secondOptPM.addPass(createCSEPass());
 
         state = secondpm.run(*mlirModule);
-        spdlog::debug(MLIRModuleToString(mlirModule));
+        spdlog::warn(MLIRModuleToString(mlirModule));
         if (failed(state))
         {
             throw MLIRLoweringError();
