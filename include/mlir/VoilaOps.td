@@ -398,7 +398,7 @@ def EmitOp : Voila_Op<"emit", [NoSideEffect,HasParent<"FuncOp">,
 
   // The return operation takes an optional input operand to return. This
   // value must match the return type of the enclosing function.
-  let arguments = (ins Variadic<AnyTensor>:$input);
+  let arguments = (ins Variadic<AnyType>:$input);
 
 let extraClassDeclaration = [{
 bool hasOperand() { return getNumOperands() != 0; }
@@ -505,7 +505,7 @@ let description = [{
 }];
 
 let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input);
-let results = (outs AnyTypeOf<[AnyInteger,AnyFloat]>:$output);
+let results = (outs AnyTypeOf<[I64,F64]>:$output);
 }
 
 def CountOp : Voila_Op<"aggr_count", [NoSideEffect]> {
