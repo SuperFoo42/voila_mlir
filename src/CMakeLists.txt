@@ -37,7 +37,6 @@ add_subdirectory(compiler)
 add_library(voila_compiler
         voila_parser.cpp
         voila_lexer.cpp
-        Program.cpp
         TypeInferer.cpp
         DotVisualizer.cpp
         MLIRGenerator.cpp
@@ -46,7 +45,7 @@ add_library(voila_compiler
         ShapeInferencePass.cpp
         ShapeInferenceInterface.cpp)
 
-target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast voila_lowering reflex spdlog)
+target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast voila_lowering reflex spdlog MLIRExecutionEngine)
 target_compile_features(voila_compiler PUBLIC cxx_std_20)
 target_compile_options(voila_compiler PUBLIC
         -Wpedantic

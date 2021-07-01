@@ -1,3 +1,7 @@
+set(LLVM_LINK_COMPONENTS
+        Support
+        )
+
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
 
@@ -29,6 +33,9 @@ set(LIBS
 
 add_llvm_executable(voila
         main.cpp
+        ../Program.cpp
+        DEPENDS
+        MLIRShapeInferenceInterfaceIncGen
         )
 
 target_compile_options(voila PUBLIC

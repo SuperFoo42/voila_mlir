@@ -8,6 +8,7 @@ using namespace mlir::voila;
 //===----------------------------------------------------------------------===//
 // Standalone dialect.
 //===----------------------------------------------------------------------===//
+#include "mlir/VoilaOpsDialect.cpp.inc"
 
 void VoilaDialect::initialize() {
     addOperations<
