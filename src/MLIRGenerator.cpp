@@ -13,7 +13,7 @@ namespace voila
         // add them to the module.
         module = ::mlir::ModuleOp::create(builder.getUnknownLoc());
 
-        for (const auto &f : program.functions)
+        for (const auto &f : program.get_funcs())
         {
             auto generatorImpl = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, program.inferer);
             generatorImpl(*f);

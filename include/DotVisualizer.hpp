@@ -17,7 +17,7 @@ namespace voila::ast
         size_t nodeID;
         const std::optional<std::reference_wrapper<TypeInferer>> inferer;
 
-        template <bool infer_type = true>
+        template <bool infer_type = false>
         void printVertex(const ASTNode &node)
         {
             *os << fmt::format("n{} [label=<<b>{} <br/>", nodeID, node.type2string());

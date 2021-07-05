@@ -58,6 +58,7 @@ namespace voila
         void operator()(const ast::Or &anOr) final;
         void operator()(const ast::Not &aNot) final;
         void operator()(const ast::Predicate &pred) final;
+        void operator()(const ast::StatementWrapper &wrapper) final;
 
         Type &get_type(const ast::ASTNode &node) const;
 
@@ -65,8 +66,10 @@ namespace voila
 
         Type &get_type(const ast::Statement &node) const;
 
-        void set_arity(const ast::ASTNode *const node, const size_t ar);
-        void set_type(const ast::ASTNode *const node, const DataType type);
+        void set_arity(const ast::ASTNode *node, size_t ar);
+        void set_type(const ast::ASTNode *node, DataType type);
+
+        void insertNewType(const ast::ASTNode &node, DataType t, Arity ar);
 
       private:
         void unify(const ast::ASTNode &t1, const ast::ASTNode &t2);
@@ -85,7 +88,6 @@ namespace voila
          */
         static bool convertible(DataType t1, DataType t2);
 
-        void insertNewType(const ast::ASTNode &node, DataType t, Arity ar);
         void
         insertNewFuncType(const ast::ASTNode &node, std::vector<size_t> typeParamIDs, DataType returnT, Arity returnAr);
 

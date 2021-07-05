@@ -1,17 +1,5 @@
-# this is a comment
-def foo(x)
+main(x,y)
 {
-    x = true;
-    emit x;
-}
-
-main(y)
-{
-    d = read(y, 1);
-    f = foo(y);
-    y = and(f, false);
-    z = foo(y);
-    g = not(and(y,z));
-    y = select(d,g);
-    emit y;
+    z = aggr(sum, select(x, y))
+    emit z;
 }

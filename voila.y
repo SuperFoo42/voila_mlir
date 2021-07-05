@@ -138,26 +138,26 @@ program:
 	| program func { out.add_func($2); }
 	| program main { out.add_func($2); } //TODO: main function is singleton
 
-func: FUNCTION ID LPAREN var_list RPAREN LBRACE stmts RBRACE { $$ = new ast::Fun(@1+@6,$2, $4, $7); out.infer_type(*$$);}
+func: FUNCTION ID LPAREN var_list RPAREN LBRACE stmts RBRACE { $$ = new ast::Fun(@1+@6,$2, $4, $7); }
 
-main: MAIN LPAREN var_list RPAREN LBRACE stmts RBRACE { $$ = new ast::Main(@1+@5,$3, $6); out.infer_type(*$$); }
+main: MAIN LPAREN var_list RPAREN LBRACE stmts RBRACE { $$ = new ast::Main(@1+@5,$3, $6); }
 
 stmts:
 	%empty { }
 	| stmts stmt { $$ = $1; $$.push_back($2); }
 
 stmt: expr COLON { $$ = ast::Statement::make<StatementWrapper>(@1,$1); }
-    | var ASSIGN function_call COLON { $$ = ast::Statement::make<Assign>(@2,$1, $3); out.infer_type($$); }
-	| var ASSIGN expr COLON { $$ = ast::Statement::make<Assign>(@2,$1, ast::Statement::make<StatementWrapper>(@3,$3)); out.infer_type($$); }
-	| LOOP pred LBRACE stmts RBRACE { $$ = ast::Statement::make<Loop>(@1+@2,$2, $4); out.infer_type($$); }
-	| EMIT expr COLON { $$ = ast::Statement::make<Emit>(@1,$2); out.infer_type($$); }
+    | var ASSIGN function_call COLON { $$ = ast::Statement::make<Assign>(@2,$1, $3);  }
+	| var ASSIGN expr COLON { $$ = ast::Statement::make<Assign>(@2,$1, ast::Statement::make<StatementWrapper>(@3,$3));  }
+	| LOOP pred LBRACE stmts RBRACE { $$ = ast::Statement::make<Loop>(@1+@2,$2, $4); }
+	| EMIT expr COLON { $$ = ast::Statement::make<Emit>(@1,$2);  }
 	| effect COLON { $$ = $1; }
 	| effect COLON pred { $$ = $1; $$.set_predicate($3); }
 	| function_call COLON { $$ = $1; }
 
-function_call: ID LPAREN var_list RPAREN { $$ = ast::Statement::make<FunctionCall>(@1+@4,$1, $3); out.infer_type($$); }
+function_call: ID LPAREN var_list RPAREN { $$ = ast::Statement::make<FunctionCall>(@1+@4,$1, $3); }
 
-var: ID {$$ = out.has_var($1) ? ast::Expression::make<Ref>(@1, out.get_var($1)) : ast::Expression::make<Variable>(@1, $1); if ($$.is_variable()){ out.add_var($$);}; out.infer_type($$); };
+var: ID {$$ = out.has_var($1) ? ast::Expression::make<Ref>(@1, out.get_var($1)) : ast::Expression::make<Variable>(@1, $1); if ($$.is_variable()){ out.add_var($$);};  };
 
 	/* aggregate ( result_store, variable with predicate as aggregation filter, vector_to_aggregate) */
 effect:
@@ -171,7 +171,7 @@ aggregation:
 	| AGGR LPAREN MIN COMMA expr RPAREN { $$ = ast::Expression::make<AggrMin>(@1+@6,$5); }
 	| AGGR LPAREN MAX COMMA expr RPAREN { $$ = ast::Expression::make<AggrMax>(@1+@6,$5); }
 
-pred: BAR pred_expr { $$ = Expression::make<Predicate>(@2,$2); out.infer_type($$); }
+pred: BAR pred_expr { $$ = Expression::make<Predicate>(@2,$2); }
 
 selection:
 	SELECT LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Selection>(@1+@4,$3, $5); }
@@ -181,12 +181,12 @@ expr:
 	| var
 	| var LBRACKET INT RBRACKET { $$ = ast::Expression::make<TupleGet>(@2+@4,$1, $3); assert($1.is_reference()); }
 	| LPAREN expr_list RPAREN { $$ = ast::Expression::make<TupleCreate>(@1+@3,$2); } /* recursive tuples do not look like a good idea */
-	| expr pred { $$ = $1; $$.set_predicate($2); out.infer_type($$); }
-	| arithmetic {$$ = $1; out.infer_type($$); }
-	| comparison {$$ = $1; out.infer_type($$); }
+	| expr pred { $$ = $1; $$.set_predicate($2);  }
+	| arithmetic {$$ = $1; }
+	| comparison {$$ = $1;  }
 	| logical {$$ = $1; }
-	| read_op {$$ = $1; out.infer_type($$); }
-	| selection { $$ = $1; out.infer_type($$); }
+	| read_op {$$ = $1;  }
+	| selection { $$ = $1; }
 	| aggregation {$$ = $1; }
 
 /* TODO: is this correct/complete? */
@@ -198,13 +198,13 @@ pred_expr:
 
 constant:
     bool_constant { $$= $1; }
-	| INT { $$ = ast::Expression::make<IntConst>(@1,$1); out.infer_type($$); }
-	| FLT { $$ = ast::Expression::make<FltConst>(@1,$1); out.infer_type($$); }
-	| STR { $$ = ast::Expression::make<StrConst>(@1,$1); out.infer_type($$); }
+	| INT { $$ = ast::Expression::make<IntConst>(@1,$1);  }
+	| FLT { $$ = ast::Expression::make<FltConst>(@1,$1); }
+	| STR { $$ = ast::Expression::make<StrConst>(@1,$1); }
 
 bool_constant:
-    TRUE { $$ = ast::Expression::make<BooleanConst>(@1,true); out.infer_type($$); }
-    | FALSE { $$ = ast::Expression::make<BooleanConst>(@1, false); out.infer_type($$); }
+    TRUE { $$ = ast::Expression::make<BooleanConst>(@1,true);  }
+    | FALSE { $$ = ast::Expression::make<BooleanConst>(@1, false); }
 
 arithmetic :
 	ADD LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Add>(@1+@6,$3, $5); }
@@ -222,13 +222,13 @@ comparison :
 	| GEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Geq>(@1+@6,$3, $5); }
 
 logical:
-	AND LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<And>(@1+@6,$3, $5); out.infer_type($$);}
- 	| OR LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Or>(@1+@6,$3, $5); out.infer_type($$);}
- 	| NOT LPAREN expr RPAREN {$$ = ast::Expression::make<Not>(@1+@4,$3); out.infer_type($$);}
+	AND LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<And>(@1+@6,$3, $5); }
+ 	| OR LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Or>(@1+@6,$3, $5); }
+ 	| NOT LPAREN expr RPAREN {$$ = ast::Expression::make<Not>(@1+@4,$3); }
 
 read_op:
-	GATHER LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Gather>(@1+@6,$3, $5); out.infer_type($$);}
-	| READ LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Read>(@1+@6,$3, $5); out.infer_type($$);}
+	GATHER LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Gather>(@1+@6,$3, $5); }
+	| READ LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Read>(@1+@6,$3, $5); }
 
 expr_list: 
 	expr { $$ = std::vector<ast::Expression>(); $$.push_back($1);}

@@ -1,15 +1,12 @@
 #include "Program.hpp"
 
-#include "MainFunctionNotFoundException.hpp"
-
-#include <fstream>
-#include <llvm/IR/AssemblyAnnotationWriter.h>
-#include <spdlog/spdlog.h>
+#include "voila_lexer.hpp"
 
 namespace voila
 {
     using namespace ast;
     using namespace ::mlir;
+    using namespace ::voila::lexer;
 
     static std::string MLIRModuleToString(OwningModuleRef &module)
     {
@@ -47,7 +44,7 @@ namespace voila
 
     void Program::to_dot(const std::string &fname)
     {
-        for (auto &func : functions)
+        for (auto &func : get_funcs())
         {
             DotVisualizer vis(*func, std::optional<std::reference_wrapper<TypeInferer>>(inferer));
             std::ofstream out(fname + "." + func->name + ".dot", std::ios::out);
@@ -72,48 +69,17 @@ namespace voila
         func_vars.emplace(expr.as_variable()->var, expr);
     }
 
-    void Program::set_main_args_shape(const std::unordered_map<std::string, size_t> &shapes)
-    {
-        const auto main = std::find_if(
-            functions.begin(), functions.end(), [](const auto &f) -> auto { return dynamic_cast<Main *>(f.get()); });
-        if (main == functions.end())
-            throw MainFunctionNotFoundException();
-        auto &args = (*main)->args;
-        for (auto &arg : args)
-        {
-            assert(arg.is_variable());
-            if (shapes.contains(arg.as_variable()->var))
-            {
-                inferer.set_arity(arg.as_expr(), shapes.at(arg.as_variable()->var));
-            }
-        }
-    }
-
-    void Program::set_main_args_type(const std::unordered_map<std::string, DataType> &types)
-    {
-        const auto main = std::find_if(
-            functions.begin(), functions.end(), [](const auto &f) -> auto { return dynamic_cast<Main *>(f.get()); });
-        if (main == functions.end())
-            throw MainFunctionNotFoundException();
-        auto &args = (*main)->args;
-        for (auto &arg : args)
-        {
-            assert(arg.is_variable());
-            if (types.contains(arg.as_variable()->var))
-            {
-                inferer.set_type(arg.as_expr(), types.at(arg.as_variable()->var));
-            }
-        }
-    }
     const OwningModuleRef &Program::getMLIRModule() const
     {
         return mlirModule;
     }
+
     const MLIRContext &Program::getMLIRContext() const
     {
         return context;
     }
-    void Program::runJIT(bool optimize, [[maybe_unused]] std::optional<std::string> objPath)
+
+    void Program::runJIT([[maybe_unused]] std::optional<std::string> objPath)
     {
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
@@ -124,7 +90,7 @@ namespace voila
 
         // An optimization pipeline to use within the execution engine.
         auto optPipeline = makeOptimizingTransformer(
-            /*optLevel=*/optimize ? 3 : 0, /*sizeLevel=*/0,
+            /*optLevel=*/m_optimize ? 3 : 0, /*sizeLevel=*/0,
             /*targetMachine=*/nullptr);
 
         // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
@@ -133,7 +99,7 @@ namespace voila
                                                    {}, true, true);
         assert(maybeEngine && "failed to construct an execution engine");
         auto engine = std::move(*maybeEngine);
-        // FIXME: detor of fn results in segfault
+        // FIXME: dtor of fn results in segfault
         /*
                 auto fn = engine->lookup("main");
                 if (!fn)
@@ -147,49 +113,17 @@ namespace voila
             engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));*/
         // Invoke the JIT-compiled function.
         // can not use new, because it appears that new does not really allocate storage in this case
-//WTF: we need to pass all this to function in order to obtain a result
-        auto *arg = static_cast<uint64_t *>(std::malloc(sizeof(uint64_t) * 100));
-        std::fill_n(arg, 100, 123);
-        auto *arg2 = static_cast<uint64_t *>(std::malloc(sizeof(uint64_t) * 100));
-        std::fill_n(arg2, 100, 123);
-        uint64_t foo = 0;
-        uint64_t bar = 0;
-        uint64_t baz = 0;
-        SmallVector<void *> args;
-        struct
-        {
-            uint64_t *p1;
-            uint64_t *p2;
-            uint64_t x; //?
-            uint64_t p1_sizes[1]; //?
-            uint64_t p2_sizes[1]; //?
-        } res{};
-        // pass pointers to args
-        args.push_back(&arg);
-        args.push_back(&arg2);
-        args.push_back(&foo);
-        args.push_back(&bar);
-        args.push_back(&baz);
-        args.push_back(&res);
+        // WTF: we need to pass all this to function in order to obtain a result
 
-        auto invocationResult = engine->invokePacked("main", args);
+        auto invocationResult = engine->invokePacked("main", params);
 
         if (invocationResult)
         {
             throw JITInvocationError();
         }
-
-        for (auto i = 0; i < 100; ++i)
-        {
-            std::cout << arg2[i] << std::endl;
-            std::cout << res.p1[i] << std::endl;
-        }
-        std::free(arg);
-        std::free(arg2);
-        std::free(res.p1);
     }
 
-    void Program::convertToLLVM(bool optimize)
+    void Program::convertToLLVM()
     {
         // lower to llvm
         registerLLVMDialectTranslation(*mlirModule->getContext());
@@ -208,7 +142,7 @@ namespace voila
 
         /// Optionally run an optimization pipeline over the llvm module.
         auto optPipeline = makeOptimizingTransformer(
-            /*optLevel=*/optimize ? 3 : 0, /*sizeLevel=*/0,
+            /*optLevel=*/m_optimize ? 3 : 0, /*sizeLevel=*/0,
             /*targetMachine=*/nullptr);
         if (auto err = optPipeline(llvmModule.get()))
         {
@@ -235,7 +169,7 @@ namespace voila
         os.flush();
     }
 
-    void Program::lowerMLIR([[maybe_unused]] bool optimize)
+    void Program::lowerMLIR()
     {
         ::mlir::PassManager pm(&context);
         if (debug)
@@ -289,29 +223,29 @@ namespace voila
         secondOptPM.addPass(createFinalizingBufferizePass());
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
-        if (optimize)
+        if (m_optimize)
         {
             secondOptPM.addPass(createPromoteBuffersToStackPass());
             secondpm.addPass(createBufferResultsToOutParamsPass());
             secondOptPM.addPass(createBufferHoistingPass());
-            secondOptPM.addPass(createAffineDataCopyGenerationPass());
+            // secondOptPM.addPass(createAffineDataCopyGenerationPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
             secondOptPM.addPass(createLoopFusionPass());
             secondOptPM.addPass(createLoopCoalescingPass());
             secondOptPM.addPass(createLoopUnrollPass());
             secondOptPM.addPass(createLoopUnrollAndJamPass());
-            // secondOptPM.addPass(createAffineParallelizePass());
-            // secondOptPM.addPass(createSuperVectorizePass());
+            secondOptPM.addPass(createAffineParallelizePass());
+            secondOptPM.addPass(createSuperVectorizePass());
             secondOptPM.addPass(createSimplifyAffineStructuresPass());
             secondOptPM.addPass(createForLoopSpecializationPass());
-            /*secondOptPM.addPass(createParallelLoopFusionPass());
+            secondOptPM.addPass(createParallelLoopFusionPass());
             secondOptPM.addPass(createParallelLoopSpecializationPass());
-            secondOptPM.addPass(createParallelLoopTilingPass());*/
+            secondOptPM.addPass(createParallelLoopTilingPass());
             secondOptPM.addPass(createCanonicalizerPass());
             secondOptPM.addPass(createCSEPass());
         }
-        //secondOptPM.addPass(createBufferDeallocationPass());
+        // secondOptPM.addPass(createBufferDeallocationPass());
         secondOptPM.addPass(createLowerAffinePass());
         secondOptPM.addPass(createLowerToCFGPass());
 
@@ -342,37 +276,238 @@ namespace voila
         spdlog::debug(MLIRModuleToString(mlirModule));
         return mlirModule;
     }
-    Program &Program::operator<<(const Parameter param)
+
+    Program &Program::operator<<(Parameter param)
     {
-        const auto main = std::find_if(
-            functions.begin(), functions.end(), [](const auto &f) -> auto { return dynamic_cast<Main *>(f.get()); });
-        if (main == functions.end())
-            throw MainFunctionNotFoundException();
-        auto &args = (*main)->args;
-        auto arg = args.at(params.size());
+        const auto &main = functions.at("main");
+        auto arg = main->args.at(nparam++);
 
         assert(arg.is_variable());
-        params.push_back(param.data);
-        inferer.set_type(arg.as_expr(), param.type);
-        inferer.set_arity(arg.as_expr(), param.size);
+        inferer.insertNewType(*arg.as_variable(), param.type, Arity(param.size));
+
+        assert(param.type != DataType::NUMERIC && param.type != DataType::VOID && param.type != DataType::UNKNOWN);
+
+        if (param.size == 0) // scalar type
+        {
+            params.push_back(param.data);
+        }
+        else
+        {
+            // store strided 1d memref as unpacked struct defined in
+            // llvm/mlir/include/mlir/ExecutionEngine/CRunnerUtils.h
+            void **ptr = new void *;
+            *ptr = param.data;
+            params.push_back(ptr);
+            params.push_back(ptr);            // base ptr
+            params.push_back(new int64_t(0)); // offset
+            params.push_back(new int64_t(0)); // sizes
+            params.push_back(new int64_t(0)); // strides
+        }
 
         return *this;
     }
 
-    std::unique_ptr<void *> Program::operator()()
+    // either return void, scalar or pointer to strided memref type as unique_ptr
+    std::variant<std::monostate,
+                 std::unique_ptr<StridedMemRefType<uint32_t, 1> *>,
+                 std::unique_ptr<StridedMemRefType<uint64_t, 1> *>,
+                 std::unique_ptr<StridedMemRefType<double, 1> *>,
+                 uint32_t,
+                 uint64_t,
+                 double>
+    Program::operator()()
     {
-        runJIT(m_optimize, std::nullopt);
-        // TODO:
-        return std::make_unique<void *>(nullptr);
+        // generate mlir
+        spdlog::debug("Start type inference");
+        inferTypes();
+        spdlog::debug("Finished type inference");
+
+        spdlog::debug("Start mlir generation");
+        // generate mlir
+        generateMLIR();
+        spdlog::debug("Finished mlir generation");
+        spdlog::debug("Start mlir lowering");
+        // lower mlir
+        lowerMLIR();
+        spdlog::debug("Finished mlir lowering");
+        spdlog::debug("Start mlir to llvm conversion");
+        // lower to llvm
+        convertToLLVM();
+
+        spdlog::debug("Finished mlir to llvm conversion");
+
+        // run jit
+        const auto &main = functions.at("main");
+        std::variant<std::monostate, std::unique_ptr<StridedMemRefType<uint32_t, 1> *>,std::unique_ptr<StridedMemRefType<uint64_t, 1> *>, std::unique_ptr<StridedMemRefType<double, 1> *>,
+                     uint32_t, uint64_t, double>
+            res = std::monostate();
+        if (main->result.has_value())
+        {
+            auto type = inferer.get_type(main->result.value());
+            // test scalar
+
+            switch (type.t)
+            {
+                case DataType::BOOL: // FIXME: I1 type is not directly mappable to C++ types
+                    throw NotImplementedException();
+                case DataType::NUMERIC:
+                    throw std::logic_error("Abstract type");
+                case DataType::INT32:
+                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    {
+                        auto *arg = new uint32_t;
+                        params.push_back(arg);
+                    }
+                    else
+                    {
+                        auto *arg = new StridedMemRefType<uint32_t, 1>();
+                        params.push_back(arg);
+                    }
+                    break;
+                case DataType::INT64:
+                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    {
+                        auto *arg = new uint64_t;
+                        params.push_back(arg);
+                    }
+                    else
+                    {
+                        auto *arg = new StridedMemRefType<uint64_t, 1>();
+                        params.push_back(arg);
+                    }
+                    break;
+                case DataType::DBL:
+                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    {
+                        auto *arg = new double;
+                        params.push_back(arg);
+                    }
+                    else
+                    {
+                        auto *arg = new StridedMemRefType<double, 1>();
+                        params.push_back(arg);
+                    }
+                    break;
+                case DataType::STRING:
+                    throw NotImplementedException();
+                case DataType::VOID:
+                    break;
+                case DataType::UNKNOWN:
+                    throw std::logic_error("");
+            }
+
+            runJIT();
+
+            switch (type.t)
+            {
+                case DataType::INT32:
+                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    {
+                        auto *extractedRes = reinterpret_cast<uint32_t *>(params.pop_back_val());
+                        res.emplace<uint32_t>(*extractedRes);
+                        delete extractedRes;
+                    }
+                    else
+                    {
+                        res.emplace<std::unique_ptr<StridedMemRefType<uint32_t, 1> *>>(
+                            std::make_unique<StridedMemRefType<uint32_t, 1> *>(
+                                reinterpret_cast<StridedMemRefType<uint32_t, 1> *>(params.pop_back_val())));
+                    }
+                    break;
+                case DataType::INT64:
+                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    {
+                        auto *extractedRes = reinterpret_cast<uint64_t *>(params.pop_back_val());
+                        res.emplace<uint64_t>(*extractedRes);
+                        delete extractedRes;
+                    }
+                    else
+                    {
+                        res.emplace<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(
+                            std::make_unique<StridedMemRefType<uint64_t, 1> *>(
+                                reinterpret_cast<StridedMemRefType<uint64_t, 1> *>(params.pop_back_val())));
+                    }
+                    break;
+                case DataType::DBL:
+                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    {
+                        auto *extractedRes = reinterpret_cast<double *>(params.pop_back_val());
+                        res.emplace<double>(*extractedRes);
+                        delete extractedRes;
+                    }
+                    else
+                    {
+                        res.emplace<std::unique_ptr<StridedMemRefType<double, 1> *>>(
+                            std::make_unique<StridedMemRefType<double, 1> *>(
+                                reinterpret_cast<StridedMemRefType<double, 1> *>(params.pop_back_val())));
+                    }
+                    break;
+                default:
+                    throw std::logic_error("");
+            }
+        }
+        return res;
     }
 
     void Program::add_func(ast::Fun *f)
     {
-        functions.emplace_back(f);
+        functions.emplace(f->name, f);
         f->variables = std::move(func_vars);
         func_vars.clear();
     }
 
+    void Program::inferTypes()
+    {
+        TypeInferencePass typeInference(inferer);
+        typeInference.inferTypes(*this);
+    }
+    Program::Program(std::string_view source_path, bool debug, bool optimize) :
+        func_vars(),
+        context(),
+        llvmContext(),
+        mlirModule(),
+        llvmModule(),
+        functions(),
+        debug{debug},
+        m_optimize{optimize},
+        inferer()
+    {
+        std::ifstream fst(source_path.data(), std::ios::in);
+
+        if (fst.is_open())
+        {
+            lexer = new Lexer(fst);        // read file, decode UTF-8/16/32 format
+            lexer->filename = source_path; // the filename to display with error locations
+
+            ::voila::parser::Parser parser(*lexer, *this);
+            if (parser() != 0)
+                throw ::voila::ParsingError();
+        }
+        else
+        {
+            spdlog::error("failed to open {}", source_path);
+        }
+    }
+    Program::Program(bool debug, bool optimize) :
+        func_vars(),
+        context(),
+        llvmContext(),
+        mlirModule(),
+        llvmModule(),
+        functions(),
+        debug{debug},
+        m_optimize{optimize},
+        lexer{new Lexer()},
+        inferer()
+    {
+    }
+
+    /**
+     * @param data pointer to data
+     * @param size  number of elements in @link{data} pointer, 0 if pointer to scalar
+     * @param type data type compatible to values in @link{data}
+     * @return
+     */
     Parameter make_param(void *data, size_t size, DataType type)
     {
         return Parameter(data, size, type);

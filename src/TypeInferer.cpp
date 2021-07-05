@@ -284,12 +284,16 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Aggregation &aggregation)
     {
-        // TODO
-        ASTVisitor::operator()(aggregation);
+        //TODO
+        aggregation.src.visit(*this);
     }
 
     void TypeInferer::operator()(const ast::Write &write)
     {
+        write.start.visit(*this);
+        write.src.visit(*this);
+        write.dest.visit(*this);
+
         if (!compatible(get_type(write.src).t, get_type(write.dest).t))
             throw IncompatibleTypesException();
         if (!compatible(get_type(write.start).t, DataType::INT64))
@@ -303,6 +307,10 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Scatter &scatter)
     {
+        scatter.src.visit(*this);
+        scatter.idxs.visit(*this);
+        scatter.dest.visit(*this);
+
         if (!compatible(get_type(scatter.src).t, get_type(scatter.dest).t))
             throw IncompatibleTypesException();
         if (!compatible(get_type(scatter.idxs).t, DataType::INT64))
@@ -316,6 +324,11 @@ namespace voila
 
     void TypeInferer::operator()(const ast::FunctionCall &call)
     {
+        for (auto &arg : call.args)
+        {
+            arg.visit(*this);
+        }
+
         std::vector<size_t> argIds;
         std::transform(
             call.args.begin(), call.args.end(),
@@ -330,6 +343,9 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Assign &assign)
     {
+        assign.dest.visit(*this);
+        assign.expr.visit(*this);
+
         assert(assign.expr.is_function_call() || assign.expr.is_statement_wrapper());
 
         if (assign.dest.is_reference() &&
@@ -348,12 +364,20 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Emit &emit)
     {
-        // TODO
+        emit.expr.visit(*this);
+
         typeIDs.try_emplace(&emit, get_type_id(emit.expr));
     }
 
     void TypeInferer::operator()(const ast::Loop &loop)
     {
+        loop.pred.visit(*this);
+
+        for (auto &stmt : loop.stms)
+        {
+            stmt.visit(*this);
+        }
+
         if (!compatible(get_type(loop.pred).t, DataType::BOOL))
         {
             throw IncompatibleTypesException();
@@ -362,6 +386,9 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Arithmetic &arithmetic)
     {
+        arithmetic.lhs.visit(*this);
+        arithmetic.rhs.visit(*this);
+
         const auto &left_type = get_type(arithmetic.lhs);
         const auto &right_type = get_type(arithmetic.rhs);
         if (left_type.ar != right_type.ar)
@@ -408,6 +435,9 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Read &read)
     {
+        read.column.visit(*this);
+        read.idx.visit(*this);
+
         if (!compatible(get_type(read.idx).t, DataType::INT64))
             throw IncompatibleTypesException();
         if (get_type(read.column).t == DataType::VOID)
@@ -418,6 +448,9 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Gather &gather)
     {
+        gather.column.visit(*this);
+        gather.idxs.visit(*this);
+
         if (!compatible(get_type(gather.idxs).t, DataType::INT64))
             throw IncompatibleTypesException();
         if (get_type(gather.column).t == DataType::VOID)
@@ -446,6 +479,14 @@ namespace voila
     void TypeInferer::operator()(const ast::Fun &fun)
     {
         // TODO: clear infered types at start of new function?
+        for (auto &arg : fun.args) //infer function args
+        {
+            arg.visit(*this);
+        }
+        for (auto &stmt : fun.body) //infer body types
+        {
+            stmt.visit(*this);
+        }
         std::vector<size_t> argIds;
         std::transform(
             fun.args.begin(), fun.args.end(),
@@ -458,6 +499,14 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Main &main)
     {
+        // TODO: clear infered types at start of new function?
+         //do not infer function args, they have to be specified by user before further inference
+
+        for (auto &stmt : main.body) //infer body types
+        {
+            stmt.visit(*this);
+        }
+
         std::vector<size_t> argIds;
         std::transform(
             main.args.begin(), main.args.end(),
@@ -470,6 +519,9 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Selection &selection)
     {
+        selection.pred.visit(*this);
+        selection.param.visit(*this);
+
         auto &type = get_type(*selection.param.as_expr());
 
         if (!convertible(get_type(selection.pred).t, DataType::BOOL))
@@ -486,6 +538,8 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Predicate &pred)
     {
+        pred.expr.visit(*this);
+
         auto &type = get_type(*pred.expr.as_expr());
 
         if (!convertible(get_type(pred.expr).t, DataType::BOOL))
@@ -502,6 +556,9 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Comparison &comparison)
     {
+        comparison.lhs.visit(*this);
+        comparison.rhs.visit(*this);
+
         const auto &left_type = get_type(*comparison.lhs.as_expr());
         const auto &right_type = get_type(*comparison.rhs.as_expr());
         if (left_type.ar != right_type.ar)
@@ -587,6 +644,9 @@ namespace voila
     }
     void TypeInferer::operator()(const ast::And &anAnd)
     {
+        anAnd.lhs.visit(*this);
+        anAnd.rhs.visit(*this);
+
         const auto &left_type = get_type(*anAnd.lhs.as_expr());
         const auto &right_type = get_type(*anAnd.rhs.as_expr());
         if (left_type.ar != right_type.ar)
@@ -607,6 +667,9 @@ namespace voila
     }
     void TypeInferer::operator()(const ast::Or &anOr)
     {
+        anOr.lhs.visit(*this);
+        anOr.rhs.visit(*this);
+
         const auto &left_type = get_type(*anOr.lhs.as_expr());
         const auto &right_type = get_type(*anOr.rhs.as_expr());
         if (left_type.ar != right_type.ar)
@@ -627,6 +690,8 @@ namespace voila
     }
     void TypeInferer::operator()(const ast::Not &aNot)
     {
+        aNot.param.visit(*this);
+
         auto &type = get_type(*aNot.param.as_expr());
 
         if (!convertible(type.t, DataType::BOOL))
@@ -639,6 +704,11 @@ namespace voila
         }
 
         insertNewType(aNot, DataType::BOOL);
+    }
+
+    void TypeInferer::operator()(const ast::StatementWrapper &wrapper)
+    {
+        wrapper.expr.visit(*this);
     }
 
     void TypeInferer::set_arity(const ast::ASTNode *const node, const size_t ar)

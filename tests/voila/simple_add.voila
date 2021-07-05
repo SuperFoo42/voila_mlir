@@ -1,5 +1,5 @@
-main(x)
+main(x, y)
 {
-    z = add(x, 1);
+    z = add(x, y);
     emit z;
 }

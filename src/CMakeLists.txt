@@ -1,6 +1,8 @@
 CPMAddPackage("gh:Neargye/magic_enum@0.7.2")
 CPMAddPackage("gh:jarro2783/cxxopts@2.2.1")
 CPMAddPackage("gh:gabime/spdlog@1.8.5")
+CPMAddPackage("gh:ericniebler/range-v3#0.11.0")
+
 
 CPMAddPackage(
         NAME fmt
@@ -43,9 +45,10 @@ add_library(voila_compiler
         MLIRGeneratorImpl.cpp
         VoilaInlinerInterface.cpp
         ShapeInferencePass.cpp
-        ShapeInferenceInterface.cpp)
+        ShapeInferenceInterface.cpp
+        TypeInferencePass.cpp)
 
-target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast voila_lowering reflex spdlog MLIRExecutionEngine)
+target_link_libraries(voila_compiler magic_enum reflex fmt voila_ast voila_lowering reflex spdlog range-v3 MLIRExecutionEngine)
 target_compile_features(voila_compiler PUBLIC cxx_std_20)
 target_compile_options(voila_compiler PUBLIC
         -Wpedantic
