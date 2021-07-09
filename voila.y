@@ -82,7 +82,6 @@
 %token OR "or"
 %token NOT "not"
 
-/* TODO: unary operators */
 %token HASH "hash"
 %token SELECT "matching selection"
 
@@ -100,6 +99,8 @@
 %token MAX "max"
 %token AVG "avg"
 /* TODO hash table ops */
+%token LOOKUP "lookup"
+%token INSERT "insert"
 
 %nonassoc ASSIGN "assignment"
 
@@ -188,6 +189,7 @@ expr:
 	| read_op {$$ = $1;  }
 	| selection { $$ = $1; }
 	| aggregation {$$ = $1; }
+	| HASH LPAREN expr RPAREN { $$ = ast::Expression::make<Hash>(@1+@4, $3); }
 
 /* TODO: is this correct/complete? */
 pred_expr:

@@ -16,6 +16,7 @@
 #include "mlir/lowering/ReadOpLowering.hpp"
 #include "mlir/lowering/SelectOpLowering.hpp"
 #include "mlir/lowering/SumOpLowering.hpp"
+#include "mlir/lowering/HashOpLowering.hpp"
 
 using namespace mlir;
 using namespace ::voila::mlir;
@@ -35,7 +36,7 @@ void VoilaToAffineLoweringPass::runOnFunction()
 
     // We define the specific operations, or dialects, that are legal targets for
     // this lowering.
-    target.addLegalDialect<AffineDialect, memref::MemRefDialect, StandardOpsDialect, scf::SCFDialect>();
+    target.addLegalDialect<AffineDialect, memref::MemRefDialect, StandardOpsDialect, linalg::LinalgDialect, scf::SCFDialect>();
 
     // We also define the dialect as Illegal so that the conversion will fail
     // if any of these operations are *not* converted. Given that we actually want
@@ -49,7 +50,7 @@ void VoilaToAffineLoweringPass::runOnFunction()
                  FltConstOpLowering, SelectOpLowering, ReadOpLowering, GatherOpLowering, AddIOpLowering, SubIOpLowering,
                  MulIOpLowering, DivFOpLowering, EqIOpLowering, NeqIOpLowering, LeIOpLowering, LeqIOpLowering,
                  GeIOpLowering, GeqIOpLowering, SumOpLowering, CountOpLowering, MinOpLowering, MaxOpLowering,
-                 AvgOpLowering, MoveOpLowering, LoopOpLowering>(&getContext());
+                 AvgOpLowering, MoveOpLowering, LoopOpLowering, HashOpLowering>(&getContext());
 
     patterns.add<EmitOpLowering>(&getContext(), function);
 

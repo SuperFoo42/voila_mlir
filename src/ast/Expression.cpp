@@ -8,7 +8,7 @@ namespace voila::ast
     }
     bool Expression::is_expr() const
     {
-        return true;
+        return mImpl->is_hash();
     }
     bool Expression::is_select() const
     {
@@ -126,6 +126,12 @@ namespace voila::ast
     {
         return mImpl->is_reference();
     }
+
+    bool Expression::is_hash() const
+    {
+        return mImpl->is_hash();
+    }
+
     IExpression *Expression::as_expr() const
     {
         return mImpl->as_expr();
@@ -330,5 +336,10 @@ namespace voila::ast
     AggrAvg *Expression::as_aggr_avg() const
     {
         return mImpl->as_aggr_avg();
+    }
+
+    Hash *Expression::as_hash() const
+    {
+        return mImpl->as_hash();
     }
 } // namespace voila::ast

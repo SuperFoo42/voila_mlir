@@ -536,4 +536,15 @@ let description = [{
 
 let arguments = (ins AnyType:$input, AnyType:$out);
 }
+
+
+def HashOp : Voila_Op<"hash", [NoSideEffect]> {
+let summary = "hash input values for use with hash tables";
+let description = [{
+//TODO
+}];
+
+let arguments = (ins 1DTensorOf<[AnyType]>:$input);
+let results = (outs I64Tensor:$output);
+}
 #endif // VOILA_OPS

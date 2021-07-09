@@ -48,7 +48,8 @@ add_library(voila_ast
         Write.cpp
         Assign.cpp
         Predicate.cpp
-        Variable.cpp)
+        Variable.cpp
+        Hash.cpp)
 
 target_link_libraries(voila_ast fmt magic_enum)
 target_compile_features(voila_ast PUBLIC cxx_std_20)

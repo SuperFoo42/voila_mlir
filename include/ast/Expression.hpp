@@ -105,6 +105,8 @@ namespace voila::ast
 
         [[nodiscard]] bool is_aggr_avg() const;
 
+        [[nodiscard]] bool is_hash() const;
+
         // casts
         [[nodiscard]] IExpression *as_expr() const;
 
@@ -178,6 +180,7 @@ namespace voila::ast
         [[nodiscard]] AggrMax *as_aggr_max() const;
 
         [[nodiscard]] AggrAvg *as_aggr_avg() const;
+        [[nodiscard]] Hash *as_hash() const;
 
         [[nodiscard]] std::string type2string() const;
 
@@ -186,7 +189,7 @@ namespace voila::ast
 
         void set_predicate(Expression expr);
 
-        std::optional<Expression> get_predicate() const;
+        [[nodiscard]] std::optional<Expression> get_predicate() const;
 
         Location get_location();
 

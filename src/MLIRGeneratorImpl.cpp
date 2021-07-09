@@ -292,6 +292,15 @@ namespace voila::mlir
                                                       std::get<Value>(param));
     }
 
+    void MLIRGeneratorImpl::operator()(const Hash &hash)
+    {
+        auto location = loc(hash.get_location());
+        auto param = visitor_gen(hash.items);
+
+        result = builder.create<::mlir::voila::HashOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI64Type()),
+                                                      std::get<Value>(param));
+    }
+
     void MLIRGeneratorImpl::operator()(const IntConst &intConst)
     {
         result = builder.create<::mlir::voila::IntConstOp>(

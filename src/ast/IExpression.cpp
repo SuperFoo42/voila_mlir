@@ -325,4 +325,13 @@ namespace voila::ast
     {
         return nullptr;
     }
+    bool IExpression::is_hash() const
+    {
+        return false;
+    }
+
+    Hash *IExpression::as_hash()
+    {
+        return nullptr;
+    }
 } // namespace voila::ast

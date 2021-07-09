@@ -384,6 +384,13 @@ namespace voila
         }
     }
 
+    void TypeInferer::operator()(const ast::Hash &hash)
+    {
+        hash.items.visit(*this);
+
+        insertNewFuncType(hash, {get_type_id(hash.items)}, DataType::INT64, get_type(hash.items).ar);
+    }
+
     void TypeInferer::operator()(const ast::Arithmetic &arithmetic)
     {
         arithmetic.lhs.visit(*this);

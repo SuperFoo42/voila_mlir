@@ -1,4 +1,5 @@
 #pragma once
+#include "ArgsOutOfRangeError.hpp"
 #include "DotVisualizer.hpp"
 #include "JITInvocationError.hpp"
 #include "LLVMGenerationError.hpp"
@@ -51,7 +52,8 @@
 
 namespace voila
 {
-    namespace lexer {
+    namespace lexer
+    {
         class Lexer;
     }
     class Parameter
@@ -69,7 +71,7 @@ namespace voila
     class Program
     {
         std::unordered_map<std::string, ast::Expression> func_vars;
-        ::mlir::SmallVector<void *> params;
+        ::mlir::SmallVector<void *, 11> params; // 11 is two memrefs + result
         size_t nparam = 0;
         ::mlir::MLIRContext context;
         llvm::LLVMContext llvmContext;

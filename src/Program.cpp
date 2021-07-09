@@ -193,6 +193,7 @@ namespace voila
         optPM.addPass(createCanonicalizerPass());
         optPM.addPass(createCSEPass());
         // bufferization passes
+        optPM.addPass(createLinalgBufferizePass());
         pm.addPass(createTensorConstantBufferizePass());
         optPM.addPass(createTensorBufferizePass());
         optPM.addPass(createStdBufferizePass());
@@ -223,11 +224,13 @@ namespace voila
         secondOptPM.addPass(createFinalizingBufferizePass());
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
+        secondpm.addPass(createLinalgComprehensiveModuleBufferizePass());
+        secondOptPM.addPass(createConvertLinalgToAffineLoopsPass());
         if (m_optimize)
         {
             secondOptPM.addPass(createPromoteBuffersToStackPass());
-            secondpm.addPass(createBufferResultsToOutParamsPass());
-            secondOptPM.addPass(createBufferHoistingPass());
+            //secondpm.addPass(createBufferResultsToOutParamsPass());
+            //secondOptPM.addPass(createBufferHoistingPass());
             // secondOptPM.addPass(createAffineDataCopyGenerationPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
@@ -240,8 +243,8 @@ namespace voila
             secondOptPM.addPass(createSimplifyAffineStructuresPass());
             secondOptPM.addPass(createForLoopSpecializationPass());
             secondOptPM.addPass(createParallelLoopFusionPass());
-            secondOptPM.addPass(createParallelLoopSpecializationPass());
-            secondOptPM.addPass(createParallelLoopTilingPass());
+            //secondOptPM.addPass(createParallelLoopSpecializationPass());
+            //secondOptPM.addPass(createParallelLoopTilingPass());
             secondOptPM.addPass(createCanonicalizerPass());
             secondOptPM.addPass(createCSEPass());
         }
@@ -280,8 +283,15 @@ namespace voila
     Program &Program::operator<<(Parameter param)
     {
         const auto &main = functions.at("main");
-        auto arg = main->args.at(nparam++);
-
+        Expression arg;
+        try
+        {
+            arg = main->args.at(nparam++);
+        }
+        catch (std::out_of_range &ex)
+        {
+            throw ArgsOutOfRangeError();
+        }
         assert(arg.is_variable());
         inferer.insertNewType(*arg.as_variable(), param.type, Arity(param.size));
 
@@ -293,7 +303,7 @@ namespace voila
         }
         else
         {
-            // store strided 1d memref as unpacked struct defined in
+            // store strided 1D memref as unpacked struct defined in
             // llvm/mlir/include/mlir/ExecutionEngine/CRunnerUtils.h
             void **ptr = new void *;
             *ptr = param.data;
@@ -301,7 +311,7 @@ namespace voila
             params.push_back(ptr);            // base ptr
             params.push_back(new int64_t(0)); // offset
             params.push_back(new int64_t(0)); // sizes
-            params.push_back(new int64_t(0)); // strides
+            params.push_back(new int64_t(1)); // strides
         }
 
         return *this;

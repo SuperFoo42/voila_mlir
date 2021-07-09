@@ -107,7 +107,7 @@ if (reflex_ADDED)
     execute_process(COMMAND sh ./build.sh
             WORKING_DIRECTORY ${reflex_SOURCE_DIR}
             )
-    add_library(reflex INTERFACE IMPORTED include/mlir/lowering/LogicalOpLowering.hpp include/mlir/lowering/MoveOpLowering.cpp include/mlir/lowering/MoveOpLowering.hpp)
+    add_library(reflex INTERFACE IMPORTED include/mlir/lowering/LogicalOpLowering.hpp include/mlir/lowering/MoveOpLowering.cpp include/mlir/lowering/MoveOpLowering.hpp include/ast/Hash.cpp include/ast/Hash.hpp)
     target_include_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/include")
     target_link_libraries(reflex INTERFACE "${reflex_SOURCE_DIR}/lib/libreflex.a")
 endif ()

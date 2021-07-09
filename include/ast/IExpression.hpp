@@ -2,8 +2,9 @@
 
 #include "ASTNode.hpp"
 #include "PredicationUnsupportedException.hpp"
-#include <optional>
+
 #include <fmt/core.h>
+#include <optional>
 
 namespace voila::ast
 {
@@ -44,6 +45,7 @@ namespace voila::ast
     class AggrMin;
     class AggrMax;
     class AggrAvg;
+    class Hash;
 
     class IExpression : public ASTNode
     {
@@ -134,6 +136,8 @@ namespace voila::ast
 
         [[nodiscard]] virtual bool is_aggr_avg() const;
 
+        [[nodiscard]] virtual bool is_hash() const;
+
         // casts
         virtual IExpression *as_expr();
 
@@ -208,5 +212,7 @@ namespace voila::ast
         virtual AggrMax *as_aggr_max();
 
         virtual AggrAvg *as_aggr_avg();
+
+        virtual Hash *as_hash();
     };
 } // namespace voila::ast

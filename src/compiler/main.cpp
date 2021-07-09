@@ -114,13 +114,13 @@ int main(int argc, char *argv[])
         }
         spdlog::debug("Finished parsing input file");
 
-        // alloc dummy data to pass to pogram args
-        auto *arg = static_cast<uint64_t *>(std::malloc(sizeof(uint64_t) * 100));
-        std::fill_n(arg, 100, 123);
+        // alloc dummy data to pass to program args
+        auto *arg = static_cast<uint64_t *>(std::malloc(sizeof(uint64_t) * 1000));
+        std::fill_n(arg, 1000, 123);
         auto *arg2 = static_cast<uint64_t *>(std::malloc(sizeof(uint64_t) * 100));
         std::fill_n(arg2, 100, 123);
         prog << ::voila::make_param(arg, 100, voila::DataType::INT64);
-        prog << ::voila::make_param(arg2, 100, voila::DataType::INT64);
+        //prog << ::voila::make_param(arg2, 100, voila::DataType::INT64);
 
         // run in jit
         auto res = prog();
@@ -135,5 +135,4 @@ int main(int argc, char *argv[])
     }
 
     return EXIT_SUCCESS;
-    // return failed(mlir::MlirOptMain(argc, argv, "Voila optimizer driver\n", registry));
 }

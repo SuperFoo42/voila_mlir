@@ -40,3 +40,4 @@
 #include "ast/Write.hpp"
 #include "ast/Predicate.hpp"
 #include "ast/Variable.hpp"
+#include "ast/Hash.hpp"

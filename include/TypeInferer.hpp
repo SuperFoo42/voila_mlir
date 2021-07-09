@@ -59,6 +59,7 @@ namespace voila
         void operator()(const ast::Not &aNot) final;
         void operator()(const ast::Predicate &pred) final;
         void operator()(const ast::StatementWrapper &wrapper) final;
+        void operator()(const ast::Hash &hash) final;
 
         Type &get_type(const ast::ASTNode &node) const;
 

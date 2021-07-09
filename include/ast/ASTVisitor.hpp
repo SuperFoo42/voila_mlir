@@ -48,6 +48,7 @@ namespace voila::ast
     class Comparison;
     class Variable;
     class Predicate;
+    class Hash;
 
     class ASTVisitor
     {
@@ -99,5 +100,6 @@ namespace voila::ast
         virtual void operator()(const Selection &) {}
         virtual void operator()(const Variable &) {}
         virtual void operator()(const Predicate &) {}
+        virtual void operator()(const Hash &){}
     };
 } // namespace voila::ast
