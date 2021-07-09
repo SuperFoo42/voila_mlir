@@ -12,9 +12,79 @@
 #include "llvm/ADT/Sequence.h"
 namespace voila::mlir::lowering
 {
-    template<typename BinaryOp, typename LoweredBinaryOp>
-    class BinaryOpLowering : public ::mlir::ConversionPattern
+    struct BinOpGenerator
     {
+        virtual ::mlir::Value
+        operator()(::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::Value lhs, ::mlir::Value rhs) const = 0;
+        virtual ~BinOpGenerator() = default;
+    };
+
+    template<class IntOp, class FloatOp>
+    struct IntFloatBinOpGenerator : BinOpGenerator
+    {
+        static inline auto isFloat(const ::mlir::Type &t)
+        {
+            return t.isF64() || t.isF32() || t.isF128() || t.isF80();
+        }
+
+        static inline ::mlir::Type getFloatType(const ::mlir::OpBuilder &builder, const ::mlir::Type &t)
+        {
+            if (t.isF64())
+                return ::mlir::Float64Type::get(builder.getContext());
+            if (t.isF32())
+                return ::mlir::Float32Type::get(builder.getContext());
+            if (t.isF128())
+                return ::mlir::Float128Type::get(builder.getContext());
+            if (t.isF80())
+                return ::mlir::Float80Type::get(builder.getContext());
+            throw std::logic_error("No float type");
+        }
+
+        ::mlir::Value operator()(::mlir::OpBuilder &builder,
+                                 ::mlir::Location loc,
+                                 ::mlir::Value lhs,
+                                 ::mlir::Value rhs) const override
+        {
+            if (isFloat(lhs.getType()) && isFloat(rhs.getType()))
+            {
+                return builder.template create<FloatOp>(loc, lhs, rhs);
+            }
+            else if (isFloat(lhs.getType()))
+            {
+                auto castedFlt =
+                    builder.template create<::mlir::SIToFPOp>(loc, rhs, getFloatType(builder, lhs.getType()));
+                return builder.template create<FloatOp>(loc, lhs, castedFlt);
+            }
+            else if (isFloat(rhs.getType()))
+            {
+                auto castedFlt =
+                    builder.template create<::mlir::SIToFPOp>(loc, lhs, getFloatType(builder, rhs.getType()));
+                return builder.template create<FloatOp>(loc, castedFlt, rhs);
+            }
+            else
+            {
+                return builder.template create<IntOp>(loc, lhs, rhs);
+            }
+        }
+    };
+
+    template<class Op>
+    struct SingleTypeBinOpGenerator : BinOpGenerator
+    {
+        ::mlir::Value operator()(::mlir::OpBuilder &builder,
+                                 ::mlir::Location loc,
+                                 ::mlir::Value lhs,
+                                 ::mlir::Value rhs) const override
+        {
+            return builder.template create<Op>(loc, lhs, rhs);
+        }
+    };
+
+    template<typename BinaryOp, class GenClass>
+    class BinaryOpLowering : public ::mlir::ConversionPattern, GenClass
+    {
+        using GenClass::operator();
+
       public:
         explicit BinaryOpLowering(::mlir::MLIRContext *ctx) : ConversionPattern(BinaryOp::getOperationName(), 1, ctx) {}
 
@@ -38,10 +108,10 @@ namespace voila::mlir::lowering
                 ::mlir::SmallVector<::mlir::StringRef, 2> iter_type;
                 iter_type.push_back("parallel");
 
-                auto fn = [](::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::ValueRange vals)
+                auto fn = [&](::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::ValueRange vals)
                 {
                     ::mlir::SmallVector<::mlir::Value, 1> res;
-                    res.push_back(builder.create<LoweredBinaryOp>(loc, vals[0], vals[1]));
+                    res.push_back(operator()(builder, loc, vals[0], vals[1]));
 
                     builder.create<::mlir::linalg::YieldOp>(loc, res);
                 };
@@ -72,10 +142,10 @@ namespace voila::mlir::lowering
                 ::mlir::SmallVector<::mlir::StringRef, 1> iter_type;
                 iter_type.push_back("parallel");
 
-                auto fn = [&opAdaptor](::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::ValueRange vals)
+                auto fn = [&](::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::ValueRange vals)
                 {
                     ::mlir::SmallVector<::mlir::Value, 1> res;
-                    res.push_back(builder.create<LoweredBinaryOp>(loc, vals.front(), opAdaptor.rhs()));
+                    res.push_back(operator()(builder, loc, vals.front(), opAdaptor.rhs()));
 
                     builder.create<::mlir::linalg::YieldOp>(loc, res);
                 };
@@ -107,10 +177,10 @@ namespace voila::mlir::lowering
                 ::mlir::SmallVector<::mlir::StringRef, 1> iter_type;
                 iter_type.push_back("parallel");
 
-                auto fn = [&opAdaptor](::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::ValueRange vals)
+                auto fn = [&](::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::ValueRange vals)
                 {
                     ::mlir::SmallVector<::mlir::Value, 1> res;
-                    res.push_back(builder.create<LoweredBinaryOp>(loc, opAdaptor.lhs(), vals.front()));
+                    res.push_back(operator()(builder, loc, opAdaptor.lhs(), vals.front()));
 
                     builder.create<::mlir::linalg::YieldOp>(loc, res);
                 };
@@ -132,9 +202,11 @@ namespace voila::mlir::lowering
             }
             else // no tensors as params
             {
-                rewriter.replaceOpWithNewOp<LoweredBinaryOp>(op, opAdaptor.lhs(), opAdaptor.rhs());
+                auto res = operator()(rewriter, loc, opAdaptor.lhs(), opAdaptor.rhs());
+                rewriter.replaceOp(op, res);
             }
             return ::mlir::success();
         }
     };
+
 } // namespace voila::mlir::lowering
