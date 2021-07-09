@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
         auto *arg2 = static_cast<uint64_t *>(std::malloc(sizeof(uint64_t) * 100));
         std::fill_n(arg2, 100, 123);
         prog << ::voila::make_param(arg, 100, voila::DataType::INT64);
-        //prog << ::voila::make_param(arg2, 100, voila::DataType::INT64);
+        prog << ::voila::make_param(arg2, 100, voila::DataType::INT64);
 
         // run in jit
         auto res = prog();
