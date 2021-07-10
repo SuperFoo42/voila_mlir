@@ -49,8 +49,8 @@ void VoilaToAffineLoweringPass::runOnFunction()
     RewritePatternSet patterns(&getContext());
     patterns.add<AndOpLowering, OrOpLowering, NotOpLowering, BoolConstOpLowering, IntConstOpLowering,
                  FltConstOpLowering, SelectOpLowering, ReadOpLowering, GatherOpLowering, AddOpLowering, SubOpLowering,
-                 MulOpLowering, DivOpLowering, ModOpLowering, EqIOpLowering, NeqIOpLowering, LeIOpLowering,
-                 LeqIOpLowering, GeIOpLowering, GeqIOpLowering, SumOpLowering, CountOpLowering, MinOpLowering,
+                 MulOpLowering, DivOpLowering, ModOpLowering, EqOpLowering, NeqOpLowering, LeOpLowering,
+                 LeqOpLowering, GeOpLowering, GeqOpLowering, SumOpLowering, CountOpLowering, MinOpLowering,
                  MaxOpLowering, AvgOpLowering, MoveOpLowering, LoopOpLowering, HashOpLowering>(&getContext());
 
     patterns.add<EmitOpLowering>(&getContext(), function);

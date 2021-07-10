@@ -12,6 +12,24 @@
 #include "llvm/ADT/Sequence.h"
 namespace voila::mlir::lowering
 {
+    static inline auto isFloat(const ::mlir::Type &t)
+    {
+        return t.isF64() || t.isF32() || t.isF128() || t.isF80();
+    }
+
+    static inline ::mlir::Type getFloatType(const ::mlir::OpBuilder &builder, const ::mlir::Type &t)
+    {
+        if (t.isF64())
+            return ::mlir::Float64Type::get(builder.getContext());
+        if (t.isF32())
+            return ::mlir::Float32Type::get(builder.getContext());
+        if (t.isF128())
+            return ::mlir::Float128Type::get(builder.getContext());
+        if (t.isF80())
+            return ::mlir::Float80Type::get(builder.getContext());
+        throw std::logic_error("No float type");
+    }
+
     struct BinOpGenerator
     {
         virtual ::mlir::Value
@@ -22,24 +40,6 @@ namespace voila::mlir::lowering
     template<class IntOp, class FloatOp>
     struct IntFloatBinOpGenerator : BinOpGenerator
     {
-        static inline auto isFloat(const ::mlir::Type &t)
-        {
-            return t.isF64() || t.isF32() || t.isF128() || t.isF80();
-        }
-
-        static inline ::mlir::Type getFloatType(const ::mlir::OpBuilder &builder, const ::mlir::Type &t)
-        {
-            if (t.isF64())
-                return ::mlir::Float64Type::get(builder.getContext());
-            if (t.isF32())
-                return ::mlir::Float32Type::get(builder.getContext());
-            if (t.isF128())
-                return ::mlir::Float128Type::get(builder.getContext());
-            if (t.isF80())
-                return ::mlir::Float80Type::get(builder.getContext());
-            throw std::logic_error("No float type");
-        }
-
         ::mlir::Value operator()(::mlir::OpBuilder &builder,
                                  ::mlir::Location loc,
                                  ::mlir::Value lhs,
@@ -100,8 +100,12 @@ namespace voila::mlir::lowering
             {
                 ::mlir::SmallVector<::mlir::Value, 1> outTensorSize;
                 outTensorSize.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.lhs(), 0));
-                auto outTensor = rewriter.create<::mlir::linalg::InitTensorOp>(
-                    loc, outTensorSize, rewriter.getI64Type()); // TODO: float types
+                ::mlir::Type outTensorType;
+                if (isFloat(opAdaptor.lhs().getType().template dyn_cast<::mlir::TensorType>().getElementType()))
+                    outTensorType = opAdaptor.lhs().getType().template dyn_cast<::mlir::TensorType>().getElementType();
+                else
+                    outTensorType = opAdaptor.rhs().getType().template dyn_cast<::mlir::TensorType>().getElementType();
+                auto outTensor = rewriter.create<::mlir::linalg::InitTensorOp>(loc, outTensorSize, outTensorType);
                 ::mlir::SmallVector<::mlir::Value, 1> res;
                 res.push_back(outTensor);
 
@@ -134,8 +138,12 @@ namespace voila::mlir::lowering
             {
                 ::mlir::SmallVector<::mlir::Value, 1> outTensorSize;
                 outTensorSize.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.lhs(), 0));
-                auto outTensor = rewriter.create<::mlir::linalg::InitTensorOp>(
-                    loc, outTensorSize, rewriter.getI64Type()); // TODO: float types
+                ::mlir::Type outTensorType;
+                if (isFloat(opAdaptor.lhs().getType().template dyn_cast<::mlir::TensorType>().getElementType()))
+                    outTensorType = opAdaptor.lhs().getType().template dyn_cast<::mlir::TensorType>().getElementType();
+                else
+                    outTensorType = opAdaptor.rhs().getType();
+                auto outTensor = rewriter.create<::mlir::linalg::InitTensorOp>(loc, outTensorSize, outTensorType);
                 ::mlir::SmallVector<::mlir::Value, 1> res;
                 res.push_back(outTensor);
 
@@ -169,8 +177,12 @@ namespace voila::mlir::lowering
             {
                 ::mlir::SmallVector<::mlir::Value, 1> outTensorSize;
                 outTensorSize.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.rhs(), 0));
-                auto outTensor = rewriter.create<::mlir::linalg::InitTensorOp>(
-                    loc, outTensorSize, rewriter.getI64Type()); // TODO: float types
+                ::mlir::Type outTensorType;
+                if (isFloat(opAdaptor.lhs().getType()))
+                    outTensorType = opAdaptor.lhs().getType();
+                else
+                    outTensorType = opAdaptor.rhs().getType().template dyn_cast<::mlir::TensorType>().getElementType();
+                auto outTensor = rewriter.create<::mlir::linalg::InitTensorOp>(loc, outTensorSize, outTensorType);
                 ::mlir::SmallVector<::mlir::Value, 1> res;
                 res.push_back(outTensor);
 
