@@ -16,8 +16,6 @@ namespace voila::mlir::lowering
     template<typename CmpOp>
     class ComparisonOpLowering : public ::mlir::ConversionPattern
     {
-        using LoopIterationFn = ::mlir::function_ref<
-            ::mlir::Value(::mlir::OpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs)>;
         static constexpr auto getIntCmpPred()
         {
             if constexpr (std::is_same_v<CmpOp, ::mlir::voila::EqOp>)

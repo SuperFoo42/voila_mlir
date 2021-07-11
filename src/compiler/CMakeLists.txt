@@ -34,6 +34,7 @@ set(LIBS
 add_llvm_executable(voila
         main.cpp
         ../Program.cpp
+        ../Config.cpp
         DEPENDS
         MLIRShapeInferenceInterfaceIncGen
         )
@@ -50,7 +51,6 @@ target_compile_options(voila PUBLIC
 
 target_compile_features(voila PUBLIC cxx_std_20)
 llvm_update_compile_flags(voila)
-
 target_link_libraries(voila PRIVATE ${LIBS})
 
 mlir_check_all_link_libraries(voila)

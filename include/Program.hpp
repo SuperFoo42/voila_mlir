@@ -1,5 +1,6 @@
 #pragma once
 #include "ArgsOutOfRangeError.hpp"
+#include "Config.hpp"
 #include "DotVisualizer.hpp"
 #include "JITInvocationError.hpp"
 #include "LLVMGenerationError.hpp"
@@ -46,9 +47,9 @@
 #include <mlir/VoilaDialect.h>
 #include <mlir/lowering/VoilaToAffineLoweringPass.hpp>
 #include <mlir/lowering/VoilaToLLVMLoweringPass.hpp>
+#pragma GCC diagnostic pop
 #include <range/v3/all.hpp>
 #include <unordered_map>
-#pragma GCC diagnostic pop
 
 namespace voila
 {
@@ -78,8 +79,7 @@ namespace voila
         ::mlir::OwningModuleRef mlirModule;
         std::unique_ptr<llvm::Module> llvmModule;
         std::unordered_map<std::string, std::unique_ptr<ast::Fun>> functions;
-        const bool debug;
-        const bool m_optimize;
+        Config config;
         lexer::Lexer *lexer;
 
       public:
@@ -87,9 +87,9 @@ namespace voila
 
         const ::mlir::OwningModuleRef &getMLIRModule() const;
 
-        explicit Program(bool debug = false, bool optimize = true);
+        explicit Program(Config config = Config());
 
-        explicit Program(std::string_view source_path, bool debug = false, bool optimize = true);
+        explicit Program(std::string_view source_path, Config config = Config());
 
         ~Program() = default;
 

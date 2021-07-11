@@ -1,3 +1,4 @@
+#include "Config.hpp"
 #include "ParsingError.hpp"
 #include "Program.hpp"
 
@@ -20,6 +21,7 @@
 
 int main(int argc, char *argv[])
 {
+    spdlog::set_level(spdlog::level::warn);
     mlir::registerAllPasses();
     mlir::DialectRegistry registry;
     registry.insert<mlir::voila::VoilaDialect>();
@@ -28,7 +30,7 @@ int main(int argc, char *argv[])
     mlir::registerMLIRContextCLOptions();
 
     cxxopts::Options options("VOILA compiler", "");
-
+    //TODO: different output files
     options.add_options()("h, help", "Show help")(
         "f, file", "File name",
         cxxopts::value<
@@ -37,7 +39,7 @@ int main(int argc, char *argv[])
                             cxxopts::value<bool>()->default_value(
                                 "false")) ("O,opt", "Enable optimization passes",
                                            cxxopts::value<bool>()->default_value(
-                                               "true")) ("o,obj", "Dump object code",
+                                               "true")) ("o,obj", "Dump llvm IR",
                                                          cxxopts::value<bool>()->default_value(
                                                              "false")) ("d, dump-mlir", "Dump intermediate voila",
                                                                         cxxopts::value<bool>()->default_value(
@@ -83,21 +85,17 @@ int main(int argc, char *argv[])
     try
     {
         auto cmd = options.parse(argc, argv);
-
         if (cmd.count("h"))
         {
             std::cout << options.help({"", "Group"}) << std::endl;
             exit(EXIT_SUCCESS);
         }
-
+        voila::Config config(cmd);
         if (cmd.count("v"))
         {
             spdlog::set_level(spdlog::level::debug);
-            ::llvm::DebugFlag = true;
-        }
-        else
-        {
-            spdlog::set_level(spdlog::level::warn);
+            config.debug = true;
+            //::llvm::DebugFlag = true; //FIXME: this breaks things, but there is a way to enable this on a less global way that might work
         }
 
         spdlog::debug("Start parsing input file");
@@ -106,7 +104,7 @@ int main(int argc, char *argv[])
         {
             throw std::invalid_argument("invalid file");
         }
-        auto prog = ::voila::Program(file, cmd.count("v"), cmd.count("O"));
+        auto prog = voila::Program(file, config);
 
         if (cmd.count("a"))
         {

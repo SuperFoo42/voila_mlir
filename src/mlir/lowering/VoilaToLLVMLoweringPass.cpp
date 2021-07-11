@@ -1,17 +1,5 @@
 #include "mlir/lowering/VoilaToLLVMLoweringPass.hpp"
 
-
-//===----------------------------------------------------------------------===//
-// VoilaToLLVM RewritePatterns
-//===----------------------------------------------------------------------===//
-
-namespace
-{
-    /// Lowers `toy.print` to a loop nest calling `printf` on each of the individual
-    /// elements of the array.
-
-} // end anonymous namespace
-
 //===----------------------------------------------------------------------===//
 // VoilaToLLVMLoweringPass
 //===----------------------------------------------------------------------===//
@@ -19,7 +7,7 @@ namespace
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
-        void VoilaToLLVMLoweringPass::runOnOperation()
+    void VoilaToLLVMLoweringPass::runOnOperation()
     {
         // The first thing to define is the conversion target. This will define the
         // final target for this lowering. For this lowering, we are only targeting
@@ -46,6 +34,7 @@ namespace voila::mlir::lowering
         populateAffineToStdConversionPatterns(patterns);
         populateLoopToStdConversionPatterns(patterns);
         populateStdToLLVMConversionPatterns(typeConverter, patterns);
+        populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
 
         // The only remaining operation to lower from the `toy` dialect, is the
         // PrintOp.
@@ -56,14 +45,14 @@ namespace voila::mlir::lowering
         if (failed(applyFullConversion(module, target, std::move(patterns))))
             signalPassFailure();
     }
-}
+} // namespace voila::mlir::lowering
 
-namespace voila::mlir {
+namespace voila::mlir
+{
     /// Create a pass for lowering operations the remaining `Voila` operations, as
     /// well as `Affine` and `Std`, to the LLVM dialect for codegen.
-    std::unique_ptr<::mlir::Pass>
-    createLowerToLLVMPass()
-{
-    return std::make_unique<lowering::VoilaToLLVMLoweringPass>();
-}
-} // namespace voila::mlir::lowering
+    std::unique_ptr<::mlir::Pass> createLowerToLLVMPass()
+    {
+        return std::make_unique<lowering::VoilaToLLVMLoweringPass>();
+    }
+} // namespace voila::mlir

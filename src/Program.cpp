@@ -1,5 +1,8 @@
 #include "Program.hpp"
 
+#include <utility>
+
+#include "Config.hpp"
 #include "voila_lexer.hpp"
 
 namespace voila
@@ -49,7 +52,6 @@ namespace voila
             DotVisualizer vis(*func, std::optional<std::reference_wrapper<TypeInferer>>(inferer));
             std::ofstream out(fname + "." + func->name + ".dot", std::ios::out);
             out << vis;
-            out.close();
         }
     }
 
@@ -90,7 +92,7 @@ namespace voila
 
         // An optimization pipeline to use within the execution engine.
         auto optPipeline = makeOptimizingTransformer(
-            /*optLevel=*/m_optimize ? 3 : 0, /*sizeLevel=*/0,
+            /*optLevel=*/config.optimize ? 3 : 0, /*sizeLevel=*/0,
             /*targetMachine=*/nullptr);
 
         // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
@@ -142,7 +144,7 @@ namespace voila
 
         /// Optionally run an optimization pipeline over the llvm module.
         auto optPipeline = makeOptimizingTransformer(
-            /*optLevel=*/m_optimize ? 3 : 0, /*sizeLevel=*/0,
+            /*optLevel=*/config.optimize ? 3 : 0, /*sizeLevel=*/0,
             /*targetMachine=*/nullptr);
         if (auto err = optPipeline(llvmModule.get()))
         {
@@ -172,7 +174,7 @@ namespace voila
     void Program::lowerMLIR()
     {
         ::mlir::PassManager pm(&context);
-        if (debug)
+        if (config.debug)
         {
             pm.enableStatistics();
             // pm.enableIRPrinting();
@@ -213,7 +215,7 @@ namespace voila
 
         // FIXME: properly apply passes
         ::mlir::PassManager secondpm(&context);
-        if (debug)
+        if (config.debug)
         {
             secondpm.enableStatistics();
             // secondpm.enableIRPrinting();
@@ -226,12 +228,12 @@ namespace voila
         secondOptPM.addPass(createCSEPass());
         secondpm.addPass(createLinalgComprehensiveModuleBufferizePass());
         secondOptPM.addPass(createConvertLinalgToAffineLoopsPass());
-        if (m_optimize)
+        if (config.optimize)
         {
             secondOptPM.addPass(createPromoteBuffersToStackPass());
-            //secondpm.addPass(createBufferResultsToOutParamsPass());
-            //secondOptPM.addPass(createBufferHoistingPass());
-            // secondOptPM.addPass(createAffineDataCopyGenerationPass());
+            // secondpm.addPass(createBufferResultsToOutParamsPass());
+            // secondOptPM.addPass(createBufferHoistingPass());
+            //  secondOptPM.addPass(createAffineDataCopyGenerationPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
             secondOptPM.addPass(createLoopFusionPass());
@@ -243,15 +245,17 @@ namespace voila
             secondOptPM.addPass(createSimplifyAffineStructuresPass());
             secondOptPM.addPass(createForLoopSpecializationPass());
             secondOptPM.addPass(createParallelLoopFusionPass());
-            //secondOptPM.addPass(createParallelLoopSpecializationPass());
-            //secondOptPM.addPass(createParallelLoopTilingPass());
+            // secondOptPM.addPass(createParallelLoopSpecializationPass());
+            secondOptPM.addPass(createParallelLoopTilingPass());
             secondOptPM.addPass(createCanonicalizerPass());
             secondOptPM.addPass(createCSEPass());
         }
-        // secondOptPM.addPass(createBufferDeallocationPass());
+        secondOptPM.addPass(createBufferDeallocationPass());
         secondOptPM.addPass(createLowerAffinePass());
         secondOptPM.addPass(createLowerToCFGPass());
-
+        secondOptPM.addPass(createStdBufferizePass());
+        secondOptPM.addPass(createPromoteBuffersToStackPass());
+        //secondpm.addPass(createMemRefToLLVMPass());
         secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
@@ -268,7 +272,7 @@ namespace voila
     {
         // Load our Dialect in this MLIR Context.
         context.getOrLoadDialect<::mlir::voila::VoilaDialect>();
-        if (debug)
+        if (config.debug)
         {
             // context.disableMultithreading(); //FIXME: with threading disabled, the program segfaults
         }
@@ -327,6 +331,11 @@ namespace voila
                  double>
     Program::operator()()
     {
+        if (config.plotAST)
+        {
+            to_dot(config.ASTOutFile);
+        }
+
         // generate mlir
         spdlog::debug("Start type inference");
         inferTypes();
@@ -336,19 +345,31 @@ namespace voila
         // generate mlir
         generateMLIR();
         spdlog::debug("Finished mlir generation");
+        if (config.printMLIR)
+        {
+            printMLIR(config.MLIROutFile);
+        }
         spdlog::debug("Start mlir lowering");
         // lower mlir
         lowerMLIR();
         spdlog::debug("Finished mlir lowering");
+        if (config.printLoweredMLIR)
+        {
+            printMLIR(config.MLIRLoweredOutFile);
+        }
         spdlog::debug("Start mlir to llvm conversion");
         // lower to llvm
         convertToLLVM();
-
+        if (config.printLLVM)
+        {
+            printLLVM(config.LLVMOutFile);
+        }
         spdlog::debug("Finished mlir to llvm conversion");
 
         // run jit
         const auto &main = functions.at("main");
-        std::variant<std::monostate, std::unique_ptr<StridedMemRefType<uint32_t, 1> *>,std::unique_ptr<StridedMemRefType<uint64_t, 1> *>, std::unique_ptr<StridedMemRefType<double, 1> *>,
+        std::variant<std::monostate, std::unique_ptr<StridedMemRefType<uint32_t, 1> *>,
+                     std::unique_ptr<StridedMemRefType<uint64_t, 1> *>, std::unique_ptr<StridedMemRefType<double, 1> *>,
                      uint32_t, uint64_t, double>
             res = std::monostate();
         if (main->result.has_value())
@@ -471,16 +492,8 @@ namespace voila
         TypeInferencePass typeInference(inferer);
         typeInference.inferTypes(*this);
     }
-    Program::Program(std::string_view source_path, bool debug, bool optimize) :
-        func_vars(),
-        context(),
-        llvmContext(),
-        mlirModule(),
-        llvmModule(),
-        functions(),
-        debug{debug},
-        m_optimize{optimize},
-        inferer()
+    Program::Program(std::string_view source_path, Config config) :
+        func_vars(), context(), llvmContext(), mlirModule(), llvmModule(), functions(), config{std::move(config)}, inferer()
     {
         std::ifstream fst(source_path.data(), std::ios::in);
 
@@ -498,15 +511,14 @@ namespace voila
             spdlog::error("failed to open {}", source_path);
         }
     }
-    Program::Program(bool debug, bool optimize) :
+    Program::Program(Config config) :
         func_vars(),
         context(),
         llvmContext(),
         mlirModule(),
         llvmModule(),
         functions(),
-        debug{debug},
-        m_optimize{optimize},
+        config{std::move(config)},
         lexer{new Lexer()},
         inferer()
     {
