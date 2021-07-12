@@ -8,3 +8,4 @@ build
 /cmake-build-*/
 .idea
 /build/
+/tests/test_defs.hpp.inc

@@ -1,5 +1,8 @@
 #include "Config.hpp"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
 #include <cxxopts.hpp>
+#pragma GCC diagnostic pop
 
 namespace voila
 {

@@ -33,8 +33,6 @@ set(LIBS
 
 add_llvm_executable(voila
         main.cpp
-        ../Program.cpp
-        ../Config.cpp
         DEPENDS
         MLIRShapeInferenceInterfaceIncGen
         )

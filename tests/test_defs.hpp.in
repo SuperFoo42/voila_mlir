@@ -1,0 +1,2 @@
+#pragma once
+#define VOILA_TEST_SOURCES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/voila"

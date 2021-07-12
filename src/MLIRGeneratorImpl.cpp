@@ -172,7 +172,7 @@ namespace voila::mlir
         auto rhs = visitor_gen(sub.rhs);
 
         result =
-            builder.create<::mlir::voila::AddOp>(location, getType(sub), std::get<Value>(lhs), std::get<Value>(rhs));
+            builder.create<::mlir::voila::SubOp>(location, getType(sub), std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Mul &mul)
@@ -182,7 +182,7 @@ namespace voila::mlir
         auto rhs = visitor_gen(mul.rhs);
 
         result =
-            builder.create<::mlir::voila::AddOp>(location, getType(mul), std::get<Value>(lhs), std::get<Value>(rhs));
+            builder.create<::mlir::voila::MulOp>(location, getType(mul), std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Div &div)
@@ -192,7 +192,7 @@ namespace voila::mlir
         auto rhs = visitor_gen(div.rhs);
 
         result =
-            builder.create<::mlir::voila::AddOp>(location, getType(div), std::get<Value>(lhs), std::get<Value>(rhs));
+            builder.create<::mlir::voila::DivOp>(location, getType(div), std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Mod &mod)
@@ -202,7 +202,7 @@ namespace voila::mlir
         auto rhs = visitor_gen(mod.rhs);
 
         result =
-            builder.create<::mlir::voila::AddOp>(location, getType(mod), std::get<Value>(lhs), std::get<Value>(rhs));
+            builder.create<::mlir::voila::ModOp>(location, getType(mod), std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Eq &eq)

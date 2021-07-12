@@ -261,7 +261,7 @@ namespace voila
         secondOptPM.addPass(createCSEPass());
 
         state = secondpm.run(*mlirModule);
-        spdlog::warn(MLIRModuleToString(mlirModule));
+        spdlog::debug(MLIRModuleToString(mlirModule));
         if (failed(state))
         {
             throw MLIRLoweringError();
@@ -313,6 +313,7 @@ namespace voila
             *ptr = param.data;
             params.push_back(ptr);
             params.push_back(ptr);            // base ptr
+            //TODO: dealloc this ptrs after call
             params.push_back(new int64_t(0)); // offset
             params.push_back(new int64_t(0)); // sizes
             params.push_back(new int64_t(1)); // strides
@@ -322,6 +323,7 @@ namespace voila
     }
 
     // either return void, scalar or pointer to strided memref type as unique_ptr
+    //TODO: memory cleanups, only run mlir to llvm translation once
     std::variant<std::monostate,
                  std::unique_ptr<StridedMemRefType<uint32_t, 1> *>,
                  std::unique_ptr<StridedMemRefType<uint64_t, 1> *>,
