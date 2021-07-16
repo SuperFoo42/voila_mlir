@@ -82,7 +82,6 @@
 %token OR "or"
 %token NOT "not"
 
-%token HASH "hash"
 %token SELECT "matching selection"
 
 /* binary operators */
@@ -98,7 +97,8 @@
 %token MIN "min"
 %token MAX "max"
 %token AVG "avg"
-/* TODO hash table ops */
+
+%token HASH "hash"
 %token LOOKUP "lookup"
 %token INSERT "insert"
 
@@ -150,6 +150,7 @@ stmts:
 stmt: expr COLON { $$ = ast::Statement::make<StatementWrapper>(@1,$1); }
     | var ASSIGN function_call COLON { $$ = ast::Statement::make<Assign>(@2,$1, $3);  }
 	| var ASSIGN expr COLON { $$ = ast::Statement::make<Assign>(@2,$1, ast::Statement::make<StatementWrapper>(@3,$3));  }
+	| INSERT LPAREN expr RPAREN { $$ = ast::Statement::make<Insert>(@1+@4,$3); }
 	| LOOP pred LBRACE stmts RBRACE { $$ = ast::Statement::make<Loop>(@1+@2,$2, $4); }
 	| EMIT expr COLON { $$ = ast::Statement::make<Emit>(@1,$2);  }
 	| effect COLON { $$ = $1; }
@@ -190,6 +191,7 @@ expr:
 	| selection { $$ = $1; }
 	| aggregation {$$ = $1; }
 	| HASH LPAREN expr RPAREN { $$ = ast::Expression::make<Hash>(@1+@4, $3); }
+	| LOOKUP LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Lookup>(@1+@6, $3, $5); }
 
 /* TODO: is this correct/complete? */
 pred_expr:

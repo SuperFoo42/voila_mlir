@@ -28,6 +28,7 @@ namespace voila::mlir::lowering
 
         auto fn = [](OpBuilder &builder, Location loc, ValueRange vals)
         {
+            //TODO: deal with not I64 types by casting
             /**
              * Hash function based on splitmix
              * @link{https://github.com/lemire/testingRNG/blob/master/source/splitmix64.h}

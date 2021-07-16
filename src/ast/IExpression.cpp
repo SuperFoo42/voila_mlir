@@ -334,4 +334,13 @@ namespace voila::ast
     {
         return nullptr;
     }
+    bool IExpression::is_lookup() const
+    {
+        return false;
+    }
+
+    Lookup *IExpression::as_lookup()
+    {
+        return nullptr;
+    }
 } // namespace voila::ast

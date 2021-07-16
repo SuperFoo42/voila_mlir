@@ -15,6 +15,7 @@ namespace voila::ast
     class Loop;
     class StatementWrapper;
     class Predicate;
+    class Insert;
 
     class IStatement : public ASTNode
     {
@@ -42,6 +43,7 @@ namespace voila::ast
         [[nodiscard]] virtual bool is_write() const;
 
         [[nodiscard]] virtual bool is_statement_wrapper() const;
+        [[nodiscard]] virtual bool is_insert() const;
 
         [[nodiscard]] virtual StatementWrapper *as_statement_wrapper();
 
@@ -59,6 +61,8 @@ namespace voila::ast
         virtual Scatter *as_scatter();
 
         virtual Write *as_write();
+
+        virtual Insert *as_insert();
 
         virtual std::optional<Expression> as_expression();
     };

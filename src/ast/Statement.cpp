@@ -99,4 +99,12 @@ namespace voila::ast
     {
         return mImpl->as_statement_wrapper();
     }
+    Insert *Statement::as_insert() const
+    {
+        return mImpl->as_insert();
+    }
+    bool Statement::is_insert() const
+    {
+        return mImpl->is_insert();
+    }
 } // namespace voila::ast

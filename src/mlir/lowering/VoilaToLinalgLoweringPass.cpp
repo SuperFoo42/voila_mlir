@@ -1,11 +1,11 @@
-#include "mlir/lowering/VoilaToAffineLoweringPass.hpp"
+#include "mlir/lowering/VoilaToLinalgLoweringPass.hpp"
 
 namespace voila::mlir
 {
     using namespace ::mlir;
     namespace lowering
     {
-        void VoilaToAffineLoweringPass::runOnFunction()
+        void VoilaToLinalgLoweringPass::runOnFunction()
         {
             auto function = getFunction();
 
@@ -28,15 +28,17 @@ namespace voila::mlir
             // a partial lowering, we explicitly mark the Toy operations that don't want
             // to lower, `toy.print`, as `legal`.
             target.addIllegalDialect<::mlir::voila::VoilaDialect>();
+            target
+                .addLegalOp<::mlir::voila::EmitOp, ::mlir::voila::BoolConstOp, ::mlir::voila::IntConstOp,
+                            ::mlir::voila::FltConstOp, ::mlir::voila::SelectOp, ::mlir::voila::ReadOp,
+                            ::mlir::voila::GatherOp, ::mlir::voila::SumOp, ::mlir::voila::CountOp, ::mlir::voila::MinOp,
+                            ::mlir::voila::MaxOp, ::mlir::voila::AvgOp, ::mlir::voila::MoveOp, ::mlir::voila::LoopOp>();
             // Now that the conversion target has been defined, we just need to provide
             // the set of patterns that will lower the Toy operations.
             RewritePatternSet patterns(&getContext());
-            patterns.add<BoolConstOpLowering, IntConstOpLowering,
-                         FltConstOpLowering, SelectOpLowering, ReadOpLowering, GatherOpLowering, SumOpLowering, CountOpLowering,
-                         MinOpLowering, MaxOpLowering, AvgOpLowering, MoveOpLowering, LoopOpLowering>(
-                &getContext());
-
-            patterns.add<EmitOpLowering>(&getContext(), function);
+            patterns.add<AndOpLowering, OrOpLowering, NotOpLowering, AddOpLowering, SubOpLowering, MulOpLowering,
+                         DivOpLowering, ModOpLowering, EqOpLowering, NeqOpLowering, LeOpLowering, LeqOpLowering,
+                         GeOpLowering, GeqOpLowering, HashOpLowering>(&getContext());
 
             // With the target and rewrite patterns defined, we can now attempt the
             // conversion. The conversion will signal failure if any of our `illegal`
@@ -46,17 +48,11 @@ namespace voila::mlir
                 function.dump();
                 signalPassFailure();
             }
-            // match function return type after emit lowering
-            // FIXME: this is only a workaround, there must be a more clean way to achieve bufferization for function
-            // return
-            auto newType = FunctionType::get(&getContext(), function.getType().getInputs(),
-                                             function.body().back().back().getOperandTypes());
-            function.setType(newType);
         }
     } // namespace lowering
 
-    std::unique_ptr<Pass> createLowerToAffinePass()
+    std::unique_ptr<::mlir::Pass> createLowerToLinalgPass()
     {
-        return std::make_unique<lowering::VoilaToAffineLoweringPass>();
+        return std::make_unique<lowering::VoilaToLinalgLoweringPass>();
     }
 } // namespace voila::mlir

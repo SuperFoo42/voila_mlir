@@ -20,25 +20,24 @@
 #include "mlir/lowering/SumOpLowering.hpp"
 
 #include <memory>
-#include <mlir/Dialect/Affine/IR/AffineOps.h>
 #include <mlir/Dialect/Linalg/IR/LinalgOps.h>
-#include <mlir/Dialect/MemRef/IR/MemRef.h>
-#include <mlir/Dialect/SCF/SCF.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>
+
 namespace voila::mlir
 {
     namespace lowering
     {
-        struct VoilaToAffineLoweringPass : public ::mlir::PassWrapper<VoilaToAffineLoweringPass, ::mlir::FunctionPass>
+        struct VoilaToLinalgLoweringPass : public ::mlir::PassWrapper<VoilaToLinalgLoweringPass, ::mlir::FunctionPass>
         {
             void getDependentDialects(::mlir::DialectRegistry &registry) const override
             {
-                registry.insert<::mlir::AffineDialect, ::mlir::memref::MemRefDialect, ::mlir::StandardOpsDialect,
-                                ::mlir::linalg::LinalgDialect, ::mlir::scf::SCFDialect>();
+                registry
+                    .insert<::mlir::StandardOpsDialect, ::mlir::linalg::LinalgDialect, ::mlir::tensor::TensorDialect>();
             }
+
             void runOnFunction() final;
         };
     } // namespace lowering
 
-    std::unique_ptr<::mlir::Pass> createLowerToAffinePass();
+    std::unique_ptr<::mlir::Pass> createLowerToLinalgPass();
 } // namespace voila::mlir

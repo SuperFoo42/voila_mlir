@@ -297,8 +297,8 @@ namespace voila::mlir
         auto location = loc(hash.get_location());
         auto param = visitor_gen(hash.items);
 
-        result = builder.create<::mlir::voila::HashOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI64Type()),
-                                                      std::get<Value>(param));
+        result = builder.create<::mlir::voila::HashOp>(
+            location, ::mlir::RankedTensorType::get(-1, builder.getI64Type()), std::get<Value>(param));
     }
 
     void MLIRGeneratorImpl::operator()(const IntConst &intConst)
@@ -432,6 +432,26 @@ namespace voila::mlir
 
         result = builder.create<::mlir::voila::SelectOp>(location, std::get<Value>(values).getType(),
                                                          std::get<Value>(values), std::get<Value>(pred));
+    }
+
+    void MLIRGeneratorImpl::operator()(const Lookup &lookup)
+    {
+        auto location = loc(lookup.get_location());
+        auto table = visitor_gen(lookup.table);
+        auto keys = visitor_gen(lookup.keys);
+
+        result =
+            builder.create<::mlir::voila::LookupOp>(location, ::mlir::RankedTensorType::get(-1, builder.getIndexType()),
+                                                    std::get<Value>(table), std::get<Value>(keys));
+    }
+
+    void MLIRGeneratorImpl::operator()(const Insert &insert)
+    {
+        auto location = loc(insert.get_location());
+        auto table = std::get<Value>(visitor_gen(insert.keys));
+
+        result = builder.create<::mlir::voila::InsertOp>(
+            location, ::mlir::RankedTensorType::get(-1, getType(*insert.keys.as_expr())), table);
     }
 
     void MLIRGeneratorImpl::operator()(const Variable &variable)

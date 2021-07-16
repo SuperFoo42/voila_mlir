@@ -59,9 +59,13 @@ TEST(AddTests, TensorScalarTest) {
         ASSERT_EQ(elem, TENSOR_SUM);
 }
 
-TEST(AddTests, ScalarTensorTest) {}
+TEST(AddTests, ScalarTensorTest) {
+    FAIL();
+}
 
-TEST(AddTests, ScalarScalarTest) {}
+TEST(AddTests, ScalarScalarTest) {
+    FAIL();
+}
 
 TEST(SubTests, TensorTensorTest) {
     Config config;
@@ -90,8 +94,14 @@ TEST(SubTests, TensorTensorTest) {
         ASSERT_EQ(elem, TENSOR_SUB);
 }
 
-TEST(SubTests, TensorScalarTest) {}
+TEST(SubTests, TensorScalarTest) {
+    FAIL();
+}
 
-TEST(SubTests, ScalarTensorTest) {}
+TEST(SubTests, ScalarTensorTest) {
+    FAIL();
+}
 
-TEST(SubTests, ScalarScalarTest) {}
+TEST(SubTests, ScalarScalarTest) {
+    FAIL();
+}

@@ -1,9 +1,9 @@
 #include "Program.hpp"
 
-#include <utility>
-
 #include "Config.hpp"
 #include "voila_lexer.hpp"
+
+#include <utility>
 
 namespace voila
 {
@@ -189,6 +189,9 @@ namespace voila
         optPM.addPass(createCanonicalizerPass());
         optPM.addPass(createCSEPass());
 
+        // Partially lower voila to linalg
+        optPM.addPass(::voila::mlir::createLowerToLinalgPass());
+
         // Partially lower voila to affine with a few cleanups
         optPM.addPass(::voila::mlir::createLowerToAffinePass());
 
@@ -255,7 +258,7 @@ namespace voila
         secondOptPM.addPass(createLowerToCFGPass());
         secondOptPM.addPass(createStdBufferizePass());
         secondOptPM.addPass(createPromoteBuffersToStackPass());
-        //secondpm.addPass(createMemRefToLLVMPass());
+        // secondpm.addPass(createMemRefToLLVMPass());
         secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
@@ -312,8 +315,8 @@ namespace voila
             void **ptr = new void *;
             *ptr = param.data;
             params.push_back(ptr);
-            params.push_back(ptr);            // base ptr
-            //TODO: dealloc this ptrs after call
+            params.push_back(ptr); // base ptr
+            // TODO: dealloc this ptrs after call
             params.push_back(new int64_t(0)); // offset
             params.push_back(new int64_t(0)); // sizes
             params.push_back(new int64_t(1)); // strides
@@ -323,7 +326,7 @@ namespace voila
     }
 
     // either return void, scalar or pointer to strided memref type as unique_ptr
-    //TODO: memory cleanups, only run mlir to llvm translation once
+    // TODO: memory cleanups, only run mlir to llvm translation once
     std::variant<std::monostate,
                  std::unique_ptr<StridedMemRefType<uint32_t, 1> *>,
                  std::unique_ptr<StridedMemRefType<uint64_t, 1> *>,
@@ -495,7 +498,14 @@ namespace voila
         typeInference.inferTypes(*this);
     }
     Program::Program(std::string_view source_path, Config config) :
-        func_vars(), context(), llvmContext(), mlirModule(), llvmModule(), functions(), config{std::move(config)}, inferer()
+        func_vars(),
+        context(),
+        llvmContext(),
+        mlirModule(),
+        llvmModule(),
+        functions(),
+        config{std::move(config)},
+        inferer()
     {
         std::ifstream fst(source_path.data(), std::ios::in);
 

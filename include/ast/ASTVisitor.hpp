@@ -49,6 +49,8 @@ namespace voila::ast
     class Variable;
     class Predicate;
     class Hash;
+    class Lookup;
+    class Insert;
 
     class ASTVisitor
     {
@@ -101,5 +103,8 @@ namespace voila::ast
         virtual void operator()(const Variable &) {}
         virtual void operator()(const Predicate &) {}
         virtual void operator()(const Hash &){}
+        //TODO: insert in visitors
+        virtual void operator()(const Lookup &){}
+        virtual void operator()(const Insert &){}
     };
 } // namespace voila::ast

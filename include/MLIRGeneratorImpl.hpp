@@ -118,5 +118,7 @@ namespace voila::mlir
         void operator()(const ast::Variable &variable) final;
         void operator()(const ast::Predicate &pred) final;
         void operator()(const ast::Hash &hash) final;
+        void operator()(const ast::Lookup &lookup) override;
+        void operator()(const ast::Insert &insert) override;
     };
 } // namespace voila::mlir

@@ -1,6 +1,7 @@
 add_library(voila_lowering
         VoilaToAffineLoweringPass.cpp
         VoilaToLLVMLoweringPass.cpp
+        VoilaToLinalgLoweringPass.cpp
         SelectOpLowering.cpp
         AvgOpLowering.cpp
         MaxOpLowering.cpp
@@ -13,4 +14,6 @@ add_library(voila_lowering
         GatherOpLowering.cpp
         LoopOpLowering.cpp
         MoveOpLowering.cpp
-        HashOpLowering.cpp)
+        HashOpLowering.cpp
+        InsertOpLowering.cpp
+        LookupOpLowering.cpp)

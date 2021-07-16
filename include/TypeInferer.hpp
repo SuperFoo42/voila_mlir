@@ -71,6 +71,8 @@ namespace voila
         void set_type(const ast::ASTNode *node, DataType type);
 
         void insertNewType(const ast::ASTNode &node, DataType t, Arity ar);
+        void operator()(const ast::Lookup &lookup) override;
+        void operator()(const ast::Insert &insert) override;
 
       private:
         void unify(const ast::ASTNode &t1, const ast::ASTNode &t2);

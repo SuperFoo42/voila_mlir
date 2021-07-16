@@ -41,3 +41,5 @@
 #include "ast/Predicate.hpp"
 #include "ast/Variable.hpp"
 #include "ast/Hash.hpp"
+#include "ast/Lookup.hpp"
+#include "ast/Insert.hpp"

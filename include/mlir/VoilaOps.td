@@ -342,6 +342,7 @@ let results = (outs 1DTensorOf<[AnyType]>);
 //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
+//TODO
 def WriteOp : Voila_Op<"write",[NoSideEffect]> {
 let summary = "write elements to column";
 let description = [{
@@ -357,6 +358,7 @@ let results = (outs AnyTensor);
 //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
+//TODO
 def ScatterOp : Voila_Op<"scatter",[NoSideEffect]> {
 let summary = "scatter elements to column";
 let description = [{
@@ -546,5 +548,25 @@ let description = [{
 
 let arguments = (ins 1DTensorOf<[AnyType]>:$input);
 let results = (outs I64Tensor:$output);
+}
+
+def InsertOp : Voila_Op<"insert"> {
+let summary = "insert values in a hash table";
+let description = [{
+This is a convenience function, allocating a hashtable, hashing and scatter + linear probing for collision resolution
+}];
+
+let arguments = (ins 1DTensorOf<[AnyType]>:$input);
+let results = (outs 1DTensorOf<[AnyType]>:$hashtable);
+}
+
+def LookupOp : Voila_Op<"lookup", [NoSideEffect,SameTypeOperands, SameOperandsShape]> {
+let summary = "lookup index of hash values";
+let description = [{
+This is a convenience function, basically consisting of hashing and gather + linear probing for collision resolution
+}];
+
+let arguments = (ins 1DTensorOf<[AnyType]>:$hashtable, 1DTensorOf<[AnyType]>:$keys);
+let results = (outs IndexTensor:$output);
 }
 #endif // VOILA_OPS

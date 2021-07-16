@@ -342,4 +342,12 @@ namespace voila::ast
     {
         return mImpl->as_hash();
     }
+    Lookup *Expression::as_lookup() const
+    {
+        return mImpl->as_lookup();
+    }
+    bool Expression::is_lookup() const
+    {
+        return mImpl->is_lookup();
+    }
 } // namespace voila::ast

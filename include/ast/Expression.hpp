@@ -107,6 +107,8 @@ namespace voila::ast
 
         [[nodiscard]] bool is_hash() const;
 
+        [[nodiscard]] bool is_lookup() const;
+
         // casts
         [[nodiscard]] IExpression *as_expr() const;
 
@@ -180,7 +182,10 @@ namespace voila::ast
         [[nodiscard]] AggrMax *as_aggr_max() const;
 
         [[nodiscard]] AggrAvg *as_aggr_avg() const;
+
         [[nodiscard]] Hash *as_hash() const;
+
+        [[nodiscard]] Lookup *as_lookup() const;
 
         [[nodiscard]] std::string type2string() const;
 

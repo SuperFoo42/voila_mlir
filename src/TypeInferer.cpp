@@ -543,6 +543,17 @@ namespace voila
         insertNewFuncType(selection, {get_type_id(selection.param), get_type_id(selection.param)}, type.t);
     }
 
+    void TypeInferer::operator()(const ast::Lookup &lookup)
+    {
+        //TODO
+        ASTVisitor::operator()(lookup);
+    }
+    void TypeInferer::operator()(const ast::Insert &insert)
+    {
+        //TODO
+        ASTVisitor::operator()(insert);
+    }
+
     void TypeInferer::operator()(const ast::Predicate &pred)
     {
         pred.expr.visit(*this);
@@ -727,4 +738,5 @@ namespace voila
     {
         types.at(typeIDs.at(node))->t = type;
     }
+
 } // namespace voila

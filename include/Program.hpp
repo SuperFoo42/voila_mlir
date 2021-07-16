@@ -47,6 +47,7 @@
 #include <mlir/VoilaDialect.h>
 #include <mlir/lowering/VoilaToAffineLoweringPass.hpp>
 #include <mlir/lowering/VoilaToLLVMLoweringPass.hpp>
+#include <mlir/lowering/VoilaToLinalgLoweringPass.hpp>
 #pragma GCC diagnostic pop
 #include <range/v3/all.hpp>
 #include <unordered_map>

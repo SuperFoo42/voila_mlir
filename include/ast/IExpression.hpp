@@ -46,6 +46,7 @@ namespace voila::ast
     class AggrMax;
     class AggrAvg;
     class Hash;
+    class Lookup;
 
     class IExpression : public ASTNode
     {
@@ -138,6 +139,8 @@ namespace voila::ast
 
         [[nodiscard]] virtual bool is_hash() const;
 
+        [[nodiscard]] virtual bool is_lookup() const;
+
         // casts
         virtual IExpression *as_expr();
 
@@ -214,5 +217,7 @@ namespace voila::ast
         virtual AggrAvg *as_aggr_avg();
 
         virtual Hash *as_hash();
+
+        virtual Lookup *as_lookup();
     };
 } // namespace voila::ast

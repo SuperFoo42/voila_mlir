@@ -10,7 +10,6 @@
 #include <mlir/InitAllDialects.h>
 #include <mlir/InitAllPasses.h>
 #include <mlir/VoilaDialect.h>
-#include <mlir/lowering/VoilaToAffineLoweringPass.hpp>
 #pragma GCC diagnostic pop
 
 #include <cstdlib>
@@ -30,7 +29,7 @@ int main(int argc, char *argv[])
     mlir::registerMLIRContextCLOptions();
 
     cxxopts::Options options("VOILA compiler", "");
-    //TODO: different output files
+    // TODO: different output files
     options.add_options()("h, help", "Show help")(
         "f, file", "File name",
         cxxopts::value<
@@ -95,7 +94,8 @@ int main(int argc, char *argv[])
         {
             spdlog::set_level(spdlog::level::debug);
             config.debug = true;
-            //::llvm::DebugFlag = true; //FIXME: this breaks things, but there is a way to enable this on a less global way that might work
+            //::llvm::DebugFlag = true; //FIXME: this breaks things, but there is a way to enable this on a less global
+            //way that might work
         }
 
         spdlog::debug("Start parsing input file");
