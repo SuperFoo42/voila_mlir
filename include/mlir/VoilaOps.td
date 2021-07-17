@@ -566,7 +566,7 @@ let description = [{
 This is a convenience function, basically consisting of hashing and gather + linear probing for collision resolution
 }];
 
-let arguments = (ins 1DTensorOf<[AnyType]>:$hashtable, 1DTensorOf<[AnyType]>:$keys);
+let arguments = (ins MemRefRankOf<[AnyType], [1]>:$hashtable, 1DTensorOf<[AnyType]>:$keys);
 let results = (outs IndexTensor:$output);
 }
 #endif // VOILA_OPS
