@@ -557,10 +557,10 @@ This is a convenience function, allocating a hashtable, hashing and scatter + li
 }];
 
 let arguments = (ins 1DTensorOf<[AnyType]>:$input);
-let results = (outs 1DTensorOf<[AnyType]>:$hashtable);
+let results = (outs MemRefRankOf<[AnyType], [1]>:$hashtable);
 }
 
-def LookupOp : Voila_Op<"lookup", [NoSideEffect,SameTypeOperands, SameOperandsShape]> {
+def LookupOp : Voila_Op<"lookup", [NoSideEffect,SameOperandsElementType]> {
 let summary = "lookup index of hash values";
 let description = [{
 This is a convenience function, basically consisting of hashing and gather + linear probing for collision resolution

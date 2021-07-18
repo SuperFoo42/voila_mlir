@@ -452,7 +452,7 @@ namespace voila::mlir
 
         result = builder.create<::mlir::voila::InsertOp>(
             location,
-            ::mlir::RankedTensorType::get(-1, table.getType().dyn_cast<::mlir::TensorType>().getElementType()), table);
+            ::mlir::MemRefType::get(-1, table.getType().dyn_cast<::mlir::TensorType>().getElementType()), table);
     }
 
     void MLIRGeneratorImpl::operator()(const Variable &variable)

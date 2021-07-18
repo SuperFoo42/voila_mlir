@@ -226,17 +226,22 @@ namespace voila
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(secondpm);
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
-        secondOptPM.addPass(createFinalizingBufferizePass());
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
-        secondpm.addPass(createLinalgComprehensiveModuleBufferizePass());
+        pm.addPass(createNormalizeMemRefsPass());
+        secondOptPM.addPass(createConvertLinalgToLoopsPass());
         secondOptPM.addPass(createConvertLinalgToAffineLoopsPass());
+        secondOptPM.addPass(createLinalgFusionOfTensorOpsPass());
+        secondpm.addPass(createLinalgComprehensiveModuleBufferizePass());
+        secondOptPM.addPass(createLinalgDetensorizePass());
+
         if (config.optimize)
         {
             secondOptPM.addPass(createPromoteBuffersToStackPass());
             // secondpm.addPass(createBufferResultsToOutParamsPass());
             // secondOptPM.addPass(createBufferHoistingPass());
             //  secondOptPM.addPass(createAffineDataCopyGenerationPass());
+            secondOptPM.addPass(createLinalgFusionOfTensorOpsPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
             secondOptPM.addPass(createLoopFusionPass());
@@ -254,6 +259,7 @@ namespace voila
             secondOptPM.addPass(createCSEPass());
         }
         secondOptPM.addPass(createBufferDeallocationPass());
+        secondOptPM.addPass(createFinalizingBufferizePass());
         secondOptPM.addPass(createLowerAffinePass());
         secondOptPM.addPass(createLowerToCFGPass());
         secondOptPM.addPass(createStdBufferizePass());

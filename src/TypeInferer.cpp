@@ -545,8 +545,11 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Lookup &lookup)
     {
-        //TODO
-        ASTVisitor::operator()(lookup);
+        lookup.keys.visit(*this);
+        lookup.table.visit(*this);
+
+        //actually, return type is IndexType
+        insertNewFuncType(lookup, {get_type_id(lookup.keys), get_type_id(lookup.table)}, DataType::INT64, get_type(lookup.keys).ar);
     }
     void TypeInferer::operator()(const ast::Insert &insert)
     {

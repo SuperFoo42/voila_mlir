@@ -1,6 +1,5 @@
 #include "Config.hpp"
 #include "Program.hpp"
-#include "range/v3/algorithm/copy.hpp"
 #include "test_defs.hpp.inc"
 
 #include <gtest/gtest.h>
@@ -144,5 +143,33 @@ TEST(HashTableTests, Insert)
     for (size_t i = 0; i < TENSOR_SIZE; ++i)
     {
         ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->operator[](i), ref[i]);
+    }
+}
+
+TEST(HashTableTests, Lookup)
+{
+    Config config;
+
+    config.debug = true;
+    config.optimize = false;
+    //::llvm::DebugFlag = true;
+    const auto file = VOILA_TEST_SOURCES_PATH "/simple_lookup.voila";
+    constexpr size_t TENSOR_SIZE = 100;
+    constexpr uint64_t TENSOR_VALS = 123;
+    constexpr size_t VALUE_POS = 43;
+    Program prog(file, config);
+    // alloc dummy data to pass to program args
+    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
+    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+
+    // run in jit
+    auto res = prog();
+
+    ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], TENSOR_SIZE);
+
+    for (size_t i = 0; i < TENSOR_SIZE; ++i)
+    {
+        ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->operator[](i), VALUE_POS);
     }
 }

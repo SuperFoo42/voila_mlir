@@ -1,0 +1,6 @@
+main(x)
+{
+    y = insert(x);
+    z = lookup(y,x);
+    emit z;
+}
