@@ -1,17 +1,17 @@
 #pragma once
 #include "ASTVisitor.hpp"
 #include "Expression.hpp"
-#include "IStatement.hpp"
+#include "IExpression.hpp"
 
 #include <string>
 
 namespace voila::ast
 {
-    class Insert : public IStatement
+    class Insert : public IExpression
     {
       public:
         Insert(Location loc, Expression keys) :
-            IStatement(loc), keys{std::move(keys)}
+            IExpression(loc), keys{std::move(keys)}
         {
             // TODO
         }

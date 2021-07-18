@@ -21,7 +21,7 @@ namespace voila::mlir
             // We define the specific operations, or dialects, that are legal targets for
             // this lowering.
             target.addLegalDialect<AffineDialect, memref::MemRefDialect, StandardOpsDialect, linalg::LinalgDialect,
-                                   scf::SCFDialect>();
+                                   tensor::TensorDialect, scf::SCFDialect>();
 
             // We also define the dialect as Illegal so that the conversion will fail
             // if any of these operations are *not* converted. Given that we actually want
@@ -38,7 +38,8 @@ namespace voila::mlir
             RewritePatternSet patterns(&getContext());
             patterns.add<AndOpLowering, OrOpLowering, NotOpLowering, AddOpLowering, SubOpLowering, MulOpLowering,
                          DivOpLowering, ModOpLowering, EqOpLowering, NeqOpLowering, LeOpLowering, LeqOpLowering,
-                         GeOpLowering, GeqOpLowering, HashOpLowering>(&getContext());
+                         GeOpLowering, GeqOpLowering, HashOpLowering, LookupOpLowering, InsertOpLowering>(
+                &getContext());
 
             // With the target and rewrite patterns defined, we can now attempt the
             // conversion. The conversion will signal failure if any of our `illegal`

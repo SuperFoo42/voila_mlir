@@ -547,9 +547,9 @@ let description = [{
 }];
 
 let arguments = (ins 1DTensorOf<[AnyType]>:$input);
-let results = (outs I64Tensor:$output);
+let results = (outs IndexTensor:$output);
 }
-
+//TODO: this is currently more like a create op
 def InsertOp : Voila_Op<"insert"> {
 let summary = "insert values in a hash table";
 let description = [{

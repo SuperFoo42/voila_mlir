@@ -17,9 +17,9 @@ namespace voila::mlir::lowering
         // TODO: murmur3 for strings
         assert(hashOpAdaptor.input().getType().isa<TensorType>());
 
-        SmallVector<Value,1> outTensorSize;
+        SmallVector<Value, 1> outTensorSize;
         outTensorSize.push_back(rewriter.create<tensor::DimOp>(loc, hashOpAdaptor.input(), 0));
-        auto outTensor = rewriter.create<linalg::InitTensorOp>(loc, outTensorSize, rewriter.getI64Type());
+        auto outTensor = rewriter.create<linalg::InitTensorOp>(loc, outTensorSize, rewriter.getIndexType());
         SmallVector<Value, 1> res;
         res.push_back(outTensor);
 
@@ -28,7 +28,7 @@ namespace voila::mlir::lowering
 
         auto fn = [](OpBuilder &builder, Location loc, ValueRange vals)
         {
-            //TODO: deal with not I64 types by casting
+            // TODO: deal with not I64 types by casting
             /**
              * Hash function based on splitmix
              * @link{https://github.com/lemire/testingRNG/blob/master/source/splitmix64.h}
@@ -57,7 +57,7 @@ namespace voila::mlir::lowering
             auto s3 = builder.create<UnsignedShiftRightOp>(
                 loc, m2, builder.create<ConstantIntOp>(loc, 31, builder.getI64Type()));
             SmallVector<Value, 1> res;
-            res.push_back(builder.create<XOrOp>(loc, m2, s3));
+            res.push_back(builder.create<IndexCastOp>(loc, builder.getIndexType(), builder.create<XOrOp>(loc, m2, s3)));
 
             builder.create<linalg::YieldOp>(loc, res);
         };
@@ -69,9 +69,9 @@ namespace voila::mlir::lowering
         indexing_maps.push_back(rewriter.getDimIdentityMap());
 
         auto linalgOp = rewriter.create<linalg::GenericOp>(loc, /*results*/ ret_type,
-                                                       /*inputs*/ operands, /*outputs*/ res,
-                                                       /*indexing maps*/ indexing_maps,
-                                                       /*iterator types*/ iter_type, fn);
+                                                           /*inputs*/ operands, /*outputs*/ res,
+                                                           /*indexing maps*/ indexing_maps,
+                                                           /*iterator types*/ iter_type, fn);
 
         rewriter.replaceOp(op, linalgOp->getResults());
         return success();

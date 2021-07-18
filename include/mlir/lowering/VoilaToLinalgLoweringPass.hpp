@@ -18,7 +18,8 @@
 #include "mlir/lowering/ReadOpLowering.hpp"
 #include "mlir/lowering/SelectOpLowering.hpp"
 #include "mlir/lowering/SumOpLowering.hpp"
-
+#include "mlir/lowering/LookupOpLowering.hpp"
+#include "mlir/lowering/InsertOpLowering.hpp"
 #include <memory>
 #include <mlir/Dialect/Linalg/IR/LinalgOps.h>
 #include <mlir/Dialect/Tensor/IR/Tensor.h>

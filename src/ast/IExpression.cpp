@@ -343,4 +343,12 @@ namespace voila::ast
     {
         return nullptr;
     }
+    bool IExpression::is_insert() const
+    {
+        return false;
+    }
+    Insert *IExpression::as_insert()
+    {
+        return nullptr;
+    }
 } // namespace voila::ast

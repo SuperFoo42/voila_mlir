@@ -451,7 +451,8 @@ namespace voila::mlir
         auto table = std::get<Value>(visitor_gen(insert.keys));
 
         result = builder.create<::mlir::voila::InsertOp>(
-            location, ::mlir::RankedTensorType::get(-1, getType(*insert.keys.as_expr())), table);
+            location,
+            ::mlir::RankedTensorType::get(-1, table.getType().dyn_cast<::mlir::TensorType>().getElementType()), table);
     }
 
     void MLIRGeneratorImpl::operator()(const Variable &variable)

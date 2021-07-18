@@ -72,6 +72,8 @@
 "select" return voila::parser::Parser::make_SELECT(location());
 
 "hash" return voila::parser::Parser::make_HASH(location());
+"insert" return voila::parser::Parser::make_INSERT(location());
+"lookup" return voila::parser::Parser::make_LOOKUP(location());
 
 -?[[:digit:]]+ return voila::parser::Parser::make_INT(std::strtoimax(str().c_str(), nullptr, 10), location());
 -?([[:digit:]]+|[[:digit:]]*\.[[:digit:]]+([eE][-+]?[[:digit:]]+)?)      return voila::parser::Parser::make_FLT(std::stod(str()), location());

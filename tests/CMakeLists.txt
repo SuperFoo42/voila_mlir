@@ -33,6 +33,7 @@ set(LIBS
         spdlog
         gtest
         gtest_main
+        range-v3
         gmock
         )
 

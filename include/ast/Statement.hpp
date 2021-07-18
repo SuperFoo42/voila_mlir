@@ -46,7 +46,6 @@ namespace voila::ast
 
         [[nodiscard]] bool is_write() const;
 
-        [[nodiscard]] bool is_insert() const;
 
         // type conversions
         [[nodiscard]] IStatement *as_stmt() const;
@@ -62,8 +61,6 @@ namespace voila::ast
         [[nodiscard]] Scatter *as_scatter() const;
 
         [[nodiscard]] Write *as_write() const;
-
-        [[nodiscard]] Insert *as_insert() const;
 
         [[nodiscard]] bool is_statement_wrapper() const;
         [[nodiscard]] StatementWrapper * as_statement_wrapper() const;

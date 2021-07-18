@@ -47,7 +47,7 @@ namespace voila::ast
     class AggrAvg;
     class Hash;
     class Lookup;
-
+    class Insert;
     class IExpression : public ASTNode
     {
       public:
@@ -219,5 +219,8 @@ namespace voila::ast
         virtual Hash *as_hash();
 
         virtual Lookup *as_lookup();
+        [[nodiscard]] virtual bool is_insert() const;
+
+        virtual Insert *as_insert();
     };
 } // namespace voila::ast

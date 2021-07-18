@@ -84,12 +84,4 @@ namespace voila::ast
     {
         return std::nullopt;
     }
-    bool IStatement::is_insert() const
-    {
-        return false;
-    }
-    Insert *IStatement::as_insert()
-    {
-        return nullptr;
-    }
 } // namespace voila::ast

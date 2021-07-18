@@ -350,4 +350,13 @@ namespace voila::ast
     {
         return mImpl->is_lookup();
     }
+
+    Insert *Expression::as_insert() const
+    {
+        return mImpl->as_insert();
+    }
+    bool Expression::is_insert() const
+    {
+        return mImpl->is_insert();
+    }
 } // namespace voila::ast

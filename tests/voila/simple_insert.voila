@@ -1,0 +1,5 @@
+main(x)
+{
+    z = insert(x);
+    emit z;
+}

@@ -166,10 +166,9 @@ namespace voila::ast
 
         [[nodiscard]] const Ref *as_reference() const;
 
-        [[nodiscard]] Predicate * as_predicate() const;
+        [[nodiscard]] Predicate *as_predicate() const;
 
         [[nodiscard]] Variable *as_variable() const;
-
 
         [[nodiscard]] Aggregation *as_aggr() const;
 
@@ -187,6 +186,9 @@ namespace voila::ast
 
         [[nodiscard]] Lookup *as_lookup() const;
 
+        [[nodiscard]] bool is_insert() const;
+
+        [[nodiscard]] Insert *as_insert() const;
         [[nodiscard]] std::string type2string() const;
 
         void visit(ASTVisitor &visitor);

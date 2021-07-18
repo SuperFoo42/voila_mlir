@@ -26,33 +26,25 @@ namespace voila::mlir::lowering
          * v |= v >> 32;
          * v++;
          */
-        auto firstOr =
-            rewriter.create<OrOp>(loc, insertSize,
-                                  rewriter.create<UnsignedShiftRightOp>(
-                                      loc, insertSize, rewriter.create<ConstantIntOp>(loc, 1, rewriter.getI64Type())));
-        auto secondOr =
-            rewriter.create<OrOp>(loc, firstOr,
-                                  rewriter.create<UnsignedShiftRightOp>(
-                                      loc, firstOr, rewriter.create<ConstantIntOp>(loc, 2, rewriter.getI64Type())));
-        auto thirdOr =
-            rewriter.create<OrOp>(loc, secondOr,
-                                  rewriter.create<UnsignedShiftRightOp>(
-                                      loc, secondOr, rewriter.create<ConstantIntOp>(loc, 4, rewriter.getI64Type())));
-        auto fourthOr =
-            rewriter.create<OrOp>(loc, thirdOr,
-                                  rewriter.create<UnsignedShiftRightOp>(
-                                      loc, thirdOr, rewriter.create<ConstantIntOp>(loc, 8, rewriter.getI64Type())));
-        auto fithOr =
-            rewriter.create<OrOp>(loc, fourthOr,
-                                  rewriter.create<UnsignedShiftRightOp>(
-                                      loc, fourthOr, rewriter.create<ConstantIntOp>(loc, 16, rewriter.getI64Type())));
-        auto sixthOr =
-            rewriter.create<OrOp>(loc, fithOr,
-                                  rewriter.create<UnsignedShiftRightOp>(
-                                      loc, fithOr, rewriter.create<ConstantIntOp>(loc, 32, rewriter.getI64Type())));
+        auto firstOr = rewriter.create<OrOp>(
+            loc, insertSize,
+            rewriter.create<UnsignedShiftRightOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
+        auto secondOr = rewriter.create<OrOp>(
+            loc, firstOr,
+            rewriter.create<UnsignedShiftRightOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
+        auto thirdOr = rewriter.create<OrOp>(
+            loc, secondOr,
+            rewriter.create<UnsignedShiftRightOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
+        auto fourthOr = rewriter.create<OrOp>(
+            loc, thirdOr,
+            rewriter.create<UnsignedShiftRightOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
+        auto fithOr = rewriter.create<OrOp>(
+            loc, fourthOr,
+            rewriter.create<UnsignedShiftRightOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
+        auto sixthOr = rewriter.create<OrOp>(
+            loc, fithOr, rewriter.create<UnsignedShiftRightOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
         SmallVector<Value, 1> htSize;
-        htSize.push_back(
-            rewriter.create<AddIOp>(loc, sixthOr, rewriter.create<ConstantIntOp>(loc, 1, rewriter.getI64Type())));
+        htSize.push_back(rewriter.create<AddIOp>(loc, sixthOr, rewriter.create<ConstantIndexOp>(loc, 1)));
         auto ht = rewriter.create<memref::AllocOp>(
             loc, MemRefType::get(-1, keys.getType().dyn_cast<TensorType>().getElementType()), htSize);
         return std::make_pair(ht, htSize);
@@ -67,7 +59,7 @@ namespace voila::mlir::lowering
 
         // allocate and prefill hashtable
         auto tmp = allocHashTable(rewriter, insertOpAdaptor.input(), loc);
-        auto ht = tmp.first;
+        Value ht = tmp.first;
         auto htSize = tmp.second;
 
         SmallVector<Value, 1> lb;
@@ -87,8 +79,7 @@ namespace voila::mlir::lowering
 
         // map to ht size
         // mapping by mod of power 2 which is just x & (htSize-1)
-        auto modSize =
-            rewriter.create<SubIOp>(loc, htSize.front(), rewriter.create<ConstantIntOp>(loc, 1, rewriter.getI64Type()));
+        auto modSize = rewriter.create<SubIOp>(loc, htSize.front(), rewriter.create<ConstantIndexOp>(loc, 1));
         auto mappedHashVals = rewriter.create<::mlir::voila::AndOp>(loc, hashVals.getType(), hashVals, modSize);
         auto mappedHashValsMemref = rewriter.create<memref::BufferCastOp>(
             loc, convertTensorToMemRef(mappedHashVals.getType().dyn_cast<TensorType>()), mappedHashVals);
@@ -96,42 +87,46 @@ namespace voila::mlir::lowering
             loc, convertTensorToMemRef(insertOpAdaptor.input().getType().dyn_cast<TensorType>()),
             insertOpAdaptor.input());
         // insert values in ht
-        buildAffineLoopNest(
-            rewriter, loc, lb, htSize, {1},
-            [&ht, &hashInvalidConst, &mappedHashValsMemref, &keysMemref](OpBuilder &builder, Location loc,
-                                                                         ValueRange vals)
-            {
-                // load values
-                SmallVector<Value, 1> hashIdx;
-                hashIdx.push_back(builder.create<IndexCastOp>(
-                    loc, builder.create<AffineLoadOp>(loc, mappedHashValsMemref, vals), builder.getIndexType()));
-                auto toStore = builder.create<AffineLoadOp>(loc, keysMemref, vals);
-                SmallVector<Type, 1> resTypes;
-                resTypes.push_back(hashIdx[0].getType());
-                // probing
-                auto loop = builder.create<::mlir::scf::WhileOp>(loc, resTypes, hashIdx);
+        buildAffineLoopNest(rewriter, loc, lb, {rewriter.create<tensor::DimOp>(loc, hashVals, 0)}, {1},
+                            [&ht, &hashInvalidConst, &mappedHashValsMemref, &keysMemref](OpBuilder &builder,
+                                                                                         Location loc, ValueRange vals)
+                            {
+                                // load values
+                                SmallVector<Value, 1> hashIdx;
+                                hashIdx.push_back(builder.create<AffineLoadOp>(loc, mappedHashValsMemref, vals));
+                                auto toStore = builder.create<AffineLoadOp>(loc, keysMemref, vals);
+                                SmallVector<Type, 1> resTypes;
+                                resTypes.push_back(hashIdx[0].getType());
+                                // probing
+                                auto loop = builder.create<::mlir::scf::WhileOp>(loc, resTypes, hashIdx);
 
-                // condition block
-                auto beforeBuilder = OpBuilder(loop.before());
-                auto bucketVal = beforeBuilder.create<AffineLoadOp>(loc, ht, loop.before().getArguments());
-                auto isEmpty = beforeBuilder.create<CmpIOp>(loc, beforeBuilder.getI1Type(), CmpIPredicate::ne,
-                                                            bucketVal, hashInvalidConst);
-                beforeBuilder.create<scf::ConditionOp>(loc, isEmpty, loop.before().getArguments());
-                // body block
-                auto afterBuilder = OpBuilder(loop.after());
-                auto nextIdx = afterBuilder.create<AddIOp>(loc, loop.getAfterArguments()[0],
-                                                           afterBuilder.create<ConstantIndexOp>(loc, 1));
-                SmallVector<Value, 1> res;
-                res.push_back(nextIdx);
-                afterBuilder.create<scf::YieldOp>(loc, res);
+                                // condition block
+                                auto beforeBlock = builder.createBlock(&loop.before());
+                                beforeBlock->addArgument(loop->getOperands().front().getType());
+                                auto beforeBuilder = OpBuilder::atBlockEnd(beforeBlock);
+                                auto bucketVal =
+                                    beforeBuilder.create<memref::LoadOp>(loc, ht, loop.before().getArguments());
+                                auto notEmpty = beforeBuilder.create<CmpIOp>(
+                                    loc, beforeBuilder.getI1Type(), CmpIPredicate::ne, bucketVal, hashInvalidConst);
+                                beforeBuilder.create<scf::ConditionOp>(loc, notEmpty, loop->getOperands());
+                                // body block
+                                auto afterBlock = builder.createBlock(&loop.after());
+                                afterBlock->addArgument(loop->getOperands().front().getType());
+                                auto afterBuilder = OpBuilder::atBlockEnd(afterBlock);
 
-                // insert
-                builder.create<AffineStoreOp>(loc, toStore, ht, loop->getResults());
-            });
+                                auto nextIdx = afterBuilder.create<AddIOp>(
+                                    loc, afterBlock->getArgument(0), afterBuilder.create<ConstantIndexOp>(loc, 1));
+                                SmallVector<Value, 1> res;
+                                res.push_back(nextIdx);
+                                afterBuilder.create<scf::YieldOp>(loc, res);
 
-        SmallVector<Value, 1> res;
-        res.push_back(ht);
-        rewriter.replaceOp(op, res);
+                                // insert
+                                builder.setInsertionPointAfter(loop);
+                                builder.create<memref::StoreOp>(loc, toStore, ht, loop->getResults());
+                            });
+
+        rewriter.replaceOp(op, ht);
+
         return success();
     }
 

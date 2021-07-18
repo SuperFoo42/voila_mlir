@@ -3,7 +3,6 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
-    ;
     using ::mlir::voila::LookupOp;
     using ::mlir::voila::LookupOpAdaptor;
 
@@ -56,12 +55,14 @@ namespace voila::mlir::lowering
             curIdx.push_back(builder.create<linalg::IndexOp>(loc, 0));
             auto key = builder.create<tensor::ExtractOp>(loc, lookupOpAdaptor.keys(), curIdx);
             auto notFound = builder.create<CmpIOp>(loc, CmpIPredicate::ne, entry, key);
-            auto cond = builder.create<scf::ConditionOp>(
-                loc, builder.create<OrOp>(loc, builder.getI1Type(), isEmpty, notFound), loop.before().getArguments());
+            builder.create<scf::ConditionOp>(loc, builder.create<OrOp>(loc, builder.getI1Type(), isEmpty, notFound),
+                                             loop.before().getArguments());
             // body
             auto bodyBuilder = OpBuilder(loop.after());
-            auto inc = bodyBuilder.create<AddIOp>(loc, loop.getAfterArguments().front(),
-                                                  builder.create<ConstantIntOp>(loc, 1, builder.getI64Type()));
+            SmallVector<Value, 1> inc;
+            inc.push_back(bodyBuilder.create<AddIOp>(loc, loop.getAfterArguments().front(),
+                                                     builder.create<ConstantIntOp>(loc, 1, builder.getI64Type())));
+            bodyBuilder.create<scf::YieldOp>(loc, inc);
             // result
             builder.create<linalg::YieldOp>(loc, loop->getResults());
         };

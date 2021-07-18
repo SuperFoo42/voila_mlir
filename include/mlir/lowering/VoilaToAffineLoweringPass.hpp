@@ -18,6 +18,7 @@
 #include "mlir/lowering/ReadOpLowering.hpp"
 #include "mlir/lowering/SelectOpLowering.hpp"
 #include "mlir/lowering/SumOpLowering.hpp"
+#include "mlir/lowering/InsertOpLowering.hpp"
 
 #include <memory>
 #include <mlir/Dialect/Affine/IR/AffineOps.h>
