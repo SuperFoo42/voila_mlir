@@ -32,7 +32,7 @@ namespace voila::mlir::lowering
         Value upperBound;
 
         // find first tensor operand and use its result type
-        upperBound = rewriter.create<memref::DimOp>(loc, sumOpAdaptor.input(), 0);
+        upperBound = rewriter.create<tensor::DimOp>(loc, sumOpAdaptor.input(), 0);
 
         // start index for store
         SmallVector<Value> iter_args;

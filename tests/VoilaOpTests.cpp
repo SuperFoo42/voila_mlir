@@ -152,7 +152,6 @@ TEST(HashTableTests, Lookup)
 
     config.debug = true;
     config.optimize = false;
-    //::llvm::DebugFlag = true;
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_lookup.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr uint64_t TENSOR_VALS = 123;

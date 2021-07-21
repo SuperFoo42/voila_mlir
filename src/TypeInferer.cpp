@@ -284,8 +284,9 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Aggregation &aggregation)
     {
-        //TODO
+        // TODO
         aggregation.src.visit(*this);
+        insertNewFuncType(aggregation, {get_type_id(aggregation.src)}, DataType::INT64, Arity(1));
     }
 
     void TypeInferer::operator()(const ast::Write &write)
@@ -486,11 +487,11 @@ namespace voila
     void TypeInferer::operator()(const ast::Fun &fun)
     {
         // TODO: clear infered types at start of new function?
-        for (auto &arg : fun.args) //infer function args
+        for (auto &arg : fun.args) // infer function args
         {
             arg.visit(*this);
         }
-        for (auto &stmt : fun.body) //infer body types
+        for (auto &stmt : fun.body) // infer body types
         {
             stmt.visit(*this);
         }
@@ -507,9 +508,9 @@ namespace voila
     void TypeInferer::operator()(const ast::Main &main)
     {
         // TODO: clear infered types at start of new function?
-         //do not infer function args, they have to be specified by user before further inference
+        // do not infer function args, they have to be specified by user before further inference
 
-        for (auto &stmt : main.body) //infer body types
+        for (auto &stmt : main.body) // infer body types
         {
             stmt.visit(*this);
         }
@@ -548,14 +549,15 @@ namespace voila
         lookup.keys.visit(*this);
         lookup.table.visit(*this);
 
-        //actually, return type is IndexType
-        insertNewFuncType(lookup, {get_type_id(lookup.keys), get_type_id(lookup.table)}, DataType::INT64, get_type(lookup.keys).ar);
+        // actually, return type is IndexType
+        insertNewFuncType(lookup, {get_type_id(lookup.keys), get_type_id(lookup.table)}, DataType::INT64,
+                          get_type(lookup.keys).ar);
     }
     void TypeInferer::operator()(const ast::Insert &insert)
     {
         insert.keys.visit(*this);
 
-        //actually, return type is IndexType
+        // actually, return type is IndexType
         insertNewFuncType(insert, {get_type_id(insert.keys)}, DataType::INT64, get_type(insert.keys).ar);
     }
 
@@ -582,16 +584,28 @@ namespace voila
         comparison.lhs.visit(*this);
         comparison.rhs.visit(*this);
 
-        const auto &left_type = get_type(*comparison.lhs.as_expr());
-        const auto &right_type = get_type(*comparison.rhs.as_expr());
+        auto &left_type = get_type(*comparison.lhs.as_expr());
+        auto &right_type = get_type(*comparison.rhs.as_expr());
+        //TODO: insert for all binary preds
+        if (left_type.ar.is_undef() xor right_type.ar.is_undef())
+        {
+            if (left_type.ar.is_undef())
+            {
+                left_type.ar = right_type.ar;
+            }
+            else
+            {
+                right_type.ar = left_type.ar;
+            }
+        }
         if (left_type.ar != right_type.ar)
         {
             throw NonMatchingArityException();
         }
-        if (!convertible(left_type.t, DataType::BOOL) || !convertible(right_type.t, DataType::BOOL))
+/*        if (!convertible(left_type.t, DataType::BOOL) || !convertible(right_type.t, DataType::BOOL))
         {
             throw IncompatibleTypesException();
-        }
+        }*/
 
         if (left_type.t != right_type.t)
         {

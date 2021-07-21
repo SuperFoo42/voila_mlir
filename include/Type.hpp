@@ -17,8 +17,8 @@ namespace voila
 
     class Arity
     {
-        [[maybe_unused]] size_t arity;
-        [[maybe_unused]] bool undef;
+        size_t arity;
+        bool undef;
 
       public:
         Arity() : arity{std::numeric_limits<decltype(arity)>::max()}, undef{true} {}
@@ -50,7 +50,8 @@ namespace voila
             return arity;
         }
 
-        explicit Arity(const size_t i) {
+        explicit Arity(const size_t i)
+        {
             arity = i;
             undef = false;
         }

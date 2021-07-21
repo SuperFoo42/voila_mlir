@@ -3,6 +3,7 @@
 #include "Config.hpp"
 #include "voila_lexer.hpp"
 
+#include <MlirModuleVerificationError.hpp>
 #include <utility>
 
 namespace voila
@@ -231,7 +232,6 @@ namespace voila
         pm.addPass(createNormalizeMemRefsPass());
         secondOptPM.addPass(createConvertLinalgToLoopsPass());
         secondOptPM.addPass(createConvertLinalgToAffineLoopsPass());
-        secondOptPM.addPass(createLinalgFusionOfTensorOpsPass());
         secondpm.addPass(createLinalgComprehensiveModuleBufferizePass());
         secondOptPM.addPass(createLinalgDetensorizePass());
 
@@ -241,7 +241,6 @@ namespace voila
             // secondpm.addPass(createBufferResultsToOutParamsPass());
             // secondOptPM.addPass(createBufferHoistingPass());
             //  secondOptPM.addPass(createAffineDataCopyGenerationPass());
-            secondOptPM.addPass(createLinalgFusionOfTensorOpsPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
             secondOptPM.addPass(createLoopFusionPass());
@@ -285,10 +284,20 @@ namespace voila
         {
             // context.disableMultithreading(); //FIXME: with threading disabled, the program segfaults
         }
-        mlirModule = ::voila::MLIRGenerator::mlirGen(context, *this);
-
+        try
+        {
+            mlirModule = ::voila::MLIRGenerator::mlirGen(context, *this);
+        }
+        catch (MLIRModuleVerificationError &err)
+        {
+            spdlog::error(MLIRModuleToString(mlirModule));
+            throw err;
+        }
         if (!mlirModule)
+        {
+            spdlog::error(MLIRModuleToString(mlirModule));
             throw ::voila::MLIRGenerationError();
+        }
         spdlog::debug(MLIRModuleToString(mlirModule));
         return mlirModule;
     }

@@ -22,7 +22,7 @@ def IntConstOp : Voila_Op<"integer constant", [NoSideEffect]> {
 
   // The constant operation returns a single value of TensorType.
   //TODO:
-  let results = (outs 1DTensorOf<[I64]>);
+  let results = (outs I64);
 
 let builders = [
 OpBuilder<(ins "mlir::IntegerAttr":$value), [{
@@ -50,7 +50,7 @@ def FltConstOp : Voila_Op<"float constant", [NoSideEffect]> {
   let arguments = (ins F64Attr:$value);
 
   // The constant operation returns a single value of TensorType.
-  let results = (outs 1DTensorOf<[F64]>);
+  let results = (outs F64);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseConstantOp(parser, result); }];
@@ -82,7 +82,7 @@ def BoolConstOp : Voila_Op<"bool constant", [NoSideEffect]> {
   let arguments = (ins I1Attr:$value);
 
   // The constant operation returns a single value of TensorType.
-  let results = (outs 1DTensorOf<[I1]>);
+  let results = (outs I1);
 
 let builders = [
 OpBuilder<(ins "mlir::IntegerAttr":$value), [{
@@ -108,7 +108,7 @@ def AddOp : Voila_Op<"add",[NoSideEffect, Commutative,DeclareOpInterfaceMethods<
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$rhs);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
 let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -122,7 +122,7 @@ def SubOp : Voila_Op<"sub",[NoSideEffect, DeclareOpInterfaceMethods<ShapeInferen
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$rhs);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
 let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$result);
 
   // Specify a parser and printer method.
@@ -137,7 +137,7 @@ def MulOp : Voila_Op<"mul",[NoSideEffect, Commutative,DeclareOpInterfaceMethods<
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$rhs);
+  let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
   let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
 
   // Specify a parser and printer method.
@@ -152,7 +152,7 @@ def DivOp : Voila_Op<"div",[NoSideEffect, DeclareOpInterfaceMethods<ShapeInferen
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$rhs);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
 let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
 
   // Specify a parser and printer method.
@@ -167,7 +167,7 @@ def ModOp : Voila_Op<"mod",[NoSideEffect, DeclareOpInterfaceMethods<ShapeInferen
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$rhs);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
 let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
 
   // Specify a parser and printer method.
@@ -199,7 +199,7 @@ def OrOp : Voila_Op<"or",[NoSideEffect,Commutative, DeclareOpInterfaceMethods<Sh
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins I1Tensor:$lhs, I1Tensor:$rhs);
+  let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$lhs, AnyTypeOf<[I1Tensor,I1]>:$rhs);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -213,7 +213,7 @@ let description = [{
 The "bot" operation performs element-wise not on a tensor.
 }];
 
-let arguments = (ins I1Tensor:$value);
+let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$value);
 let results = (outs I1Tensor);
 
 // Specify a parser and printer method.
@@ -229,7 +229,7 @@ def EqOp : Voila_Op<"eq",[NoSideEffect,Commutative,DeclareOpInterfaceMethods<Sha
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -244,7 +244,7 @@ def NeqOp : Voila_Op<"neq",[NoSideEffect,Commutative,DeclareOpInterfaceMethods<S
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -259,7 +259,7 @@ def LeOp : Voila_Op<"le",[NoSideEffect,DeclareOpInterfaceMethods<ShapeInferenceO
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -274,7 +274,7 @@ def LeqOp : Voila_Op<"leq",[NoSideEffect,DeclareOpInterfaceMethods<ShapeInferenc
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -289,7 +289,7 @@ def GeOp : Voila_Op<"ge",[NoSideEffect,DeclareOpInterfaceMethods<ShapeInferenceO
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -304,7 +304,7 @@ def GeqOp : Voila_Op<"geq",[NoSideEffect,DeclareOpInterfaceMethods<ShapeInferenc
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.

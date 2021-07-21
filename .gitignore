@@ -9,3 +9,4 @@ build
 .idea
 /build/
 /tests/test_defs.hpp.inc
+/benchmark/include/benchmark_defs.hpp.inc

@@ -304,20 +304,18 @@ namespace voila::mlir
     void MLIRGeneratorImpl::operator()(const IntConst &intConst)
     {
         result = builder.create<::mlir::voila::IntConstOp>(
-            loc(intConst.get_location()), ::mlir::RankedTensorType::get(1, builder.getI64Type()), intConst.val);
+            loc(intConst.get_location()), builder.getI64Type(), intConst.val);
     }
 
     void MLIRGeneratorImpl::operator()(const BooleanConst &booleanConst)
     {
         result = builder.create<::mlir::voila::BoolConstOp>(
-            loc(booleanConst.get_location()), ::mlir::RankedTensorType::get(1, builder.getI1Type()), booleanConst.val);
+            loc(booleanConst.get_location()),builder.getI1Type(), booleanConst.val);
     }
 
     void MLIRGeneratorImpl::operator()(const FltConst &fltConst)
     {
-        result = builder.create<::mlir::voila::FltConstOp>(loc(fltConst.get_location()),
-                                                           ::mlir::RankedTensorType::get(1, builder.getF64Type()),
-                                                           builder.getF64FloatAttr(fltConst.val));
+        result = builder.create<::mlir::voila::FltConstOp>(loc(fltConst.get_location()),builder.getF64FloatAttr(fltConst.val));
     }
 
     void MLIRGeneratorImpl::operator()(const StrConst &)
@@ -476,7 +474,7 @@ namespace voila::mlir
             case DataType::BOOL:
                 if (t.ar.is_undef())
                 {
-                    return ::mlir::UnrankedTensorType::get(builder.getI1Type());
+                    return ::mlir::RankedTensorType::get(-1,builder.getI1Type());
                 }
                 else
                 {
@@ -485,7 +483,7 @@ namespace voila::mlir
             case DataType::INT32:
                 if (t.ar.is_undef())
                 {
-                    return ::mlir::UnrankedTensorType::get(builder.getI32Type());
+                    return ::mlir::RankedTensorType::get(-1,builder.getI32Type());
                 }
                 else
                 {
@@ -494,7 +492,7 @@ namespace voila::mlir
             case DataType::INT64:
                 if (t.ar.is_undef())
                 {
-                    return ::mlir::UnrankedTensorType::get(builder.getI64Type());
+                    return ::mlir::RankedTensorType::get(-1,builder.getI64Type());
                 }
                 else
                 {
@@ -503,7 +501,7 @@ namespace voila::mlir
             case DataType::DBL:
                 if (t.ar.is_undef())
                 {
-                    return ::mlir::UnrankedTensorType::get(builder.getF64Type());
+                    return ::mlir::RankedTensorType::get(-1,builder.getF64Type());
                 }
                 else
                 {
