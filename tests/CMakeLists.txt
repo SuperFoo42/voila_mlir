@@ -22,7 +22,6 @@ set(LIBS
         MLIRParser
         MLIRTransforms
         MLIRExecutionEngine
-        MLIRIR
         MLIRLLVMIR
         MLIRLLVMToLLVMIRTranslation
         MLIRTargetLLVMIRExport

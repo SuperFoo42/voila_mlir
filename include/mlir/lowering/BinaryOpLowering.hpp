@@ -3,6 +3,7 @@
 #include "mlir/Dialect/Linalg/IR/LinalgOps.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/Utils/StructuredOpsUtils.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/Bufferize.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -45,20 +46,37 @@ namespace voila::mlir::lowering
                                  ::mlir::Value lhs,
                                  ::mlir::Value rhs) const override
         {
-            if (isFloat(lhs.getType()) && isFloat(rhs.getType()))
+            ::mlir::Type lhsType, rhsType;
+            if (lhs.getType().template isa<::mlir::TensorType>())
+            {
+                lhsType = lhs.getType().template dyn_cast<::mlir::TensorType>().getElementType();
+            }
+            else
+            {
+                lhsType = lhs.getType();
+            }
+
+            if (rhs.getType().template isa<::mlir::TensorType>())
+            {
+                rhsType = rhs.getType().template dyn_cast<::mlir::TensorType>().getElementType();
+            }
+            else
+            {
+                rhsType = rhs.getType();
+            }
+
+            if (isFloat(lhsType) && isFloat(rhsType))
             {
                 return builder.template create<FloatOp>(loc, lhs, rhs);
             }
-            else if (isFloat(lhs.getType()))
+            else if (isFloat(lhsType))
             {
-                auto castedFlt =
-                    builder.template create<::mlir::SIToFPOp>(loc, rhs, getFloatType(builder, lhs.getType()));
+                auto castedFlt = builder.template create<::mlir::SIToFPOp>(loc, rhs, lhsType);
                 return builder.template create<FloatOp>(loc, lhs, castedFlt);
             }
-            else if (isFloat(rhs.getType()))
+            else if (isFloat(rhsType))
             {
-                auto castedFlt =
-                    builder.template create<::mlir::SIToFPOp>(loc, lhs, getFloatType(builder, rhs.getType()));
+                auto castedFlt = builder.template create<::mlir::SIToFPOp>(loc, lhs, rhsType);
                 return builder.template create<FloatOp>(loc, castedFlt, rhs);
             }
             else
@@ -98,124 +116,27 @@ namespace voila::mlir::lowering
             if (opAdaptor.lhs().getType().template isa<::mlir::TensorType>() &&
                 opAdaptor.rhs().getType().template isa<::mlir::TensorType>())
             {
-                ::mlir::SmallVector<::mlir::Value, 1> outTensorSize;
-                outTensorSize.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.lhs(), 0));
-                ::mlir::Type outTensorType;
-                if (isFloat(opAdaptor.lhs().getType().template dyn_cast<::mlir::TensorType>().getElementType()))
-                    outTensorType = opAdaptor.lhs().getType().template dyn_cast<::mlir::TensorType>().getElementType();
-                else
-                    outTensorType = opAdaptor.rhs().getType().template dyn_cast<::mlir::TensorType>().getElementType();
-                auto outTensor = rewriter.create<::mlir::linalg::InitTensorOp>(loc, outTensorSize, outTensorType);
-                ::mlir::SmallVector<::mlir::Value, 1> res;
-                res.push_back(outTensor);
-
-                ::mlir::SmallVector<::mlir::StringRef, 2> iter_type;
-                iter_type.push_back("parallel");
-
-                auto fn = [&](::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::ValueRange vals)
-                {
-                    ::mlir::SmallVector<::mlir::Value, 1> res;
-                    res.push_back(operator()(builder, loc, vals[0], vals[1]));
-
-                    builder.create<::mlir::linalg::YieldOp>(loc, res);
-                };
-
-                ::mlir::SmallVector<::mlir::Type, 1> ret_type;
-                ret_type.push_back(outTensor.getType());
-                ::mlir::SmallVector<::mlir::AffineMap, 3> indexing_maps;
-                indexing_maps.push_back(rewriter.getDimIdentityMap());
-                indexing_maps.push_back(rewriter.getDimIdentityMap());
-                indexing_maps.push_back(rewriter.getDimIdentityMap());
-
-                auto linalgOp = rewriter.create<::mlir::linalg::GenericOp>(loc, /*results*/ ret_type,
-                                                                           /*inputs*/ operands, /*outputs*/ res,
-                                                                           /*indexing maps*/ indexing_maps,
-                                                                           /*iterator types*/ iter_type, fn);
-
-                rewriter.replaceOp(op, linalgOp->getResults());
+                rewriter.replaceOp(op, operator()(rewriter, loc, opAdaptor.lhs(), opAdaptor.rhs()));
             }
             else if (opAdaptor.lhs().getType().template isa<::mlir::TensorType>())
             {
-                ::mlir::SmallVector<::mlir::Value, 1> outTensorSize;
-                outTensorSize.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.lhs(), 0));
-                ::mlir::Type outTensorType;
-                if (isFloat(opAdaptor.lhs().getType().template dyn_cast<::mlir::TensorType>().getElementType()))
-                    outTensorType = opAdaptor.lhs().getType().template dyn_cast<::mlir::TensorType>().getElementType();
-                else
-                    outTensorType = opAdaptor.rhs().getType();
-                auto outTensor = rewriter.create<::mlir::linalg::InitTensorOp>(loc, outTensorSize, outTensorType);
-                ::mlir::SmallVector<::mlir::Value, 1> res;
-                res.push_back(outTensor);
-
-                ::mlir::SmallVector<::mlir::StringRef, 1> iter_type;
-                iter_type.push_back("parallel");
-
-                auto fn = [&](::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::ValueRange vals)
-                {
-                    ::mlir::SmallVector<::mlir::Value, 1> res;
-                    res.push_back(operator()(builder, loc, vals.front(), opAdaptor.rhs()));
-
-                    builder.create<::mlir::linalg::YieldOp>(loc, res);
-                };
-
-                ::mlir::SmallVector<::mlir::Type, 1> ret_type;
-                ret_type.push_back(outTensor.getType());
-                ::mlir::SmallVector<::mlir::AffineMap, 2> indexing_maps;
-                indexing_maps.push_back(rewriter.getDimIdentityMap());
-                indexing_maps.push_back(rewriter.getDimIdentityMap());
-                ::mlir::SmallVector<::mlir::Value, 1> ops;
-                ops.push_back(opAdaptor.lhs());
-
-                auto linalgOp = rewriter.create<::mlir::linalg::GenericOp>(loc, /*results*/ ret_type,
-                                                                           /*inputs*/ ops, /*outputs*/ res,
-                                                                           /*indexing maps*/ indexing_maps,
-                                                                           /*iterator types*/ iter_type, fn);
-
-                rewriter.replaceOp(op, linalgOp->getResults());
+                auto other = rewriter.template create<::mlir::linalg::InitTensorOp>(
+                    loc, opAdaptor.lhs().getType().template dyn_cast<::mlir::RankedTensorType>().getShape(),
+                    opAdaptor.rhs().getType());
+                auto filledOther = rewriter.create < ::mlir::linalg::FillOp>(loc, other, opAdaptor.rhs());
+                rewriter.replaceOp(op, operator()(rewriter, loc, opAdaptor.lhs(), filledOther.result()));
             }
             else if (opAdaptor.rhs().getType().template isa<::mlir::TensorType>())
             {
-                ::mlir::SmallVector<::mlir::Value, 1> outTensorSize;
-                outTensorSize.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.rhs(), 0));
-                ::mlir::Type outTensorType;
-                if (isFloat(opAdaptor.lhs().getType()))
-                    outTensorType = opAdaptor.lhs().getType();
-                else
-                    outTensorType = opAdaptor.rhs().getType().template dyn_cast<::mlir::TensorType>().getElementType();
-                auto outTensor = rewriter.create<::mlir::linalg::InitTensorOp>(loc, outTensorSize, outTensorType);
-                ::mlir::SmallVector<::mlir::Value, 1> res;
-                res.push_back(outTensor);
-
-                ::mlir::SmallVector<::mlir::StringRef, 1> iter_type;
-                iter_type.push_back("parallel");
-
-                auto fn = [&](::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::ValueRange vals)
-                {
-                    ::mlir::SmallVector<::mlir::Value, 1> res;
-                    res.push_back(operator()(builder, loc, opAdaptor.lhs(), vals.front()));
-
-                    builder.create<::mlir::linalg::YieldOp>(loc, res);
-                };
-
-                ::mlir::SmallVector<::mlir::Type, 1> ret_type;
-                ret_type.push_back(outTensor.getType());
-                ::mlir::SmallVector<::mlir::AffineMap, 2> indexing_maps;
-                indexing_maps.push_back(rewriter.getDimIdentityMap());
-                indexing_maps.push_back(rewriter.getDimIdentityMap());
-                ::mlir::SmallVector<::mlir::Value, 1> ops;
-                ops.push_back(opAdaptor.rhs());
-
-                auto linalgOp = rewriter.create<::mlir::linalg::GenericOp>(loc, /*results*/ ret_type,
-                                                                           /*inputs*/ ops, /*outputs*/ res,
-                                                                           /*indexing maps*/ indexing_maps,
-                                                                           /*iterator types*/ iter_type, fn);
-
-                rewriter.replaceOp(op, linalgOp->getResults());
+                auto other = rewriter.template create<::mlir::linalg::InitTensorOp>(
+                    loc, opAdaptor.rhs().getType().template dyn_cast<::mlir::RankedTensorType>().getShape(),
+                    opAdaptor.lhs().getType());
+                auto filledOther = rewriter.create < ::mlir::linalg::FillOp>(loc, other, opAdaptor.lhs());
+                rewriter.replaceOp(op, operator()(rewriter, loc, filledOther.result(), opAdaptor.lhs()));
             }
             else // no tensors as params
             {
-                auto res = operator()(rewriter, loc, opAdaptor.lhs(), opAdaptor.rhs());
-                rewriter.replaceOp(op, res);
+                rewriter.replaceOp(op, operator()(rewriter, loc, opAdaptor.lhs(), opAdaptor.rhs()));
             }
             return ::mlir::success();
         }

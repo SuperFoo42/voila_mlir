@@ -33,13 +33,11 @@ namespace voila::mlir
             // patterns must be applied to fully transform an illegal operation into a
             // set of legal ones.
             RewritePatternSet patterns(&getContext());
+            populateAffineToVectorConversionPatterns(patterns);
             populateAffineToStdConversionPatterns(patterns);
             populateLoopToStdConversionPatterns(patterns);
             populateStdToLLVMConversionPatterns(typeConverter, patterns);
             populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
-
-            // The only remaining operation to lower from the `toy` dialect, is the
-            // PrintOp.
 
             // We want to completely lower to LLVM, so we use a `FullConversion`. This
             // ensures that only legal operations will remain after the conversion.

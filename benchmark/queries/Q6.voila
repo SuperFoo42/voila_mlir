@@ -2,10 +2,10 @@ main(l_quantity, l_discount, l_shipdate, l_extendedprice)
 {
     #Q6 with qualification parameters
     to_select = geq(l_shipdate, 19940101); #l_shipdate >= 1994-01-01
-    to_select = and(to_select, le(l_shipdate, 19950101)); # l_shipdate < 1995-01-01
-    to_select = and(to_select, le(l_quantity, 24)); #  l_quantity < 24;
-    to_select = and(to_select, geq(l_discount, 0.5)); # l_discount >= 0.06 - 0.01
-    to_select = and(to_select, leq(l_discount, 0.7)); # l_discount <= 0.06 + 0.01
+    to_select2 = and(to_select, le(l_shipdate, 19950101)); # l_shipdate < 1995-01-01
+    to_select3 = and(to_select2, le(l_quantity, 24)); #  l_quantity < 24;
+    to_select4 = and(to_select3, geq(l_discount, 0.05)); # l_discount >= 0.06 - 0.01
+    to_select5 = and(to_select4, leq(l_discount, 0.07)); # l_discount <= 0.06 + 0.01
 
-    emit aggr(sum, mul(select(l_extendedprice, to_select), select(l_discount, to_select)));
+    emit aggr(sum, mul(select(l_extendedprice, to_select5), select(l_discount, to_select5)));
 }

@@ -10,6 +10,7 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/Async/IR/Async.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -26,7 +27,7 @@ namespace voila::mlir
         {
             void getDependentDialects(::mlir::DialectRegistry &registry) const override
             {
-                registry.insert<::mlir::LLVM::LLVMDialect, ::mlir::scf::SCFDialect>();
+                registry.insert<::mlir::LLVM::LLVMDialect, ::mlir::scf::SCFDialect, ::mlir::async::AsyncDialect>();
             }
             void runOnOperation() final;
         };

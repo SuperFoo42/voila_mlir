@@ -99,7 +99,7 @@ namespace voila
         // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
         // the module.
         auto maybeEngine = ExecutionEngine::create(*mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline, llvm::None,
-                                                   {}, true, true);
+                                                   {}, true, false);
         assert(maybeEngine && "failed to construct an execution engine");
         auto engine = std::move(*maybeEngine);
         // FIXME: dtor of fn results in segfault
@@ -115,11 +115,11 @@ namespace voila
         /*if (objPath.has_value())
             engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));*/
         // Invoke the JIT-compiled function.
-        // can not use new, because it appears that new does not really allocate storage in this case
-        // WTF: we need to pass all this to function in order to obtain a result
-
+        auto start = std::chrono::high_resolution_clock::now();
         auto invocationResult = engine->invokePacked("main", params);
-
+        auto stop = std::chrono::high_resolution_clock::now();
+        float currentTime = float(std::chrono::duration_cast <std::chrono::milliseconds> (stop - start).count());
+        std::cout << "Elapsed Time: " << currentTime << " ms \n";
         if (invocationResult)
         {
             throw JITInvocationError();
@@ -198,6 +198,8 @@ namespace voila
 
         optPM.addPass(createCanonicalizerPass());
         optPM.addPass(createCSEPass());
+        optPM.addPass(createConvertElementwiseToLinalgPass());
+        optPM.addPass(createLinalgElementwiseOpFusionPass());
         // bufferization passes
         optPM.addPass(createLinalgBufferizePass());
         pm.addPass(createTensorConstantBufferizePass());
@@ -229,42 +231,49 @@ namespace voila
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
-        pm.addPass(createNormalizeMemRefsPass());
+        //secondpm.addPass(createLinalgComprehensiveModuleBufferizePass());
+        secondOptPM.addPass(createLinalgDetensorizePass());
+        secondOptPM.addPass(createConvertLinalgToParallelLoopsPass());
         secondOptPM.addPass(createConvertLinalgToLoopsPass());
         secondOptPM.addPass(createConvertLinalgToAffineLoopsPass());
-        secondpm.addPass(createLinalgComprehensiveModuleBufferizePass());
-        secondOptPM.addPass(createLinalgDetensorizePass());
-
         if (config.optimize)
         {
+            secondOptPM.addPass(createBufferHoistingPass());
             secondOptPM.addPass(createPromoteBuffersToStackPass());
-            // secondpm.addPass(createBufferResultsToOutParamsPass());
-            // secondOptPM.addPass(createBufferHoistingPass());
-            //  secondOptPM.addPass(createAffineDataCopyGenerationPass());
+            secondOptPM.addPass(createSimplifyAffineStructuresPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
+            //secondOptPM.addPass(createLoopUnrollPass());
+            secondOptPM.addPass(createAffineParallelizePass());
+            secondOptPM.addPass(createAffineScalarReplacementPass());
+            secondOptPM.addPass(createSuperVectorizePass(4));
+            secondOptPM.addPass(createLowerAffinePass());
+            secondOptPM.addPass(createParallelLoopSpecializationPass());
+            secondOptPM.addPass(createParallelLoopFusionPass());
+            secondOptPM.addPass(createParallelLoopTilingPass());
             secondOptPM.addPass(createLoopFusionPass());
             secondOptPM.addPass(createLoopCoalescingPass());
-            secondOptPM.addPass(createLoopUnrollPass());
             secondOptPM.addPass(createLoopUnrollAndJamPass());
-            secondOptPM.addPass(createAffineParallelizePass());
-            secondOptPM.addPass(createSuperVectorizePass());
-            secondOptPM.addPass(createSimplifyAffineStructuresPass());
-            secondOptPM.addPass(createForLoopSpecializationPass());
-            secondOptPM.addPass(createParallelLoopFusionPass());
-            // secondOptPM.addPass(createParallelLoopSpecializationPass());
-            secondOptPM.addPass(createParallelLoopTilingPass());
-            secondOptPM.addPass(createCanonicalizerPass());
-            secondOptPM.addPass(createCSEPass());
+            secondpm.addPass(createAsyncParallelForPass());
+
+            //secondpm.addPass(createBufferResultsToOutParamsPass());
+            //secondOptPM.addPass(createAffineDataCopyGenerationPass());
+            //secondOptPM.addPass(createLoopUnrollPass());
         }
-        secondOptPM.addPass(createBufferDeallocationPass());
-        secondOptPM.addPass(createFinalizingBufferizePass());
-        secondOptPM.addPass(createLowerAffinePass());
-        secondOptPM.addPass(createLowerToCFGPass());
+
+        //secondOptPM.addPass(createCanonicalizerPass());
+        //secondOptPM.addPass(createCSEPass());
         secondOptPM.addPass(createStdBufferizePass());
-        secondOptPM.addPass(createPromoteBuffersToStackPass());
-        // secondpm.addPass(createMemRefToLLVMPass());
+        secondOptPM.addPass(createFinalizingBufferizePass());
+        secondpm.addPass(createNormalizeMemRefsPass());
+        secondOptPM.addPass(createBufferDeallocationPass());
+
+        secondpm.addPass(createStripDebugInfoPass());
+        secondpm.addPass(createConvertVectorToLLVMPass());
+        secondpm.addPass(createConvertAsyncToLLVMPass());
+        secondOptPM.addPass(createLowerToCFGPass());
         secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
+        secondpm.addPass(createMemRefToLLVMPass());
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
 

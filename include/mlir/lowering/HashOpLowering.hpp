@@ -6,6 +6,8 @@
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/VoilaDialect.h"
 #include "mlir/VoilaOps.h"
+#include "mlir/Dialect/Linalg/IR/LinalgOps.h"
+#include "mlir/Dialect/Utils/StructuredOpsUtils.h"
 
 #include "llvm/ADT/Sequence.h"
 

@@ -15,6 +15,7 @@ CPMAddPackage("gh:d99kris/rapidcsv#v8.51")
 if (benchmark_ADDED)
     # enable c++11 to avoid compilation errors
     set_target_properties(benchmark PROPERTIES CXX_STANDARD 20)
+    target_compile_options(benchmark PUBLIC -Wno-suggest-override)
 endif ()
 include_directories(include)
 add_subdirectory(src)

@@ -1,6 +1,5 @@
 #include "mlir/lowering/HashOpLowering.hpp"
 
-#include "mlir/Dialect/Linalg/IR/LinalgOps.h"
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -24,7 +23,7 @@ namespace voila::mlir::lowering
         res.push_back(outTensor);
 
         SmallVector<StringRef, 1> iter_type;
-        iter_type.push_back("parallel");
+        iter_type.push_back(getParallelIteratorTypeName());
 
         auto fn = [](OpBuilder &builder, Location loc, ValueRange vals)
         {

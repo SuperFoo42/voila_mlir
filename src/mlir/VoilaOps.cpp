@@ -5,7 +5,6 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/OpImplementation.h"
-#include "mlir/VoilaDialect.h"
 
 #define GET_OP_CLASSES
 #include "mlir/VoilaOps.cpp.inc"

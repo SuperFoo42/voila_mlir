@@ -207,71 +207,49 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const Eq &eq)
     {
-        auto location = loc(eq.get_location());
-        auto lhs = std::get<Value>(visitor_gen(eq.lhs));
-        auto rhs = std::get<Value>(visitor_gen(eq.rhs));
-
-        result = builder.create<::mlir::voila::EqOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
-                                                     lhs, rhs);
+        result = getCmpOp<::mlir::voila::EqOp>(eq);
     }
 
     void MLIRGeneratorImpl::operator()(const Neq &neq)
     {
-        auto location = loc(neq.get_location());
-        auto lhs = std::get<Value>(visitor_gen(neq.lhs));
-        auto rhs = std::get<Value>(visitor_gen(neq.rhs));
-
-        result = builder.create<::mlir::voila::NeqOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
-                                                      lhs, rhs);
+        result = getCmpOp<::mlir::voila::NeqOp>(neq);
     }
 
     void MLIRGeneratorImpl::operator()(const Le &le)
     {
-        auto location = loc(le.get_location());
-        auto lhs = std::get<Value>(visitor_gen(le.lhs));
-        auto rhs = std::get<Value>(visitor_gen(le.rhs));
-
-        result = builder.create<::mlir::voila::LeOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
-                                                     lhs, rhs);
+        result = getCmpOp<::mlir::voila::LeOp>(le);
     }
 
     void MLIRGeneratorImpl::operator()(const Ge &ge)
     {
-        auto location = loc(ge.get_location());
-        auto lhs = std::get<Value>(visitor_gen(ge.lhs));
-        auto rhs = std::get<Value>(visitor_gen(ge.rhs));
-
-        result = builder.create<::mlir::voila::GeOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
-                                                     lhs, rhs);
+        result = getCmpOp<::mlir::voila::GeOp>(ge);
     }
 
     void MLIRGeneratorImpl::operator()(const Leq &leq)
     {
-        auto location = loc(leq.get_location());
-        auto lhs = std::get<Value>(visitor_gen(leq.lhs));
-        auto rhs = std::get<Value>(visitor_gen(leq.rhs));
-
-        result = builder.create<::mlir::voila::LeqOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
-                                                      lhs, rhs);
+        result = getCmpOp<::mlir::voila::LeqOp>(leq);
     }
 
     void MLIRGeneratorImpl::operator()(const Geq &geq)
     {
-        auto location = loc(geq.get_location());
-        auto lhs = std::get<Value>(visitor_gen(geq.lhs));
-        auto rhs = std::get<Value>(visitor_gen(geq.rhs));
-
-        result = builder.create<::mlir::voila::GeqOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
-                                                      lhs, rhs);
+        result = getCmpOp<::mlir::voila::GeqOp>(geq);
     }
 
     void MLIRGeneratorImpl::operator()(const And &anAnd)
     {
         auto location = loc(anAnd.get_location());
-        auto lhs = std::get<Value>(visitor_gen(anAnd.lhs));
-        auto rhs = std::get<Value>(visitor_gen(anAnd.rhs));
-        result = builder.create<::mlir::voila::AndOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
-                                                      lhs, rhs);
+        auto lhs = std::get<::mlir::Value>(visitor_gen(anAnd.lhs));
+        auto rhs = std::get<::mlir::Value>(visitor_gen(anAnd.rhs));
+        if (lhs.getType().isa<::mlir::TensorType>() || rhs.getType().isa<::mlir::TensorType>())
+        {
+            ::mlir::ArrayRef<int64_t> shape;
+            shape = getShape(lhs, rhs);
+
+            result = builder.create<::mlir::voila::AndOp>(
+                location, ::mlir::RankedTensorType::get(shape, builder.getI1Type()), lhs, rhs);
+        }
+        else
+            result = builder.create<::mlir::voila::AndOp>(location, builder.getI1Type(), lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Or &anOr)
@@ -303,19 +281,20 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const IntConst &intConst)
     {
-        result = builder.create<::mlir::voila::IntConstOp>(
-            loc(intConst.get_location()), builder.getI64Type(), intConst.val);
+        result =
+            builder.create<::mlir::voila::IntConstOp>(loc(intConst.get_location()), builder.getI64Type(), intConst.val);
     }
 
     void MLIRGeneratorImpl::operator()(const BooleanConst &booleanConst)
     {
-        result = builder.create<::mlir::voila::BoolConstOp>(
-            loc(booleanConst.get_location()),builder.getI1Type(), booleanConst.val);
+        result = builder.create<::mlir::voila::BoolConstOp>(loc(booleanConst.get_location()), builder.getI1Type(),
+                                                            booleanConst.val);
     }
 
     void MLIRGeneratorImpl::operator()(const FltConst &fltConst)
     {
-        result = builder.create<::mlir::voila::FltConstOp>(loc(fltConst.get_location()),builder.getF64FloatAttr(fltConst.val));
+        result = builder.create<::mlir::voila::FltConstOp>(loc(fltConst.get_location()),
+                                                           builder.getF64FloatAttr(fltConst.val));
     }
 
     void MLIRGeneratorImpl::operator()(const StrConst &)
@@ -425,11 +404,14 @@ namespace voila::mlir
     void MLIRGeneratorImpl::operator()(const Selection &selection)
     {
         auto location = loc(selection.get_location());
-        auto values = visitor_gen(selection.param);
-        auto pred = visitor_gen(selection.pred);
+        auto values = std::get<Value>(visitor_gen(selection.param));
+        auto pred = std::get<Value>(visitor_gen(selection.pred));
+        assert(pred.getType().isa<::mlir::TensorType>());
 
-        result = builder.create<::mlir::voila::SelectOp>(location, std::get<Value>(values).getType(),
-                                                         std::get<Value>(values), std::get<Value>(pred));
+        result = builder.create<::mlir::voila::SelectOp>(
+            location,
+            ::mlir::RankedTensorType::get(-1, values.getType().dyn_cast<::mlir::TensorType>().getElementType()), values,
+            pred);
     }
 
     void MLIRGeneratorImpl::operator()(const Lookup &lookup)
@@ -449,8 +431,8 @@ namespace voila::mlir
         auto table = std::get<Value>(visitor_gen(insert.keys));
 
         result = builder.create<::mlir::voila::InsertOp>(
-            location,
-            ::mlir::MemRefType::get(-1, table.getType().dyn_cast<::mlir::TensorType>().getElementType()), table);
+            location, ::mlir::MemRefType::get(-1, table.getType().dyn_cast<::mlir::TensorType>().getElementType()),
+            table);
     }
 
     void MLIRGeneratorImpl::operator()(const Variable &variable)
@@ -474,7 +456,7 @@ namespace voila::mlir
             case DataType::BOOL:
                 if (t.ar.is_undef())
                 {
-                    return ::mlir::RankedTensorType::get(-1,builder.getI1Type());
+                    return ::mlir::RankedTensorType::get(-1, builder.getI1Type());
                 }
                 else
                 {
@@ -483,7 +465,7 @@ namespace voila::mlir
             case DataType::INT32:
                 if (t.ar.is_undef())
                 {
-                    return ::mlir::RankedTensorType::get(-1,builder.getI32Type());
+                    return ::mlir::RankedTensorType::get(-1, builder.getI32Type());
                 }
                 else
                 {
@@ -492,7 +474,7 @@ namespace voila::mlir
             case DataType::INT64:
                 if (t.ar.is_undef())
                 {
-                    return ::mlir::RankedTensorType::get(-1,builder.getI64Type());
+                    return ::mlir::RankedTensorType::get(-1, builder.getI64Type());
                 }
                 else
                 {
@@ -501,7 +483,7 @@ namespace voila::mlir
             case DataType::DBL:
                 if (t.ar.is_undef())
                 {
-                    return ::mlir::RankedTensorType::get(-1,builder.getF64Type());
+                    return ::mlir::RankedTensorType::get(-1, builder.getF64Type());
                 }
                 else
                 {

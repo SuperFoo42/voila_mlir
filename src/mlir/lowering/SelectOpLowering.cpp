@@ -96,9 +96,11 @@ namespace voila::mlir::lowering
         SmallVector<Value> sizes;
         sizes.push_back(resultSize.getResult(0));
         rewriter.create<memref::StoreOp>(loc, resultSize->getResult(0), resSizeMemRef, indices);
-        rewriter.replaceOpWithNewOp<memref::ReinterpretCastOp>(
-            op, MemRefType::get(-1, alloc.getType().dyn_cast<MemRefType>().getElementType()), alloc, zeroConst, sizes,
+        auto res = rewriter.create<memref::ReinterpretCastOp>(
+            loc, MemRefType::get(-1, alloc.getType().dyn_cast<MemRefType>().getElementType()), alloc, zeroConst, sizes,
             indices);
+        rewriter.replaceOpWithNewOp<memref::TensorLoadOp>(
+            op, res);
     }
 
     LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,

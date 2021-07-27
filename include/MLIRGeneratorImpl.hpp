@@ -3,6 +3,7 @@
 #include "Program.hpp"
 
 #include <NotInferedException.hpp>
+#include <mlir/IR/Value.h>
 #include <variant>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -60,6 +61,44 @@ namespace voila::mlir
         result_variant visitor_gen(const ast::Statement &node);
 
         result_variant visitor_gen(const ast::Expression &node);
+
+        static llvm::ArrayRef<int64_t> getShape(const ::mlir::Value &lhs, const ::mlir::Value &rhs)
+        {
+            llvm::ArrayRef<int64_t> shape;
+            if (lhs.getType().isa<::mlir::TensorType>() &&
+                lhs.getType().dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
+            {
+                shape = lhs.getType().dyn_cast<::mlir::RankedTensorType>().getShape();
+            }
+            else if (rhs.getType().isa<::mlir::TensorType>() &&
+                     rhs.getType().dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
+            {
+                shape = rhs.getType().dyn_cast<::mlir::RankedTensorType>().getShape();
+            }
+            else
+            {
+                shape = llvm::SmallVector<int64_t, 1>{-1};
+            }
+            return shape;
+        }
+
+        template<class Op>
+        ::mlir::Value getCmpOp(const ast::Comparison &cmpNode)
+        {
+            auto location = loc(cmpNode.get_location());
+            auto lhs = std::get<::mlir::Value>(visitor_gen(cmpNode.lhs));
+            auto rhs = std::get<::mlir::Value>(visitor_gen(cmpNode.rhs));
+            if (lhs.getType().isa<::mlir::TensorType>() || rhs.getType().isa<::mlir::TensorType>())
+            {
+                ::mlir::ArrayRef<int64_t> shape;
+                shape = getShape(lhs, rhs);
+
+                return builder.create<Op>(location, ::mlir::RankedTensorType::get(shape, builder.getI1Type()), lhs,
+                                          rhs);
+            }
+            else
+                return builder.create<Op>(location, builder.getI1Type(), lhs, rhs);
+        }
 
       public:
         MLIRGeneratorImpl(::mlir::OpBuilder &builder,

@@ -20,7 +20,6 @@ set(LIBS
         MLIRParser
         MLIRTransforms
         MLIRExecutionEngine
-        MLIRIR
         MLIRLLVMIR
         MLIRLLVMToLLVMIRTranslation
         MLIRTargetLLVMIRExport
@@ -33,11 +32,20 @@ set(LIBS
         cereal
         )
 
-add_llvm_executable(tpc-benchmark
+add_executable(tpc-benchmark
         TPCHBenchmark.cpp benchmark_main.cpp
         )
 
 target_link_libraries(tpc-benchmark PRIVATE ${LIBS})
+target_compile_options(tpc-benchmark PUBLIC
+        -Wpedantic
+        -Wall
+        -Werror
+        -Wextra
+        -Wno-c++98-compat
+        -Wno-c++98-c++11-c++14-compat
+        -Wno-c++98-compat-pedantic
+        -Wno-suggest-override)
 
 target_compile_features(tpc-benchmark PUBLIC cxx_std_20)
-mlir_check_all_link_libraries(tpc-benchmark)
+#mlir_check_all_link_libraries(tpc-benchmark)

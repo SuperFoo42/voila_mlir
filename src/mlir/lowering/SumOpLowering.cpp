@@ -8,110 +8,60 @@ namespace voila::mlir::lowering
 
     SumOpLowering::SumOpLowering(MLIRContext *ctx) : ConversionPattern(SumOp::getOperationName(), 1, ctx) {}
 
-    static MemRefType convertTensorToMemRef(TensorType type)
-    {
-        assert(type.hasRank() && "expected only ranked shapes");
-        return MemRefType::get(type.getShape(), type.getElementType());
-    }
-
-    static void lowerOpToLoops(Operation *op,
-                               ValueRange operands,
-                               PatternRewriter &rewriter,
-                               SumOpLowering::LoopIterationFn processIteration)
-    {
-        SumOpAdaptor sumOpAdaptor(operands);
-        auto loc = op->getLoc();
-        auto resType = op->getResultTypes().front(); // only one result
-
-        // Create a nest of affine loops, with one loop per dimension of the shape.
-        // The buildAffineLoopNest function takes a callback that is used to construct
-        // the body of the innermost loop given a builder, a location and a range of
-        // loop induction variables.
-
-        Value lowerBound = rewriter.create<ConstantIndexOp>(loc, 0);
-        Value upperBound;
-
-        // find first tensor operand and use its result type
-        upperBound = rewriter.create<tensor::DimOp>(loc, sumOpAdaptor.input(), 0);
-
-        // start index for store
-        SmallVector<Value> iter_args;
-
-        if (resType.isa<FloatType>())
-        {
-            iter_args.push_back(
-                rewriter.create<ConstantFloatOp>(loc, rewriter.getF64FloatAttr(0).getValue(), rewriter.getF64Type()));
-        }
-        else if (resType.isa<IntegerType>())
-        {
-            iter_args.push_back(rewriter.create<ConstantIntOp>(loc, 0, rewriter.getI64Type()));
-        }
-        else
-        {
-            throw MLIRLoweringError();
-        }
-
-        auto sumReductionLoop = rewriter.create<AffineForOp>(
-            loc, lowerBound, rewriter.getDimIdentityMap(), upperBound, rewriter.getDimIdentityMap(), 1, iter_args,
-            [&](OpBuilder &nestedBuilder, Location loc, Value iter_var /*index on which to store selected value*/,
-                ValueRange ivs) -> void
-            {
-                // Call the processing function with the rewriter, the memref operands,
-                // and the loop induction variables. This function will return the value
-                // to store at the current index.
-                Value sumRes = processIteration(nestedBuilder, operands, iter_var, ivs.front());
-                nestedBuilder.create<AffineYieldOp>(loc, sumRes);
-            });
-
-        rewriter.replaceOp(op, sumReductionLoop->getResult(0));
-    }
-
     LogicalResult
     SumOpLowering::matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const
     {
         auto loc = op->getLoc();
-        lowerOpToLoops(op, operands, rewriter,
-                       [loc](OpBuilder &builder, ValueRange memRefOperands, ValueRange loopIvs, Value iter_var) -> Value
-                       {
-                           SumOpAdaptor sumOpAdaptor(memRefOperands);
-                           Value values;
+        SumOpAdaptor sumOpAdaptor(operands);
 
-                           if (sumOpAdaptor.input().getType().isa<TensorType>())
-                           {
-                               values = builder.create<memref::BufferCastOp>(
-                                   loc, convertTensorToMemRef(sumOpAdaptor.input().getType().dyn_cast<TensorType>()),
-                                   sumOpAdaptor.input());
-                           }
-                           else
-                           {
-                               values = sumOpAdaptor.input();
-                           }
+        SmallVector<int64_t,1> shape;
+        SmallVector<Value, 1> res;
 
-                           if (values.getType().isa<MemRefType>())
-                           {
-                               // Create the binary operation performed on the loaded values.
-                               auto loadedVal = builder.create<AffineLoadOp>(loc, values, loopIvs);
-                               if (iter_var.getType().isa<FloatType>())
-                               {
-                                   return builder.create<AddFOp>(loc, iter_var, loadedVal);
-                               }
-                               else
-                               {
-                                   return builder.create<AddIOp>(loc, iter_var, loadedVal);
-                               }
-                           }
-                           else
-                           {
-                               if (iter_var.getType().isa<FloatType>())
-                               {
-                                   return builder.create<AddFOp>(loc, iter_var, values);
-                               }
-                               else
-                               {
-                                   return builder.create<AddIOp>(loc, iter_var, values);
-                               }
-                           }
-                       });
+        if (op->getResultTypes().front().isa<IntegerType>())
+        {
+            auto tmp = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getI64Type());
+            res.push_back(rewriter.create<linalg::FillOp>(loc, rewriter.create<ConstantIntOp>(loc, 0, rewriter.getI64Type()), tmp).result());
+        }
+        else if (op->getResultTypes().front().isa<FloatType>())
+        {
+            auto tmp = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getF64Type());
+            res.push_back(rewriter.create<linalg::FillOp>(loc, rewriter.create<ConstantFloatOp>(loc, rewriter.getF64FloatAttr(0).getValue(), rewriter.getF64Type()), tmp).result());
+        }
+        else
+        {
+            throw std::logic_error("Invalid type"); // TODO
+        }
+
+
+        SmallVector<Type,1> res_type;
+        res_type.push_back(res.front().getType());
+
+        SmallVector<StringRef, 1> iter_type;
+        iter_type.push_back(getReductionIteratorTypeName());
+
+        auto fn = [](OpBuilder &builder, Location loc, ValueRange vals)
+        {
+            ::mlir::Value res;
+            if (vals.front().getType().isa<IntegerType>())
+                res = builder.create<AddIOp>(loc, vals);
+            else
+                res = builder.create<AddFOp>(loc, vals);
+
+            builder.create<linalg::YieldOp>(loc, res);
+        };
+
+        SmallVector<AffineExpr, 2> srcExprs;
+        srcExprs.push_back(getAffineDimExpr(0, rewriter.getContext()));
+        SmallVector<AffineExpr, 2> dstExprs;
+        auto maps = AffineMap::inferFromExprList({srcExprs, dstExprs});
+
+        auto linalgOp = rewriter.create<linalg::GenericOp>(loc, /*results*/ res_type,
+                                                           /*inputs*/ sumOpAdaptor.input(), /*outputs*/ res,
+                                                           /*indexing maps*/ maps,
+                                                           /*iterator types*/ iter_type, fn);
+
+        rewriter.replaceOp(op, linalgOp->getResults());
+
         return success();
     }
 } // namespace voila::mlir::lowering
