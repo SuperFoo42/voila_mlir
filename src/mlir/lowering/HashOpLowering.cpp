@@ -16,9 +16,19 @@ namespace voila::mlir::lowering
         // TODO: murmur3 for strings
         assert(hashOpAdaptor.input().getType().isa<TensorType>());
 
-        SmallVector<Value, 1> outTensorSize;
-        outTensorSize.push_back(rewriter.create<tensor::DimOp>(loc, hashOpAdaptor.input(), 0));
-        auto outTensor = rewriter.create<linalg::InitTensorOp>(loc, outTensorSize, rewriter.getIndexType());
+        ::mlir::Value outTensor;
+        if (hashOpAdaptor.input().getType().dyn_cast<TensorType>().hasStaticShape())
+        {
+            outTensor = rewriter.create<linalg::InitTensorOp>(
+                loc, hashOpAdaptor.input().getType().dyn_cast<TensorType>().getShape(), rewriter.getIndexType());
+        }
+        else
+        {
+            SmallVector<Value, 1> outTensorSize;
+            outTensorSize.push_back(rewriter.create<tensor::DimOp>(loc, hashOpAdaptor.input(), 0));
+            outTensor = rewriter.create<linalg::InitTensorOp>(loc, outTensorSize, rewriter.getIndexType());
+        }
+
         SmallVector<Value, 1> res;
         res.push_back(outTensor);
 

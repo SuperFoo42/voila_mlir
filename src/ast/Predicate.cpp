@@ -6,7 +6,6 @@ namespace voila::ast
 {
     Predicate::Predicate(const Location loc, Expression expr) :
         IExpression(loc), expr(std::move(expr)){
-        //TODO check for bool return type?
     }
     std::string Predicate::type2string() const
     {

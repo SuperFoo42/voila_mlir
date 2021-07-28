@@ -520,9 +520,13 @@ namespace voila
             main.args.begin(), main.args.end(),
             std::back_inserter(argIds), [&](const auto &elem) -> auto { return get_type_id(elem); });
         if (main.result.has_value())
+        {
             insertNewFuncType(main, argIds, get_type_id(*main.result));
+        }
         else
+        {
             insertNewFuncType(main, argIds, DataType::VOID);
+        }
     }
 
     void TypeInferer::operator()(const ast::Selection &selection)
@@ -550,7 +554,7 @@ namespace voila
         lookup.table.visit(*this);
 
         // actually, return type is IndexType
-        insertNewFuncType(lookup, {get_type_id(lookup.keys), get_type_id(lookup.table)}, DataType::INT64,
+        insertNewFuncType(lookup, {get_type_id(lookup.table), get_type_id(lookup.keys)}, DataType::INT64,
                           get_type(lookup.keys).ar);
     }
     void TypeInferer::operator()(const ast::Insert &insert)
@@ -586,7 +590,7 @@ namespace voila
 
         auto &left_type = get_type(*comparison.lhs.as_expr());
         auto &right_type = get_type(*comparison.rhs.as_expr());
-        //TODO: insert for all binary preds
+        // TODO: insert for all binary preds
         if (left_type.ar.is_undef() xor right_type.ar.is_undef())
         {
             if (left_type.ar.is_undef())
@@ -602,10 +606,10 @@ namespace voila
         {
             throw NonMatchingArityException();
         }
-/*        if (!convertible(left_type.t, DataType::BOOL) || !convertible(right_type.t, DataType::BOOL))
-        {
-            throw IncompatibleTypesException();
-        }*/
+        /*        if (!convertible(left_type.t, DataType::BOOL) || !convertible(right_type.t, DataType::BOOL))
+                {
+                    throw IncompatibleTypesException();
+                }*/
 
         if (left_type.t != right_type.t)
         {

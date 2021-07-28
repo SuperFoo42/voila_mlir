@@ -118,8 +118,8 @@ TEST(HashTableTests, Insert)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = false;
+    config.debug = false;
+    config.optimize = true;
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_insert.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr size_t NEXTPOW = 128;
@@ -150,8 +150,8 @@ TEST(HashTableTests, Lookup)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = false;
+    config.debug = false;
+    config.optimize = true;
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_lookup.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr uint64_t TENSOR_VALS = 123;

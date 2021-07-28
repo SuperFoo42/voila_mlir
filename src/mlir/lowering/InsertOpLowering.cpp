@@ -74,22 +74,25 @@ namespace voila::mlir::lowering
                             { builder.create<AffineStoreOp>(loc, hashInvalidConst, ht, vals); });
 
         // hash values
-        auto hashVals = rewriter.create<::mlir::voila::HashOp>(loc, RankedTensorType::get(-1, rewriter.getIndexType()),
+        auto hashVals = rewriter.create<::mlir::voila::HashOp>(loc, RankedTensorType::get(insertOpAdaptor.input().getType().dyn_cast<TensorType>().getShape(), rewriter.getIndexType()),
                                                                insertOpAdaptor.input());
 
         // map to ht size
         // mapping by mod of power 2 which is just x & (htSize-1)
         auto modSize = rewriter.create<SubIOp>(loc, htSize.front(), rewriter.create<ConstantIndexOp>(loc, 1));
-        auto mappedHashVals = rewriter.create<::mlir::voila::AndOp>(loc, hashVals.getType(), hashVals, modSize);
+        auto intHash = rewriter.create<IndexCastOp>(loc, hashVals, RankedTensorType::get(hashVals.getType().getShape(), rewriter.getI64Type()));
+        auto intMod = rewriter.create<IndexCastOp>(loc, modSize, rewriter.getI64Type());
+        auto mappedHashVals = rewriter.create<::mlir::voila::AndOp>(loc, hashVals.getType(), intHash, intMod);
+        auto indexMappedHashVals = rewriter.create<IndexCastOp>(loc, mappedHashVals, RankedTensorType::get(hashVals.getType().getShape(), rewriter.getIndexType()));
         auto mappedHashValsMemref = rewriter.create<memref::BufferCastOp>(
-            loc, convertTensorToMemRef(mappedHashVals.getType().dyn_cast<TensorType>()), mappedHashVals);
+            loc, convertTensorToMemRef(indexMappedHashVals.getType().dyn_cast<TensorType>()), indexMappedHashVals);
         auto keysMemref = rewriter.create<memref::BufferCastOp>(
             loc, convertTensorToMemRef(insertOpAdaptor.input().getType().dyn_cast<TensorType>()),
             insertOpAdaptor.input());
         // insert values in ht
         buildAffineLoopNest(rewriter, loc, lb, {rewriter.create<tensor::DimOp>(loc, hashVals, 0)}, {1},
-                            [&ht, &hashInvalidConst, &mappedHashValsMemref, &keysMemref](OpBuilder &builder,
-                                                                                         Location loc, ValueRange vals)
+                            [&modSize, &ht, &hashInvalidConst, &mappedHashValsMemref,
+                             &keysMemref](OpBuilder &builder, Location loc, ValueRange vals)
                             {
                                 // load values
                                 SmallVector<Value, 1> hashIdx;
@@ -116,8 +119,9 @@ namespace voila::mlir::lowering
 
                                 auto nextIdx = afterBuilder.create<AddIOp>(
                                     loc, afterBlock->getArgument(0), afterBuilder.create<ConstantIndexOp>(loc, 1));
+                                auto nextIndexWrapOver = afterBuilder.create<AndOp>(loc, nextIdx, modSize);
                                 SmallVector<Value, 1> res;
-                                res.push_back(nextIdx);
+                                res.push_back(nextIndexWrapOver);
                                 afterBuilder.create<scf::YieldOp>(loc, res);
 
                                 // insert

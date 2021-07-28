@@ -25,14 +25,16 @@ namespace voila::mlir::lowering
         auto loc = op->getLoc();
 
         auto htSize = rewriter.create<memref::DimOp>(loc, lookupOpAdaptor.hashtable(), 0);
-        auto hashValues = rewriter.create<::mlir::voila::HashOp>(loc, RankedTensorType::get(-1, rewriter.getI64Type()),
+        auto hashValues = rewriter.create<::mlir::voila::HashOp>(loc, RankedTensorType::get(lookupOpAdaptor.keys().getType().dyn_cast<TensorType>().getShape(), rewriter.getI64Type()),
                                                                  lookupOpAdaptor.keys());
         auto modSize = rewriter.create<SubIOp>(loc, htSize, rewriter.create<ConstantIndexOp>(loc, 1));
-        auto mappedHashVals = rewriter.create<::mlir::voila::AndOp>(
-            loc, RankedTensorType::get(-1, rewriter.getIndexType()), hashValues, modSize);
+        auto intHash = rewriter.create<IndexCastOp>(loc, hashValues, RankedTensorType::get(hashValues.getType().getShape(), rewriter.getI64Type()));
+        auto intMod = rewriter.create<IndexCastOp>(loc, modSize, rewriter.getI64Type());
+        auto mappedHashVals = rewriter.create<::mlir::voila::AndOp>(loc, hashValues.getType(), intHash, intMod);
+        auto indexMappedHashVals = rewriter.create<IndexCastOp>(loc, mappedHashVals, RankedTensorType::get(hashValues.getType().getShape(), rewriter.getIndexType()));
 
         auto mappedHashValsMemRef =
-            rewriter.create<memref::BufferCastOp>(loc, convertTensorToMemRef(mappedHashVals.getType()), mappedHashVals);
+            rewriter.create<memref::BufferCastOp>(loc, convertTensorToMemRef(indexMappedHashVals.getType().dyn_cast<TensorType>()), indexMappedHashVals);
 
         SmallVector<Value, 1> resSize;
         resSize.push_back(rewriter.create<tensor::DimOp>(loc, hashValues, 0));
@@ -46,7 +48,7 @@ namespace voila::mlir::lowering
         auto res = rewriter.create<memref::AllocOp>(loc, MemRefType::get(-1, rewriter.getIndexType()), allocSize);
 
         auto loopBody =
-            [&res, &mappedHashValsMemRef, &lookupOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
+            [&modSize, &res, &mappedHashValsMemRef, &lookupOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
         {
             // probing
             SmallVector<Type, 1> resTypes;
@@ -81,8 +83,10 @@ namespace voila::mlir::lowering
             afterBlock->addArgument(loop->getOperands().front().getType());
             auto bodyBuilder = OpBuilder::atBlockEnd(afterBlock);
             SmallVector<Value, 1> inc;
-            inc.push_back(bodyBuilder.create<AddIOp>(loc, loop.getAfterArguments().front(),
-                                                     builder.create<ConstantIndexOp>(loc, 1)));
+            inc.push_back(bodyBuilder.create<AndOp>(loc,
+                                                    bodyBuilder.create<AddIOp>(loc, loop.getAfterArguments().front(),
+                                                                               builder.create<ConstantIndexOp>(loc, 1)),
+                                                    modSize));
             bodyBuilder.create<scf::YieldOp>(loc, inc);
             builder.setInsertionPointAfter(loop);
             // store result

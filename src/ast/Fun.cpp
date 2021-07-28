@@ -23,7 +23,6 @@ namespace voila::ast
             }
             result = *ret;
         }
-        // TODO: check function, deduce argument types and register function
     }
     bool Fun::is_function_definition() const
     {

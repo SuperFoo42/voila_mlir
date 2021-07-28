@@ -13,7 +13,6 @@ namespace voila::ast
     FunctionCall::FunctionCall(const Location loc, std::string fun, std::vector<Expression> args) :
         IStatement(loc), fun{std::move(fun)}, args{std::move(args)}
     {
-        // TODO: lookup function definition and check if all arguments match and have references
     }
     std::string FunctionCall::type2string() const
     {

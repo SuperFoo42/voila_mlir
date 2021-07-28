@@ -389,7 +389,7 @@ namespace voila::mlir
             // Otherwise, if this return operation has an operand then add a result to
             // the function.
             // TODO: get emit type
-            function.setType(builder.getFunctionType(function.getType().getInputs(), convert(Type())));
+            function.setType(builder.getFunctionType(function.getType().getInputs(), getType(*(*fun.result).as_stmt())));
         }
 
         result = function;
@@ -417,12 +417,12 @@ namespace voila::mlir
     void MLIRGeneratorImpl::operator()(const Lookup &lookup)
     {
         auto location = loc(lookup.get_location());
-        auto table = visitor_gen(lookup.table);
-        auto keys = visitor_gen(lookup.keys);
+        auto table = std::get<Value>(visitor_gen(lookup.table));
+        auto keys = std::get<Value>(visitor_gen(lookup.keys));
 
         result =
-            builder.create<::mlir::voila::LookupOp>(location, ::mlir::RankedTensorType::get(-1, builder.getIndexType()),
-                                                    std::get<Value>(table), std::get<Value>(keys));
+            builder.create<::mlir::voila::LookupOp>(location, ::mlir::RankedTensorType::get(keys.getType().dyn_cast<::mlir::TensorType>().getShape(), builder.getIndexType()),
+                                                    table, keys);
     }
 
     void MLIRGeneratorImpl::operator()(const Insert &insert)
@@ -449,7 +449,7 @@ namespace voila::mlir
         return convert(astType);
     }
 
-    ::mlir::Type MLIRGeneratorImpl::convert(const Type &t)
+    ::mlir::Type MLIRGeneratorImpl::convert(const ::voila::Type &t)
     {
         switch (t.t)
         {

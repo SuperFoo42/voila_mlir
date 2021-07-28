@@ -111,7 +111,7 @@ namespace voila
          * @Deprecated use () instead
          * @param shapes
          */
-        void runJIT(std::optional<std::string> objPath = std::nullopt);
+        void runJIT(const std::optional<std::string>& objPath = std::nullopt);
 
         void printMLIR(const std::string &filename);
 

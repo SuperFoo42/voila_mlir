@@ -82,7 +82,7 @@ namespace voila
         return context;
     }
 
-    void Program::runJIT([[maybe_unused]] std::optional<std::string> objPath)
+    void Program::runJIT([[maybe_unused]] const std::optional<std::string>& objPath)
     {
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
