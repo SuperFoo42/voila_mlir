@@ -189,7 +189,7 @@ expr:
 	| read_op {$$ = $1;  }
 	| selection { $$ = $1; }
 	| aggregation {$$ = $1; }
-	| HASH LPAREN expr RPAREN { $$ = ast::Expression::make<Hash>(@1+@4, $3); }
+	| HASH LPAREN expr_list RPAREN { $$ = ast::Expression::make<Hash>(@1+@4, $3); }
 	| LOOKUP LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Lookup>(@1+@6, $3, $5); }
 	| INSERT LPAREN expr RPAREN { $$ = ast::Expression::make<Insert>(@1+@4,$3); }
 

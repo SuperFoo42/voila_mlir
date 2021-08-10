@@ -52,7 +52,8 @@ add_library(voila_compiler
 
 target_link_libraries(voila_compiler
         magic_enum
-        reflex fmt
+        reflex
+        fmt
         voila_ast
         voila_lowering
         reflex

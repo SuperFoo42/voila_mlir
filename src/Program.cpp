@@ -119,7 +119,7 @@ namespace voila
         auto invocationResult = engine->invokePacked("main", params);
         auto stop = std::chrono::high_resolution_clock::now();
         float currentTime = float(std::chrono::duration_cast <std::chrono::milliseconds> (stop - start).count());
-        std::cout << "Elapsed Time: " << currentTime << " ms \n";
+        timer += currentTime;
         if (invocationResult)
         {
             throw JITInvocationError();
@@ -456,8 +456,9 @@ namespace voila
                     throw std::logic_error("");
             }
 
+            spdlog::debug("Running JIT Program");
             runJIT();
-
+            spdlog::debug("Finished Running JIT Program");
             switch (type.t)
             {
                 case DataType::INT32:

@@ -11,5 +11,5 @@ class DictionaryCompressor
 
   public:
     explicit DictionaryCompressor(std::vector<std::string> &&column);
-    std::pair<std::vector<int64_t>, std::unordered_map<std::string, int64_t>> compress();
+    std::pair<std::vector<int32_t>, std::unordered_map<std::string, int32_t>> compress();
 };

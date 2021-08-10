@@ -273,16 +273,21 @@ namespace voila::mlir
     void MLIRGeneratorImpl::operator()(const Hash &hash)
     {
         auto location = loc(hash.get_location());
-        auto param = visitor_gen(hash.items);
+        std::vector<Value> params;
+        std::vector<::mlir::Type> types;
+        for (auto &item : hash.items)
+        {
+            params.push_back(std::get<Value>(visitor_gen(item)));
+            types.push_back(params.back().getType());
+        }
 
-        result = builder.create<::mlir::voila::HashOp>(
-            location, ::mlir::RankedTensorType::get(-1, builder.getI64Type()), std::get<Value>(param));
+        result = builder.create<::mlir::voila::HashOp>(location, types, params);
     }
 
     void MLIRGeneratorImpl::operator()(const IntConst &intConst)
     {
-        result =
-            builder.create<::mlir::voila::IntConstOp>(loc(intConst.get_location()), builder.getI64Type(), intConst.val);
+        result = builder.create<::mlir::voila::IntConstOp>(loc(intConst.get_location()), getScalarType(intConst),
+                                                           intConst.val);
     }
 
     void MLIRGeneratorImpl::operator()(const BooleanConst &booleanConst)
@@ -389,7 +394,8 @@ namespace voila::mlir
             // Otherwise, if this return operation has an operand then add a result to
             // the function.
             // TODO: get emit type
-            function.setType(builder.getFunctionType(function.getType().getInputs(), getType(*(*fun.result).as_stmt())));
+            function.setType(
+                builder.getFunctionType(function.getType().getInputs(), getType(*(*fun.result).as_stmt())));
         }
 
         result = function;
@@ -420,9 +426,11 @@ namespace voila::mlir
         auto table = std::get<Value>(visitor_gen(lookup.table));
         auto keys = std::get<Value>(visitor_gen(lookup.keys));
 
-        result =
-            builder.create<::mlir::voila::LookupOp>(location, ::mlir::RankedTensorType::get(keys.getType().dyn_cast<::mlir::TensorType>().getShape(), builder.getIndexType()),
-                                                    table, keys);
+        result = builder.create<::mlir::voila::LookupOp>(
+            location,
+            ::mlir::RankedTensorType::get(keys.getType().dyn_cast<::mlir::TensorType>().getShape(),
+                                          builder.getIndexType()),
+            table, keys);
     }
 
     void MLIRGeneratorImpl::operator()(const Insert &insert)
@@ -489,6 +497,34 @@ namespace voila::mlir
                 {
                     return ::mlir::RankedTensorType::get(t.ar.get_size(), builder.getF64Type());
                 }
+            default:
+                // TODO
+                throw NotImplementedException();
+        }
+    }
+
+    ::mlir::Type MLIRGeneratorImpl::getScalarType(const ASTNode &node)
+    {
+        const auto astType = inferer.get_type(node);
+        return scalarConvert(astType);
+    }
+
+    ::mlir::Type MLIRGeneratorImpl::scalarConvert(const ::voila::Type &t)
+    {
+        switch (t.t)
+        {
+            case DataType::BOOL:
+                return builder.getI1Type();
+
+            case DataType::INT32:
+                return builder.getI32Type();
+
+            case DataType::INT64:
+
+                return builder.getI64Type();
+            case DataType::DBL:
+
+                return builder.getF64Type();
             default:
                 // TODO
                 throw NotImplementedException();

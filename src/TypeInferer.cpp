@@ -168,7 +168,9 @@ namespace voila
             return voila::DataType::INT32;
         }
         else
+        {
             return voila::DataType::INT64;
+        }
     }
 
     DataType TypeInferer::convert(DataType t1, DataType t2)
@@ -387,9 +389,15 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Hash &hash)
     {
-        hash.items.visit(*this);
+        //TODO: check same arities
+        for (auto &elem : hash.items)
+            elem.visit(*this);
 
-        insertNewFuncType(hash, {get_type_id(hash.items)}, DataType::INT64, get_type(hash.items).ar);
+        std::vector<size_t> type_ids;
+        for (const auto &elem : hash.items)
+            type_ids.push_back(get_type_id(elem));
+
+        insertNewFuncType(hash, type_ids, DataType::INT64, get_type(hash.items.front()).ar);
     }
 
     void TypeInferer::operator()(const ast::Arithmetic &arithmetic)

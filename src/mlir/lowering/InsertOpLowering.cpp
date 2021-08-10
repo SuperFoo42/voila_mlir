@@ -80,9 +80,8 @@ namespace voila::mlir::lowering
         // map to ht size
         // mapping by mod of power 2 which is just x & (htSize-1)
         auto modSize = rewriter.create<SubIOp>(loc, htSize.front(), rewriter.create<ConstantIndexOp>(loc, 1));
-        auto intHash = rewriter.create<IndexCastOp>(loc, hashVals, RankedTensorType::get(hashVals.getType().getShape(), rewriter.getI64Type()));
         auto intMod = rewriter.create<IndexCastOp>(loc, modSize, rewriter.getI64Type());
-        auto mappedHashVals = rewriter.create<::mlir::voila::AndOp>(loc, hashVals.getType(), intHash, intMod);
+        auto mappedHashVals = rewriter.create<::mlir::voila::AndOp>(loc, hashVals.getType(), hashVals, intMod);
         auto indexMappedHashVals = rewriter.create<IndexCastOp>(loc, mappedHashVals, RankedTensorType::get(hashVals.getType().getShape(), rewriter.getIndexType()));
         auto mappedHashValsMemref = rewriter.create<memref::BufferCastOp>(
             loc, convertTensorToMemRef(indexMappedHashVals.getType().dyn_cast<TensorType>()), indexMappedHashVals);

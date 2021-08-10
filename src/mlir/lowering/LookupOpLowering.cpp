@@ -28,9 +28,8 @@ namespace voila::mlir::lowering
         auto hashValues = rewriter.create<::mlir::voila::HashOp>(loc, RankedTensorType::get(lookupOpAdaptor.keys().getType().dyn_cast<TensorType>().getShape(), rewriter.getI64Type()),
                                                                  lookupOpAdaptor.keys());
         auto modSize = rewriter.create<SubIOp>(loc, htSize, rewriter.create<ConstantIndexOp>(loc, 1));
-        auto intHash = rewriter.create<IndexCastOp>(loc, hashValues, RankedTensorType::get(hashValues.getType().getShape(), rewriter.getI64Type()));
         auto intMod = rewriter.create<IndexCastOp>(loc, modSize, rewriter.getI64Type());
-        auto mappedHashVals = rewriter.create<::mlir::voila::AndOp>(loc, hashValues.getType(), intHash, intMod);
+        auto mappedHashVals = rewriter.create<::mlir::voila::AndOp>(loc, hashValues.getType(), hashValues, intMod);
         auto indexMappedHashVals = rewriter.create<IndexCastOp>(loc, mappedHashVals, RankedTensorType::get(hashValues.getType().getShape(), rewriter.getIndexType()));
 
         auto mappedHashValsMemRef =

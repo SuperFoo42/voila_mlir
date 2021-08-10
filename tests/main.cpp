@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     registry.insert<mlir::StandardOpsDialect>();
     ::mlir::registerAllDialects(registry);
     mlir::registerMLIRContextCLOptions();
-   //spdlog::set_level(spdlog::level::debug);
+   spdlog::set_level(spdlog::level::debug);
     //setup gtest
     ::testing::InitGoogleTest(&argc, argv);
 

@@ -22,7 +22,7 @@ def IntConstOp : Voila_Op<"integer constant", [NoSideEffect]> {
 
   // The constant operation returns a single value of TensorType.
   //TODO:
-  let results = (outs I64);
+  let results = (outs AnyTypeOf<[I32,I64]>);
 
 let builders = [
 OpBuilder<(ins "mlir::IntegerAttr":$value), [{
@@ -546,8 +546,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyType]>:$input);
-let results = (outs IndexTensor:$output);
+let arguments = (ins Variadic<1DTensorOf<[AnyType]>>:$input);
+let results = (outs I64Tensor:$output);
 }
 //TODO: this is currently more like a create op
 def InsertOp : Voila_Op<"insert"> {

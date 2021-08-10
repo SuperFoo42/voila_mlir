@@ -12,5 +12,5 @@ class DateReformatter
   public:
     explicit DateReformatter(std::vector<std::string> &&column);
 
-    std::vector<int64_t> reformat();
+    std::vector<int32_t> reformat();
 };

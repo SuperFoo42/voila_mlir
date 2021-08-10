@@ -2,7 +2,8 @@
 
 #include <string>
 
-namespace cxxopts {
+namespace cxxopts
+{
     class ParseResult;
 }
 
@@ -16,6 +17,7 @@ namespace voila
         bool printMLIR;
         bool printLoweredMLIR;
         bool printLLVM;
+
         std::string ASTOutFile;
         std::string MLIROutFile;
         std::string MLIRLoweredOutFile;

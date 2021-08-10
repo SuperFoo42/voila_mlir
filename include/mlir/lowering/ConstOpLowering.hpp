@@ -25,7 +25,10 @@ namespace voila::mlir::lowering
             ::mlir::Attribute valAttr;
             if constexpr (std::is_same_v<ConstOp, ::mlir::voila::IntConstOp>)
             {
-                valAttr = rewriter.getI64IntegerAttr(constantValue);
+                if (std::numeric_limits<uint_least32_t>::max() >= constantValue)
+                    valAttr = rewriter.getI32IntegerAttr(constantValue);
+                else
+                    valAttr = rewriter.getI64IntegerAttr(constantValue);
             }
             else if constexpr (std::is_same_v<ConstOp, ::mlir::voila::FltConstOp>)
             {
@@ -40,7 +43,7 @@ namespace voila::mlir::lowering
                 return ::mlir::failure();
             }
 
-            rewriter.template replaceOpWithNewOp<::mlir::ConstantOp>(op,valAttr);
+            rewriter.template replaceOpWithNewOp<::mlir::ConstantOp>(op, valAttr);
 
             return ::mlir::success();
         }

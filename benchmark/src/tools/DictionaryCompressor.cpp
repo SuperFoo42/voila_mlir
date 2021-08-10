@@ -3,9 +3,9 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-std::pair<std::vector<int64_t>, std::unordered_map<std::string, int64_t>> DictionaryCompressor::compress()
+std::pair<std::vector<int32_t>, std::unordered_map<std::string, int32_t>> DictionaryCompressor::compress()
 {
-    std::unordered_map<std::string, int64_t> dictionary;
+    std::unordered_map<std::string, int32_t> dictionary;
     {
         std::set<std::string> colValues(column.begin(), column.end());
 
@@ -13,7 +13,7 @@ std::pair<std::vector<int64_t>, std::unordered_map<std::string, int64_t>> Dictio
         for (auto &elem : colValues)
             dictionary.emplace(elem, static_cast<int64_t>(dictionary.size()));
     }
-    std::vector<int64_t> compressedCol;
+    std::vector<int32_t> compressedCol;
 
     for (auto &elem : column)
     {

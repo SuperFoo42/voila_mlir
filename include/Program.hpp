@@ -82,6 +82,7 @@ namespace voila
         std::unordered_map<std::string, std::unique_ptr<ast::Fun>> functions;
         Config config;
         lexer::Lexer *lexer;
+        double timer = 0;
 
       public:
         const ::mlir::MLIRContext &getMLIRContext() const;
@@ -111,7 +112,7 @@ namespace voila
          * @Deprecated use () instead
          * @param shapes
          */
-        void runJIT(const std::optional<std::string>& objPath = std::nullopt);
+        void runJIT(const std::optional<std::string> &objPath = std::nullopt);
 
         void printMLIR(const std::string &filename);
 
@@ -141,6 +142,11 @@ namespace voila
                      uint64_t,
                      double>
         operator()();
+
+        double getExecTime()
+        {
+            return timer;
+        }
 
         TypeInferer inferer;
     };

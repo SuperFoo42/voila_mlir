@@ -3,6 +3,7 @@
 #include "Program.hpp"
 
 #include <NotInferedException.hpp>
+#include <mlir/IR/Types.h>
 #include <mlir/IR/Value.h>
 #include <variant>
 #pragma GCC diagnostic push
@@ -99,6 +100,10 @@ namespace voila::mlir
             else
                 return builder.create<Op>(location, builder.getI1Type(), lhs, rhs);
         }
+
+        ::mlir::Type getScalarType(const ast::ASTNode &node);
+
+        ::mlir::Type scalarConvert(const ::voila::Type &t);
 
       public:
         MLIRGeneratorImpl(::mlir::OpBuilder &builder,

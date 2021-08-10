@@ -5,14 +5,15 @@
 #include "IExpression.hpp"
 
 #include <utility>
+
 namespace voila::ast
 {
     class Hash : public IExpression
     {
       public:
-        Expression items;
+        std::vector<Expression> items;
 
-        Hash(const Location loc, Expression items) : IExpression(loc), items{std::move(items)} {}
+        Hash(const Location loc, std::vector<Expression> items) : IExpression(loc), items{std::move(items)} {}
 
         [[nodiscard]] std::string type2string() const final;
 

@@ -34,7 +34,7 @@ class TableReader
             switch (colTypes[i])
             {
                 case ColumnTypes::INT:
-                    tbl.addColumn(doc.GetColumn<int64_t>(i), colTypes[i]);
+                    tbl.addColumn(doc.GetColumn<int32_t>(i), colTypes[i]);
                     break;
                 case ColumnTypes::STRING:
                 case ColumnTypes::DATE:

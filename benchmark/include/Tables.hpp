@@ -34,7 +34,7 @@ class Table
         outputArchive(tbl);
     }
 
-    using column_type = std::variant<std::vector<std::string>, std::vector<double>, std::vector<int64_t>>;
+    using column_type = std::variant<std::vector<std::string>, std::vector<double>, std::vector<int32_t>>;
     virtual void addColumn(column_type &&column, ColumnTypes type)
     {
         columns.emplace_back(column);
@@ -72,7 +72,7 @@ class Table
 
 class CompressedTable : public Table
 {
-    std::vector<std::unordered_map<std::string, int64_t>> dictionaries;
+    std::vector<std::unordered_map<std::string, int32_t>> dictionaries;
 
   public:
     ~CompressedTable() override = default;

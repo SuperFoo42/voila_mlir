@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
 project(voila_mlir LANGUAGES CXX C)
-set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 
 include(cmake/CPM.cmake)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
