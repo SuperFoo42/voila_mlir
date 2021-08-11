@@ -568,9 +568,10 @@ namespace voila
     void TypeInferer::operator()(const ast::Insert &insert)
     {
         insert.keys.visit(*this);
+        insert.values.visit(*this);
 
         // actually, return type is IndexType
-        insertNewFuncType(insert, {get_type_id(insert.keys)}, DataType::INT64, get_type(insert.keys).ar);
+        insertNewFuncType(insert, {get_type_id(insert.keys),get_type_id(insert.values)}, get_type(insert.values).t, get_type(insert.keys).ar);
     }
 
     void TypeInferer::operator()(const ast::Predicate &pred)

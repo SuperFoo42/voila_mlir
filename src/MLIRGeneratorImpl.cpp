@@ -437,10 +437,10 @@ namespace voila::mlir
     {
         auto location = loc(insert.get_location());
         auto table = std::get<Value>(visitor_gen(insert.keys));
+        auto data = std::get<Value>(visitor_gen(insert.values));
 
         result = builder.create<::mlir::voila::InsertOp>(
-            location, ::mlir::MemRefType::get(-1, table.getType().dyn_cast<::mlir::TensorType>().getElementType()),
-            table);
+            location, data.getType(), table, data);
     }
 
     void MLIRGeneratorImpl::operator()(const Variable &variable)

@@ -1,5 +1,6 @@
 main(x)
 {
-    z = insert(x);
+    y = hash(x);
+    z = insert(y,x);
     emit z;
 }
