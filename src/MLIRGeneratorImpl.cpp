@@ -424,13 +424,14 @@ namespace voila::mlir
     {
         auto location = loc(lookup.get_location());
         auto table = std::get<Value>(visitor_gen(lookup.table));
-        auto keys = std::get<Value>(visitor_gen(lookup.keys));
+        auto hashes = std::get<Value>(visitor_gen(lookup.hashes));
+        auto values = std::get<Value>(visitor_gen(lookup.values));
 
         result = builder.create<::mlir::voila::LookupOp>(
             location,
-            ::mlir::RankedTensorType::get(keys.getType().dyn_cast<::mlir::TensorType>().getShape(),
+            ::mlir::RankedTensorType::get(hashes.getType().dyn_cast<::mlir::TensorType>().getShape(),
                                           builder.getIndexType()),
-            table, keys);
+            table, hashes, values);
     }
 
     void MLIRGeneratorImpl::operator()(const Insert &insert)

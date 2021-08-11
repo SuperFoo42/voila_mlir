@@ -10,8 +10,8 @@ namespace voila::ast
     class Lookup : public IExpression
     {
       public:
-        Lookup(Location loc, Expression table, Expression keys) :
-            IExpression(loc), table{std::move(table)}, keys{std::move(keys)}
+        Lookup(Location loc, Expression table, Expression keys, Expression values) :
+            IExpression(loc), table{std::move(table)}, hashes{std::move(keys)}, values{std::move(values)}
         {
             // TODO
         }
@@ -25,6 +25,6 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        Expression table, keys;
+        Expression table, hashes, values;
     };
 } // namespace voila::ast

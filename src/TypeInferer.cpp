@@ -389,7 +389,7 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Hash &hash)
     {
-        //TODO: check same arities
+        // TODO: check same arities
         for (auto &elem : hash.items)
             elem.visit(*this);
 
@@ -558,20 +558,23 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Lookup &lookup)
     {
-        lookup.keys.visit(*this);
+        lookup.hashes.visit(*this);
         lookup.table.visit(*this);
+        lookup.values.visit(*this);
 
         // actually, return type is IndexType
-        insertNewFuncType(lookup, {get_type_id(lookup.table), get_type_id(lookup.keys)}, DataType::INT64,
-                          get_type(lookup.keys).ar);
+        insertNewFuncType(lookup, {get_type_id(lookup.table), get_type_id(lookup.hashes), get_type_id(lookup.values)},
+                          get_type(lookup.values).t, get_type(lookup.values).ar);
     }
+
     void TypeInferer::operator()(const ast::Insert &insert)
     {
         insert.keys.visit(*this);
         insert.values.visit(*this);
 
         // actually, return type is IndexType
-        insertNewFuncType(insert, {get_type_id(insert.keys),get_type_id(insert.values)}, get_type(insert.values).t, get_type(insert.keys).ar);
+        insertNewFuncType(insert, {get_type_id(insert.keys), get_type_id(insert.values)}, get_type(insert.values).t,
+                          get_type(insert.keys).ar);
     }
 
     void TypeInferer::operator()(const ast::Predicate &pred)

@@ -148,8 +148,8 @@ stmts:
 	| stmts stmt { $$ = $1; $$.push_back($2); }
 
 stmt: expr COLON { $$ = ast::Statement::make<StatementWrapper>(@1,$1); }
-    | var ASSIGN function_call COLON { $$ = ast::Statement::make<Assign>(@2,$1, $3);  }
-	| var ASSIGN expr COLON { $$ = ast::Statement::make<Assign>(@2,$1, ast::Statement::make<StatementWrapper>(@3,$3));  }
+    | var_list ASSIGN function_call COLON { $$ = ast::Statement::make<Assign>(@2,$1, $3);  }
+	| var_list ASSIGN expr COLON { $$ = ast::Statement::make<Assign>(@2,$1, ast::Statement::make<StatementWrapper>(@3,$3));  }
 	| LOOP pred LBRACE stmts RBRACE { $$ = ast::Statement::make<Loop>(@1+@2,$2, $4); }
 	| EMIT expr COLON { $$ = ast::Statement::make<Emit>(@1,$2);  }
 	| effect COLON { $$ = $1; }
@@ -190,7 +190,7 @@ expr:
 	| selection { $$ = $1; }
 	| aggregation {$$ = $1; }
 	| HASH LPAREN expr_list RPAREN { $$ = ast::Expression::make<Hash>(@1+@4, $3); }
-	| LOOKUP LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Lookup>(@1+@6, $3, $5); }
+	| LOOKUP LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<Lookup>(@1+@8, $3, $5, $7); } /* hashtable, hashes, values */
 	| INSERT LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Insert>(@1+@6,$3, $5); } /* keys, values */
 
 /* TODO: is this correct/complete? */

@@ -549,7 +549,7 @@ let description = [{
 let arguments = (ins Variadic<1DTensorOf<[AnyType]>>:$input);
 let results = (outs I64Tensor:$output);
 }
-//TODO: this is currently more like a create op
+
 def InsertOp : Voila_Op<"insert"> {
 let summary = "insert values in a hash table";
 let description = [{
@@ -566,7 +566,7 @@ let description = [{
 This is a convenience function, basically consisting of hashing and gather + linear probing for collision resolution
 }];
 
-let arguments = (ins 1DTensorOf<[AnyType]>:$hashtable, 1DTensorOf<[I64]>:$keys);
+let arguments = (ins 1DTensorOf<[AnyType]>:$hashtable, 1DTensorOf<[I64]>:$hashes, 1DTensorOf<[AnyType]>:$values);
 let results = (outs IndexTensor:$output);
 }
 #endif // VOILA_OPS
