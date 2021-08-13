@@ -5,7 +5,10 @@
 #include "Predicate.hpp"
 #include "Statement.hpp"
 
+#include <ast/Statement.hpp>
+#include <cassert>
 #include <optional>
+#include <range/v3/all.hpp>
 #include <utility>
 #include <vector>
 
@@ -14,7 +17,7 @@ namespace voila::ast
     class Assign : public IStatement
     {
       public:
-        Assign(Location loc, Expression dest, Statement expr);
+        Assign(Location loc, std::vector<Expression> dests, Statement expr);
 
         [[nodiscard]] bool is_assignment() const final;
 
@@ -29,8 +32,9 @@ namespace voila::ast
 
         void visit(ASTVisitor &visitor) final;
         void visit(ASTVisitor &visitor) const final;
+
       public:
-        Expression dest;
+        std::vector<Expression> dests;
         Statement expr;
         std::optional<Expression> pred;
     };

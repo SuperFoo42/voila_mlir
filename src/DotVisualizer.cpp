@@ -76,7 +76,10 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(assign);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        assign.dest.visit(*this);
+        for (auto dest : assign.dests)
+        {
+            dest.visit(*this);
+        }
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
         assign.expr.visit(*this);
     }

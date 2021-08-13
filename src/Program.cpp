@@ -82,7 +82,7 @@ namespace voila
         return context;
     }
 
-    void Program::runJIT([[maybe_unused]] const std::optional<std::string>& objPath)
+    void Program::runJIT([[maybe_unused]] const std::optional<std::string> &objPath)
     {
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
@@ -118,7 +118,7 @@ namespace voila
         auto start = std::chrono::high_resolution_clock::now();
         auto invocationResult = engine->invokePacked("main", params);
         auto stop = std::chrono::high_resolution_clock::now();
-        float currentTime = float(std::chrono::duration_cast <std::chrono::milliseconds> (stop - start).count());
+        float currentTime = float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
         timer += currentTime;
         if (invocationResult)
         {
@@ -192,7 +192,6 @@ namespace voila
 
         // Partially lower voila to linalg
         optPM.addPass(::voila::mlir::createLowerToLinalgPass());
-
         // Partially lower voila to affine with a few cleanups
         optPM.addPass(::voila::mlir::createLowerToAffinePass());
 
@@ -200,17 +199,21 @@ namespace voila
         optPM.addPass(createCSEPass());
         optPM.addPass(createConvertElementwiseToLinalgPass());
         optPM.addPass(createLinalgElementwiseOpFusionPass());
+        optPM.addPass(createLinalgTilingPass());
         // bufferization passes
-        optPM.addPass(createLinalgBufferizePass());
-        pm.addPass(createTensorConstantBufferizePass());
-        optPM.addPass(createTensorBufferizePass());
-        optPM.addPass(createStdBufferizePass());
+        //pm.addPass(createLinalgComprehensiveModuleBufferizePass());
         optPM.addPass(createSCFBufferizePass());
+        optPM.addPass(createLinalgDetensorizePass());
+        optPM.addPass(createLinalgBufferizePass());
+        optPM.addPass(createStdBufferizePass());
+        optPM.addPass(createTensorBufferizePass());
+        pm.addPass(createTensorConstantBufferizePass());
         pm.addPass(createFuncBufferizePass());
-        pm.addPass(createNormalizeMemRefsPass());
-        optPM.addPass(createPipelineDataTransferPass());
         optPM.addPass(createCanonicalizerPass());
         optPM.addPass(createCSEPass());
+        optPM.addPass(createBufferHoistingPass());
+        pm.addPass(createNormalizeMemRefsPass());
+        optPM.addPass(createPipelineDataTransferPass());
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));
 
@@ -231,19 +234,18 @@ namespace voila
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
-        //secondpm.addPass(createLinalgComprehensiveModuleBufferizePass());
-        secondOptPM.addPass(createLinalgDetensorizePass());
+
         secondOptPM.addPass(createConvertLinalgToParallelLoopsPass());
         secondOptPM.addPass(createConvertLinalgToLoopsPass());
         secondOptPM.addPass(createConvertLinalgToAffineLoopsPass());
+
         if (config.optimize)
         {
-            secondOptPM.addPass(createBufferHoistingPass());
             secondOptPM.addPass(createPromoteBuffersToStackPass());
             secondOptPM.addPass(createSimplifyAffineStructuresPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
-            //secondOptPM.addPass(createLoopUnrollPass());
+            // secondOptPM.addPass(createLoopUnrollPass());
             secondOptPM.addPass(createAffineParallelizePass());
             secondOptPM.addPass(createAffineScalarReplacementPass());
             secondOptPM.addPass(createSuperVectorizePass(4));
@@ -256,15 +258,14 @@ namespace voila
             secondOptPM.addPass(createLoopUnrollAndJamPass());
             secondpm.addPass(createAsyncParallelForPass());
 
-            //secondpm.addPass(createBufferResultsToOutParamsPass());
-            //secondOptPM.addPass(createAffineDataCopyGenerationPass());
-            //secondOptPM.addPass(createLoopUnrollPass());
+            // secondpm.addPass(createBufferResultsToOutParamsPass());
+            // secondOptPM.addPass(createAffineDataCopyGenerationPass());
+            // secondOptPM.addPass(createLoopUnrollPass());
         }
 
-        //secondOptPM.addPass(createCanonicalizerPass());
-        //secondOptPM.addPass(createCSEPass());
-        secondOptPM.addPass(createStdBufferizePass());
-        secondOptPM.addPass(createFinalizingBufferizePass());
+        // secondOptPM.addPass(createCanonicalizerPass());
+        // secondOptPM.addPass(createCSEPass());
+        optPM.addPass(createFinalizingBufferizePass());
         secondpm.addPass(createNormalizeMemRefsPass());
         secondOptPM.addPass(createBufferDeallocationPass());
 
@@ -403,17 +404,19 @@ namespace voila
             res = std::monostate();
         if (main->result.has_value())
         {
-            auto type = inferer.get_type(main->result.value());
+            auto &type = inferer.get_type(main->result.value());
             // test scalar
-
-            switch (type.t)
+            assert(dynamic_cast<const ScalarType *>(&type) ||
+                   dynamic_cast<const FunctionType *>(&type)->returnTypes.size() == 1);
+            // TODO: allow multiple return
+            switch (type.getTypes().front())
             {
                 case DataType::BOOL: // FIXME: I1 type is not directly mappable to C++ types
                     throw NotImplementedException();
                 case DataType::NUMERIC:
                     throw std::logic_error("Abstract type");
                 case DataType::INT32:
-                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
                     {
                         auto *arg = new uint32_t;
                         params.push_back(arg);
@@ -425,7 +428,7 @@ namespace voila
                     }
                     break;
                 case DataType::INT64:
-                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
                     {
                         auto *arg = new uint64_t;
                         params.push_back(arg);
@@ -437,7 +440,7 @@ namespace voila
                     }
                     break;
                 case DataType::DBL:
-                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
                     {
                         auto *arg = new double;
                         params.push_back(arg);
@@ -459,10 +462,10 @@ namespace voila
             spdlog::debug("Running JIT Program");
             runJIT();
             spdlog::debug("Finished Running JIT Program");
-            switch (type.t)
+            switch (type.getTypes().front())
             {
                 case DataType::INT32:
-                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
                     {
                         auto *extractedRes = reinterpret_cast<uint32_t *>(params.pop_back_val());
                         res.emplace<uint32_t>(*extractedRes);
@@ -476,7 +479,7 @@ namespace voila
                     }
                     break;
                 case DataType::INT64:
-                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
                     {
                         auto *extractedRes = reinterpret_cast<uint64_t *>(params.pop_back_val());
                         res.emplace<uint64_t>(*extractedRes);
@@ -490,7 +493,7 @@ namespace voila
                     }
                     break;
                 case DataType::DBL:
-                    if (!type.ar.is_undef() && type.ar.get_size() == 0)
+                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
                     {
                         auto *extractedRes = reinterpret_cast<double *>(params.pop_back_val());
                         res.emplace<double>(*extractedRes);
@@ -522,6 +525,7 @@ namespace voila
         TypeInferencePass typeInference(inferer);
         typeInference.inferTypes(*this);
     }
+
     Program::Program(std::string_view source_path, Config config) :
         func_vars(),
         context(),
@@ -548,6 +552,7 @@ namespace voila
             spdlog::error("failed to open {}", source_path);
         }
     }
+
     Program::Program(Config config) :
         func_vars(),
         context(),

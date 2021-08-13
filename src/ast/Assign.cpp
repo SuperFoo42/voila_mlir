@@ -1,15 +1,11 @@
 #include "ast/Assign.hpp"
 
-#include <ast/Statement.hpp>
-#include <cassert>
-#include <utility>
-
 namespace voila::ast
 {
-    Assign::Assign(Location loc, Expression dest, Statement expr) :
-        IStatement(loc), dest{std::move(dest)}, expr{std::move(expr)}, pred{std::nullopt}
+    Assign::Assign(Location loc, std::vector<Expression> dests, Statement expr) :
+        IStatement(loc), dests{std::move(dests)}, expr{std::move(expr)}, pred{std::nullopt}
     {
-        assert(this->dest.is_variable() || this->dest.is_reference());
+        assert(ranges::all_of(this->dests, [](auto &dest) -> auto {return dest.is_variable() || dest.is_reference();}));
     }
     Assign *Assign::as_assignment()
     {

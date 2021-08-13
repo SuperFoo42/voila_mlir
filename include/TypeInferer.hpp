@@ -1,6 +1,6 @@
 #pragma once
 #include "ASTNodes.hpp"
-#include "Type.hpp"
+#include "Types.hpp"
 
 #include <ast/ASTVisitor.hpp>
 #include <unordered_map>
@@ -13,8 +13,6 @@ namespace voila
         std::vector<std::unique_ptr<Type>> types;
 
       public:
-        // TypeInferer() : typeIDs{}, types{} {}
-
         void operator()(const ast::Aggregation &aggregation) final;
         void operator()(const ast::Write &write) final;
         void operator()(const ast::Scatter &scatter) final;
@@ -100,7 +98,14 @@ namespace voila
         void unify(const ast::ASTNode &t1, const ast::Statement &t2);
         void unify(const ast::ASTNode &t1, const ast::Expression &t2);
         void insertNewFuncType(const ast::ASTNode &node, std::vector<size_t> typeParamIDs, size_t returnTypeID);
+        void insertNewFuncType(const ast::ASTNode &node,
+                               std::vector<size_t> typeParamIDs,
+                               std::vector<std::pair<DataType, Arity>> returnTypes);
+        void insertNewFuncType(const ast::ASTNode &node,
+                          std::vector<size_t> typeParamIDs,
+                          const std::vector<size_t> &returnTypeIDs);
         void unify(const ast::ASTNode *t1, const ast::ASTNode *t2);
         void unify(const ast::Expression &t1, const ast::Statement &t2);
+
     };
 } // namespace voila

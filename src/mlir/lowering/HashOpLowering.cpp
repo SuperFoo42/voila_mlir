@@ -387,12 +387,10 @@ namespace voila::mlir::lowering
 
         SmallVector<Type, 1> ret_type;
         ret_type.push_back(outTensor.getType());
-        SmallVector<AffineMap, 2> indexing_maps;
-        indexing_maps.push_back(rewriter.getDimIdentityMap());
-        indexing_maps.push_back(rewriter.getDimIdentityMap());
+        SmallVector<AffineMap> indexing_maps(hashOpAdaptor.input().size()+1, rewriter.getDimIdentityMap());
 
         auto linalgOp = rewriter.create<linalg::GenericOp>(loc, /*results*/ ret_type,
-                                                           /*inputs*/ operands, /*outputs*/ res,
+                                                           /*inputs*/ hashOpAdaptor.input(), /*outputs*/ res,
                                                            /*indexing maps*/ indexing_maps,
                                                            /*iterator types*/ iter_type, hashFunc);
 

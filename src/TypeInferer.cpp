@@ -5,6 +5,8 @@
 #include "NotInferedException.hpp"
 #include "ast/Arithmetic.hpp"
 
+#include <utility>
+
 namespace voila
 {
     bool TypeInferer::convertible(DataType t1, DataType t2)
@@ -38,7 +40,7 @@ namespace voila
     TypeInferer::insertNewType(const ast::ASTNode &node, const DataType t = DataType::UNKNOWN, const Arity ar = Arity())
     {
         typeIDs.try_emplace(&node, types.size());
-        types.push_back(std::make_unique<Type>(types.size(), t, ar));
+        types.push_back(std::make_unique<ScalarType>(types.size(), t, ar));
     }
 
     /**
@@ -53,17 +55,44 @@ namespace voila
                                         const DataType returnT = DataType::UNKNOWN,
                                         const Arity returnAr = Arity())
     {
+        insertNewFuncType(node, std::move(typeParamIDs), {std::make_pair(returnT, returnAr)});
+    }
+
+    void TypeInferer::insertNewFuncType(const ast::ASTNode &node,
+                                        std::vector<size_t> typeParamIDs = {},
+                                        std::vector<std::pair<DataType, Arity>> returnTypes = {
+                                            std::make_pair(DataType::UNKNOWN, Arity())})
+    {
         typeIDs.try_emplace(&node, types.size());
-        types.push_back(std::make_unique<FunctionType>(types.size(), std::move(typeParamIDs), returnT, returnAr));
+        types.push_back(std::make_unique<FunctionType>(types.size(), std::move(typeParamIDs), std::move(returnTypes)));
     }
 
     void TypeInferer::insertNewFuncType(const ast::ASTNode &node,
                                         std::vector<size_t> typeParamIDs,
                                         const size_t returnTypeID)
     {
-        typeIDs.try_emplace(&node, types.size());
-        types.push_back(std::make_unique<FunctionType>(types.size(), std::move(typeParamIDs), types.at(returnTypeID)->t,
-                                                       types.at(returnTypeID)->ar));
+        insertNewFuncType(node, std::move(typeParamIDs), std::vector<size_t>(1, returnTypeID));
+    }
+
+    void TypeInferer::insertNewFuncType(const ast::ASTNode &node,
+                                        std::vector<size_t> typeParamIDs,
+                                        const std::vector<size_t> &returnTypeIDs)
+    {
+        std::vector<std::pair<DataType, Arity>> returnTypes;
+        for (auto tID : returnTypeIDs)
+        {
+            auto *t = types.at(tID).get();
+            if (dynamic_cast<FunctionType *>(t))
+            {
+                returnTypes.insert(returnTypes.end(), dynamic_cast<FunctionType *>(t)->returnTypes.begin(),
+                                   dynamic_cast<FunctionType *>(t)->returnTypes.end());
+            }
+            else
+            {
+                returnTypes.emplace_back(dynamic_cast<ScalarType *>(t)->t, dynamic_cast<ScalarType &>(*t).ar);
+            }
+        }
+        insertNewFuncType(node, std::move(typeParamIDs), returnTypes);
     }
 
     size_t TypeInferer::get_type_id(const ast::Expression &node)
@@ -156,11 +185,6 @@ namespace voila
         }
     }
 
-    bool TypeInferer::compatible(DataType t1, DataType t2)
-    {
-        return convertible(t1, t2) || convertible(t2, t1);
-    }
-
     static voila::DataType get_int_type(std::intmax_t i)
     {
         if (i < std::numeric_limits<uint_least32_t>::max())
@@ -224,11 +248,11 @@ namespace voila
         }
         else if (typeIDs.contains(t1) && typeIDs.contains(t2))
         {
-            if (convertible(types[typeIDs[t1]]->t, types[typeIDs[t2]]->t))
+            if (types[typeIDs[t1]]->convertible(*types[typeIDs[t2]]))
             {
                 typeIDs[t1] = typeIDs[t2];
             }
-            else if (convertible(types[typeIDs[t2]]->t, types[typeIDs[t1]]->t))
+            else if (types[typeIDs[t2]]->convertible(*types[typeIDs[t1]]))
             {
                 typeIDs[t2] = typeIDs[t1];
             }
@@ -297,9 +321,9 @@ namespace voila
         write.src.visit(*this);
         write.dest.visit(*this);
 
-        if (!compatible(get_type(write.src).t, get_type(write.dest).t))
+        if (!get_type(write.src).compatible(get_type(write.dest)))
             throw IncompatibleTypesException();
-        if (!compatible(get_type(write.start).t, DataType::INT64))
+        if (!get_type(write.start).compatible(DataType::INT64))
             throw IncompatibleTypesException();
 
         // TODO: unification
@@ -314,9 +338,9 @@ namespace voila
         scatter.idxs.visit(*this);
         scatter.dest.visit(*this);
 
-        if (!compatible(get_type(scatter.src).t, get_type(scatter.dest).t))
+        if (!get_type(scatter.src).compatible(get_type(scatter.dest)))
             throw IncompatibleTypesException();
-        if (!compatible(get_type(scatter.idxs).t, DataType::INT64))
+        if (!get_type(scatter.idxs).compatible(DataType::INT64))
             throw IncompatibleTypesException();
 
         // TODO: unification
@@ -336,7 +360,7 @@ namespace voila
         std::transform(
             call.args.begin(), call.args.end(),
             std::back_inserter(argIds), [&](const auto &elem) -> auto { return get_type_id(elem); });
-        insertNewFuncType(call, argIds); // TODO
+        insertNewFuncType(call, argIds, DataType::UNKNOWN, Arity()); // TODO
     }
 
     void TypeInferer::operator()(const ast::Variable &var)
@@ -346,23 +370,36 @@ namespace voila
 
     void TypeInferer::operator()(const ast::Assign &assign)
     {
-        assign.dest.visit(*this);
+        for (auto &dest : assign.dests)
+        {
+            dest.visit(*this);
+        }
+
         assign.expr.visit(*this);
 
         assert(assign.expr.is_function_call() || assign.expr.is_statement_wrapper());
 
-        if (assign.dest.is_reference() &&
-            !compatible(get_type(assign.dest.as_reference()->ref).t, get_type(assign.expr).t))
+        std::vector<size_t> paramIds;
+        for (auto &dest : assign.dests)
         {
-            throw IncompatibleTypesException();
+            if (dest.is_reference() && !get_type(dest.as_reference()->ref).compatible(get_type(assign.expr)))
+            {
+                throw IncompatibleTypesException();
+            }
+
+            if (assign.expr.is_statement_wrapper())
+            {
+                unify(dest, assign.expr.as_statement_wrapper()->expr);
+            }
+            else
+            {
+                unify(dest, assign.expr);
+            }
+
+            paramIds.push_back(get_type_id(dest));
         }
-
-        if (assign.expr.is_statement_wrapper())
-            unify(assign.dest, assign.expr.as_statement_wrapper()->expr);
-        else
-            unify(assign.dest, assign.expr);
-
-        insertNewFuncType(assign, {get_type_id(assign.dest), get_type_id(assign.expr)}, DataType::VOID);
+        paramIds.push_back(get_type_id(assign.expr));
+        insertNewFuncType(assign, paramIds, DataType::VOID);
     }
 
     void TypeInferer::operator()(const ast::Emit &emit)
@@ -381,7 +418,7 @@ namespace voila
             stmt.visit(*this);
         }
 
-        if (!compatible(get_type(loop.pred).t, DataType::BOOL))
+        if (!get_type(loop.pred).compatible(DataType::BOOL))
         {
             throw IncompatibleTypesException();
         }
@@ -397,7 +434,8 @@ namespace voila
         for (const auto &elem : hash.items)
             type_ids.push_back(get_type_id(elem));
 
-        insertNewFuncType(hash, type_ids, DataType::INT64, get_type(hash.items.front()).ar);
+        assert(get_type(hash.items.front()).getArities().size() == 1);
+        insertNewFuncType(hash, type_ids, DataType::INT64, get_type(hash.items.front()).getArities().front());
     }
 
     void TypeInferer::operator()(const ast::Arithmetic &arithmetic)
@@ -407,22 +445,25 @@ namespace voila
 
         const auto &left_type = get_type(arithmetic.lhs);
         const auto &right_type = get_type(arithmetic.rhs);
-        if (left_type.ar != right_type.ar)
+        if (left_type.getArities() != right_type.getArities())
         {
             throw NonMatchingArityException();
         }
-        if (!compatible(left_type.t, DataType::NUMERIC) || !compatible(right_type.t, DataType::NUMERIC))
+        if (!left_type.compatible(DataType::NUMERIC) || !right_type.compatible(DataType::NUMERIC))
         {
             throw IncompatibleTypesException();
         }
 
-        if (left_type.t != right_type.t)
+        if (left_type.getTypes() != right_type.getTypes())
         {
             unify(arithmetic.lhs, arithmetic.rhs);
         }
 
+        assert(get_type(arithmetic.lhs).getTypes().size() == 1);
+        assert(left_type.getArities().size());
+
         insertNewFuncType(arithmetic, {get_type_id(arithmetic.lhs), get_type_id(arithmetic.rhs)},
-                          get_type(arithmetic.lhs).t, left_type.ar);
+                          get_type(arithmetic.lhs).getTypes().front(), left_type.getArities().front());
     }
 
     void TypeInferer::operator()(const ast::IntConst &aConst)
@@ -454,9 +495,10 @@ namespace voila
         read.column.visit(*this);
         read.idx.visit(*this);
 
-        if (!compatible(get_type(read.idx).t, DataType::INT64))
+        if (!get_type(read.idx).compatible(DataType::INT64))
             throw IncompatibleTypesException();
-        if (get_type(read.column).t == DataType::VOID)
+        assert(get_type(read.column).getTypes().size() == 1);
+        if (get_type(read.column).getTypes().front() == DataType::VOID)
             throw IncompatibleTypesException();
 
         insertNewFuncType(read, {get_type_id(read.column), get_type_id(read.idx)}, DataType::VOID);
@@ -467,9 +509,10 @@ namespace voila
         gather.column.visit(*this);
         gather.idxs.visit(*this);
 
-        if (!compatible(get_type(gather.idxs).t, DataType::INT64))
+        if (!get_type(gather.idxs).compatible(DataType::INT64))
             throw IncompatibleTypesException();
-        if (get_type(gather.column).t == DataType::VOID)
+        assert(get_type(gather.column).getTypes().size() == 1);
+        if (get_type(gather.column).getTypes().front() == DataType::VOID)
             throw IncompatibleTypesException();
 
         insertNewFuncType(gather, {get_type_id(gather.column), get_type_id(gather.idxs)}, DataType::VOID);
@@ -544,16 +587,18 @@ namespace voila
 
         auto &type = get_type(*selection.param.as_expr());
 
-        if (!convertible(get_type(selection.pred).t, DataType::BOOL))
+        if (!get_type(selection.pred).convertible(DataType::BOOL))
         {
             throw IncompatibleTypesException();
         }
         else
         {
-            get_type(selection.pred).t = DataType::BOOL;
+            dynamic_cast<ScalarType &>(get_type(selection.pred)).t = DataType::BOOL;
         }
 
-        insertNewFuncType(selection, {get_type_id(selection.param), get_type_id(selection.param)}, type.t);
+        assert(type.getTypes().size());
+        insertNewFuncType(selection, {get_type_id(selection.param), get_type_id(selection.param)},
+                          type.getTypes().front());
     }
 
     void TypeInferer::operator()(const ast::Lookup &lookup)
@@ -562,9 +607,10 @@ namespace voila
         lookup.table.visit(*this);
         lookup.values.visit(*this);
 
-        // actually, return type is IndexType
+        assert(get_type(lookup.values).getTypes().size() == 1);
+        assert(get_type(lookup.values).getArities().size() == 1);
         insertNewFuncType(lookup, {get_type_id(lookup.table), get_type_id(lookup.hashes), get_type_id(lookup.values)},
-                          get_type(lookup.values).t, get_type(lookup.values).ar);
+                          get_type(lookup.values).getTypes().front(), get_type(lookup.values).getArities().front());
     }
 
     void TypeInferer::operator()(const ast::Insert &insert)
@@ -572,9 +618,11 @@ namespace voila
         insert.keys.visit(*this);
         insert.values.visit(*this);
 
-        // actually, return type is IndexType
-        insertNewFuncType(insert, {get_type_id(insert.keys), get_type_id(insert.values)}, get_type(insert.values).t,
-                          get_type(insert.keys).ar);
+        // TODO: return multiple output tables
+        assert(get_type(insert.values).getTypes().size() == 1);
+        assert(get_type(insert.keys).getArities().size() == 1);
+        insertNewFuncType(insert, {get_type_id(insert.keys), get_type_id(insert.values)},
+                          get_type(insert.values).getTypes().front(), get_type(insert.keys).getArities().front());
     }
 
     void TypeInferer::operator()(const ast::Predicate &pred)
@@ -583,16 +631,17 @@ namespace voila
 
         auto &type = get_type(*pred.expr.as_expr());
 
-        if (!convertible(get_type(pred.expr).t, DataType::BOOL))
+        if (!get_type(pred.expr).convertible(DataType::BOOL))
         {
             throw IncompatibleTypesException();
         }
         else
         {
-            get_type(pred.expr).t = DataType::BOOL;
+            dynamic_cast<ScalarType &>(get_type(pred.expr)).t = DataType::BOOL;
         }
 
-        insertNewFuncType(pred, {get_type_id(pred.expr), get_type_id(pred.expr)}, type.t);
+        assert(type.getTypes().size() == 1);
+        insertNewFuncType(pred, {get_type_id(pred.expr), get_type_id(pred.expr)}, type.getTypes().front());
     }
 
     void TypeInferer::operator()(const ast::Comparison &comparison)
@@ -600,8 +649,8 @@ namespace voila
         comparison.lhs.visit(*this);
         comparison.rhs.visit(*this);
 
-        auto &left_type = get_type(*comparison.lhs.as_expr());
-        auto &right_type = get_type(*comparison.rhs.as_expr());
+        auto &left_type = dynamic_cast<ScalarType &>(get_type(*comparison.lhs.as_expr()));
+        auto &right_type = dynamic_cast<ScalarType &>(get_type(*comparison.rhs.as_expr()));
         // TODO: insert for all binary preds
         if (left_type.ar.is_undef() xor right_type.ar.is_undef())
         {
@@ -702,16 +751,16 @@ namespace voila
 
         const auto &left_type = get_type(*anAnd.lhs.as_expr());
         const auto &right_type = get_type(*anAnd.rhs.as_expr());
-        if (left_type.ar != right_type.ar)
+        if (left_type.getArities() != right_type.getArities())
         {
             throw NonMatchingArityException();
         }
-        if (!convertible(left_type.t, DataType::BOOL) || !convertible(right_type.t, DataType::BOOL))
+        if (!left_type.convertible(DataType::BOOL) || !right_type.convertible(DataType::BOOL))
         {
             throw IncompatibleTypesException();
         }
 
-        if (left_type.t != right_type.t)
+        if (left_type.getTypes() != right_type.getTypes())
         {
             unify(anAnd.lhs, anAnd.rhs);
         }
@@ -725,16 +774,16 @@ namespace voila
 
         const auto &left_type = get_type(*anOr.lhs.as_expr());
         const auto &right_type = get_type(*anOr.rhs.as_expr());
-        if (left_type.ar != right_type.ar)
+        if (left_type.getArities() != right_type.getArities())
         {
             throw NonMatchingArityException();
         }
-        if (!convertible(left_type.t, DataType::BOOL) || !convertible(right_type.t, DataType::BOOL))
+        if (!left_type.convertible(DataType::BOOL) || !right_type.convertible(DataType::BOOL))
         {
             throw IncompatibleTypesException();
         }
 
-        if (left_type.t != right_type.t)
+        if (left_type.getTypes() != right_type.getTypes())
         {
             unify(anOr.lhs, anOr.rhs);
         }
@@ -747,13 +796,13 @@ namespace voila
 
         auto &type = get_type(*aNot.param.as_expr());
 
-        if (!convertible(type.t, DataType::BOOL))
+        if (!type.convertible(DataType::BOOL))
         {
             throw IncompatibleTypesException();
         }
         else
         {
-            type.t = DataType::BOOL;
+            dynamic_cast<ScalarType &>(type).t = DataType::BOOL;
         }
 
         insertNewType(aNot, DataType::BOOL);
@@ -766,12 +815,26 @@ namespace voila
 
     void TypeInferer::set_arity(const ast::ASTNode *const node, const size_t ar)
     {
-        types.at(typeIDs.at(node))->ar = Arity(ar);
+        if (dynamic_cast<ScalarType *>(types.at(typeIDs.at(node)).get()))
+        {
+            dynamic_cast<ScalarType *>(types.at(typeIDs.at(node)).get())->ar = Arity(ar);
+        }
+        else // what when returnTypes > 1 elem
+        {
+            dynamic_cast<FunctionType *>(types.at(typeIDs.at(node)).get())->returnTypes.front().second = Arity(ar);
+        }
     }
 
     void TypeInferer::set_type(const ast::ASTNode *const node, const DataType type)
     {
-        types.at(typeIDs.at(node))->t = type;
+        if (dynamic_cast<ScalarType *>(types.at(typeIDs.at(node)).get()))
+        {
+            dynamic_cast<ScalarType *>(types.at(typeIDs.at(node)).get())->t = type;
+        }
+        else // what when returnTypes > 1 elem
+        {
+            dynamic_cast<FunctionType *>(types.at(typeIDs.at(node)).get())->returnTypes.front().first = type;
+        }
     }
 
 } // namespace voila

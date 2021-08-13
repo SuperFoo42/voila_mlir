@@ -11,12 +11,6 @@ namespace voila::mlir::lowering
     {
     }
 
-    static auto convertTensorToMemRef(TensorType type)
-    {
-        assert(type.hasRank() && "expected only ranked shapes");
-        return MemRefType::get(type.getShape(), type.getElementType());
-    }
-
     ::mlir::LogicalResult LookupOpLowering::matchAndRewrite(::mlir::Operation *op,
                                                             llvm::ArrayRef<::mlir::Value> operands,
                                                             ConversionPatternRewriter &rewriter) const
@@ -44,26 +38,28 @@ namespace voila::mlir::lowering
 
         SmallVector<Type, 1> ret_type;
         ret_type.push_back(outTensor.getType());
-        SmallVector<AffineMap, 2> indexing_maps;
+        SmallVector<AffineMap, 3> indexing_maps;
+        indexing_maps.push_back(rewriter.getDimIdentityMap());
         indexing_maps.push_back(rewriter.getDimIdentityMap());
         indexing_maps.push_back(rewriter.getDimIdentityMap());
 
-        SmallVector<Value, 1> hashIndices;
-        hashIndices.push_back(lookupOpAdaptor.hashes());
+        SmallVector<Value, 2> iter_vals;
+        iter_vals.push_back(lookupOpAdaptor.hashes());
+        iter_vals.push_back(lookupOpAdaptor.values());
 
         auto htSize = rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashtable(), 0);
         auto modSize = rewriter.create<SubIOp>(loc, htSize, rewriter.create<ConstantIndexOp>(loc, 1));
         auto intMod = rewriter.create<IndexCastOp>(loc, modSize, rewriter.getI64Type());
 
-        auto lookupFunc = [&modSize, &lookupOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
+        auto lookupFunc = [&intMod, &lookupOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
         {
             auto hashVals = vals[0];
             auto values = vals[1];
             // probing
             SmallVector<Type, 1> resTypes;
-            resTypes.push_back(builder.getIndexType());
+            resTypes.push_back(builder.getI64Type());
             SmallVector<Value, 1> hashVal;
-            hashVal.push_back(builder.create<AndOp>(loc, hashVals, modSize));
+            hashVal.push_back(builder.create<AndOp>(loc, hashVals, intMod));
             // probing with do while
             // Maybe we should keep track of the max probing count during generation and iterate only so many times
             auto loop = builder.create<scf::WhileOp>(loc, resTypes, hashVal);
@@ -72,8 +68,9 @@ namespace voila::mlir::lowering
             auto beforeBlock = builder.createBlock(&loop.before());
             beforeBlock->addArgument(loop->getOperands().front().getType());
             auto condBuilder = OpBuilder::atBlockEnd(beforeBlock);
-            auto entry =
-                condBuilder.create<tensor::ExtractOp>(loc, lookupOpAdaptor.hashtable(), loop.before().getArguments());
+            SmallVector<Value, 1> idx;
+            idx.push_back(condBuilder.create<IndexCastOp>(loc, loop.before().getArgument(0), builder.getIndexType()));
+            auto entry = condBuilder.create<tensor::ExtractOp>(loc, lookupOpAdaptor.hashtable(), idx);
             auto isEmpty = builder.create<CmpIOp>(loc, CmpIPredicate::eq, entry,
                                                   builder.create<ConstantIntOp>(loc, 0, entry.getType()));
 
@@ -85,10 +82,11 @@ namespace voila::mlir::lowering
             afterBlock->addArgument(loop->getOperands().front().getType());
             auto bodyBuilder = OpBuilder::atBlockEnd(afterBlock);
             SmallVector<Value, 1> inc;
-            inc.push_back(bodyBuilder.create<AndOp>(loc,
-                                                    bodyBuilder.create<AddIOp>(loc, loop.getAfterArguments().front(),
-                                                                               builder.create<ConstantIndexOp>(loc, 1)),
-                                                    modSize));
+            inc.push_back(bodyBuilder.create<AndOp>(
+                loc,
+                bodyBuilder.create<AddIOp>(loc, loop.getAfterArguments().front(),
+                                           builder.create<ConstantIntOp>(loc, 1, builder.getI64Type())),
+                intMod));
             bodyBuilder.create<scf::YieldOp>(loc, inc);
             builder.setInsertionPointAfter(loop);
             // store result
@@ -96,7 +94,7 @@ namespace voila::mlir::lowering
         };
 
         auto linalgOp = rewriter.create<linalg::GenericOp>(loc, /*results*/ ret_type,
-                                                           /*inputs*/ hashIndices, /*outputs*/ res,
+                                                           /*inputs*/ iter_vals, /*outputs*/ res,
                                                            /*indexing maps*/ indexing_maps,
                                                            /*iterator types*/ iter_type, lookupFunc);
 

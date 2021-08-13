@@ -11,19 +11,19 @@
 #include <spdlog/spdlog.h>
 #pragma GCC diagnostic pop
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
-    //setup mlir
+    // setup mlir
     mlir::registerAllPasses();
     mlir::DialectRegistry registry;
     registry.insert<mlir::voila::VoilaDialect>();
     registry.insert<mlir::StandardOpsDialect>();
     ::mlir::registerAllDialects(registry);
     mlir::registerMLIRContextCLOptions();
-   spdlog::set_level(spdlog::level::debug);
-    //setup gtest
+    spdlog::set_level(spdlog::level::debug);
+    // setup gtest
     ::testing::InitGoogleTest(&argc, argv);
 
-    //run gtests
+    // run gtests
     return RUN_ALL_TESTS();
 }

@@ -12,6 +12,7 @@ namespace voila::mlir
     using ::llvm::SmallVector;
     using ::llvm::StringRef;
     using ::mlir::Value;
+    using ::mlir::ValueRange;
 
     void MLIRGeneratorImpl::operator()(const AggrSum &sum)
     {
@@ -104,17 +105,28 @@ namespace voila::mlir
     {
         auto res = visitor_gen(assign.expr);
         result = res;
-        auto value = std::get<Value>(res);
+        ValueRange val;
+        if (std::holds_alternative<Value>(res))
+            val = {std::get<Value>(res)};
+        else if ((std::holds_alternative<ValueRange>(res)))
+            val = std::get<ValueRange>(res);
 
         // assign value to variable
-        if (assign.dest.is_variable())
+        for (size_t i = 0; i < assign.dests.size(); ++i)
+
         {
-            symbolTable.insert(assign.dest.as_variable()->var, value);
-        }
-        else
-        {
-            builder.create<::mlir::voila::MoveOp>(
-                value.getLoc(), value, symbolTable.lookup(assign.dest.as_reference()->ref.as_variable()->var));
+            auto dest = assign.dests[i];
+            auto value = val[i];
+
+            if (dest.is_variable())
+            {
+                symbolTable.insert(dest.as_variable()->var, value);
+            }
+            else
+            {
+                builder.create<::mlir::voila::MoveOp>(value.getLoc(), value,
+                                                      symbolTable.lookup(dest.as_reference()->ref.as_variable()->var));
+            }
         }
     }
 
@@ -440,8 +452,7 @@ namespace voila::mlir
         auto table = std::get<Value>(visitor_gen(insert.keys));
         auto data = std::get<Value>(visitor_gen(insert.values));
 
-        result = builder.create<::mlir::voila::InsertOp>(
-            location, data.getType(), table, data);
+        result = builder.create<::mlir::voila::InsertOp>(location, ::mlir::RankedTensorType::get(-1, getElementTypeOrSelf(data.getType())), table, data);
     }
 
     void MLIRGeneratorImpl::operator()(const Variable &variable)
@@ -454,49 +465,50 @@ namespace voila::mlir
 
     ::mlir::Type MLIRGeneratorImpl::getType(const ASTNode &node)
     {
-        const auto astType = inferer.get_type(node);
+        const auto &astType = inferer.get_type(node);
         return convert(astType);
     }
 
     ::mlir::Type MLIRGeneratorImpl::convert(const ::voila::Type &t)
     {
-        switch (t.t)
+        assert(dynamic_cast<const ScalarType *>(&t) || dynamic_cast<const FunctionType *>(&t)->returnTypes.size() == 1);
+        switch (t.getTypes().front())
         {
             case DataType::BOOL:
-                if (t.ar.is_undef())
+                if (t.getArities().front().is_undef())
                 {
                     return ::mlir::RankedTensorType::get(-1, builder.getI1Type());
                 }
                 else
                 {
-                    return ::mlir::RankedTensorType::get(t.ar.get_size(), builder.getI1Type());
+                    return ::mlir::RankedTensorType::get(t.getArities().front().get_size(), builder.getI1Type());
                 }
             case DataType::INT32:
-                if (t.ar.is_undef())
+                if (t.getArities().front().is_undef())
                 {
                     return ::mlir::RankedTensorType::get(-1, builder.getI32Type());
                 }
                 else
                 {
-                    return ::mlir::RankedTensorType::get(t.ar.get_size(), builder.getI32Type());
+                    return ::mlir::RankedTensorType::get(t.getArities().front().get_size(), builder.getI32Type());
                 }
             case DataType::INT64:
-                if (t.ar.is_undef())
+                if (t.getArities().front().is_undef())
                 {
                     return ::mlir::RankedTensorType::get(-1, builder.getI64Type());
                 }
                 else
                 {
-                    return ::mlir::RankedTensorType::get(t.ar.get_size(), builder.getI64Type());
+                    return ::mlir::RankedTensorType::get(t.getArities().front().get_size(), builder.getI64Type());
                 }
             case DataType::DBL:
-                if (t.ar.is_undef())
+                if (t.getArities().front().is_undef())
                 {
                     return ::mlir::RankedTensorType::get(-1, builder.getF64Type());
                 }
                 else
                 {
-                    return ::mlir::RankedTensorType::get(t.ar.get_size(), builder.getF64Type());
+                    return ::mlir::RankedTensorType::get(t.getArities().front().get_size(), builder.getF64Type());
                 }
             default:
                 // TODO
@@ -506,13 +518,14 @@ namespace voila::mlir
 
     ::mlir::Type MLIRGeneratorImpl::getScalarType(const ASTNode &node)
     {
-        const auto astType = inferer.get_type(node);
+        const auto &astType = inferer.get_type(node);
         return scalarConvert(astType);
     }
 
     ::mlir::Type MLIRGeneratorImpl::scalarConvert(const ::voila::Type &t)
     {
-        switch (t.t)
+        assert(dynamic_cast<const ScalarType *>(&t) || dynamic_cast<const FunctionType *>(&t)->returnTypes.size() == 1);
+        switch (t.getTypes().front())
         {
             case DataType::BOOL:
                 return builder.getI1Type();

@@ -48,7 +48,7 @@ add_library(voila_compiler
         ShapeInferenceInterface.cpp
         TypeInferencePass.cpp
         Program.cpp
-        Config.cpp)
+        Config.cpp Types.cpp)
 
 target_link_libraries(voila_compiler
         magic_enum

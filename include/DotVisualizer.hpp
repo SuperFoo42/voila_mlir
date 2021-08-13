@@ -1,8 +1,9 @@
 #pragma once
-#include "ast/ASTVisitor.hpp"
 #include "ASTNodes.hpp"
 #include "TypeInferer.hpp"
-#include "Type.hpp"
+#include "Types.hpp"
+#include "ast/ASTVisitor.hpp"
+
 #include <fmt/core.h>
 #include <iostream>
 #include <utility>
@@ -17,21 +18,27 @@ namespace voila::ast
         size_t nodeID;
         const std::optional<std::reference_wrapper<TypeInferer>> inferer;
 
-        template <bool infer_type = false>
+        template<bool infer_type = false>
         void printVertex(const ASTNode &node)
         {
             *os << fmt::format("n{} [label=<<b>{} <br/>", nodeID, node.type2string());
             if (infer_type && inferer.has_value())
             {
                 const auto &type = inferer->get().get_type(node);
-                //FIXME: overload does not work, need dynamic cast
-                const auto res = dynamic_cast<const FunctionType*>(&type);
+                // FIXME: overload does not work, need dynamic cast
+                const auto res = dynamic_cast<const FunctionType *>(&type);
                 if (!res)
                 {
-                    *os << type;
+                    if (dynamic_cast<const ScalarType *>(&type))
+                    {
+                        *os << dynamic_cast<const ScalarType &>(type);
+                    }
+                    else
+                    {
+                        *os << dynamic_cast<const FunctionType &>(type);
+                    }
                 }
                 else
-
                 {
                     *os << *res;
                 }
@@ -44,7 +51,11 @@ namespace voila::ast
         }
 
       public:
-        explicit DotVisualizer(Fun &start, const std::optional<std::reference_wrapper<TypeInferer>> &inferer = std::nullopt) : to_dot{start}, os{nullptr}, nodeID{0}, inferer{inferer} {}
+        explicit DotVisualizer(Fun &start,
+                               const std::optional<std::reference_wrapper<TypeInferer>> &inferer = std::nullopt) :
+            to_dot{start}, os{nullptr}, nodeID{0}, inferer{inferer}
+        {
+        }
         void operator()(const AggrSum &sum) final;
         void operator()(const AggrCnt &cnt) final;
         void operator()(const AggrMin &min) final;

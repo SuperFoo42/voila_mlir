@@ -2,6 +2,6 @@ main(x)
 {
     h = hash(x);
     y = insert(h,x);
-    z = lookup(y,h);
+    z = lookup(y,h,x);
     emit z;
 }

@@ -35,6 +35,7 @@ namespace voila::mlir
         using result_variant = std::variant<std::monostate,
                                             ::mlir::ModuleOp,
                                             ::mlir::Value,
+                                            ::mlir::ValueRange,
                                             ::mlir::Type,
                                             ::mlir::LogicalResult,
                                             ::mlir::FuncOp>;
