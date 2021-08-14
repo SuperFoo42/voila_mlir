@@ -11,50 +11,53 @@ namespace voila::mlir::lowering
     {
     }
 
+    static auto convertTensorToMemRef(TensorType type)
+    {
+        assert(type.hasRank() && "expected only ranked shapes");
+        return MemRefType::get(type.getShape(), type.getElementType());
+    }
+
     ::mlir::LogicalResult LookupOpLowering::matchAndRewrite(::mlir::Operation *op,
                                                             llvm::ArrayRef<::mlir::Value> operands,
                                                             ConversionPatternRewriter &rewriter) const
     {
         LookupOpAdaptor lookupOpAdaptor(operands);
         auto loc = op->getLoc();
-        const auto &shape = lookupOpAdaptor.hashes().getType().dyn_cast<::mlir::TensorType>().getShape();
         ::mlir::Value outTensor;
         if (lookupOpAdaptor.hashes().getType().dyn_cast<TensorType>().hasStaticShape())
         {
-            outTensor = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getI64Type());
+            outTensor = rewriter.create<memref::AllocOp>(
+                loc, convertTensorToMemRef(lookupOpAdaptor.hashes().getType().dyn_cast<TensorType>()));
         }
         else
         {
             SmallVector<Value, 1> outTensorSize;
             outTensorSize.push_back(rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashes(), 0));
-            outTensor = rewriter.create<linalg::InitTensorOp>(loc, outTensorSize, rewriter.getI64Type());
+            outTensor = rewriter.create<memref::AllocOp>(
+                loc, convertTensorToMemRef(lookupOpAdaptor.hashes().getType().dyn_cast<TensorType>()), outTensorSize);
         }
-
-        SmallVector<Value, 1> res;
-        res.push_back(outTensor);
-
-        SmallVector<StringRef, 1> iter_type;
-        iter_type.push_back(getParallelIteratorTypeName());
-
-        SmallVector<Type, 1> ret_type;
-        ret_type.push_back(outTensor.getType());
-        SmallVector<AffineMap, 3> indexing_maps;
-        indexing_maps.push_back(rewriter.getDimIdentityMap());
-        indexing_maps.push_back(rewriter.getDimIdentityMap());
-        indexing_maps.push_back(rewriter.getDimIdentityMap());
-
-        SmallVector<Value, 2> iter_vals;
-        iter_vals.push_back(lookupOpAdaptor.hashes());
-        iter_vals.push_back(lookupOpAdaptor.values());
 
         auto htSize = rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashtable(), 0);
         auto modSize = rewriter.create<SubIOp>(loc, htSize, rewriter.create<ConstantIndexOp>(loc, 1));
         auto intMod = rewriter.create<IndexCastOp>(loc, modSize, rewriter.getI64Type());
 
-        auto lookupFunc = [&intMod, &lookupOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
+        auto lookupFunc = [&intMod, &lookupOpAdaptor, &outTensor](OpBuilder &builder, Location loc, ValueRange vals)
         {
-            auto hashVals = vals[0];
-            auto values = vals[1];
+            auto hashVals = builder.create<AffineLoadOp>(
+                loc,
+                builder.create<memref::BufferCastOp>(
+                    loc, convertTensorToMemRef(lookupOpAdaptor.hashes().getType().dyn_cast<TensorType>()),
+                    lookupOpAdaptor.hashes()),
+                vals.front());
+
+            // TODO: lookup in every variadic memref
+            auto values = builder.create<AffineLoadOp>(
+                loc,
+                builder.create<memref::BufferCastOp>(
+                    loc, convertTensorToMemRef(lookupOpAdaptor.values().getType().dyn_cast<TensorType>()),
+                    lookupOpAdaptor.values()),
+                vals.front());
+
             // probing
             SmallVector<Type, 1> resTypes;
             resTypes.push_back(builder.getI64Type());
@@ -70,7 +73,7 @@ namespace voila::mlir::lowering
             auto condBuilder = OpBuilder::atBlockEnd(beforeBlock);
             SmallVector<Value, 1> idx;
             idx.push_back(condBuilder.create<IndexCastOp>(loc, loop.before().getArgument(0), builder.getIndexType()));
-            auto entry = condBuilder.create<tensor::ExtractOp>(loc, lookupOpAdaptor.hashtable(), idx);
+            auto entry = condBuilder.create<memref::LoadOp>(loc, builder.create<memref::BufferCastOp>(loc, convertTensorToMemRef(lookupOpAdaptor.hashtable().getType().dyn_cast<TensorType>()),lookupOpAdaptor.hashtable()), idx);
             auto isEmpty = builder.create<CmpIOp>(loc, CmpIPredicate::eq, entry,
                                                   builder.create<ConstantIntOp>(loc, 0, entry.getType()));
 
@@ -90,15 +93,16 @@ namespace voila::mlir::lowering
             bodyBuilder.create<scf::YieldOp>(loc, inc);
             builder.setInsertionPointAfter(loop);
             // store result
-            builder.create<linalg::YieldOp>(loc, loop->getResults());
+            builder.create<AffineStoreOp>(loc, loop->getResults().front(), outTensor, vals.front());
         };
 
-        auto linalgOp = rewriter.create<linalg::GenericOp>(loc, /*results*/ ret_type,
-                                                           /*inputs*/ iter_vals, /*outputs*/ res,
-                                                           /*indexing maps*/ indexing_maps,
-                                                           /*iterator types*/ iter_type, lookupFunc);
+        SmallVector<Value, 1> lb, ub;
+        lb.push_back(rewriter.create<ConstantIndexOp>(loc, 0));
+        ub.push_back(rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashes(), 0));
 
-        rewriter.replaceOp(op, linalgOp->getResults());
+        buildAffineLoopNest(rewriter, loc, lb, ub, 1, lookupFunc);
+
+        rewriter.replaceOpWithNewOp<memref::TensorLoadOp>(op, outTensor);
         return success();
     }
 
