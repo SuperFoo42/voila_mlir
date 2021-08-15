@@ -108,8 +108,8 @@ namespace voila::mlir
         ValueRange val;
         if (std::holds_alternative<Value>(res))
             val = {std::get<Value>(res)};
-        else if ((std::holds_alternative<ValueRange>(res)))
-            val = std::get<ValueRange>(res);
+        else if ((std::holds_alternative<SmallVector<Value>>(res)))
+            val = std::get<SmallVector<Value>>(res);
 
         // assign value to variable
         for (size_t i = 0; i < assign.dests.size(); ++i)
@@ -285,15 +285,9 @@ namespace voila::mlir
     void MLIRGeneratorImpl::operator()(const Hash &hash)
     {
         auto location = loc(hash.get_location());
-        std::vector<Value> params;
-        std::vector<::mlir::Type> types;
-        for (auto &item : hash.items)
-        {
-            params.push_back(std::get<Value>(visitor_gen(item)));
-            types.push_back(params.back().getType());
-        }
-
-        result = builder.create<::mlir::voila::HashOp>(location, types, params);
+        auto params = std::get<SmallVector<Value>>(visitor_gen(hash.items));
+        auto retType = ::mlir::RankedTensorType::get(params.front().getType().dyn_cast<::mlir::TensorType>().getShape(), builder.getI64Type());
+        result = builder.create<::mlir::voila::HashOp>(location, retType, params);
     }
 
     void MLIRGeneratorImpl::operator()(const IntConst &intConst)
@@ -416,7 +410,7 @@ namespace voila::mlir
     void MLIRGeneratorImpl::operator()(const Main &main)
     {
         // TODO: can we just slice main to fun, or do we have to consider some special properties of main?
-        ASTVisitor::operator()(static_cast<Fun>(main));
+        operator()(static_cast<Fun>(main));
     }
 
     void MLIRGeneratorImpl::operator()(const Selection &selection)
@@ -450,9 +444,15 @@ namespace voila::mlir
     {
         auto location = loc(insert.get_location());
         auto table = std::get<Value>(visitor_gen(insert.keys));
-        auto data = std::get<Value>(visitor_gen(insert.values));
+        auto data = std::get<SmallVector<Value>>(visitor_gen(insert.values));
 
-        result = builder.create<::mlir::voila::InsertOp>(location, ::mlir::RankedTensorType::get(-1, getElementTypeOrSelf(data.getType())), table, data);
+        ::mlir::SmallVector<::mlir::Type> retTypes;
+        for (auto val : data)
+        {
+            retTypes.push_back(::mlir::RankedTensorType::get({-1}, getElementTypeOrSelf(val)));
+        }
+        auto insertOp = builder.create<::mlir::voila::InsertOp>(location, retTypes, table, data);
+        result = insertOp.hashtables();
     }
 
     void MLIRGeneratorImpl::operator()(const Variable &variable)
@@ -578,6 +578,36 @@ namespace voila::mlir
         if (std::holds_alternative<std::monostate>(visitor.result))
             throw MLIRGenerationException();
         return visitor.result;
+    }
+
+    MLIRGeneratorImpl::result_variant MLIRGeneratorImpl::visitor_gen(const std::vector<Statement> &nodes)
+    {
+        ::mlir::SmallVector<Value> values;
+        for (const auto &node : nodes)
+        {
+            auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, inferer);
+            node.visit(visitor);
+            if (std::holds_alternative<std::monostate>(visitor.result))
+                throw MLIRGenerationException();
+            values.push_back(std::get<Value>(visitor.result));
+        }
+
+        return values;
+    }
+
+    MLIRGeneratorImpl::result_variant MLIRGeneratorImpl::visitor_gen(const std::vector<Expression> &nodes)
+    {
+        ::mlir::SmallVector<Value> values;
+        for (const auto &node : nodes)
+        {
+            auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, inferer);
+            node.visit(visitor);
+            if (std::holds_alternative<std::monostate>(visitor.result))
+                throw MLIRGenerationException();
+            values.push_back(std::get<Value>(visitor.result));
+        }
+
+        return values;
     }
 
 } // namespace voila::mlir

@@ -232,8 +232,6 @@ namespace voila
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(secondpm);
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
-        secondOptPM.addPass(createCanonicalizerPass());
-        secondOptPM.addPass(createCSEPass());
 
         secondOptPM.addPass(createConvertLinalgToParallelLoopsPass());
         secondOptPM.addPass(createConvertLinalgToLoopsPass());
@@ -258,7 +256,7 @@ namespace voila
             secondOptPM.addPass(createLoopUnrollAndJamPass());
             secondpm.addPass(createAsyncParallelForPass());
 
-            // secondpm.addPass(createBufferResultsToOutParamsPass());
+            //secondpm.addPass(createBufferResultsToOutParamsPass());
             // secondOptPM.addPass(createAffineDataCopyGenerationPass());
             // secondOptPM.addPass(createLoopUnrollPass());
         }

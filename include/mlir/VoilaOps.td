@@ -556,8 +556,8 @@ let description = [{
 This is a convenience function, allocating a hashtable, hashing and scatter + linear probing for collision resolution
 }];
 
-let arguments = (ins I64Tensor:$keys, 1DTensorOf<[AnyType]>:$values);
-let results = (outs 1DTensorOf<[AnyType]>:$hashtable);
+let arguments = (ins I64Tensor:$hashValues, Variadic<1DTensorOf<[AnyType]>>:$values);
+let results = (outs Variadic<1DTensorOf<[AnyType]>>:$hashtables);
 }
 
 def LookupOp : Voila_Op<"lookup", [NoSideEffect,SameOperandsElementType]> {

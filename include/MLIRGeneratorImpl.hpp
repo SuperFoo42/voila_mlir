@@ -35,7 +35,7 @@ namespace voila::mlir
         using result_variant = std::variant<std::monostate,
                                             ::mlir::ModuleOp,
                                             ::mlir::Value,
-                                            ::mlir::ValueRange,
+                                            ::mlir::SmallVector<::mlir::Value>, //FIXME: ugly, but needed because ValueRange does not extend lifetime of underlying object
                                             ::mlir::Type,
                                             ::mlir::LogicalResult,
                                             ::mlir::FuncOp>;
@@ -63,6 +63,10 @@ namespace voila::mlir
         result_variant visitor_gen(const ast::Statement &node);
 
         result_variant visitor_gen(const ast::Expression &node);
+
+        result_variant visitor_gen(const std::vector<ast::Expression> &nodes);
+
+        result_variant visitor_gen(const std::vector<ast::Statement> &nodes);
 
         static llvm::ArrayRef<int64_t> getShape(const ::mlir::Value &lhs, const ::mlir::Value &rhs)
         {

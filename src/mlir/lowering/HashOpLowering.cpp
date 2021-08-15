@@ -306,8 +306,7 @@ namespace voila::mlir::lowering
     {
         SmallVector<Value> intVals;
         unsigned int size = 0;
-        assert(vals.size() % 2 == 0);
-        for (size_t i = 0; i < vals.size() / 2; ++i)
+        for (size_t i = 0; i < vals.size() -1; ++i)
         {
             if (vals[i].getType().isIntOrFloat())
             {

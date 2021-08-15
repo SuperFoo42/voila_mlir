@@ -11,7 +11,7 @@ namespace voila::ast
     class Insert : public IExpression
     {
       public:
-        Insert(Location loc, Expression keys, Expression values) :
+        Insert(Location loc, Expression keys, std::vector<Expression> values) :
             IExpression(loc), keys{std::move(keys)}, values{std::move(values)}
         {
             // TODO
@@ -27,6 +27,6 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) final;
 
         Expression keys;
-        Expression values;
+        std::vector<Expression> values;
     };
 } // namespace voila::ast

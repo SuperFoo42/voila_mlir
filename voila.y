@@ -191,7 +191,7 @@ expr:
 	| aggregation {$$ = $1; }
 	| HASH LPAREN expr_list RPAREN { $$ = ast::Expression::make<Hash>(@1+@4, $3); }
 	| LOOKUP LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<Lookup>(@1+@8, $3, $5, $7); } /* hashtable, hashes, values */
-	| INSERT LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Insert>(@1+@6,$3, $5); } /* keys, values */
+	| INSERT LPAREN expr COMMA expr_list RPAREN { $$ = ast::Expression::make<Insert>(@1+@6,$3, $5); } /* keys, values */
 
 /* TODO: is this correct/complete? */
 pred_expr:

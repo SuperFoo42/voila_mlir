@@ -616,13 +616,21 @@ namespace voila
     void TypeInferer::operator()(const ast::Insert &insert)
     {
         insert.keys.visit(*this);
-        insert.values.visit(*this);
+        for (auto &val : insert.values)
+            val.visit(*this);
 
         // TODO: return multiple output tables
-        assert(get_type(insert.values).getTypes().size() == 1);
         assert(get_type(insert.keys).getArities().size() == 1);
-        insertNewFuncType(insert, {get_type_id(insert.keys), get_type_id(insert.values)},
-                          get_type(insert.values).getTypes().front(), get_type(insert.keys).getArities().front());
+        std::vector<size_t> paramTypeIds;
+        paramTypeIds.push_back(get_type_id(insert.keys));
+        ranges::transform(
+            insert.values, std::back_inserter(paramTypeIds), [&](auto &val) -> auto { return get_type_id(val); });
+        std::vector<std::pair<DataType, Arity>> returnTypes;
+        ranges::transform(
+            insert.values, std::back_inserter(returnTypes), [&](auto &val) -> auto {
+                return std::make_pair(get_type(val).getTypes().front(), get_type(insert.keys).getArities().front());
+            });
+        insertNewFuncType(insert, paramTypeIds, returnTypes);
     }
 
     void TypeInferer::operator()(const ast::Predicate &pred)

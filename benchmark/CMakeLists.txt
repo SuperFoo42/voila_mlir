@@ -11,7 +11,7 @@ CPMAddPackage(
         GITHUB_REPOSITORY USCiLab/cereal
         OPTIONS "SKIP_PORTABILITY_TEST ON" "JUST_INSTALL_CEREAL ON"
 )
-CPMAddPackage("gh:d99kris/rapidcsv#v8.51")
+CPMAddPackage("gh:d99kris/rapidcsv#v8.53")
 
 if (benchmark_ADDED)
     # enable c++11 to avoid compilation errors

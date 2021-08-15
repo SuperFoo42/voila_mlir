@@ -27,7 +27,7 @@ namespace voila
 
         // Verify the module after we have finished constructing it, this will check
         // the structural properties of the IR and invoke any specific verifiers we
-        // have on the Toy operations.
+        // have on the Voila operations.
         if (failed(::mlir::verify(module)))
         {
             throw MLIRModuleVerificationError();
@@ -35,11 +35,13 @@ namespace voila
 
         return module;
     }
+
     ::mlir::OwningModuleRef MLIRGenerator::mlirGen(::mlir::MLIRContext &ctx, const Program &program)
     {
         MLIRGenerator generator(ctx);
         return generator.generate(program);
     }
+
     MLIRGenerator::MLIRGenerator(::mlir::MLIRContext &ctx) : builder{&ctx}
     {
         (void) this->builder;
