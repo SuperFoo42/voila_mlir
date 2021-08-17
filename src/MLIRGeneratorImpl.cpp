@@ -135,10 +135,10 @@ namespace voila::mlir
         auto location = loc(emit.get_location());
 
         // 'return' takes an optional expression, handle that case here.
-        mlir::Value expr = std::get<Value>(visitor_gen(emit.expr));
+        auto exprs = std::get<SmallVector<Value>>(visitor_gen(emit.exprs));
 
         // Otherwise, this return operation has zero operands.
-        builder.create<::mlir::voila::EmitOp>(location, ::llvm::makeArrayRef(expr));
+        builder.create<::mlir::voila::EmitOp>(location, exprs);
         result = ::mlir::success();
     }
 
@@ -172,9 +172,9 @@ namespace voila::mlir
         auto location = loc(add.get_location());
         auto lhs = visitor_gen(add.lhs);
         auto rhs = visitor_gen(add.rhs);
-
-        result =
-            builder.create<::mlir::voila::AddOp>(location, getType(add), std::get<Value>(lhs), std::get<Value>(rhs));
+        auto resType = getTypes(add);
+        assert(resType.size() == 1);
+        result = builder.create<::mlir::voila::AddOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Sub &sub)
@@ -182,9 +182,9 @@ namespace voila::mlir
         auto location = loc(sub.get_location());
         auto lhs = visitor_gen(sub.lhs);
         auto rhs = visitor_gen(sub.rhs);
-
-        result =
-            builder.create<::mlir::voila::SubOp>(location, getType(sub), std::get<Value>(lhs), std::get<Value>(rhs));
+        auto resType = getTypes(sub);
+        assert(resType.size() == 1);
+        result = builder.create<::mlir::voila::SubOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Mul &mul)
@@ -192,9 +192,9 @@ namespace voila::mlir
         auto location = loc(mul.get_location());
         auto lhs = visitor_gen(mul.lhs);
         auto rhs = visitor_gen(mul.rhs);
-
-        result =
-            builder.create<::mlir::voila::MulOp>(location, getType(mul), std::get<Value>(lhs), std::get<Value>(rhs));
+        auto resType = getTypes(mul);
+        assert(resType.size() == 1);
+        result = builder.create<::mlir::voila::MulOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Div &div)
@@ -203,8 +203,9 @@ namespace voila::mlir
         auto lhs = visitor_gen(div.lhs);
         auto rhs = visitor_gen(div.rhs);
 
-        result =
-            builder.create<::mlir::voila::DivOp>(location, getType(div), std::get<Value>(lhs), std::get<Value>(rhs));
+        auto resType = getTypes(div);
+        assert(resType.size() == 1);
+        result = builder.create<::mlir::voila::DivOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Mod &mod)
@@ -212,9 +213,9 @@ namespace voila::mlir
         auto location = loc(mod.get_location());
         auto lhs = visitor_gen(mod.lhs);
         auto rhs = visitor_gen(mod.rhs);
-
-        result =
-            builder.create<::mlir::voila::ModOp>(location, getType(mod), std::get<Value>(lhs), std::get<Value>(rhs));
+        auto resType = getTypes(mod);
+        assert(resType.size() == 1);
+        result = builder.create<::mlir::voila::ModOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Eq &eq)
@@ -286,7 +287,8 @@ namespace voila::mlir
     {
         auto location = loc(hash.get_location());
         auto params = std::get<SmallVector<Value>>(visitor_gen(hash.items));
-        auto retType = ::mlir::RankedTensorType::get(params.front().getType().dyn_cast<::mlir::TensorType>().getShape(), builder.getI64Type());
+        auto retType = ::mlir::RankedTensorType::get(params.front().getType().dyn_cast<::mlir::TensorType>().getShape(),
+                                                     builder.getI64Type());
         result = builder.create<::mlir::voila::HashOp>(location, retType, params);
     }
 
@@ -366,9 +368,12 @@ namespace voila::mlir
         // Arguments type are uniformly unranked tensors.
 
         llvm::SmallVector<::mlir::Type> arg_types;
-        std::transform(
-            fun.args.begin(), fun.args.end(),
-            std::back_inserter(arg_types), [&](const auto &t) -> auto { return getType(*t.as_expr()); });
+        for (const auto &t : fun.args)
+        {
+            auto types = getTypes(*t.as_expr());
+            arg_types.insert(arg_types.end(), types.begin(), types.end());
+        }
+
         auto func_type = builder.getFunctionType(arg_types, llvm::None);
         auto function = ::mlir::FuncOp::create(location, fun.name, func_type);
         funcTable.emplace(fun.name, function);
@@ -401,7 +406,7 @@ namespace voila::mlir
             // the function.
             // TODO: get emit type
             function.setType(
-                builder.getFunctionType(function.getType().getInputs(), getType(*(*fun.result).as_stmt())));
+                builder.getFunctionType(function.getType().getInputs(), getTypes(*(*fun.result).as_stmt())));
         }
 
         result = function;
@@ -463,15 +468,28 @@ namespace voila::mlir
         result = symbolTable.lookup(variable.var);
     }
 
-    ::mlir::Type MLIRGeneratorImpl::getType(const ASTNode &node)
+    std::vector<::mlir::Type> MLIRGeneratorImpl::getTypes(const ASTNode &node)
     {
         const auto &astType = inferer.get_type(node);
-        return convert(astType);
+        std::vector<::mlir::Type> types;
+        if (dynamic_cast<const ScalarType *>(&astType))
+        {
+            types.push_back(convert(astType));
+        }
+        else
+        {
+            for (auto tid : dynamic_cast<const FunctionType *>(&astType)->returnTypeIDs)
+            {
+                types.push_back(convert(*inferer.types.at(tid)));
+            }
+        }
+        return types;
     }
 
     ::mlir::Type MLIRGeneratorImpl::convert(const ::voila::Type &t)
     {
-        assert(dynamic_cast<const ScalarType *>(&t) || dynamic_cast<const FunctionType *>(&t)->returnTypes.size() == 1);
+        assert(dynamic_cast<const ScalarType *>(&t) ||
+               dynamic_cast<const FunctionType *>(&t)->returnTypeIDs.size() == 1);
         switch (t.getTypes().front())
         {
             case DataType::BOOL:
@@ -524,7 +542,8 @@ namespace voila::mlir
 
     ::mlir::Type MLIRGeneratorImpl::scalarConvert(const ::voila::Type &t)
     {
-        assert(dynamic_cast<const ScalarType *>(&t) || dynamic_cast<const FunctionType *>(&t)->returnTypes.size() == 1);
+        assert(dynamic_cast<const ScalarType *>(&t) ||
+               dynamic_cast<const FunctionType *>(&t)->returnTypeIDs.size() == 1);
         switch (t.getTypes().front())
         {
             case DataType::BOOL:

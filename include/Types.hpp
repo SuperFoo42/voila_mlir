@@ -6,6 +6,8 @@
 #include <utility>
 namespace voila
 {
+    class TypeInferer;
+
     enum class DataType
     {
         BOOL,
@@ -40,13 +42,16 @@ namespace voila
         }
     };
 
+    using type_id_t = size_t;
+
     class Type
     {
       public:
         static bool convertibleDataTypes(DataType t1, DataType t2);
-        [[maybe_unused]] size_t typeID;
+        [[maybe_unused]] type_id_t typeID;
+        TypeInferer &inferer;
         virtual ~Type() = default;
-        explicit Type(size_t tID) : typeID(tID) {}
+        explicit Type(type_id_t tID, TypeInferer &inferer) : typeID{tID}, inferer{inferer} {}
         [[nodiscard]] virtual bool convertible(const Type &) const = 0;
         [[nodiscard]] virtual bool convertible(const DataType &) const = 0;
         [[nodiscard]] virtual std::vector<DataType> getTypes() const = 0;
@@ -68,7 +73,7 @@ namespace voila
         [[maybe_unused]] DataType t;
         [[maybe_unused]] Arity ar;
 
-        explicit ScalarType(size_t tID, DataType t = DataType::UNKNOWN, Arity ar = Arity());
+        explicit ScalarType(size_t tID, TypeInferer &inferer, DataType t = DataType::UNKNOWN, Arity ar = Arity());
         friend std::ostream &operator<<(std::ostream &os, const ScalarType &type);
 
         [[nodiscard]] bool convertible(const Type &other) const override;
@@ -81,10 +86,10 @@ namespace voila
     class FunctionType : public Type
     {
       public:
-        explicit FunctionType(size_t tID,
-                              std::vector<size_t> paramTypeIds = {},
-                              std::vector<std::pair<DataType, Arity>> returnTypes = {
-                                  std::make_pair(DataType::UNKNOWN, Arity())});
+        explicit FunctionType(type_id_t tID,
+                              TypeInferer &inferer,
+                              std::vector<type_id_t> paramTypeIds = {},
+                              std::vector<type_id_t> returnTypes = {});
 
         friend std::ostream &operator<<(std::ostream &os, const FunctionType &type);
         [[nodiscard]] bool convertible(const Type &other) const override;
@@ -92,7 +97,7 @@ namespace voila
         [[nodiscard]] bool compatible(const DataType &other) const override;
         [[nodiscard]] std::vector<DataType> getTypes() const override;
         [[nodiscard]] std::vector<Arity> getArities() const override;
-        std::vector<size_t> paramTypeIds;
-        std::vector<std::pair<DataType, Arity>> returnTypes;
+        std::vector<type_id_t> paramTypeIds;
+        std::vector<type_id_t> returnTypeIDs;
     };
 } // namespace voila

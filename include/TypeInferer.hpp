@@ -1,6 +1,7 @@
 #pragma once
 #include "ASTNodes.hpp"
 #include "Types.hpp"
+#include "range/v3/all.hpp"
 
 #include <ast/ASTVisitor.hpp>
 #include <unordered_map>
@@ -9,9 +10,6 @@ namespace voila
 {
     class TypeInferer : public ast::ASTVisitor
     {
-        std::unordered_map<const ast::ASTNode *, size_t> typeIDs;
-        std::vector<std::unique_ptr<Type>> types;
-
       public:
         void operator()(const ast::Aggregation &aggregation) final;
         void operator()(const ast::Write &write) final;
@@ -72,8 +70,10 @@ namespace voila
         void operator()(const ast::Lookup &lookup) override;
         void operator()(const ast::Insert &insert) override;
 
+        std::vector<std::unique_ptr<Type>> types;
+
       private:
-        void unify(const ast::ASTNode &t1, const ast::ASTNode &t2);
+        void unify(ast::ASTNode &t1, ast::ASTNode &t2);
         void unify(const ast::Expression &t1, const ast::Expression &t2);
         void unify(const ast::Statement &t1, const ast::Statement &t2);
 
@@ -92,20 +92,24 @@ namespace voila
         void
         insertNewFuncType(const ast::ASTNode &node, std::vector<size_t> typeParamIDs, DataType returnT, Arity returnAr);
 
-        size_t get_type_id(const ast::Expression &node);
-        size_t get_type_id(const ast::Statement &node);
-        size_t get_type_id(const ast::ASTNode &node);
+        type_id_t get_type_id(const ast::Expression &node);
+        type_id_t get_type_id(const ast::Statement &node);
+        type_id_t get_type_id(const ast::ASTNode &node);
         void unify(const ast::ASTNode &t1, const ast::Statement &t2);
-        void unify(const ast::ASTNode &t1, const ast::Expression &t2);
-        void insertNewFuncType(const ast::ASTNode &node, std::vector<size_t> typeParamIDs, size_t returnTypeID);
+        void unify(ast::ASTNode &t1, ast::Expression &t2);
+        void insertNewFuncType(const ast::ASTNode &node, std::vector<type_id_t> typeParamIDs, type_id_t returnTypeID);
         void insertNewFuncType(const ast::ASTNode &node,
-                               std::vector<size_t> typeParamIDs,
-                               std::vector<std::pair<DataType, Arity>> returnTypes);
+                               std::vector<type_id_t> typeParamIDs,
+                               const std::vector<std::pair<DataType, Arity>> &returnTypes);
         void insertNewFuncType(const ast::ASTNode &node,
-                          std::vector<size_t> typeParamIDs,
-                          const std::vector<size_t> &returnTypeIDs);
-        void unify(const ast::ASTNode *t1, const ast::ASTNode *t2);
+                               std::vector<type_id_t> typeParamIDs,
+                               std::vector<type_id_t> returnTypeIDs);
+        void unify(ast::ASTNode *const t1, ast::ASTNode *const t2);
         void unify(const ast::Expression &t1, const ast::Statement &t2);
 
+        std::unordered_map<const ast::ASTNode *, type_id_t> typeIDs;
+        void unify(const std::vector<ast::Expression> &t1, const ast::Expression &t2);
+        void unify(const std::vector<ast::ASTNode *> &t1, const ast::ASTNode *t2);
+        void unify(const std::vector<ast::Expression> &t1, const ast::Statement &t2);
     };
 } // namespace voila

@@ -90,7 +90,8 @@ namespace voila::ast
         printVertex(emit);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        emit.expr.visit(*this);
+        for (auto expr : emit.exprs)
+            expr.visit(*this);
     }
 
     void DotVisualizer::operator()(const Loop &loop)

@@ -32,19 +32,21 @@ namespace voila::mlir
         llvm::ScopedHashTable<llvm::StringRef, ::mlir::Value> &symbolTable;
         std::unordered_map<std::string, ::mlir::FuncOp> &funcTable;
         const TypeInferer &inferer;
-        using result_variant = std::variant<std::monostate,
-                                            ::mlir::ModuleOp,
-                                            ::mlir::Value,
-                                            ::mlir::SmallVector<::mlir::Value>, //FIXME: ugly, but needed because ValueRange does not extend lifetime of underlying object
-                                            ::mlir::Type,
-                                            ::mlir::LogicalResult,
-                                            ::mlir::FuncOp>;
+        using result_variant =
+            std::variant<std::monostate,
+                         ::mlir::ModuleOp,
+                         ::mlir::Value,
+                         ::mlir::SmallVector<::mlir::Value>, // FIXME: ugly, but needed because ValueRange does not
+                                                             // extend lifetime of underlying object
+                         ::mlir::Type,
+                         ::mlir::LogicalResult,
+                         ::mlir::FuncOp>;
         result_variant result;
 
         // helper functions to map ast types to mlir
         ::mlir::Location loc(ast::Location loc);
 
-        ::mlir::Type getType(const ast::ASTNode &node);
+        std::vector<::mlir::Type> getTypes(const ast::ASTNode &node);
 
         // TODO: implement
         ::mlir::Type convert(const Type &t);

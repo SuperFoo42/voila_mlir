@@ -39,8 +39,8 @@ namespace voila
     void
     TypeInferer::insertNewType(const ast::ASTNode &node, const DataType t = DataType::UNKNOWN, const Arity ar = Arity())
     {
-        typeIDs.try_emplace(&node, types.size());
-        types.push_back(std::make_unique<ScalarType>(types.size(), t, ar));
+        typeIDs.emplace(&node, types.size());
+        types.push_back(std::make_unique<ScalarType>(types.size(), *this, t, ar));
     }
 
     /**
@@ -51,7 +51,7 @@ namespace voila
      * @param typeParamIDs
      */
     void TypeInferer::insertNewFuncType(const ast::ASTNode &node,
-                                        std::vector<size_t> typeParamIDs = {},
+                                        std::vector<type_id_t> typeParamIDs = {},
                                         const DataType returnT = DataType::UNKNOWN,
                                         const Arity returnAr = Arity())
     {
@@ -59,43 +59,36 @@ namespace voila
     }
 
     void TypeInferer::insertNewFuncType(const ast::ASTNode &node,
-                                        std::vector<size_t> typeParamIDs = {},
-                                        std::vector<std::pair<DataType, Arity>> returnTypes = {
+                                        std::vector<type_id_t> typeParamIDs = {},
+                                        const std::vector<std::pair<DataType, Arity>> &returnTypes = {
                                             std::make_pair(DataType::UNKNOWN, Arity())})
     {
-        typeIDs.try_emplace(&node, types.size());
-        types.push_back(std::make_unique<FunctionType>(types.size(), std::move(typeParamIDs), std::move(returnTypes)));
-    }
-
-    void TypeInferer::insertNewFuncType(const ast::ASTNode &node,
-                                        std::vector<size_t> typeParamIDs,
-                                        const size_t returnTypeID)
-    {
-        insertNewFuncType(node, std::move(typeParamIDs), std::vector<size_t>(1, returnTypeID));
-    }
-
-    void TypeInferer::insertNewFuncType(const ast::ASTNode &node,
-                                        std::vector<size_t> typeParamIDs,
-                                        const std::vector<size_t> &returnTypeIDs)
-    {
-        std::vector<std::pair<DataType, Arity>> returnTypes;
-        for (auto tID : returnTypeIDs)
+        std::vector<type_id_t> returnTypeIds;
+        for (auto t : returnTypes)
         {
-            auto *t = types.at(tID).get();
-            if (dynamic_cast<FunctionType *>(t))
-            {
-                returnTypes.insert(returnTypes.end(), dynamic_cast<FunctionType *>(t)->returnTypes.begin(),
-                                   dynamic_cast<FunctionType *>(t)->returnTypes.end());
-            }
-            else
-            {
-                returnTypes.emplace_back(dynamic_cast<ScalarType *>(t)->t, dynamic_cast<ScalarType &>(*t).ar);
-            }
+            returnTypeIds.push_back(types.size());
+            types.emplace_back(std::make_unique<ScalarType>(types.size(), *this, t.first, t.second));
         }
-        insertNewFuncType(node, std::move(typeParamIDs), returnTypes);
+        insertNewFuncType(node, std::move(typeParamIDs), std::move(returnTypeIds));
     }
 
-    size_t TypeInferer::get_type_id(const ast::Expression &node)
+    void TypeInferer::insertNewFuncType(const ast::ASTNode &node,
+                                        std::vector<type_id_t> typeParamIDs,
+                                        const type_id_t returnTypeID)
+    {
+        insertNewFuncType(node, std::move(typeParamIDs), std::vector<type_id_t>(1, returnTypeID));
+    }
+
+    void TypeInferer::insertNewFuncType(const ast::ASTNode &node,
+                                        std::vector<type_id_t> typeParamIDs,
+                                        std::vector<type_id_t> returnTypeIDs)
+    {
+        typeIDs.emplace(&node, types.size());
+        types.push_back(
+            std::make_unique<FunctionType>(types.size(), *this, std::move(typeParamIDs), std::move(returnTypeIDs)));
+    }
+
+    type_id_t TypeInferer::get_type_id(const ast::Expression &node)
     {
         try
         {
@@ -110,7 +103,7 @@ namespace voila
         }
     }
 
-    size_t TypeInferer::get_type_id(const ast::Statement &node)
+    type_id_t TypeInferer::get_type_id(const ast::Statement &node)
     {
         try
         {
@@ -125,7 +118,7 @@ namespace voila
         }
     }
 
-    size_t TypeInferer::get_type_id(const ast::ASTNode &node)
+    type_id_t TypeInferer::get_type_id(const ast::ASTNode &node)
     {
         try
         {
@@ -213,9 +206,9 @@ namespace voila
         }
     }
 
-    void TypeInferer::unify(const ast::ASTNode &t1, const ast::ASTNode &t2)
+    void TypeInferer::unify(ast::ASTNode &t1, ast::ASTNode &t2)
     {
-        const ast::ASTNode *tmp1 = &t1, *tmp2 = &t2;
+        ast::ASTNode *tmp1 = &t1, *tmp2 = &t2;
         if (dynamic_cast<const ast::Ref *>(&t1))
         {
             tmp1 = dynamic_cast<const ast::Ref *>(&t1)->ref.as_expr();
@@ -224,47 +217,17 @@ namespace voila
         {
             tmp2 = dynamic_cast<const ast::Ref *>(&t2)->ref.as_expr();
         }
-        unify(tmp1, tmp2);
+        unify(std::vector<ast::ASTNode *>({tmp1}), tmp2);
     }
 
-    void TypeInferer::unify(const ast::ASTNode &t1, const ast::Expression &t2)
+    void TypeInferer::unify(ast::ASTNode &t1, ast::Expression &t2)
     {
-        if (t2.is_reference())
-            unify(&t1, t2.as_reference()->ref.as_expr());
-        else
-            unify(&t1, t2.as_expr());
+        unify(std::vector<ast::ASTNode *>({&t1}), t2.as_expr());
     }
 
-    void TypeInferer::unify(const ast::ASTNode *t1, const ast::ASTNode *t2)
+    void TypeInferer::unify(ast::ASTNode *const t1, ast::ASTNode *const t2)
     {
-        // TODO
-        if (typeIDs.contains(t1) && !typeIDs.contains(t2))
-        {
-            typeIDs.emplace(t2, get_type_id(*t1));
-        }
-        else if (!typeIDs.contains(t1) && typeIDs.contains(t2))
-        {
-            typeIDs.emplace(t1, get_type_id(*t2));
-        }
-        else if (typeIDs.contains(t1) && typeIDs.contains(t2))
-        {
-            if (types[typeIDs[t1]]->convertible(*types[typeIDs[t2]]))
-            {
-                typeIDs[t1] = typeIDs[t2];
-            }
-            else if (types[typeIDs[t2]]->convertible(*types[typeIDs[t1]]))
-            {
-                typeIDs[t2] = typeIDs[t1];
-            }
-            else
-            {
-                throw IncompatibleTypesException();
-            }
-        }
-        else
-        {
-            throw NotInferedException();
-        }
+        unify(std::vector<ast::ASTNode *>({t1}), t2);
     }
 
     void TypeInferer::unify(const ast::Expression &t1, const ast::Statement &t2)
@@ -294,13 +257,69 @@ namespace voila
 
     void TypeInferer::unify(const ast::Expression &t1, const ast::Expression &t2)
     {
-        auto *tmp1 = t1.as_expr();
-        auto *tmp2 = t2.as_expr();
-        if (t1.is_reference())
-            tmp1 = t1.as_reference()->ref.as_expr();
-        if (t2.is_reference())
-            tmp2 = t2.as_reference()->ref.as_expr();
+        unify(std::vector<ast::Expression>({t1}), t2);
+    }
+
+    void TypeInferer::unify(const std::vector<ast::Expression> &t1, const ast::Expression &t2)
+    {
+        std::vector<ast::ASTNode *> tmp1;
+        ranges::transform(
+            t1, std::back_inserter(tmp1),
+            [](auto &t) -> auto { return t.is_reference() ? t.as_reference()->ref.as_expr() : t.as_expr(); });
+        auto *tmp2 = t2.is_reference() ? t2.as_reference()->ref.as_expr() : t2.as_expr();
+
         unify(tmp1, tmp2);
+    }
+
+    void TypeInferer::unify(const std::vector<ast::Expression> &t1, const ast::Statement &t2)
+    {
+        std::vector<ast::ASTNode *> tmp1;
+        ranges::transform(
+            t1, std::back_inserter(tmp1),
+            [](auto &t) -> auto { return t.is_reference() ? t.as_reference()->ref.as_expr() : t.as_expr(); });
+        auto *tmp2 = t2.is_statement_wrapper() ?
+                         dynamic_cast<ast::ASTNode *>(t2.as_statement_wrapper()->expr.as_expr()) :
+                         dynamic_cast<ast::ASTNode *>(t2.as_stmt());
+
+        unify(tmp1, tmp2);
+    }
+
+    // TODO: refactor
+    void TypeInferer::unify(const std::vector<ast::ASTNode *> &t1, const ast::ASTNode *t2)
+    {
+        for (size_t i = 0; i < t1.size(); ++i)
+        {
+            auto *tmp1 = t1[i];
+            if (typeIDs.contains(tmp1) && !typeIDs.contains(t2))
+            {
+                typeIDs.emplace(t2, get_type_id(*tmp1));
+            }
+            else if (!typeIDs.contains(tmp1) && typeIDs.contains(tmp1))
+            {
+                typeIDs.emplace(tmp1, get_type_id(*t2));
+            }
+            else if (typeIDs.contains(tmp1) && typeIDs.contains(t2))
+            {
+                assert(dynamic_cast<FunctionType *>(types[typeIDs[t2]].get()));
+                if (types[typeIDs[tmp1]]->convertible(types[typeIDs[t2]]->getTypes().at(i)))
+                {
+                    typeIDs[tmp1] = dynamic_cast<FunctionType *>(types[typeIDs[t2]].get())->returnTypeIDs.at(i);
+                }
+                else if (types.at(dynamic_cast<FunctionType *>(types[typeIDs[t2]].get())->returnTypeIDs.at(i))
+                             ->convertible(*types[typeIDs[tmp1]]))
+                {
+                    dynamic_cast<FunctionType *>(types[typeIDs[t2]].get())->returnTypeIDs.at(i) = typeIDs[tmp1];
+                }
+                else
+                {
+                    throw IncompatibleTypesException();
+                }
+            }
+            else
+            {
+                throw NotInferedException();
+            }
+        }
     }
 
     void TypeInferer::unify(const ast::Statement &t1, const ast::Statement &t2)
@@ -356,7 +375,7 @@ namespace voila
             arg.visit(*this);
         }
 
-        std::vector<size_t> argIds;
+        std::vector<type_id_t> argIds;
         std::transform(
             call.args.begin(), call.args.end(),
             std::back_inserter(argIds), [&](const auto &elem) -> auto { return get_type_id(elem); });
@@ -379,34 +398,29 @@ namespace voila
 
         assert(assign.expr.is_function_call() || assign.expr.is_statement_wrapper());
 
-        std::vector<size_t> paramIds;
-        for (auto &dest : assign.dests)
+        std::vector<type_id_t> paramIds;
+
+        unify(assign.dests, assign.expr);
+
+        for (const auto &dest : assign.dests)
         {
-            if (dest.is_reference() && !get_type(dest.as_reference()->ref).compatible(get_type(assign.expr)))
-            {
-                throw IncompatibleTypesException();
-            }
-
-            if (assign.expr.is_statement_wrapper())
-            {
-                unify(dest, assign.expr.as_statement_wrapper()->expr);
-            }
-            else
-            {
-                unify(dest, assign.expr);
-            }
-
             paramIds.push_back(get_type_id(dest));
         }
+
         paramIds.push_back(get_type_id(assign.expr));
         insertNewFuncType(assign, paramIds, DataType::VOID);
     }
 
     void TypeInferer::operator()(const ast::Emit &emit)
     {
-        emit.expr.visit(*this);
+        std::vector<type_id_t> returnTypeIds;
+        for (auto expr : emit.exprs)
+        {
+            expr.visit(*this);
+            returnTypeIds.push_back(get_type_id(expr));
+        }
 
-        typeIDs.try_emplace(&emit, get_type_id(emit.expr));
+        insertNewFuncType(emit, {}, returnTypeIds);
     }
 
     void TypeInferer::operator()(const ast::Loop &loop)
@@ -430,7 +444,7 @@ namespace voila
         for (auto &elem : hash.items)
             elem.visit(*this);
 
-        std::vector<size_t> type_ids;
+        std::vector<type_id_t> type_ids;
         for (const auto &elem : hash.items)
             type_ids.push_back(get_type_id(elem));
 
@@ -546,7 +560,7 @@ namespace voila
         {
             stmt.visit(*this);
         }
-        std::vector<size_t> argIds;
+        std::vector<type_id_t> argIds;
         std::transform(
             fun.args.begin(), fun.args.end(),
             std::back_inserter(argIds), [&](const auto &elem) -> auto { return get_type_id(elem); });
@@ -566,7 +580,7 @@ namespace voila
             stmt.visit(*this);
         }
 
-        std::vector<size_t> argIds;
+        std::vector<type_id_t> argIds;
         std::transform(
             main.args.begin(), main.args.end(),
             std::back_inserter(argIds), [&](const auto &elem) -> auto { return get_type_id(elem); });
@@ -621,7 +635,7 @@ namespace voila
 
         // TODO: return multiple output tables
         assert(get_type(insert.keys).getArities().size() == 1);
-        std::vector<size_t> paramTypeIds;
+        std::vector<type_id_t> paramTypeIds;
         paramTypeIds.push_back(get_type_id(insert.keys));
         ranges::transform(
             insert.values, std::back_inserter(paramTypeIds), [&](auto &val) -> auto { return get_type_id(val); });
@@ -829,19 +843,24 @@ namespace voila
         }
         else // what when returnTypes > 1 elem
         {
-            dynamic_cast<FunctionType *>(types.at(typeIDs.at(node)).get())->returnTypes.front().second = Arity(ar);
+            dynamic_cast<ScalarType *>(
+                types.at(dynamic_cast<FunctionType *>(types.at(typeIDs.at(node)).get())->returnTypeIDs.front()).get())
+                ->ar = Arity(ar);
         }
     }
 
     void TypeInferer::set_type(const ast::ASTNode *const node, const DataType type)
     {
-        if (dynamic_cast<ScalarType *>(types.at(typeIDs.at(node)).get()))
+        if (dynamic_cast<ScalarType *>(&get_type(*node)))
         {
-            dynamic_cast<ScalarType *>(types.at(typeIDs.at(node)).get())->t = type;
+            dynamic_cast<ScalarType &>(get_type(*node)).t = type;
         }
-        else // what when returnTypes > 1 elem
+        else
         {
-            dynamic_cast<FunctionType *>(types.at(typeIDs.at(node)).get())->returnTypes.front().first = type;
+            // TODO:what when returnTypes > 1 elem
+            dynamic_cast<ScalarType *>(
+                types.at(dynamic_cast<FunctionType *>(types.at(typeIDs.at(node)).get())->returnTypeIDs.front()).get())
+                ->t = type;
         }
     }
 

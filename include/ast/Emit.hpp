@@ -1,17 +1,17 @@
 #pragma once
+#include "ASTVisitor.hpp"
 #include "Expression.hpp"
 #include "IStatement.hpp"
 
 #include <utility>
 #include <vector>
-#include "ASTVisitor.hpp"
 
 namespace voila::ast
 {
     class Emit : public IStatement
     {
       public:
-        explicit Emit(Location loc, Expression expr) : IStatement(loc), expr{std::move(expr)} {}
+        explicit Emit(Location loc, std::vector<Expression> expr) : IStatement(loc), exprs{std::move(expr)} {}
 
         [[nodiscard]] bool is_emit() const final;
 
@@ -23,7 +23,7 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        Expression expr;
+        std::vector<Expression> exprs;
     };
 
 } // namespace voila::ast

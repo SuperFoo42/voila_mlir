@@ -219,10 +219,11 @@ TEST(HashTableTests, ComplexInsert)
 
     config.debug = true;
     config.optimize = true;
-    const auto file = VOILA_TEST_SOURCES_PATH "/complex_insert.voila";
+    constexpr auto file = VOILA_TEST_SOURCES_PATH "/complex_insert.voila";
     constexpr size_t TENSOR_SIZE = 100;
+    constexpr uint64_t TENSOR_VALS1 = 123;
+    constexpr uint64_t TENSOR_VALS2 = 246;
     constexpr size_t NEXTPOW = 128;
-    constexpr uint64_t TENSOR_VALS = 123;
     constexpr auto ref = std::to_array({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,
                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,
                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 123, 0, 0, 0, 0, 0,
@@ -231,8 +232,11 @@ TEST(HashTableTests, ComplexInsert)
     Program prog(file, config);
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
-    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
+    auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
+    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS1);
+    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS2);
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
     auto res = prog();

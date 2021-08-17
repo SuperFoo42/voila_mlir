@@ -405,7 +405,7 @@ namespace voila
             auto &type = inferer.get_type(main->result.value());
             // test scalar
             assert(dynamic_cast<const ScalarType *>(&type) ||
-                   dynamic_cast<const FunctionType *>(&type)->returnTypes.size() == 1);
+                   dynamic_cast<const FunctionType *>(&type)->returnTypeIDs.size() == 1);
             // TODO: allow multiple return
             switch (type.getTypes().front())
             {
