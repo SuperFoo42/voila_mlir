@@ -36,7 +36,7 @@
     }
 }*/
 
-static void BM_TPC_Q6(benchmark::State &state)
+static void Q6(benchmark::State &state)
 {
     using namespace voila;
 
@@ -52,9 +52,9 @@ static void BM_TPC_Q6(benchmark::State &state)
 
     double queryTime = 0;
 
+    Program prog(query, config);
     for ([[maybe_unused]] auto _ : state)
     {
-        Program prog(query, config);
         prog << ::voila::make_param(l_quantity.data(), l_quantity.size(), DataType::INT32);
         prog << ::voila::make_param(l_discount.data(), l_discount.size(), DataType::DBL);
         prog << ::voila::make_param(l_shipdate.data(), l_shipdate.size(), DataType::INT32);
@@ -69,7 +69,7 @@ static void BM_TPC_Q6(benchmark::State &state)
     state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
 }
 
-static void BM_TPC_Q1Baseline(benchmark::State &state)
+/*static void BM_TPC_Q1Baseline(benchmark::State &state)
 {
     using namespace voila;
 
@@ -91,9 +91,9 @@ static void BM_TPC_Q1Baseline(benchmark::State &state)
         }
         std::cout << res << std::endl;
     }
-}
+}*/
 
-static void BM_TPC_Q6Baseline(benchmark::State &state)
+static void Q6_Baseline(benchmark::State &state)
 {
     using namespace voila;
 
@@ -121,7 +121,7 @@ static void BM_TPC_Q6Baseline(benchmark::State &state)
     }
 }
 
-BENCHMARK(BM_TPC_Q6)->Unit(benchmark::kMillisecond);
-BENCHMARK(BM_TPC_Q6Baseline)->Unit(benchmark::kMillisecond);
+BENCHMARK(Q6)->Unit(benchmark::kMillisecond);
+BENCHMARK(Q6_Baseline)->Unit(benchmark::kMillisecond);
 // BENCHMARK(BM_TPC_Q1)->Unit(benchmark::kMillisecond);
- BENCHMARK(BM_TPC_Q1Baseline)->Unit(benchmark::kMillisecond);
+// BENCHMARK(BM_TPC_Q1Baseline)->Unit(benchmark::kMillisecond);

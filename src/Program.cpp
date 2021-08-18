@@ -370,7 +370,7 @@ namespace voila
         return *this;
     }
 
-    // either return void, scalar or pointer to strided memref type as unique_ptr
+    // either return void, scalars or pointer to strided memref types as unique_ptr
     Program::result_t Program::operator()()
     {
         if (!maybeEngine)

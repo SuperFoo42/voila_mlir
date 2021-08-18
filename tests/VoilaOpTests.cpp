@@ -158,10 +158,6 @@ TEST(HashTableTests, VariadicHash)
     constexpr uint64_t TENSOR_VALS1 = 123;
     constexpr uint64_t TENSOR_VALS2 = 246;
     constexpr uint64_t HASH = 11129820284460034441ULL;
-    /*constexpr auto ref = std::to_array({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0, 0, 0, 0, 0, 0});*/
     Program prog(file, config);
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);

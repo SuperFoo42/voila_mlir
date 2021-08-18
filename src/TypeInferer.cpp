@@ -705,7 +705,8 @@ namespace voila
             unify(comparison.lhs, comparison.rhs);
         }
 
-        insertNewType(comparison, DataType::BOOL);
+        insertNewFuncType(comparison, {get_type_id(comparison.lhs), get_type_id(comparison.rhs)}, DataType::BOOL,
+                          Arity(get_type(comparison.lhs).getArities().front()));
     }
 
     void TypeInferer::operator()(const ast::Add &var)
@@ -793,7 +794,8 @@ namespace voila
             unify(anAnd.lhs, anAnd.rhs);
         }
 
-        insertNewType(anAnd, DataType::BOOL);
+        insertNewFuncType(anAnd, {get_type_id(anAnd.lhs), get_type_id(anAnd.rhs)}, DataType::BOOL,
+                          Arity(get_type(anAnd.lhs).getArities().front()));
     }
     void TypeInferer::operator()(const ast::Or &anOr)
     {
@@ -816,7 +818,7 @@ namespace voila
             unify(anOr.lhs, anOr.rhs);
         }
 
-        insertNewType(anOr, DataType::BOOL);
+        insertNewFuncType(anOr, {get_type_id(anOr.lhs), get_type_id(anOr.rhs)},DataType::BOOL, Arity(get_type(anOr.lhs).getArities().front()));
     }
     void TypeInferer::operator()(const ast::Not &aNot)
     {
@@ -833,7 +835,7 @@ namespace voila
             dynamic_cast<ScalarType &>(type).t = DataType::BOOL;
         }
 
-        insertNewType(aNot, DataType::BOOL);
+        insertNewFuncType(aNot,{get_type_id(aNot.param)}, DataType::BOOL, Arity(get_type(aNot.param).getArities().front()));
     }
 
     void TypeInferer::operator()(const ast::StatementWrapper &wrapper)
