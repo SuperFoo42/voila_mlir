@@ -26,11 +26,13 @@ TEST(AddTests, TensorTensorTest)
     prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = prog();
+    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
 
-    ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], TENSOR_SIZE);
-    for (auto elem : *(*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res)))
+    ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
+    for (auto elem : *res)
+    {
         ASSERT_EQ(elem, TENSOR_SUM);
+    }
 }
 
 TEST(AddTests, TensorScalarTest)
@@ -54,10 +56,10 @@ TEST(AddTests, TensorScalarTest)
     prog << ::voila::make_param(arg2.get(), 0, voila::DataType::INT64);
 
     // run in jit
-    auto res = prog();
+    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
 
-    ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], TENSOR_SIZE);
-    for (auto elem : *(*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res)))
+    ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
+    for (auto elem : *res)
         ASSERT_EQ(elem, TENSOR_SUM);
 }
 
@@ -92,10 +94,10 @@ TEST(SubTests, TensorTensorTest)
     prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = prog();
+    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
 
-    ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], TENSOR_SIZE);
-    for (auto elem : *(*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res)))
+    ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
+    for (auto elem : *res)
         ASSERT_EQ(elem, TENSOR_SUB);
 }
 
@@ -135,13 +137,13 @@ TEST(HashTableTests, ScalarHash)
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = prog();
+    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
 
-    ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], TENSOR_SIZE);
+    ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
 
     for (size_t i = 0; i < TENSOR_SIZE; ++i)
     {
-        ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->operator[](i), HASH);
+        ASSERT_EQ(res->operator[](i), HASH);
     }
 }
 
@@ -151,7 +153,7 @@ TEST(HashTableTests, VariadicHash)
 
     config.debug = true;
     config.optimize = true;
-    const auto file = VOILA_TEST_SOURCES_PATH "/complex_hash.voila";
+    constexpr auto file = VOILA_TEST_SOURCES_PATH "/complex_hash.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr uint64_t TENSOR_VALS1 = 123;
     constexpr uint64_t TENSOR_VALS2 = 246;
@@ -170,13 +172,13 @@ TEST(HashTableTests, VariadicHash)
     prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = prog();
+    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
 
-    ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], TENSOR_SIZE);
+    ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
 
     for (size_t i = 0; i < TENSOR_SIZE; ++i)
     {
-        ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->operator[](i), HASH);
+        ASSERT_EQ(res->operator[](i), HASH);
     }
 }
 
@@ -202,13 +204,13 @@ TEST(HashTableTests, ScalarInsert)
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = prog();
+    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
 
-    ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], NEXTPOW);
+    ASSERT_EQ(res->sizes[0], NEXTPOW);
 
     for (size_t i = 0; i < TENSOR_SIZE; ++i)
     {
-        ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->operator[](i), ref[i]);
+        ASSERT_EQ(res->operator[](i), ref[i]);
     }
 }
 
@@ -239,14 +241,14 @@ TEST(HashTableTests, ComplexInsert)
     prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    //FIXME: multiple return values
-    auto res = prog();
+    // FIXME: multiple return values
+    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
 
-    ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], NEXTPOW);
+    ASSERT_EQ(res->sizes[0], NEXTPOW);
 
     for (size_t i = 0; i < TENSOR_SIZE; ++i)
     {
-        ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->operator[](i), ref[i]);
+        ASSERT_EQ(res->operator[](i), ref[i]);
     }
 }
 
@@ -267,13 +269,13 @@ TEST(HashTableTests, SimpleLookup)
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = prog();
+    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
 
-    ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], TENSOR_SIZE);
+    ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
 
     for (size_t i = 0; i < TENSOR_SIZE; ++i)
     {
-        ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->operator[](i), VALUE_POS);
+        ASSERT_EQ(res->operator[](i), VALUE_POS);
     }
 }
 
@@ -298,12 +300,12 @@ TEST(HashTableTests, ComplexLookup)
     prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = prog();
+    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
 
-    ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], TENSOR_SIZE);
+    ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
 
     for (size_t i = 0; i < TENSOR_SIZE; ++i)
     {
-        ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->operator[](i), VALUE_POS);
+        ASSERT_EQ(res->operator[](i), VALUE_POS);
     }
 }

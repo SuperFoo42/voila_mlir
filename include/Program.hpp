@@ -51,6 +51,7 @@
 #pragma GCC diagnostic pop
 #include <range/v3/all.hpp>
 #include <unordered_map>
+#include <memory>
 
 namespace voila
 {
@@ -70,21 +71,44 @@ namespace voila
         friend class Program;
     };
 
+    template<class T, int N>
+    struct StridedMemrefDeleter
+    {
+        void operator()(StridedMemRefType<T, N> *b)
+        {
+            std::free(b->basePtr);
+            delete b;
+        }
+    };
+
+    template<class T, int N>
+    using memref_unique_ptr = std::unique_ptr<StridedMemRefType<T, N>, StridedMemrefDeleter<T, N>>;
+
     class Program
     {
         std::unordered_map<std::string, ast::Expression> func_vars;
         ::mlir::SmallVector<void *, 11> params; // 11 is two memrefs + result
+        ::mlir::SmallVector<void *> toDealloc{};
         size_t nparam = 0;
         ::mlir::MLIRContext context;
         llvm::LLVMContext llvmContext;
         ::mlir::OwningModuleRef mlirModule;
         std::unique_ptr<llvm::Module> llvmModule;
+        std::optional<std::unique_ptr<::mlir::ExecutionEngine>> maybeEngine;
         std::unordered_map<std::string, std::unique_ptr<ast::Fun>> functions;
         Config config;
         lexer::Lexer *lexer;
         double timer = 0;
 
       public:
+        using result_t = std::variant<std::monostate,
+                                      memref_unique_ptr<uint32_t, 1>,
+                                      memref_unique_ptr<uint64_t, 1>,
+                                      memref_unique_ptr<double, 1>,
+                                      uint32_t,
+                                      uint64_t,
+                                      double>;
+
         const ::mlir::MLIRContext &getMLIRContext() const;
 
         const ::mlir::OwningModuleRef &getMLIRModule() const;
@@ -107,6 +131,8 @@ namespace voila
         void lowerMLIR();
 
         void convertToLLVM();
+
+        std::unique_ptr<::mlir::ExecutionEngine> &getOrCreateExecutionEngine();
 
         /**
          * @Deprecated use () instead
@@ -134,14 +160,7 @@ namespace voila
 
         Program &operator<<(Parameter param);
 
-        std::variant<std::monostate,
-                     std::unique_ptr<StridedMemRefType<uint32_t, 1> *>,
-                     std::unique_ptr<StridedMemRefType<uint64_t, 1> *>,
-                     std::unique_ptr<StridedMemRefType<double, 1> *>,
-                     uint32_t,
-                     uint64_t,
-                     double>
-        operator()();
+        result_t operator()();
 
         double getExecTime()
         {

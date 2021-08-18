@@ -82,26 +82,37 @@ namespace voila
         return context;
     }
 
+    std::unique_ptr<ExecutionEngine> &Program::getOrCreateExecutionEngine()
+    {
+        if (!maybeEngine)
+        {
+            llvm::InitializeNativeTarget();
+            llvm::InitializeNativeTargetAsmPrinter();
+
+            // Register the translation from MLIR to LLVM IR, which must happen before we
+            // can JIT-compile.
+            registerLLVMDialectTranslation(*mlirModule->getContext());
+
+            // An optimization pipeline to use within the execution engine.
+            auto optPipeline = makeOptimizingTransformer(
+                /*optLevel=*/config.optimize ? 3 : 0, /*sizeLevel=*/0,
+                /*targetMachine=*/nullptr);
+
+            // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
+            // the module.
+            auto expectedEngine = ExecutionEngine::create(*mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline,
+                                                          llvm::None, {}, true, false);
+            assert(expectedEngine && "failed to construct an execution engine");
+
+            maybeEngine = std::move(*expectedEngine);
+        }
+
+        return *maybeEngine;
+    }
+
     void Program::runJIT([[maybe_unused]] const std::optional<std::string> &objPath)
     {
-        llvm::InitializeNativeTarget();
-        llvm::InitializeNativeTargetAsmPrinter();
-
-        // Register the translation from MLIR to LLVM IR, which must happen before we
-        // can JIT-compile.
-        registerLLVMDialectTranslation(*mlirModule->getContext());
-
-        // An optimization pipeline to use within the execution engine.
-        auto optPipeline = makeOptimizingTransformer(
-            /*optLevel=*/config.optimize ? 3 : 0, /*sizeLevel=*/0,
-            /*targetMachine=*/nullptr);
-
-        // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
-        // the module.
-        auto maybeEngine = ExecutionEngine::create(*mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline, llvm::None,
-                                                   {}, true, false);
-        assert(maybeEngine && "failed to construct an execution engine");
-        auto engine = std::move(*maybeEngine);
+        auto &engine = getOrCreateExecutionEngine();
         // FIXME: dtor of fn results in segfault
         /*
                 auto fn = engine->lookup("main");
@@ -201,7 +212,7 @@ namespace voila
         optPM.addPass(createLinalgElementwiseOpFusionPass());
         optPM.addPass(createLinalgTilingPass());
         // bufferization passes
-        //pm.addPass(createLinalgComprehensiveModuleBufferizePass());
+        // pm.addPass(createLinalgComprehensiveModuleBufferizePass());
         optPM.addPass(createSCFBufferizePass());
         optPM.addPass(createLinalgDetensorizePass());
         optPM.addPass(createLinalgBufferizePass());
@@ -256,9 +267,9 @@ namespace voila
             secondOptPM.addPass(createLoopUnrollAndJamPass());
             secondpm.addPass(createAsyncParallelForPass());
 
-            //secondpm.addPass(createBufferResultsToOutParamsPass());
-            // secondOptPM.addPass(createAffineDataCopyGenerationPass());
-            // secondOptPM.addPass(createLoopUnrollPass());
+            // secondpm.addPass(createBufferResultsToOutParamsPass());
+            //  secondOptPM.addPass(createAffineDataCopyGenerationPass());
+            //  secondOptPM.addPass(createLoopUnrollPass());
         }
 
         // secondOptPM.addPass(createCanonicalizerPass());
@@ -335,71 +346,74 @@ namespace voila
         {
             // store strided 1D memref as unpacked struct defined in
             // llvm/mlir/include/mlir/ExecutionEngine/CRunnerUtils.h
-            void **ptr = new void *;
+            // use malloc to have matching alloc-dealloc while being able to use free on void *
+            void **ptr = static_cast<void **>(std::malloc(sizeof(void *)));
             *ptr = param.data;
             params.push_back(ptr);
+            toDealloc.push_back(params.back());
             params.push_back(ptr); // base ptr
             // TODO: dealloc this ptrs after call
-            params.push_back(new int64_t(0)); // offset
-            params.push_back(new int64_t(0)); // sizes
-            params.push_back(new int64_t(1)); // strides
+            auto *tmp = static_cast<int64_t *>(std::malloc(sizeof(int64_t)));
+            *tmp = 0;
+            params.push_back(tmp); // offset
+            toDealloc.push_back(params.back());
+            tmp = static_cast<int64_t *>(std::malloc(sizeof(int64_t)));
+            *tmp = 0;
+            params.push_back(tmp); // sizes
+            toDealloc.push_back(params.back());
+            tmp = static_cast<int64_t *>(std::malloc(sizeof(int64_t)));
+            *tmp = 1;
+            params.push_back(tmp); // strides
+            toDealloc.push_back(params.back());
         }
 
         return *this;
     }
 
     // either return void, scalar or pointer to strided memref type as unique_ptr
-    // TODO: memory cleanups, only run mlir to llvm translation once
-    std::variant<std::monostate,
-                 std::unique_ptr<StridedMemRefType<uint32_t, 1> *>,
-                 std::unique_ptr<StridedMemRefType<uint64_t, 1> *>,
-                 std::unique_ptr<StridedMemRefType<double, 1> *>,
-                 uint32_t,
-                 uint64_t,
-                 double>
-    Program::operator()()
+    Program::result_t Program::operator()()
     {
-        if (config.plotAST)
+        if (!maybeEngine)
         {
-            to_dot(config.ASTOutFile);
-        }
+            if (config.plotAST)
+            {
+                to_dot(config.ASTOutFile);
+            }
 
-        // generate mlir
-        spdlog::debug("Start type inference");
-        inferTypes();
-        spdlog::debug("Finished type inference");
+            // generate mlir
+            spdlog::debug("Start type inference");
+            inferTypes();
+            spdlog::debug("Finished type inference");
 
-        spdlog::debug("Start mlir generation");
-        // generate mlir
-        generateMLIR();
-        spdlog::debug("Finished mlir generation");
-        if (config.printMLIR)
-        {
-            printMLIR(config.MLIROutFile);
+            spdlog::debug("Start mlir generation");
+            // generate mlir
+            generateMLIR();
+            spdlog::debug("Finished mlir generation");
+            if (config.printMLIR)
+            {
+                printMLIR(config.MLIROutFile);
+            }
+            spdlog::debug("Start mlir lowering");
+            // lower mlir
+            lowerMLIR();
+            spdlog::debug("Finished mlir lowering");
+            if (config.printLoweredMLIR)
+            {
+                printMLIR(config.MLIRLoweredOutFile);
+            }
+            spdlog::debug("Start mlir to llvm conversion");
+            // lower to llvm
+            convertToLLVM();
+            if (config.printLLVM)
+            {
+                printLLVM(config.LLVMOutFile);
+            }
+            spdlog::debug("Finished mlir to llvm conversion");
         }
-        spdlog::debug("Start mlir lowering");
-        // lower mlir
-        lowerMLIR();
-        spdlog::debug("Finished mlir lowering");
-        if (config.printLoweredMLIR)
-        {
-            printMLIR(config.MLIRLoweredOutFile);
-        }
-        spdlog::debug("Start mlir to llvm conversion");
-        // lower to llvm
-        convertToLLVM();
-        if (config.printLLVM)
-        {
-            printLLVM(config.LLVMOutFile);
-        }
-        spdlog::debug("Finished mlir to llvm conversion");
 
         // run jit
         const auto &main = functions.at("main");
-        std::variant<std::monostate, std::unique_ptr<StridedMemRefType<uint32_t, 1> *>,
-                     std::unique_ptr<StridedMemRefType<uint64_t, 1> *>, std::unique_ptr<StridedMemRefType<double, 1> *>,
-                     uint32_t, uint64_t, double>
-            res = std::monostate();
+        result_t res = std::monostate();
         if (main->result.has_value())
         {
             auto &type = inferer.get_type(main->result.value());
@@ -471,9 +485,8 @@ namespace voila
                     }
                     else
                     {
-                        res.emplace<std::unique_ptr<StridedMemRefType<uint32_t, 1> *>>(
-                            std::make_unique<StridedMemRefType<uint32_t, 1> *>(
-                                reinterpret_cast<StridedMemRefType<uint32_t, 1> *>(params.pop_back_val())));
+                        res.emplace<memref_unique_ptr<uint32_t, 1>>(memref_unique_ptr<uint32_t, 1>(
+                            reinterpret_cast<StridedMemRefType<uint32_t, 1> *>(params.pop_back_val())));
                     }
                     break;
                 case DataType::INT64:
@@ -485,9 +498,8 @@ namespace voila
                     }
                     else
                     {
-                        res.emplace<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(
-                            std::make_unique<StridedMemRefType<uint64_t, 1> *>(
-                                reinterpret_cast<StridedMemRefType<uint64_t, 1> *>(params.pop_back_val())));
+                        res.emplace<memref_unique_ptr<uint64_t, 1>>(memref_unique_ptr<uint64_t, 1>(
+                            reinterpret_cast<StridedMemRefType<uint64_t, 1> *>(params.pop_back_val())));
                     }
                     break;
                 case DataType::DBL:
@@ -499,15 +511,20 @@ namespace voila
                     }
                     else
                     {
-                        res.emplace<std::unique_ptr<StridedMemRefType<double, 1> *>>(
-                            std::make_unique<StridedMemRefType<double, 1> *>(
-                                reinterpret_cast<StridedMemRefType<double, 1> *>(params.pop_back_val())));
+                        res.emplace<memref_unique_ptr<double, 1>>(memref_unique_ptr<double, 1>(
+                            reinterpret_cast<StridedMemRefType<double, 1> *>(params.pop_back_val())));
                     }
                     break;
                 default:
                     throw std::logic_error("");
             }
         }
+        params.clear();
+        for (auto elem : toDealloc)
+        {
+            std::free(elem);
+        }
+        toDealloc.clear();
         return res;
     }
 
@@ -530,6 +547,7 @@ namespace voila
         llvmContext(),
         mlirModule(),
         llvmModule(),
+        maybeEngine(std::nullopt),
         functions(),
         config{std::move(config)},
         inferer()
@@ -557,6 +575,7 @@ namespace voila
         llvmContext(),
         mlirModule(),
         llvmModule(),
+        maybeEngine(std::nullopt),
         functions(),
         config{std::move(config)},
         lexer{new Lexer()},
