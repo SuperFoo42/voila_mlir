@@ -79,7 +79,7 @@ if (BUILD_DOC)
 endif ()
 
 #Enable sanitizers globally
-add_compile_options(-fsanitize=address -fsanitize=undefined)
+add_compile_options(-fsanitize=address -fsanitize=undefined -Wno-ambiguous-reversed-operator)
 add_link_options(-fuse-ld=lld -fsanitize=address -fsanitize=undefined) #need to use lld, for some reason ld complains about invalid symbols.
 
 find_package(TBB)

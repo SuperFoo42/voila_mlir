@@ -239,6 +239,7 @@ TEST(HashTableTests, ComplexInsert)
     prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
+    //FIXME: multiple return values
     auto res = prog();
 
     ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], NEXTPOW);
@@ -249,7 +250,7 @@ TEST(HashTableTests, ComplexInsert)
     }
 }
 
-TEST(HashTableTests, Lookup)
+TEST(HashTableTests, SimpleLookup)
 {
     Config config;
     //::llvm::DebugFlag = true;
@@ -264,6 +265,37 @@ TEST(HashTableTests, Lookup)
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+
+    // run in jit
+    auto res = prog();
+
+    ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->sizes[0], TENSOR_SIZE);
+
+    for (size_t i = 0; i < TENSOR_SIZE; ++i)
+    {
+        ASSERT_EQ((*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res))->operator[](i), VALUE_POS);
+    }
+}
+
+TEST(HashTableTests, ComplexLookup)
+{
+    Config config;
+    //::llvm::DebugFlag = true;
+    config.debug = true;
+    config.optimize = true;
+    constexpr auto file = VOILA_TEST_SOURCES_PATH "/complex_lookup.voila";
+    constexpr size_t TENSOR_SIZE = 100;
+    constexpr uint64_t TENSOR_VALS1 = 123;
+    constexpr uint64_t TENSOR_VALS2 = 246;
+    constexpr size_t VALUE_POS = 9;
+    Program prog(file, config);
+    // alloc dummy data to pass to program args
+    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
+    auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
+    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS1);
+    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS2);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
     auto res = prog();

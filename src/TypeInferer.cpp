@@ -610,21 +610,27 @@ namespace voila
             dynamic_cast<ScalarType &>(get_type(selection.pred)).t = DataType::BOOL;
         }
 
-        assert(type.getTypes().size());
+        assert(!type.getTypes().empty());
         insertNewFuncType(selection, {get_type_id(selection.param), get_type_id(selection.param)},
                           type.getTypes().front());
     }
 
     void TypeInferer::operator()(const ast::Lookup &lookup)
     {
+        ranges::for_each(
+            lookup.values, [&](auto &t) -> auto { t.visit(*this); });
+        ranges::for_each(
+            lookup.tables, [&](auto &t) -> auto { t.visit(*this); });
         lookup.hashes.visit(*this);
-        lookup.table.visit(*this);
-        lookup.values.visit(*this);
 
-        assert(get_type(lookup.values).getTypes().size() == 1);
-        assert(get_type(lookup.values).getArities().size() == 1);
-        insertNewFuncType(lookup, {get_type_id(lookup.table), get_type_id(lookup.hashes), get_type_id(lookup.values)},
-                          get_type(lookup.values).getTypes().front(), get_type(lookup.values).getArities().front());
+        std::vector<type_id_t> paramTypeIds;
+        ranges::transform(
+            lookup.values, std::back_inserter(paramTypeIds), [&](auto &val) -> auto { return get_type_id(val); });
+        ranges::transform(
+            lookup.tables, std::back_inserter(paramTypeIds), [&](auto &val) -> auto { return get_type_id(val); });
+        paramTypeIds.push_back(get_type_id(lookup.hashes));
+
+        insertNewFuncType(lookup, paramTypeIds, DataType::INT64, get_type(lookup.hashes).getArities().front());
     }
 
     void TypeInferer::operator()(const ast::Insert &insert)

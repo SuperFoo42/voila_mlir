@@ -560,13 +560,14 @@ let arguments = (ins I64Tensor:$hashValues, Variadic<1DTensorOf<[AnyType]>>:$val
 let results = (outs Variadic<1DTensorOf<[AnyType]>>:$hashtables);
 }
 
-def LookupOp : Voila_Op<"lookup", [NoSideEffect,SameOperandsElementType]> {
+def LookupOp : Voila_Op<"lookup", [NoSideEffect,SameVariadicOperandSize]> {
 let summary = "lookup index of hash values";
 let description = [{
 This is a convenience function, basically consisting of hashing and gather + linear probing for collision resolution
 }];
 
-let arguments = (ins 1DTensorOf<[AnyType]>:$hashtable, 1DTensorOf<[I64]>:$hashes, 1DTensorOf<[AnyType]>:$values);
+let arguments = (ins Variadic<1DTensorOf<[AnyType]>>:$values, Variadic<1DTensorOf<[AnyType]>>:$hashtables, 1DTensorOf<[I64]>:$hashes);
 let results = (outs IndexTensor:$output);
+//TODO: verify same shape of values and hashtables
 }
 #endif // VOILA_OPS

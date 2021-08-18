@@ -190,7 +190,10 @@ expr:
 	| selection { $$ = $1; }
 	| aggregation {$$ = $1; }
 	| HASH LPAREN expr_list RPAREN { $$ = ast::Expression::make<Hash>(@1+@4, $3); }
-	| LOOKUP LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<Lookup>(@1+@8, $3, $5, $7); } /* hashtable, hashes, values */
+	| LOOKUP LPAREN expr_list RPAREN {  auto hashes = $3.back(); $3.pop_back(); const auto half = $3.size() / 2;
+	                                    auto values = std::vector<ast::Expression>($3.begin(),$3.begin()+half);
+	                                    auto hashtables = std::vector<ast::Expression>($3.begin()+half,$3.end());
+	                                    $$ = ast::Expression::make<Lookup>(@1+@4, values, hashtables,hashes); } /* values, hashtables, hashes */
 	| INSERT LPAREN expr COMMA expr_list RPAREN { $$ = ast::Expression::make<Insert>(@1+@6,$3, $5); } /* keys, values */
 
 /* TODO: is this correct/complete? */
