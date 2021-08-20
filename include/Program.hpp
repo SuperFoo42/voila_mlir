@@ -49,9 +49,9 @@
 #include <mlir/lowering/VoilaToLLVMLoweringPass.hpp>
 #include <mlir/lowering/VoilaToLinalgLoweringPass.hpp>
 #pragma GCC diagnostic pop
+#include <memory>
 #include <range/v3/all.hpp>
 #include <unordered_map>
-#include <memory>
 
 namespace voila
 {
@@ -71,18 +71,20 @@ namespace voila
         friend class Program;
     };
 
-    template<class T, int N>
-    struct StridedMemrefDeleter
+    struct ProgramResultDeleter
     {
-        void operator()(StridedMemRefType<T, N> *b)
+        llvm::SmallVector<void *> toDealloc;
+
+        void operator()(void *b)
         {
-            std::free(b->basePtr);
-            delete b;
+            for (auto ptr : toDealloc)
+                std::free(ptr);
+            std::free(b);
         }
     };
 
     template<class T, int N>
-    using memref_unique_ptr = std::unique_ptr<StridedMemRefType<T, N>, StridedMemrefDeleter<T, N>>;
+    using strided_memref_ptr = std::shared_ptr<StridedMemRefType<T, N>>;
 
     class Program
     {
@@ -101,10 +103,9 @@ namespace voila
         double timer = 0;
 
       public:
-        using result_t = std::variant<std::monostate,
-                                      memref_unique_ptr<uint32_t, 1>,
-                                      memref_unique_ptr<uint64_t, 1>,
-                                      memref_unique_ptr<double, 1>,
+        using result_t = std::variant<strided_memref_ptr<uint32_t, 1>,
+                                      strided_memref_ptr<uint64_t, 1>,
+                                      strided_memref_ptr<double, 1>,
                                       uint32_t,
                                       uint64_t,
                                       double>;
@@ -160,7 +161,7 @@ namespace voila
 
         Program &operator<<(Parameter param);
 
-        result_t operator()();
+        std::vector<result_t> operator()();
 
         double getExecTime()
         {

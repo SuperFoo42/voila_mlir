@@ -26,7 +26,7 @@ TEST(AddTests, TensorTensorTest)
     prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
+    auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
 
     ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
     for (auto elem : *res)
@@ -56,7 +56,7 @@ TEST(AddTests, TensorScalarTest)
     prog << ::voila::make_param(arg2.get(), 0, voila::DataType::INT64);
 
     // run in jit
-    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
+    auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
 
     ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
     for (auto elem : *res)
@@ -94,7 +94,7 @@ TEST(SubTests, TensorTensorTest)
     prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
+    auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
 
     ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
     for (auto elem : *res)
@@ -137,7 +137,7 @@ TEST(HashTableTests, ScalarHash)
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
+    auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
 
     ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
 
@@ -168,7 +168,7 @@ TEST(HashTableTests, VariadicHash)
     prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
+    auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
 
     ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
 
@@ -200,7 +200,7 @@ TEST(HashTableTests, ScalarInsert)
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
+    auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
 
     ASSERT_EQ(res->sizes[0], NEXTPOW);
 
@@ -222,29 +222,37 @@ TEST(HashTableTests, ComplexInsert)
     constexpr uint64_t TENSOR_VALS1 = 123;
     constexpr uint64_t TENSOR_VALS2 = 246;
     constexpr size_t NEXTPOW = 128;
-    constexpr auto ref = std::to_array({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 123, 0, 0, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0, 0, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   0, 0, 0});
+    constexpr auto ref1 = std::to_array({0, 123, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    constexpr auto ref2 = std::to_array({0, 246, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                         0, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
     Program prog(file, config);
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS1);
-    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS2);
+    std::fill_n(arg2.get(), TENSOR_SIZE, TENSOR_VALS2);
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
     prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    // FIXME: multiple return values
-    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
+    auto res = prog();
+    auto t1 = std::get<strided_memref_ptr<uint64_t, 1>>(res.at(0));
+    auto t2 = std::get<strided_memref_ptr<uint64_t, 1>>(res.at(1));
 
-    ASSERT_EQ(res->sizes[0], NEXTPOW);
+    ASSERT_EQ(t1->sizes[0], NEXTPOW);
+    ASSERT_EQ(t2->sizes[0], NEXTPOW);
 
     for (size_t i = 0; i < TENSOR_SIZE; ++i)
     {
-        ASSERT_EQ(res->operator[](i), ref[i]);
+        ASSERT_EQ(t1->operator[](i), ref1[i]);
+        ASSERT_EQ(t2->operator[](i), ref2[i]);
     }
 }
 
@@ -265,7 +273,7 @@ TEST(HashTableTests, SimpleLookup)
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
+    auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
 
     ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
 
@@ -296,7 +304,7 @@ TEST(HashTableTests, ComplexLookup)
     prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
 
     // run in jit
-    auto res = std::get<memref_unique_ptr<uint64_t, 1>>(prog());
+    auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
 
     ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
 

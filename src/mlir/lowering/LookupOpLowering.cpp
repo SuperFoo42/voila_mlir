@@ -104,7 +104,7 @@ namespace voila::mlir::lowering
                                                   builder.create<ConstantIntOp>(loc, 0, entries[i].getType()));
                 isEmpty = builder.create<AndOp>(loc, isEmpty, tmp);
                 auto tmp2 = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entries[i], values[i]);
-                notFound = builder.create<OrOp>(loc, isEmpty, tmp);
+                notFound = builder.create<OrOp>(loc, isEmpty, tmp2);
             }
 
             condBuilder.create<scf::ConditionOp>(

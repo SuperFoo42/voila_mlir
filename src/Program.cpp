@@ -352,7 +352,6 @@ namespace voila
             params.push_back(ptr);
             toDealloc.push_back(params.back());
             params.push_back(ptr); // base ptr
-            // TODO: dealloc this ptrs after call
             auto *tmp = static_cast<int64_t *>(std::malloc(sizeof(int64_t)));
             *tmp = 0;
             params.push_back(tmp); // offset
@@ -371,7 +370,7 @@ namespace voila
     }
 
     // either return void, scalars or pointer to strided memref types as unique_ptr
-    Program::result_t Program::operator()()
+    std::vector<Program::result_t> Program::operator()()
     {
         if (!maybeEngine)
         {
@@ -413,110 +412,147 @@ namespace voila
 
         // run jit
         const auto &main = functions.at("main");
-        result_t res = std::monostate();
+        std::vector<result_t> res;
         if (main->result.has_value())
         {
             auto &type = inferer.get_type(main->result.value());
             // test scalar
-            assert(dynamic_cast<const ScalarType *>(&type) ||
-                   dynamic_cast<const FunctionType *>(&type)->returnTypeIDs.size() == 1);
-            // TODO: allow multiple return
-            switch (type.getTypes().front())
+
+            SmallVector<::llvm::Type *> resTypes;
+
+            auto types = type.getTypes();
+            auto arities = type.getArities();
+            for (size_t i = 0; i < types.size(); ++i)
             {
-                case DataType::BOOL: // FIXME: I1 type is not directly mappable to C++ types
-                    throw NotImplementedException();
-                case DataType::NUMERIC:
-                    throw std::logic_error("Abstract type");
-                case DataType::INT32:
-                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
-                    {
-                        auto *arg = new uint32_t;
-                        params.push_back(arg);
-                    }
-                    else
-                    {
-                        auto *arg = new StridedMemRefType<uint32_t, 1>();
-                        params.push_back(arg);
-                    }
-                    break;
-                case DataType::INT64:
-                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
-                    {
-                        auto *arg = new uint64_t;
-                        params.push_back(arg);
-                    }
-                    else
-                    {
-                        auto *arg = new StridedMemRefType<uint64_t, 1>();
-                        params.push_back(arg);
-                    }
-                    break;
-                case DataType::DBL:
-                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
-                    {
-                        auto *arg = new double;
-                        params.push_back(arg);
-                    }
-                    else
-                    {
-                        auto *arg = new StridedMemRefType<double, 1>();
-                        params.push_back(arg);
-                    }
-                    break;
-                case DataType::STRING:
-                    throw NotImplementedException();
-                case DataType::VOID:
-                    break;
-                case DataType::UNKNOWN:
-                    throw std::logic_error("");
+                switch (types[i])
+                {
+                    case DataType::BOOL: // FIXME: I1 type is not directly mappable to C++ types
+                        throw NotImplementedException();
+                    case DataType::NUMERIC:
+                        throw std::logic_error("Abstract type");
+                    case DataType::INT32:
+                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        {
+                            resTypes.push_back(::llvm::Type::getInt32Ty(llvmContext));
+                        }
+                        else
+                        {
+                            resTypes.push_back(llvm::StructType::create(
+                                llvmContext,
+                                {llvm::Type::getInt32PtrTy(llvmContext), llvm::Type::getInt32PtrTy(llvmContext),
+                                 ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
+                                 ::llvm::Type::getInt64Ty(llvmContext)}));
+                        }
+                        break;
+                    case DataType::INT64:
+                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        {
+                            resTypes.push_back(::llvm::Type::getInt64Ty(llvmContext));
+                        }
+                        else
+                        {
+                            resTypes.push_back(llvm::StructType::create(
+                                llvmContext,
+                                {llvm::Type::getInt64PtrTy(llvmContext), llvm::Type::getInt64PtrTy(llvmContext),
+                                 ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
+                                 ::llvm::Type::getInt64Ty(llvmContext)}));
+                        }
+                        break;
+                    case DataType::DBL:
+                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        {
+                            resTypes.push_back(::llvm::Type::getDoubleTy(llvmContext));
+                        }
+                        else
+                        {
+                            resTypes.push_back(llvm::StructType::create(
+                                llvmContext,
+                                {llvm::Type::getDoublePtrTy(llvmContext), llvm::Type::getDoublePtrTy(llvmContext),
+                                 ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
+                                 ::llvm::Type::getInt64Ty(llvmContext)}));
+                        }
+                        break;
+                    case DataType::STRING:
+                        throw NotImplementedException();
+                    case DataType::VOID:
+                        break;
+                    case DataType::UNKNOWN:
+                        throw std::logic_error("");
+                }
             }
 
+            ::llvm::DataLayout layout(llvmModule.get());
+            auto resStruct = llvm::StructType::create(llvmContext, resTypes);
+            auto resLayout = layout.getStructLayout(resStruct);
+            params.push_back(std::malloc(resLayout->getSizeInBytes()));
             spdlog::debug("Running JIT Program");
             runJIT();
             spdlog::debug("Finished Running JIT Program");
-            switch (type.getTypes().front())
+            std::shared_ptr<void> basePtr(
+                params.pop_back_val(),
+                ProgramResultDeleter());
+
+            for (size_t i = 0; i < types.size(); ++i)
             {
-                case DataType::INT32:
-                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
-                    {
-                        auto *extractedRes = reinterpret_cast<uint32_t *>(params.pop_back_val());
-                        res.emplace<uint32_t>(*extractedRes);
-                        delete extractedRes;
-                    }
-                    else
-                    {
-                        res.emplace<memref_unique_ptr<uint32_t, 1>>(memref_unique_ptr<uint32_t, 1>(
-                            reinterpret_cast<StridedMemRefType<uint32_t, 1> *>(params.pop_back_val())));
-                    }
-                    break;
-                case DataType::INT64:
-                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
-                    {
-                        auto *extractedRes = reinterpret_cast<uint64_t *>(params.pop_back_val());
-                        res.emplace<uint64_t>(*extractedRes);
-                        delete extractedRes;
-                    }
-                    else
-                    {
-                        res.emplace<memref_unique_ptr<uint64_t, 1>>(memref_unique_ptr<uint64_t, 1>(
-                            reinterpret_cast<StridedMemRefType<uint64_t, 1> *>(params.pop_back_val())));
-                    }
-                    break;
-                case DataType::DBL:
-                    if (!type.getArities().front().is_undef() && type.getArities().front().get_size() == 0)
-                    {
-                        auto *extractedRes = reinterpret_cast<double *>(params.pop_back_val());
-                        res.emplace<double>(*extractedRes);
-                        delete extractedRes;
-                    }
-                    else
-                    {
-                        res.emplace<memref_unique_ptr<double, 1>>(memref_unique_ptr<double, 1>(
-                            reinterpret_cast<StridedMemRefType<double, 1> *>(params.pop_back_val())));
-                    }
-                    break;
-                default:
-                    throw std::logic_error("");
+                switch (types[i])
+                {
+                    case DataType::INT32:
+                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        {
+                            auto *extractedRes = reinterpret_cast<uint32_t *>(
+                                std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));
+                            res.emplace_back(*extractedRes);
+                        }
+                        else
+                        {
+                            res.emplace_back(strided_memref_ptr<uint32_t, 1>(
+                                basePtr, reinterpret_cast<StridedMemRefType<uint32_t, 1> *>(
+                                             std::reinterpret_pointer_cast<char>(basePtr).get() +
+                                             resLayout->getElementOffset(i))));
+                            std::get_deleter<ProgramResultDeleter>(basePtr)->toDealloc.push_back(
+                                std::get<strided_memref_ptr<uint32_t, 1>>(res.back())->basePtr);
+                        }
+                        break;
+                    case DataType::INT64:
+                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        {
+                            auto *extractedRes = reinterpret_cast<uint64_t *>(
+                                std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));
+                            res.emplace_back(*extractedRes);
+                        }
+                        else
+                        {
+                            res.emplace_back(strided_memref_ptr<uint64_t, 1>(
+                                basePtr, reinterpret_cast<StridedMemRefType<uint64_t, 1> *>(
+                                             std::reinterpret_pointer_cast<char>(basePtr).get() +
+                                             resLayout->getElementOffset(i))));
+                            std::get_deleter<ProgramResultDeleter>(basePtr)->toDealloc.push_back(
+                                std::get<strided_memref_ptr<uint64_t, 1>>(res.back())->basePtr);
+                            /*                            std::get_deleter<ProgramResultDeleter
+                               *>(basePtr)->toDealloc.push_back( std::get<strided_memref_ptr<uint64_t,
+                               1>>(res.back())->basePtr);*/
+                        }
+                        break;
+                    case DataType::DBL:
+                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        {
+                            auto *extractedRes = reinterpret_cast<double *>(
+                                std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));
+                            res.emplace_back(*extractedRes);
+                        }
+                        else
+                        {
+                            res.emplace_back(strided_memref_ptr<double, 1>(
+                                basePtr, reinterpret_cast<StridedMemRefType<double, 1> *>(
+                                             std::reinterpret_pointer_cast<char>(basePtr).get() +
+                                             resLayout->getElementOffset(i))));
+                            std::get_deleter<ProgramResultDeleter>(basePtr)->toDealloc.push_back(
+                                std::get<strided_memref_ptr<double, 1>>(res.back())->basePtr);
+                        }
+                        break;
+                    default:
+                        throw std::logic_error("");
+                }
             }
         }
         params.clear();
