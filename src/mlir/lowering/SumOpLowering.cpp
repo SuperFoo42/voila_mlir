@@ -14,26 +14,33 @@ namespace voila::mlir::lowering
         auto loc = op->getLoc();
         SumOpAdaptor sumOpAdaptor(operands);
 
-        SmallVector<int64_t,1> shape;
+        SmallVector<int64_t, 1> shape;
         SmallVector<Value, 1> res;
 
         if (op->getResultTypes().front().isa<IntegerType>())
         {
             auto tmp = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getI64Type());
-            res.push_back(rewriter.create<linalg::FillOp>(loc, rewriter.create<ConstantIntOp>(loc, 0, rewriter.getI64Type()), tmp).result());
+            res.push_back(
+                rewriter.create<linalg::FillOp>(loc, rewriter.create<ConstantIntOp>(loc, 0, rewriter.getI64Type()), tmp)
+                    .result());
         }
         else if (op->getResultTypes().front().isa<FloatType>())
         {
             auto tmp = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getF64Type());
-            res.push_back(rewriter.create<linalg::FillOp>(loc, rewriter.create<ConstantFloatOp>(loc, rewriter.getF64FloatAttr(0).getValue(), rewriter.getF64Type()), tmp).result());
+            res.push_back(
+                rewriter
+                    .create<linalg::FillOp>(loc,
+                                            rewriter.create<ConstantFloatOp>(
+                                                loc, rewriter.getF64FloatAttr(0).getValue(), rewriter.getF64Type()),
+                                            tmp)
+                    .result());
         }
         else
         {
             throw std::logic_error("Invalid type"); // TODO
         }
 
-
-        SmallVector<Type,1> res_type;
+        SmallVector<Type, 1> res_type;
         res_type.push_back(res.front().getType());
 
         SmallVector<StringRef, 1> iter_type;
@@ -60,7 +67,7 @@ namespace voila::mlir::lowering
                                                            /*indexing maps*/ maps,
                                                            /*iterator types*/ iter_type, fn);
 
-        rewriter.replaceOp(op, linalgOp->getResults());
+        rewriter.replaceOpWithNewOp<tensor::ExtractOp>(op, linalgOp->getResult(0));
 
         return success();
     }

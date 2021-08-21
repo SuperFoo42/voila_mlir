@@ -431,7 +431,7 @@ namespace voila
                     case DataType::NUMERIC:
                         throw std::logic_error("Abstract type");
                     case DataType::INT32:
-                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
                         {
                             resTypes.push_back(::llvm::Type::getInt32Ty(llvmContext));
                         }
@@ -445,7 +445,7 @@ namespace voila
                         }
                         break;
                     case DataType::INT64:
-                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
                         {
                             resTypes.push_back(::llvm::Type::getInt64Ty(llvmContext));
                         }
@@ -459,7 +459,7 @@ namespace voila
                         }
                         break;
                     case DataType::DBL:
-                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
                         {
                             resTypes.push_back(::llvm::Type::getDoubleTy(llvmContext));
                         }
@@ -488,16 +488,14 @@ namespace voila
             spdlog::debug("Running JIT Program");
             runJIT();
             spdlog::debug("Finished Running JIT Program");
-            std::shared_ptr<void> basePtr(
-                params.pop_back_val(),
-                ProgramResultDeleter());
+            std::shared_ptr<void> basePtr(params.pop_back_val(), ProgramResultDeleter());
 
             for (size_t i = 0; i < types.size(); ++i)
             {
                 switch (types[i])
                 {
                     case DataType::INT32:
-                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
                         {
                             auto *extractedRes = reinterpret_cast<uint32_t *>(
                                 std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));
@@ -514,7 +512,7 @@ namespace voila
                         }
                         break;
                     case DataType::INT64:
-                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
                         {
                             auto *extractedRes = reinterpret_cast<uint64_t *>(
                                 std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));
@@ -534,7 +532,7 @@ namespace voila
                         }
                         break;
                     case DataType::DBL:
-                        if (!arities[i].is_undef() && arities[i].get_size() == 0)
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
                         {
                             auto *extractedRes = reinterpret_cast<double *>(
                                 std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));

@@ -28,18 +28,17 @@ namespace voila::mlir
             // a partial lowering, we explicitly mark the Toy operations that don't want
             // to lower, `toy.print`, as `legal`.
             target.addIllegalDialect<::mlir::voila::VoilaDialect>();
-            target
-                .addLegalOp<::mlir::voila::EmitOp, ::mlir::voila::BoolConstOp, ::mlir::voila::IntConstOp,
-                            ::mlir::voila::FltConstOp, ::mlir::voila::SelectOp, ::mlir::voila::ReadOp,
-                            ::mlir::voila::GatherOp, ::mlir::voila::SumOp, ::mlir::voila::CountOp, ::mlir::voila::MinOp,
-                            ::mlir::voila::MaxOp, ::mlir::voila::AvgOp, ::mlir::voila::MoveOp, ::mlir::voila::LoopOp>();
+            target.addLegalOp<::mlir::voila::EmitOp, ::mlir::voila::BoolConstOp, ::mlir::voila::IntConstOp,
+                              ::mlir::voila::FltConstOp, ::mlir::voila::SelectOp, ::mlir::voila::ReadOp,
+                              ::mlir::voila::GatherOp, ::mlir::voila::MoveOp, ::mlir::voila::LoopOp,
+                              ::mlir::voila::InsertOp>();
             // Now that the conversion target has been defined, we just need to provide
             // the set of patterns that will lower the Toy operations.
             RewritePatternSet patterns(&getContext());
             patterns.add<AndOpLowering, OrOpLowering, NotOpLowering, AddOpLowering, SubOpLowering, MulOpLowering,
                          DivOpLowering, ModOpLowering, EqOpLowering, NeqOpLowering, LeOpLowering, LeqOpLowering,
-                         GeOpLowering, GeqOpLowering, HashOpLowering, LookupOpLowering, InsertOpLowering>(
-                &getContext());
+                         GeOpLowering, GeqOpLowering, HashOpLowering, LookupOpLowering, SumOpLowering, CountOpLowering,
+                         MinOpLowering, MaxOpLowering, AvgOpLowering>(&getContext());
 
             // With the target and rewrite patterns defined, we can now attempt the
             // conversion. The conversion will signal failure if any of our `illegal`

@@ -11,7 +11,6 @@ namespace voila
     class TypeInferer : public ast::ASTVisitor
     {
       public:
-        void operator()(const ast::Aggregation &aggregation) final;
         void operator()(const ast::Write &write) final;
         void operator()(const ast::Scatter &scatter) final;
         void operator()(const ast::FunctionCall &call) final;

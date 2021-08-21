@@ -313,3 +313,125 @@ TEST(HashTableTests, ComplexLookup)
         ASSERT_EQ(res->operator[](i), VALUE_POS);
     }
 }
+
+TEST(AggregateTests, SumTest)
+{
+    Config config;
+
+    config.debug = true;
+    config.optimize = true;
+
+    const auto file = VOILA_TEST_SOURCES_PATH "/simple_sum.voila";
+    constexpr size_t TENSOR_SIZE = 100;
+    constexpr uint64_t TENSOR_VALS = 123;
+    constexpr uint64_t TENSOR_SUM = TENSOR_SIZE * TENSOR_VALS;
+    Program prog(file, config);
+    // alloc dummy data to pass to program args
+    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
+    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+
+    // run in jit
+    auto res = std::get<uint64_t>(prog()[0]);
+
+    ASSERT_EQ(res, TENSOR_SUM);
+}
+
+TEST(AggregateTests, MinTest)
+{
+    Config config;
+
+    config.debug = true;
+    config.optimize = true;
+
+    const auto file = VOILA_TEST_SOURCES_PATH "/simple_min.voila";
+    constexpr auto TENSOR_VALS = std::to_array<uint64_t>(
+        {441, 965, 381, 125, 626, 162, 930, 213, 969, 866, 235, 571, 822, 469, 350, 73,  150, 494, 629, 236,
+         15,  91,  843, 391, 771, 972, 759, 551, 388, 620, 651, 854, 810, 878, 737, 719, 331, 686, 532, 707,
+         309, 540, 378, 872, 400, 8,   287, 38,  65,  452, 631, 337, 393, 502, 261, 917, 57,  410, 667, 561,
+         431, 960, 64,  358, 488, 366, 820, 849, 529, 621, 890, 268, 230, 528, 87,  20,  117, 258, 794, 644,
+         893, 565, 256, 906, 658, 557, 228, 176, 284, 159, 796, 18,  964, 635, 26,  105, 633, 832, 419, 369});
+    constexpr auto TENSOR_MIN = *std::min_element(TENSOR_VALS.begin(), TENSOR_VALS.end());
+    Program prog(file, config);
+    // alloc dummy data to pass to program args
+    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_VALS.size()]);
+    std::copy(TENSOR_VALS.begin(), TENSOR_VALS.end(), arg.get());
+    prog << ::voila::make_param(arg.get(), TENSOR_VALS.size(), voila::DataType::INT64);
+
+    // run in jit
+    auto res = std::get<uint64_t>(prog()[0]);
+
+    ASSERT_EQ(res, TENSOR_MIN);
+}
+
+TEST(AggregateTests, MaxTest)
+{
+    Config config;
+
+    config.debug = true;
+    config.optimize = true;
+
+    const auto file = VOILA_TEST_SOURCES_PATH "/simple_max.voila";
+    constexpr auto TENSOR_VALS = std::to_array<uint64_t>(
+        {441, 965, 381, 125, 626, 162, 930, 213, 969, 866, 235, 571, 822, 469, 350, 73,  150, 494, 629, 236,
+         15,  91,  843, 391, 771, 972, 759, 551, 388, 620, 651, 854, 810, 878, 737, 719, 331, 686, 532, 707,
+         309, 540, 378, 872, 400, 8,   287, 38,  65,  452, 631, 337, 393, 502, 261, 917, 57,  410, 667, 561,
+         431, 960, 64,  358, 488, 366, 820, 849, 529, 621, 890, 268, 230, 528, 87,  20,  117, 258, 794, 644,
+         893, 565, 256, 906, 658, 557, 228, 176, 284, 159, 796, 18,  964, 635, 26,  105, 633, 832, 419, 369});
+    constexpr auto TENSOR_MAX = *std::max_element(TENSOR_VALS.begin(), TENSOR_VALS.end());
+    Program prog(file, config);
+    // alloc dummy data to pass to program args
+    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_VALS.size()]);
+    std::copy(TENSOR_VALS.begin(), TENSOR_VALS.end(), arg.get());
+    prog << ::voila::make_param(arg.get(), TENSOR_VALS.size(), voila::DataType::INT64);
+
+    // run in jit
+    auto res = std::get<uint64_t>(prog()[0]);
+
+    ASSERT_EQ(res, TENSOR_MAX);
+}
+
+TEST(AggregateTests, AvgTest)
+{
+    Config config;
+
+    config.debug = true;
+    config.optimize = true;
+
+    const auto file = VOILA_TEST_SOURCES_PATH "/simple_avg.voila";
+    constexpr size_t TENSOR_SIZE = 100;
+    constexpr uint64_t TENSOR_VALS = 123;
+    constexpr uint64_t TENSOR_AVG = TENSOR_VALS;
+    Program prog(file, config);
+    // alloc dummy data to pass to program args
+    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
+    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+
+    // run in jit
+    auto res = std::get<double>(prog()[0]);
+
+    ASSERT_EQ(res, TENSOR_AVG);
+}
+
+TEST(AggregateTests, CountTest)
+{
+    Config config;
+
+    config.debug = true;
+    config.optimize = true;
+
+    const auto file = VOILA_TEST_SOURCES_PATH "/simple_count.voila";
+    constexpr size_t TENSOR_SIZE = 100;
+    constexpr uint64_t TENSOR_VALS = 123;
+    Program prog(file, config);
+    // alloc dummy data to pass to program args
+    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
+    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+
+    // run in jit
+    auto res = std::get<uint64_t>(prog()[0]);
+
+    ASSERT_EQ(res, TENSOR_SIZE);
+}

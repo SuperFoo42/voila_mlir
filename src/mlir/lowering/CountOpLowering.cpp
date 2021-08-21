@@ -10,9 +10,11 @@ namespace voila::mlir::lowering
     LogicalResult
     CountOpLowering::matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const
     {
+        auto loc = op->getLoc();
         CountOpAdaptor cntOpAdaptor(operands);
 
-        rewriter.replaceOpWithNewOp<memref::DimOp>(op, cntOpAdaptor.input(), 0);
+        auto cnt = rewriter.create<tensor::DimOp>(loc, cntOpAdaptor.input(), 0);
+        rewriter.replaceOpWithNewOp<IndexCastOp>(op, cnt, rewriter.getI64Type());
 
         return success();
     }

@@ -327,13 +327,6 @@ namespace voila
         unify(t1.as_stmt(), t2.as_stmt());
     }
 
-    void TypeInferer::operator()(const ast::Aggregation &aggregation)
-    {
-        // TODO
-        aggregation.src.visit(*this);
-        insertNewFuncType(aggregation, {get_type_id(aggregation.src)}, DataType::INT64, Arity(1));
-    }
-
     void TypeInferer::operator()(const ast::Write &write)
     {
         write.start.visit(*this);
@@ -731,23 +724,28 @@ namespace voila
     }
     void TypeInferer::operator()(const ast::AggrSum &sum)
     {
-        TypeInferer::operator()(static_cast<const ast::Aggregation &>(sum));
+        sum.src.visit(*this);
+        insertNewFuncType(sum, {get_type_id(sum.src)}, get_type(sum.src).getTypes().front(), Arity(1));
     }
     void TypeInferer::operator()(const ast::AggrCnt &cnt)
     {
-        TypeInferer::operator()(static_cast<const ast::Aggregation &>(cnt));
+        cnt.src.visit(*this);
+        insertNewFuncType(cnt, {get_type_id(cnt.src)}, DataType::INT64, Arity(1));
     }
     void TypeInferer::operator()(const ast::AggrMin &aggrMin)
     {
-        TypeInferer::operator()(static_cast<const ast::Aggregation &>(aggrMin));
+        aggrMin.src.visit(*this);
+        insertNewFuncType(aggrMin, {get_type_id(aggrMin.src)}, get_type(aggrMin.src).getTypes().front(), Arity(1));
     }
     void TypeInferer::operator()(const ast::AggrMax &aggrMax)
     {
-        TypeInferer::operator()(static_cast<const ast::Aggregation &>(aggrMax));
+        aggrMax.src.visit(*this);
+        insertNewFuncType(aggrMax, {get_type_id(aggrMax.src)}, get_type(aggrMax.src).getTypes().front(), Arity(1));
     }
     void TypeInferer::operator()(const ast::AggrAvg &avg)
     {
-        TypeInferer::operator()(static_cast<const ast::Aggregation &>(avg));
+        avg.src.visit(*this);
+        insertNewFuncType(avg, {get_type_id(avg.src)}, DataType::DBL, Arity(1));
     }
     void TypeInferer::operator()(const ast::Eq &eq)
     {
@@ -818,7 +816,8 @@ namespace voila
             unify(anOr.lhs, anOr.rhs);
         }
 
-        insertNewFuncType(anOr, {get_type_id(anOr.lhs), get_type_id(anOr.rhs)},DataType::BOOL, Arity(get_type(anOr.lhs).getArities().front()));
+        insertNewFuncType(anOr, {get_type_id(anOr.lhs), get_type_id(anOr.rhs)}, DataType::BOOL,
+                          Arity(get_type(anOr.lhs).getArities().front()));
     }
     void TypeInferer::operator()(const ast::Not &aNot)
     {
@@ -835,7 +834,8 @@ namespace voila
             dynamic_cast<ScalarType &>(type).t = DataType::BOOL;
         }
 
-        insertNewFuncType(aNot,{get_type_id(aNot.param)}, DataType::BOOL, Arity(get_type(aNot.param).getArities().front()));
+        insertNewFuncType(aNot, {get_type_id(aNot.param)}, DataType::BOOL,
+                          Arity(get_type(aNot.param).getArities().front()));
     }
 
     void TypeInferer::operator()(const ast::StatementWrapper &wrapper)

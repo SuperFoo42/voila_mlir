@@ -44,7 +44,7 @@ namespace voila::mlir
 
         mlir::Value expr = std::get<Value>(visitor_gen(cnt.src));
 
-        result = builder.create<::mlir::voila::SumOp>(location, builder.getI64Type(), ::llvm::makeArrayRef(expr));
+        result = builder.create<::mlir::voila::CountOp>(location, builder.getI64Type(), ::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const AggrMin &min)
@@ -55,7 +55,7 @@ namespace voila::mlir
 
         ::mlir::Type resType = expr.getType().dyn_cast<::mlir::TensorType>().getElementType();
 
-        result = builder.create<::mlir::voila::SumOp>(location, resType, ::llvm::makeArrayRef(expr));
+        result = builder.create<::mlir::voila::MinOp>(location, resType, ::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const AggrMax &max)
@@ -65,7 +65,7 @@ namespace voila::mlir
         mlir::Value expr = std::get<Value>(visitor_gen(max.src));
         ::mlir::Type resType = expr.getType().dyn_cast<::mlir::TensorType>().getElementType();
 
-        result = builder.create<::mlir::voila::SumOp>(location, resType, ::llvm::makeArrayRef(expr));
+        result = builder.create<::mlir::voila::MaxOp>(location, resType, ::llvm::makeArrayRef(expr));
     }
 
     void MLIRGeneratorImpl::operator()(const AggrAvg &avg)
@@ -497,14 +497,22 @@ namespace voila::mlir
                 {
                     return ::mlir::RankedTensorType::get(-1, builder.getI1Type());
                 }
+                else if (t.getArities().front().get_size() <= 1)
+                {
+                    return builder.getI1Type();
+                }
                 else
                 {
                     return ::mlir::RankedTensorType::get(t.getArities().front().get_size(), builder.getI1Type());
                 }
             case DataType::INT32:
-                if (t.getArities().front().is_undef())
+                if (t.getArities().front().is_undef() )
                 {
                     return ::mlir::RankedTensorType::get(-1, builder.getI32Type());
+                }
+                else if (t.getArities().front().get_size() <= 1)
+                {
+                    return builder.getI32Type();
                 }
                 else
                 {
@@ -515,6 +523,10 @@ namespace voila::mlir
                 {
                     return ::mlir::RankedTensorType::get(-1, builder.getI64Type());
                 }
+                else if (t.getArities().front().get_size() <= 1)
+                {
+                    return builder.getI64Type();
+                }
                 else
                 {
                     return ::mlir::RankedTensorType::get(t.getArities().front().get_size(), builder.getI64Type());
@@ -523,6 +535,10 @@ namespace voila::mlir
                 if (t.getArities().front().is_undef())
                 {
                     return ::mlir::RankedTensorType::get(-1, builder.getF64Type());
+                }
+                else if (t.getArities().front().get_size() <= 1)
+                {
+                    return builder.getF64Type();
                 }
                 else
                 {

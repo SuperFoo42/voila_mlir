@@ -32,8 +32,8 @@ namespace voila::mlir
             // the set of patterns that will lower the Toy operations.
             RewritePatternSet patterns(&getContext());
             patterns.add<BoolConstOpLowering, IntConstOpLowering, FltConstOpLowering, SelectOpLowering, ReadOpLowering,
-                         GatherOpLowering, SumOpLowering, CountOpLowering, MinOpLowering, MaxOpLowering, AvgOpLowering,
-                         MoveOpLowering, LoopOpLowering>(&getContext());
+                         GatherOpLowering,
+                         InsertOpLowering, MoveOpLowering, LoopOpLowering>(&getContext());
 
             patterns.add<EmitOpLowering>(&getContext(), function);
 

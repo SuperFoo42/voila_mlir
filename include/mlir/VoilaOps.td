@@ -506,8 +506,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input);
-let results = (outs AnyTypeOf<[I64,F64]>:$output);
+let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Optional<1DTensorOf<[Index]>>:$indices);
+let results = (outs AnyTypeOf<[I64,F64, 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>]>:$output);
 }
 
 def CountOp : Voila_Op<"aggr_count", [NoSideEffect]> {
