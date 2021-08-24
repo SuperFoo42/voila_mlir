@@ -486,8 +486,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input);
-let results = (outs AnyTypeOf<[AnyInteger,AnyFloat]>:$output);
+let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Optional<1DTensorOf<[Index, AnyInteger]>>:$indices);
+let results = (outs AnyTypeOf<[AnyInteger,AnyFloat, 1DTensorOf<[AnyInteger,AnyFloat]>]>:$output);
 }
 
 def MinOp : Voila_Op<"aggr_min", [NoSideEffect]> {
@@ -496,8 +496,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input);
-let results = (outs AnyTypeOf<[AnyInteger,AnyFloat]>:$output);
+let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Optional<1DTensorOf<[Index, AnyInteger]>>:$indices);
+let results = (outs AnyTypeOf<[AnyInteger,AnyFloat, 1DTensorOf<[AnyInteger,AnyFloat]>]>:$output);
 }
 
 def SumOp : Voila_Op<"aggr_sum", [NoSideEffect]> {
@@ -506,8 +506,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Optional<1DTensorOf<[Index]>>:$indices);
-let results = (outs AnyTypeOf<[I64,F64, 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>]>:$output);
+let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Optional<1DTensorOf<[Index, AnyInteger]>>:$indices);
+let results = (outs AnyTypeOf<[I64,F64, 1DTensorOf<[AnyTypeOf<[I64,F64]>]>]>:$output);
 }
 
 def CountOp : Voila_Op<"aggr_count", [NoSideEffect]> {
@@ -516,8 +516,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyType]>:$input);
-let results = (outs I64:$output);
+let arguments = (ins 1DTensorOf<[AnyType]>:$input, Optional<1DTensorOf<[Index, AnyInteger]>>:$indices);
+let results = (outs AnyTypeOf<[I64, 1DTensorOf<[I64]>]>:$output);
 }
 
 def AvgOp : Voila_Op<"aggr_avg", [NoSideEffect]> {
@@ -526,8 +526,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input);
-let results = (outs F64:$output);
+let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Optional<1DTensorOf<[Index, AnyInteger]>>:$indices);
+let results = (outs AnyTypeOf<[F64, 1DTensorOf<[F64]>]>:$output);
 }
 
 def MoveOp : Voila_Op<"move", [SameTypeOperands, SameOperandsShape]> {

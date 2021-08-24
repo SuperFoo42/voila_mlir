@@ -278,7 +278,10 @@ namespace voila
         secondpm.addPass(createNormalizeMemRefsPass());
         secondOptPM.addPass(createBufferDeallocationPass());
 
-        secondpm.addPass(createStripDebugInfoPass());
+        if (!config.debug)
+        {
+            secondpm.addPass(createStripDebugInfoPass());
+        }
         secondpm.addPass(createConvertVectorToLLVMPass());
         secondpm.addPass(createConvertAsyncToLLVMPass());
         secondOptPM.addPass(createLowerToCFGPass());
@@ -553,6 +556,7 @@ namespace voila
                 }
             }
         }
+        //TODO: separate functions for cleanup in future
         params.clear();
         for (auto elem : toDealloc)
         {
@@ -615,6 +619,14 @@ namespace voila
         lexer{new Lexer()},
         inferer()
     {
+    }
+
+    Program::~Program()
+    {
+        for (auto elem : toDealloc)
+        {
+            std::free(elem);
+        }
     }
 
     /**

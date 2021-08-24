@@ -1,0 +1,5 @@
+main(x,y)
+{
+    g = aggr(min, x, y);
+    emit g;
+}

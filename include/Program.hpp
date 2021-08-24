@@ -118,7 +118,7 @@ namespace voila
 
         explicit Program(std::string_view source_path, Config config = Config());
 
-        ~Program() = default;
+        ~Program();
 
         void add_func(ast::Fun *f);
 

@@ -7,12 +7,50 @@ namespace voila::mlir::lowering
 
     MinOpLowering::MinOpLowering(MLIRContext *ctx) : ConversionPattern(MinOp::getOperationName(), 1, ctx) {}
 
-    LogicalResult
-    MinOpLowering::matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const
+    static auto convertTensorToMemRef(TensorType type)
     {
-        auto loc = op->getLoc();
-        MinOpAdaptor minOpAdaptor(operands);
+        assert(type.hasRank() && "expected only ranked shapes");
+        return MemRefType::get(type.getShape(), type.getElementType());
+    }
 
+    static Value getHTSize(ConversionPatternRewriter &rewriter, Location loc, Value values)
+    {
+        auto insertSize = rewriter.create<tensor::DimOp>(loc, values, 0);
+        /** algorithm to find the next power of 2 taken from
+         *  https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+         *
+         * v |= v >> 1;
+         * v |= v >> 2;
+         * v |= v >> 4;
+         * v |= v >> 8;
+         * v |= v >> 16;
+         * v |= v >> 32;
+         * v++;
+         */
+        auto firstOr = rewriter.create<OrOp>(
+            loc, insertSize,
+            rewriter.create<UnsignedShiftRightOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
+        auto secondOr = rewriter.create<OrOp>(
+            loc, firstOr,
+            rewriter.create<UnsignedShiftRightOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
+        auto thirdOr = rewriter.create<OrOp>(
+            loc, secondOr,
+            rewriter.create<UnsignedShiftRightOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
+        auto fourthOr = rewriter.create<OrOp>(
+            loc, thirdOr,
+            rewriter.create<UnsignedShiftRightOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
+        auto fithOr = rewriter.create<OrOp>(
+            loc, fourthOr,
+            rewriter.create<UnsignedShiftRightOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
+        auto sixthOr = rewriter.create<OrOp>(
+            loc, fithOr, rewriter.create<UnsignedShiftRightOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
+
+        return rewriter.create<AddIOp>(loc, sixthOr, rewriter.create<ConstantIndexOp>(loc, 1));
+    }
+
+    static Value
+    scalarMinLowering(Operation *op, Location loc, MinOpAdaptor &minOpAdaptor, ConversionPatternRewriter &rewriter)
+    {
         SmallVector<int64_t, 1> shape;
         SmallVector<Value, 1> res;
 
@@ -72,7 +110,103 @@ namespace voila::mlir::lowering
                                                            /*indexing maps*/ maps,
                                                            /*iterator types*/ iter_type, fn);
 
-        rewriter.replaceOpWithNewOp<tensor::ExtractOp>(op, linalgOp->getResult(0));
+        return rewriter.create<tensor::ExtractOp>(loc, linalgOp->getResult(0));
+    }
+
+    static Value
+    groupedMinLowering(Operation *op, Location loc, MinOpAdaptor &minOpAdaptor, ConversionPatternRewriter &rewriter)
+    {
+        Value res;
+        auto allocSize = getHTSize(rewriter, loc,
+                                   minOpAdaptor.input()); // FIXME: not the best solution, indices can be out of range.
+        if (getElementTypeOrSelf(op->getResultTypes().front()).isa<IntegerType>())
+        {
+            res = rewriter.create<memref::AllocOp>(loc, MemRefType::get(-1, rewriter.getI64Type()),
+                                                   ::llvm::makeArrayRef(allocSize));
+            buildAffineLoopNest(rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),
+                                allocSize, {1},
+                                [&res, &minOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
+                                {
+                                    builder.create<AffineStoreOp>(
+                                        loc,
+                                        builder.create<ConstantIntOp>(loc, std::numeric_limits<int64_t>::max(),
+                                                                      getElementTypeOrSelf(minOpAdaptor.input())),
+                                        res, vals);
+                                });
+        }
+        else if (getElementTypeOrSelf(op->getResultTypes().front()).isa<FloatType>())
+        {
+            res = rewriter.create<memref::AllocOp>(loc, MemRefType::get(-1, rewriter.getF64Type()),
+                                                   ::llvm::makeArrayRef(allocSize));
+            buildAffineLoopNest(
+                rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)), allocSize, {1},
+                [&res](OpBuilder &builder, Location loc, ValueRange vals)
+                {
+                    builder.create<AffineStoreOp>(
+                        loc,
+                        builder.create<ConstantFloatOp>(loc, ::llvm::APFloat(std::numeric_limits<double>::max()),
+                                                        builder.getF64Type()),
+                        res, // TODO: any float type
+                        vals);
+                });
+        }
+        else
+        {
+            throw std::logic_error("Invalid type"); // TODO
+        }
+
+        auto inputMemref = rewriter.create<memref::BufferCastOp>(
+            loc, convertTensorToMemRef(minOpAdaptor.input().getType().dyn_cast<TensorType>()), minOpAdaptor.input());
+        auto indexMemref = rewriter.create<memref::BufferCastOp>(
+            loc, convertTensorToMemRef(minOpAdaptor.indices().getType().dyn_cast<TensorType>()),
+            minOpAdaptor.indices());
+
+        auto fn = [&res, &inputMemref, &indexMemref](OpBuilder &builder, Location loc, ValueRange vals)
+        {
+            auto idx = vals.front();
+            auto toCmp = builder.create<AffineLoadOp>(loc, inputMemref, idx);
+            Value groupIdx = builder.create<IndexCastOp>(loc, builder.create<AffineLoadOp>(loc, indexMemref, idx),
+                                                         builder.getIndexType());
+            auto oldVal = builder.create<memref::LoadOp>(loc, res, ::llvm::makeArrayRef(groupIdx));
+
+            ::mlir::Value newIsSmaller;
+            if (toCmp.getType().isa<IntegerType>())
+            {
+                newIsSmaller = builder.create<CmpIOp>(loc, CmpIPredicate::sle, toCmp, oldVal);
+            }
+            else
+            {
+                newIsSmaller = builder.create<CmpFOp>(loc, CmpFPredicate::OLE, toCmp, oldVal);
+            }
+
+            builder.create<memref::StoreOp>(loc, builder.create<SelectOp>(loc, newIsSmaller, toCmp, oldVal).result(),
+                                            res, groupIdx);
+        };
+
+        buildAffineLoopNest(rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),
+                            rewriter.create<tensor::DimOp>(loc, minOpAdaptor.input(), 0).result(), {1}, fn);
+
+        return rewriter.create<memref::TensorLoadOp>(loc, res);
+    }
+
+    LogicalResult
+    MinOpLowering::matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const
+    {
+        assert(!op->getResultTypes().empty() && op->getResultTypes().size() == 1);
+        auto loc = op->getLoc();
+        MinOpAdaptor minOpAdaptor(operands);
+        Value res;
+
+        if (minOpAdaptor.indices() && op->getResultTypes().front().isa<TensorType>())
+        {
+            res = groupedMinLowering(op, loc, minOpAdaptor, rewriter);
+        }
+        else
+        {
+            res = scalarMinLowering(op, loc, minOpAdaptor, rewriter);
+        }
+
+        rewriter.replaceOp(op, res);
 
         return success();
     }

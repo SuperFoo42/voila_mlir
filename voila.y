@@ -166,11 +166,16 @@ effect:
 	| WRITE LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Write>(@1+@8,$3, $5, $7); } /* src, dest, start_idx */
 
 aggregation:
-    AGGR LPAREN SUM COMMA expr RPAREN { $$ = ast::Expression::make<AggrSum>(@1+@6,$5); } /* maybe we restrict the expressions to more specialized predicates or tuple get in the parser to safe some correctness check effort later on */
-	| AGGR LPAREN CNT COMMA expr RPAREN { $$ = ast::Expression::make<AggrCnt>(@1+@6,$5); }
-	| AGGR LPAREN AVG COMMA expr RPAREN { $$ = ast::Expression::make<AggrAvg>(@1+@6,$5); }
-	| AGGR LPAREN MIN COMMA expr RPAREN { $$ = ast::Expression::make<AggrMin>(@1+@6,$5); }
-	| AGGR LPAREN MAX COMMA expr RPAREN { $$ = ast::Expression::make<AggrMax>(@1+@6,$5); }
+    AGGR LPAREN SUM COMMA expr RPAREN { $$ = ast::Expression::make<AggrSum>(@1+@6,$5); } /*simple aggregation */
+	| AGGR LPAREN CNT COMMA expr RPAREN { $$ = ast::Expression::make<AggrCnt>(@1+@6,$5); } /*simple aggregation */
+	| AGGR LPAREN AVG COMMA expr RPAREN { $$ = ast::Expression::make<AggrAvg>(@1+@6,$5); } /*simple aggregation */
+	| AGGR LPAREN MIN COMMA expr RPAREN { $$ = ast::Expression::make<AggrMin>(@1+@6,$5); } /*simple aggregation */
+	| AGGR LPAREN MAX COMMA expr RPAREN { $$ = ast::Expression::make<AggrMax>(@1+@6,$5); } /*simple aggregation */
+    | AGGR LPAREN SUM COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrSum>(@1+@8,$5, $7); } /* group based aggregation */
+    | AGGR LPAREN CNT COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrCnt>(@1+@8,$5, $7); } /* group based aggregation */
+    | AGGR LPAREN AVG COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrAvg>(@1+@8,$5, $7); } /* group based aggregation */
+    | AGGR LPAREN MIN COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrMin>(@1+@8,$5, $7); } /* group based aggregation */
+    | AGGR LPAREN MAX COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrMax>(@1+@8,$5, $7); } /* group based aggregation */
 
 pred: BAR pred_expr { $$ = Expression::make<Predicate>(@2,$2); }
 

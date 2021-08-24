@@ -725,28 +725,76 @@ namespace voila
     void TypeInferer::operator()(const ast::AggrSum &sum)
     {
         sum.src.visit(*this);
-        insertNewFuncType(sum, {get_type_id(sum.src)}, get_type(sum.src).getTypes().front(), Arity(1));
+        if (sum.groups)
+        {
+            sum.groups->visit(*this);
+            insertNewFuncType(sum, {get_type_id(sum.src), get_type_id(*sum.groups)},
+                              get_type(sum.src).getTypes().front());
+        }
+        else
+        {
+            insertNewFuncType(sum, {get_type_id(sum.src)}, get_type(sum.src).getTypes().front(), Arity(1));
+        }
     }
+
     void TypeInferer::operator()(const ast::AggrCnt &cnt)
     {
         cnt.src.visit(*this);
-        insertNewFuncType(cnt, {get_type_id(cnt.src)}, DataType::INT64, Arity(1));
+        if (cnt.groups)
+        {
+            cnt.groups->visit(*this);
+            insertNewFuncType(cnt, {get_type_id(cnt.src), get_type_id(*cnt.groups)}, DataType::INT64);
+        }
+        else
+        {
+            insertNewFuncType(cnt, {get_type_id(cnt.src)}, DataType::INT64, Arity(1));
+        }
     }
+
     void TypeInferer::operator()(const ast::AggrMin &aggrMin)
     {
         aggrMin.src.visit(*this);
-        insertNewFuncType(aggrMin, {get_type_id(aggrMin.src)}, get_type(aggrMin.src).getTypes().front(), Arity(1));
+        if (aggrMin.groups)
+        {
+            aggrMin.groups->visit(*this);
+            insertNewFuncType(aggrMin, {get_type_id(aggrMin.src), get_type_id(*aggrMin.groups)},
+                              get_type(aggrMin.src).getTypes().front());
+        }
+        else
+        {
+            insertNewFuncType(aggrMin, {get_type_id(aggrMin.src)}, get_type(aggrMin.src).getTypes().front(), Arity(1));
+        }
     }
+
     void TypeInferer::operator()(const ast::AggrMax &aggrMax)
     {
         aggrMax.src.visit(*this);
-        insertNewFuncType(aggrMax, {get_type_id(aggrMax.src)}, get_type(aggrMax.src).getTypes().front(), Arity(1));
+        if (aggrMax.groups)
+        {
+            aggrMax.groups->visit(*this);
+            insertNewFuncType(aggrMax, {get_type_id(aggrMax.src), get_type_id(*aggrMax.groups)},
+                              get_type(aggrMax.src).getTypes().front());
+        }
+        else
+        {
+            insertNewFuncType(aggrMax, {get_type_id(aggrMax.src)}, get_type(aggrMax.src).getTypes().front(), Arity(1));
+        }
     }
+
     void TypeInferer::operator()(const ast::AggrAvg &avg)
     {
         avg.src.visit(*this);
-        insertNewFuncType(avg, {get_type_id(avg.src)}, DataType::DBL, Arity(1));
+        if (avg.groups)
+        {
+            avg.groups->visit(*this);
+            insertNewFuncType(avg, {get_type_id(avg.src), get_type_id(*avg.groups)}, DataType::DBL);
+        }
+        else
+        {
+            insertNewFuncType(avg, {get_type_id(avg.src)}, DataType::DBL, Arity(1));
+        }
     }
+
     void TypeInferer::operator()(const ast::Eq &eq)
     {
         TypeInferer::operator()(static_cast<const ast::Comparison &>(eq));

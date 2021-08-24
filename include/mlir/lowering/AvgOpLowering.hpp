@@ -1,6 +1,7 @@
 #pragma once
-#include "mlir/IR/TypeUtilities.h"
+#include "mlir/Dialect/Linalg/IR/LinalgOps.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/IR/TypeUtilities.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/VoilaDialect.h"
@@ -16,8 +17,8 @@ namespace voila::mlir::lowering
     {
         using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter,
                                                                    ::mlir::ValueRange memRefOperands,
-            ::mlir::ValueRange loopIvs,
-            ::mlir::Value iter_var)>;
+                                                                   ::mlir::ValueRange loopIvs,
+                                                                   ::mlir::Value iter_var)>;
         explicit AvgOpLowering(::mlir::MLIRContext *ctx);
 
         ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,

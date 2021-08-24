@@ -9,7 +9,11 @@ namespace voila::ast
     class Aggregation : public IExpression
     {
       public:
-        Aggregation(const Location loc, Expression col) : IExpression(loc), src{std::move(col)} {}
+        Aggregation(const Location loc, Expression col) : IExpression(loc), src{std::move(col)}, groups(std::nullopt) {}
+        Aggregation(const Location loc, Expression col, Expression groups) :
+            IExpression(loc), src{std::move(col)}, groups(std::move(groups))
+        {
+        }
         ~Aggregation() override = default;
 
         [[nodiscard]] bool is_aggr() const final;
@@ -21,5 +25,6 @@ namespace voila::ast
         void print(std::ostream &) const final {}
 
         Expression src;
+        std::optional<Expression> groups;
     };
 } // namespace voila::ast
