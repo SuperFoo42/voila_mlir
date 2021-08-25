@@ -300,15 +300,28 @@ namespace voila
             }
             else if (typeIDs.contains(tmp1) && typeIDs.contains(t2))
             {
-                assert(dynamic_cast<FunctionType *>(types[typeIDs[t2]].get()));
                 if (types[typeIDs[tmp1]]->convertible(types[typeIDs[t2]]->getTypes().at(i)))
                 {
-                    typeIDs[tmp1] = dynamic_cast<FunctionType *>(types[typeIDs[t2]].get())->returnTypeIDs.at(i);
+                    if (dynamic_cast<FunctionType *>(types[typeIDs[t2]].get()))
+                    {
+                        typeIDs[tmp1] = dynamic_cast<FunctionType *>(types[typeIDs[t2]].get())->returnTypeIDs.at(i);
+                    }
+                    else
+                    {
+                        typeIDs[tmp1] = dynamic_cast<ScalarType *>(types[typeIDs[t2]].get())->typeID;
+                    }
                 }
-                else if (types.at(dynamic_cast<FunctionType *>(types[typeIDs[t2]].get())->returnTypeIDs.at(i))
+                else if (dynamic_cast<FunctionType *>(types[typeIDs[t2]].get()) &&
+                         types.at(dynamic_cast<FunctionType *>(types[typeIDs[t2]].get())->returnTypeIDs.at(i))
                              ->convertible(*types[typeIDs[tmp1]]))
                 {
                     dynamic_cast<FunctionType *>(types[typeIDs[t2]].get())->returnTypeIDs.at(i) = typeIDs[tmp1];
+                }
+                else if (dynamic_cast<ScalarType *>(types[typeIDs[t2]].get()) &&
+                         types.at(dynamic_cast<ScalarType *>(types[typeIDs[t2]].get())->typeID)
+                             ->convertible(*types[typeIDs[tmp1]]))
+                {
+                    dynamic_cast<ScalarType *>(types[typeIDs[t2]].get())->typeID = typeIDs[tmp1];
                 }
                 else
                 {

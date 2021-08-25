@@ -1,2 +1,4 @@
 #!/bin/sh
 cmake -H. -Bbuild -GNinja "$@"
+bison -d voila.y
+./build/_deps/reflex-src/bin/reflex --fast --bison-complete --bison-locations --header-file="include/voila_lexer.hpp" −−graphs-file=lexer.gv -o "src/voila_lexer.cpp" voila.lex

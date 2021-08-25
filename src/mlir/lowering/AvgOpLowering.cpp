@@ -52,7 +52,7 @@ namespace voila::mlir::lowering
         if (adaptor.indices() && op->getResultTypes().front().isa<TensorType>())
         {
             auto sum = rewriter.create<::mlir::voila::SumOp>(
-                loc, RankedTensorType::get(-1, getElementTypeOrSelf(adaptor.input())), adaptor.input(),
+                loc, RankedTensorType::get(-1,getElementTypeOrSelf(adaptor.input()).isa<FloatType>() ? static_cast<Type>(rewriter.getF64Type()) : static_cast<Type>(rewriter.getI64Type())), adaptor.input(),
                 adaptor.indices());
             auto count = rewriter.create<::mlir::voila::CountOp>(loc, RankedTensorType::get(-1, rewriter.getI64Type()),
                                                                  adaptor.input(), adaptor.indices());

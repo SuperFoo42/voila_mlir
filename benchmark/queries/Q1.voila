@@ -2,7 +2,25 @@
 main(l_returnflag, l_linestatus, l_quantity, l_extendedprice, l_discount, l_tax, l_shipdate, date)
 {
     to_select = leq(l_shipdate, date); # quali: l_shipdate <= 1998-12-01 - 90d
+    selected_returnflag = select(l_returnflag, to_select);
+    selected_linestatus= select(l_linestatus, to_select);
+    selected_quantity= select(l_quantity, to_select);
+    selected_extendedprice = select(l_extendedprice, to_select);
+    selected_discount= select(l_discount, to_select);
+    selected_tax= select(l_tax, to_select);
 
-    groups = insert(l_returnflag, l_linestatus);
-    emit ;
+    hashes = hash(selected_returnflag, selected_linestatus);
+    ht_returnflag, ht_linestatus = insert(hashes,selected_returnflag, selected_linestatus);
+    groups = lookup(selected_returnflag, selected_linestatus,ht_returnflag, ht_linestatus, hashes);
+
+    sum_qty = aggr(sum, selected_quantity, groups);
+    sum_base_price = aggr(sum, selected_extendedprice, groups);
+    sum_disc_price = aggr(sum, mul(selected_extendedprice,sub(1.0,selected_discount)), groups);
+    sum_charge = aggr(sum, mul(mul(selected_extendedprice,sub(1.0,selected_discount)), add(1.0, selected_tax)), groups);
+    avg_qty = aggr(avg, selected_quantity, groups);
+    avg_price = aggr(avg, selected_extendedprice, groups);
+    avg_disc = aggr(avg, selected_discount, groups);
+    count_order = aggr(count, selected_discount, groups);
+
+    emit ht_returnflag, ht_linestatus, sum_qty, sum_base_price, sum_disc_price, sum_charge, avg_price, avg_qty, avg_disc, count_order;
 }

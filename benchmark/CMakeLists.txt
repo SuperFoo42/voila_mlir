@@ -1,7 +1,7 @@
 CPMAddPackage(
         NAME benchmark
         GITHUB_REPOSITORY google/benchmark
-        VERSION 1.5.2
+        VERSION 1.5.6
         OPTIONS "BENCHMARK_ENABLE_TESTING Off"
         OPTIONS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}"
 )
@@ -12,6 +12,8 @@ CPMAddPackage(
         OPTIONS "SKIP_PORTABILITY_TEST ON" "JUST_INSTALL_CEREAL ON"
 )
 CPMAddPackage("gh:d99kris/rapidcsv#v8.53")
+
+CPMAddPackage("gh:Cyan4973/xxHash#v0.8.0")
 
 if (benchmark_ADDED)
     # enable c++11 to avoid compilation errors

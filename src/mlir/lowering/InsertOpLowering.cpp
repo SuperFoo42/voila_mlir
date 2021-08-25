@@ -115,8 +115,8 @@ namespace voila::mlir::lowering
 
         SmallVector<Value> hashInvalidConsts;
         for (auto val : insertOpAdaptor.values())
-        {
-            hashInvalidConsts.push_back(rewriter.create<ConstantIntOp>(loc, 0, getElementTypeOrSelf(val)));
+        {//FIXME: floats
+            hashInvalidConsts.push_back(rewriter.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), getElementTypeOrSelf(val)));
         }
 
         lb.push_back(rewriter.create<ConstantIndexOp>(loc, 0));

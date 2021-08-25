@@ -79,8 +79,13 @@ if (BUILD_DOC)
 endif ()
 
 #Enable sanitizers globally
-add_compile_options(-fsanitize=address -fsanitize=undefined -Wno-ambiguous-reversed-operator)
-add_link_options(-fuse-ld=lld -fsanitize=address -fsanitize=undefined) #need to use lld, for some reason ld complains about invalid symbols.
+#if ($<CONFIG:Release>)
+    add_compile_options(-Wno-ambiguous-reversed-operator)
+    add_link_options(-fuse-ld=lld) #need to use lld, for some reason ld complains about invalid symbols.
+#[[else()
+    add_compile_options(-fsanitize=address -fsanitize=undefined -Wno-ambiguous-reversed-operator)
+    add_link_options(-fuse-ld=lld -fsanitize=address -fsanitize=undefined) #need to use lld, for some reason ld complains about invalid symbols.
+endif()]]
 
 find_package(TBB)
 include_directories(${TBB_INCLUDE_DIRS})

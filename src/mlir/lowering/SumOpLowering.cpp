@@ -160,7 +160,12 @@ namespace voila::mlir::lowering
 
             if (toSum.getType().isa<IntegerType>())
             {
-                newVal = builder.create<AddIOp>(loc, oldVal, toSum);
+                Value tmp = toSum;
+                if (toSum.getType() != builder.getI64Type())
+                {
+                    tmp = builder.create<SignExtendIOp>(loc, toSum, builder.getI64Type());
+                }
+                newVal = builder.create<AddIOp>(loc, oldVal, tmp);
             }
             else
             {

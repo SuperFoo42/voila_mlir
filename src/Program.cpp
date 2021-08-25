@@ -100,8 +100,9 @@ namespace voila
 
             // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
             // the module.
-            auto expectedEngine = ExecutionEngine::create(*mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline,
-                                                          llvm::None, {}, true, false);
+            auto expectedEngine = ExecutionEngine::create(
+                *mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline,
+                config.optimize ? llvm::CodeGenOpt::Level::Aggressive : llvm::CodeGenOpt::Level::None, {}, true, false);
             assert(expectedEngine && "failed to construct an execution engine");
 
             maybeEngine = std::move(*expectedEngine);
@@ -130,7 +131,7 @@ namespace voila
         auto invocationResult = engine->invokePacked("main", params);
         auto stop = std::chrono::high_resolution_clock::now();
         float currentTime = float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
-        timer += currentTime;
+        timer = currentTime;
         if (invocationResult)
         {
             throw JITInvocationError();
@@ -189,7 +190,6 @@ namespace voila
         if (config.debug)
         {
             pm.enableStatistics();
-            // pm.enableIRPrinting();
         }
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(pm);
@@ -197,7 +197,7 @@ namespace voila
         ::mlir::OpPassManager &optPM = pm.nest<FuncOp>();
         // Now that there is only one function, we can infer the shapes of each of
         // the operations.
-        optPM.addPass(::voila::mlir::createShapeInferencePass()); // TODO: more inference?
+        //optPM.addPass(::voila::mlir::createShapeInferencePass()); // TODO: more inference?
         optPM.addPass(createCanonicalizerPass());
         optPM.addPass(createCSEPass());
 
@@ -556,8 +556,9 @@ namespace voila
                 }
             }
         }
-        //TODO: separate functions for cleanup in future
+        // TODO: separate functions for cleanup in future
         params.clear();
+        nparam = 0;
         for (auto elem : toDealloc)
         {
             std::free(elem);
