@@ -40,7 +40,7 @@ add_executable(tpc-benchmark
 
 target_link_libraries(tpc-benchmark PRIVATE ${LIBS})
 target_compile_options(tpc-benchmark PUBLIC
-#        -O3
+        -O3
         -Wpedantic
         -Wall
         -Werror

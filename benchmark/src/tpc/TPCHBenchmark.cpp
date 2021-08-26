@@ -99,7 +99,7 @@ static size_t probeAndInsert(size_t key,
 {
     key %= size;
     // probing
-    while (vals1[key % size] != INVALID || vals1[key % size] != val1 || vals2[key % size] != val2)
+    while (vals1[key % size] != INVALID && !(vals1[key % size] == val1 && vals2[key % size] == val2))
     {
         key += 1;
         key %= size;

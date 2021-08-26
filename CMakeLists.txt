@@ -80,7 +80,7 @@ endif ()
 
 #Enable sanitizers globally
 #if ($<CONFIG:Release>)
-    add_compile_options(-Wno-ambiguous-reversed-operator)
+    add_compile_options(-O3 -Wno-ambiguous-reversed-operator)
     add_link_options(-fuse-ld=lld) #need to use lld, for some reason ld complains about invalid symbols.
 #[[else()
     add_compile_options(-fsanitize=address -fsanitize=undefined -Wno-ambiguous-reversed-operator)
