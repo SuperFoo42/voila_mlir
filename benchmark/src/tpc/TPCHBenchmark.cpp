@@ -114,7 +114,7 @@ static size_t probeAndInsert(size_t key,
 template<class T1, class T2>
 static size_t hash(T1 val1, T2 val2)
 {
-    std::array<char, sizeof(T1) + sizeof(T2)> data;
+    std::array<char, sizeof(T1) + sizeof(T2)> data{};
     std::copy_n(reinterpret_cast<char *>(&val1), sizeof(T1), data.data());
     std::copy_n(reinterpret_cast<char *>(&val2), sizeof(T2), data.data() + sizeof(T1));
     return XXH3_64bits(data.data(), sizeof(T1) + sizeof(T2));
@@ -188,8 +188,9 @@ static void Q6(benchmark::State &state)
         auto startDate = getQ6Date();
         auto endDate = startDate + 10000;
         auto quantity = getQ6Quantity();
-        auto minDiscount = getQ6Discount();
-        auto maxDiscount = minDiscount + 0.1;
+        auto discount = getQ6Discount();
+        auto minDiscount = discount - 0.01;
+        auto maxDiscount = discount + 0.01;
 
         prog << ::voila::make_param(l_quantity.data(), l_quantity.size(), DataType::INT32);
         prog << ::voila::make_param(l_discount.data(), l_discount.size(), DataType::DBL);
@@ -215,9 +216,6 @@ static void Q6_Baseline(benchmark::State &state)
     auto l_quantity = lineitem.getColumn<int32_t>(4);
     auto l_extendedprice = lineitem.getColumn<double>(5);
     auto l_discount = lineitem.getColumn<double>(6);
-    auto l_tax = lineitem.getColumn<double>(7);
-    auto l_returnflag = lineitem.getColumn<int32_t>(8);
-    auto l_linestatus = lineitem.getColumn<int32_t>(9);
     auto l_shipdate = lineitem.getColumn<int32_t>(10);
 
     for ([[maybe_unused]] auto _ : state)
@@ -228,8 +226,9 @@ static void Q6_Baseline(benchmark::State &state)
             auto startDate = getQ6Date();
             auto endDate = startDate + 10000;
             auto quantity = getQ6Quantity();
-            auto minDiscount = getQ6Discount();
-            auto maxDiscount = minDiscount + 0.1;
+            auto discount = getQ6Discount();
+            auto minDiscount = discount - 0.01;
+            auto maxDiscount = discount + 0.01;
             if (l_shipdate[i] >= startDate && l_shipdate[i] < endDate && l_quantity[i] < quantity &&
                 l_discount[i] >= minDiscount && l_discount[i] <= maxDiscount)
             {

@@ -197,7 +197,7 @@ namespace voila
         ::mlir::OpPassManager &optPM = pm.nest<FuncOp>();
         // Now that there is only one function, we can infer the shapes of each of
         // the operations.
-        //optPM.addPass(::voila::mlir::createShapeInferencePass()); // TODO: more inference?
+        // optPM.addPass(::voila::mlir::createShapeInferencePass()); // TODO: more inference?
         optPM.addPass(createCanonicalizerPass());
         optPM.addPass(createCSEPass());
 
@@ -206,16 +206,18 @@ namespace voila
         // Partially lower voila to affine with a few cleanups
         optPM.addPass(::voila::mlir::createLowerToAffinePass());
 
-        optPM.addPass(createCanonicalizerPass());
-        optPM.addPass(createCSEPass());
+        // optPM.addPass(createCanonicalizerPass());
+        // optPM.addPass(createCSEPass());
         optPM.addPass(createConvertElementwiseToLinalgPass());
         optPM.addPass(createLinalgElementwiseOpFusionPass());
         optPM.addPass(createLinalgTilingPass());
         // bufferization passes
-        // pm.addPass(createLinalgComprehensiveModuleBufferizePass());
+        //pm.addPass(createLinalgComprehensiveModuleBufferizePass());
         optPM.addPass(createSCFBufferizePass());
         optPM.addPass(createLinalgDetensorizePass());
         optPM.addPass(createLinalgBufferizePass());
+        optPM.addPass(createCanonicalizerPass());
+        optPM.addPass(createCSEPass());
         optPM.addPass(createStdBufferizePass());
         optPM.addPass(createTensorBufferizePass());
         pm.addPass(createTensorConstantBufferizePass());
@@ -250,11 +252,15 @@ namespace voila
 
         if (config.optimize)
         {
+            secondOptPM.addPass(createCanonicalizerPass());
+            secondOptPM.addPass(createCSEPass());
+            secondOptPM.addPass(createBufferHoistingPass());
+            //secondpm.addPass(createBufferResultsToOutParamsPass());
+            secondpm.addPass(createNormalizeMemRefsPass());
             secondOptPM.addPass(createPromoteBuffersToStackPass());
             secondOptPM.addPass(createSimplifyAffineStructuresPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
-            // secondOptPM.addPass(createLoopUnrollPass());
             secondOptPM.addPass(createAffineParallelizePass());
             secondOptPM.addPass(createAffineScalarReplacementPass());
             secondOptPM.addPass(createSuperVectorizePass(4));
@@ -264,17 +270,14 @@ namespace voila
             secondOptPM.addPass(createParallelLoopTilingPass());
             secondOptPM.addPass(createLoopFusionPass());
             secondOptPM.addPass(createLoopCoalescingPass());
+            secondOptPM.addPass(createLoopUnrollPass());
             secondOptPM.addPass(createLoopUnrollAndJamPass());
             secondpm.addPass(createAsyncParallelForPass());
-
-            // secondpm.addPass(createBufferResultsToOutParamsPass());
-            //  secondOptPM.addPass(createAffineDataCopyGenerationPass());
-            //  secondOptPM.addPass(createLoopUnrollPass());
         }
 
         // secondOptPM.addPass(createCanonicalizerPass());
         // secondOptPM.addPass(createCSEPass());
-        optPM.addPass(createFinalizingBufferizePass());
+        secondOptPM.addPass(createFinalizingBufferizePass());
         secondpm.addPass(createNormalizeMemRefsPass());
         secondOptPM.addPass(createBufferDeallocationPass());
 

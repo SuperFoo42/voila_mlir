@@ -143,10 +143,10 @@ namespace voila::mlir::lowering
                                // Create the binary operation performed on the loaded values.
 
                                auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), loadedRhs, true);
-                               auto thenBuilder = ifOp.getThenBodyBuilder();
+                               auto thenBuilder = ifOp.getElseBodyBuilder();
                                auto thenBranch = thenBuilder.create<scf::YieldOp>(loc, iter_var);
                                thenBuilder.setInsertionPoint(thenBranch);
-                               auto elseBuilder = ifOp.getElseBodyBuilder();
+                               auto elseBuilder = ifOp.getThenBodyBuilder();
                                // value is constant
                                auto valToStore = elseBuilder.create<AffineLoadOp>(loc, values, loopIvs);
                                elseBuilder.create<AffineStoreOp>(loc, valToStore, dest, iter_var);

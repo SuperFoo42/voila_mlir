@@ -77,17 +77,17 @@ namespace voila::mlir::lowering
                                                      hashInvalidConsts[i]));
         }
 
-        Value anyEmpty =  empties[0];
+        Value anyNotEmpty =  empties[0];
         for (size_t i = 1; i < empties.size(); ++i)
         {
-            anyEmpty = builder.create<AndOp>(loc, anyEmpty, empties[i]);
+            anyNotEmpty = builder.create<AndOp>(loc, anyNotEmpty, empties[i]);
         }
 
         SmallVector<Value> founds;
         for (size_t i = 0; i < bucketVals.size(); ++i)
         {
             founds.push_back(
-                builder.create<CmpIOp>(loc, CmpIPredicate::eq, bucketVals[i], toStores[i])); // TODO: maybe neq?
+                builder.create<CmpIOp>(loc, CmpIPredicate::eq, bucketVals[i], toStores[i]));
         }
         Value allFound = founds[0];
         for (size_t i = 1; i < founds.size(); ++i)
@@ -95,7 +95,7 @@ namespace voila::mlir::lowering
             allFound = builder.create<AndOp>(loc, allFound, founds[i]);
         }
 
-        return builder.create<OrOp>(loc, builder.getI1Type(), anyEmpty, allFound);
+        return builder.create<OrOp>(loc, builder.getI1Type(), anyNotEmpty, allFound);
     }
 
     ::mlir::LogicalResult InsertOpLowering::matchAndRewrite(Operation *op,

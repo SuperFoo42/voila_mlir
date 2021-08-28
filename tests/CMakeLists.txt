@@ -33,11 +33,14 @@ set(LIBS
         gtest
         gtest_main
         gmock
+        xxhash
+        benchmark_headers
         )
 
 add_llvm_executable(voila_tests
         main.cpp
         VoilaOpTests.cpp
+        TPCBenchmarkTests.cpp
         )
 
 target_compile_options(voila_tests PUBLIC

@@ -23,4 +23,9 @@ endif ()
 include_directories(include)
 add_subdirectory(src)
 
+add_library(benchmark_headers INTERFACE)
+set_target_properties(benchmark_headers PROPERTIES
+        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+target_link_libraries(benchmark_headers INTERFACE cereal)
 configure_file(benchmark_defs.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/benchmark_defs.hpp.inc)

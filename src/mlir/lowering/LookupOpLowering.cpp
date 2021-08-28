@@ -96,7 +96,7 @@ namespace voila::mlir::lowering
                 [&builder, &loc, &idx](auto elem) -> auto { return builder.create<memref::LoadOp>(loc, elem, idx); });
 
             Value isEmpty = builder.create<CmpIOp>(loc, CmpIPredicate::eq, entries[0],
-                                                   builder.create<ConstantIntOp>(loc, 0, entries[0].getType()));
+                                                   builder.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), entries[0].getType()));
             Value notFound = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entries[0], values[0]);
             for (size_t i = 1; i < entries.size(); ++i)
             {
