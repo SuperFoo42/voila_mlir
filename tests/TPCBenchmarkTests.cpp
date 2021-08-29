@@ -91,7 +91,7 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     EXPECT_EQ(ref_idx, 503001);
     EXPECT_EQ(ht_returnflag_ref[ref_idx], 0);
     EXPECT_EQ(ht_linestatus_ref[ref_idx], 0);
-    EXPECT_DOUBLE_EQ(sum_qty_ref[ref_idx], 37734107.00);
+    EXPECT_EQ(sum_qty_ref[ref_idx], 37734107);
     EXPECT_DOUBLE_EQ(sum_base_price_ref[ref_idx], 56586554400.729897);
     EXPECT_DOUBLE_EQ(sum_disc_price_ref[ref_idx], 53758257134.865143);
     EXPECT_DOUBLE_EQ(sum_charge_ref[ref_idx], 55909065222.825607);
@@ -126,7 +126,7 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
 
     EXPECT_EQ(res_idx, ref_idx);
     auto ht_linestatus_res = std::get<strided_memref_ptr<uint32_t, 1>>(res[1]);
-    auto sum_qty_res = std::get<strided_memref_ptr<uint32_t, 1>>(res[2]);
+    auto sum_qty_res = std::get<strided_memref_ptr<uint64_t, 1>>(res[2]);
     auto sum_base_price_res = std::get<strided_memref_ptr<double, 1>>(res[3]);
     auto sum_disc_price_res = std::get<strided_memref_ptr<double, 1>>(res[4]);
     auto sum_charge_res = std::get<strided_memref_ptr<double, 1>>(res[5]);
@@ -136,7 +136,7 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     auto count_order_res = std::get<strided_memref_ptr<uint64_t, 1>>(res[9]);
     EXPECT_EQ(ht_returnflag_res->operator[](res_idx), 0);
     EXPECT_EQ(ht_linestatus_res->operator[](res_idx), 0);
-    EXPECT_DOUBLE_EQ(sum_qty_res->operator[](res_idx), 37734107.00);
+    EXPECT_EQ(sum_qty_res->operator[](res_idx), 37734107);
     EXPECT_DOUBLE_EQ(sum_base_price_res->operator[](res_idx), 56586554400.729897);
     EXPECT_DOUBLE_EQ(sum_disc_price_res->operator[](res_idx), 53758257134.865143);
     EXPECT_DOUBLE_EQ(sum_charge_res->operator[](res_idx), 55909065222.825607);

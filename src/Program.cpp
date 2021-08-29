@@ -210,9 +210,9 @@ namespace voila
         // optPM.addPass(createCSEPass());
         optPM.addPass(createConvertElementwiseToLinalgPass());
         optPM.addPass(createLinalgElementwiseOpFusionPass());
-        optPM.addPass(createLinalgTilingPass());
+
         // bufferization passes
-        //pm.addPass(createLinalgComprehensiveModuleBufferizePass());
+        // pm.addPass(createLinalgComprehensiveModuleBufferizePass());
         optPM.addPass(createSCFBufferizePass());
         optPM.addPass(createLinalgDetensorizePass());
         optPM.addPass(createLinalgBufferizePass());
@@ -246,25 +246,32 @@ namespace voila
         applyPassManagerCLOptions(secondpm);
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
 
-        secondOptPM.addPass(createConvertLinalgToParallelLoopsPass());
-        secondOptPM.addPass(createConvertLinalgToLoopsPass());
+        secondOptPM.addPass(createLinalgTilingPass());
+        secondOptPM.addPass(createLinalgTilingToTiledLoopPass());
+        secondOptPM.addPass(createLinalgTilingToParallelLoopsPass());
+        // secondOptPM.addPass(createConvertLinalgToParallelLoopsPass());
+        // secondOptPM.addPass(createConvertLinalgTiledLoopsToSCFPass());
+        // secondOptPM.addPass(createConvertLinalgToLoopsPass());
         secondOptPM.addPass(createConvertLinalgToAffineLoopsPass());
 
         if (config.optimize)
         {
-            secondOptPM.addPass(createCanonicalizerPass());
-            secondOptPM.addPass(createCSEPass());
-            secondOptPM.addPass(createBufferHoistingPass());
-            //secondpm.addPass(createBufferResultsToOutParamsPass());
+            // secondOptPM.addPass(createCanonicalizerPass());
+            // secondOptPM.addPass(createCSEPass());
+            secondOptPM.addPass(createForLoopPeelingPass());
+            // secondpm.addPass(createBufferResultsToOutParamsPass());
             secondpm.addPass(createNormalizeMemRefsPass());
             secondOptPM.addPass(createPromoteBuffersToStackPass());
             secondOptPM.addPass(createSimplifyAffineStructuresPass());
+            secondOptPM.addPass(createAffineScalarReplacementPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
             secondOptPM.addPass(createAffineParallelizePass());
             secondOptPM.addPass(createAffineScalarReplacementPass());
             secondOptPM.addPass(createSuperVectorizePass(4));
             secondOptPM.addPass(createLowerAffinePass());
+            secondOptPM.addPass(createBufferLoopHoistingPass());
+            secondOptPM.addPass(createLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createParallelLoopSpecializationPass());
             secondOptPM.addPass(createParallelLoopFusionPass());
             secondOptPM.addPass(createParallelLoopTilingPass());
@@ -272,7 +279,8 @@ namespace voila
             secondOptPM.addPass(createLoopCoalescingPass());
             secondOptPM.addPass(createLoopUnrollPass());
             secondOptPM.addPass(createLoopUnrollAndJamPass());
-            secondpm.addPass(createAsyncParallelForPass());
+            secondOptPM.addPass(createForLoopSpecializationPass());
+            secondOptPM.addPass(createLoopTilingPass());
         }
 
         // secondOptPM.addPass(createCanonicalizerPass());
@@ -290,8 +298,6 @@ namespace voila
         secondOptPM.addPass(createLowerToCFGPass());
         secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
         secondpm.addPass(createMemRefToLLVMPass());
-        secondOptPM.addPass(createCanonicalizerPass());
-        secondOptPM.addPass(createCSEPass());
 
         state = secondpm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));

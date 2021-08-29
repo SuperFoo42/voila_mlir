@@ -742,7 +742,7 @@ namespace voila
         {
             sum.groups->visit(*this);
             insertNewFuncType(sum, {get_type_id(sum.src), get_type_id(*sum.groups)},
-                              get_type(sum.src).getTypes().front());
+                              get_type(sum.src).getTypes().front() == DataType::DBL ? DataType::DBL : DataType::INT64);
         }
         else
         {
