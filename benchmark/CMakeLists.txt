@@ -2,8 +2,7 @@ CPMAddPackage(
         NAME benchmark
         GITHUB_REPOSITORY google/benchmark
         VERSION 1.5.6
-        OPTIONS "BENCHMARK_ENABLE_TESTING Off"
-        OPTIONS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}"
+        OPTIONS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}" "BENCHMARK_ENABLE_TESTING Off"
 )
 CPMAddPackage(
         NAME cereal

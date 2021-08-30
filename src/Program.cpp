@@ -261,26 +261,28 @@ namespace voila
             secondOptPM.addPass(createForLoopPeelingPass());
             // secondpm.addPass(createBufferResultsToOutParamsPass());
             secondpm.addPass(createNormalizeMemRefsPass());
-            secondOptPM.addPass(createPromoteBuffersToStackPass());
             secondOptPM.addPass(createSimplifyAffineStructuresPass());
             secondOptPM.addPass(createAffineScalarReplacementPass());
             secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createAffineLoopNormalizePass());
             secondOptPM.addPass(createAffineParallelizePass());
             secondOptPM.addPass(createAffineScalarReplacementPass());
+            secondOptPM.addPass(createLoopInvariantCodeMotionPass());
             secondOptPM.addPass(createSuperVectorizePass(4));
             secondOptPM.addPass(createLowerAffinePass());
             secondOptPM.addPass(createBufferLoopHoistingPass());
-            secondOptPM.addPass(createLoopInvariantCodeMotionPass());
-            secondOptPM.addPass(createParallelLoopSpecializationPass());
-            secondOptPM.addPass(createParallelLoopFusionPass());
-            secondOptPM.addPass(createParallelLoopTilingPass());
-            secondOptPM.addPass(createLoopFusionPass());
+            secondOptPM.addPass(createPromoteBuffersToStackPass());
+            secondOptPM.addPass(createLoopFusionPass(0,0,true));
+            secondOptPM.addPass(createLoopTilingPass());
             secondOptPM.addPass(createLoopCoalescingPass());
             secondOptPM.addPass(createLoopUnrollPass());
             secondOptPM.addPass(createLoopUnrollAndJamPass());
             secondOptPM.addPass(createForLoopSpecializationPass());
-            secondOptPM.addPass(createLoopTilingPass());
+            secondOptPM.addPass(createParallelLoopFusionPass());
+            //secondOptPM.addPass(createParallelLoopCollapsingPass());
+            secondOptPM.addPass(createParallelLoopTilingPass());
+            secondOptPM.addPass(createParallelLoopSpecializationPass());
+            secondOptPM.addPass(createSCCPPass());
         }
 
         // secondOptPM.addPass(createCanonicalizerPass());
