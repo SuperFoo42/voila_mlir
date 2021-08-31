@@ -439,13 +439,13 @@ OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments), [{
     // Generic call always returns nothing initially
     $_state.addTypes(llvm::None);
     $_state.addOperands(arguments);
-    $_state.addAttribute("callee", $_builder.getSymbolRefAttr(callee));
+    $_state.addAttribute("callee", mlir::SymbolRefAttr::get($_builder.getContext(), callee));
 }]>,
 OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments, "Type":$res_type), [{
 // Generic call always returns nothing initially
 $_state.addTypes(res_type);
 $_state.addOperands(arguments);
-$_state.addAttribute("callee", $_builder.getSymbolRefAttr(callee));
+$_state.addAttribute("callee", mlir::SymbolRefAttr::get($_builder.getContext(), callee));
 }]>
 ];
 }
