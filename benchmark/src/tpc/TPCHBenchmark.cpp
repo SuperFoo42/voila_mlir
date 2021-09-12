@@ -220,19 +220,19 @@ static void Q6_Baseline(benchmark::State &state)
 
     for ([[maybe_unused]] auto _ : state)
     {
-        [[maybe_unused]] double res = 0;
+        const auto startDate = getQ6Date();
+        const auto endDate = startDate + 10000;
+        const auto quantity = getQ6Quantity();
+        const auto discount = getQ6Discount();
+        const auto minDiscount = discount - 0.01;
+        const auto maxDiscount = discount + 0.01;
+        double res = 0;
         for (size_t i = 0; i < l_quantity.size(); ++i)
         {
-            auto startDate = getQ6Date();
-            auto endDate = startDate + 10000;
-            auto quantity = getQ6Quantity();
-            auto discount = getQ6Discount();
-            auto minDiscount = discount - 0.01;
-            auto maxDiscount = discount + 0.01;
             if (l_shipdate[i] >= startDate && l_shipdate[i] < endDate && l_quantity[i] < quantity &&
                 l_discount[i] >= minDiscount && l_discount[i] <= maxDiscount)
             {
-                res += l_extendedprice[i] * l_discount[i];
+                ::benchmark::DoNotOptimize(res += l_extendedprice[i] * l_discount[i]);
             }
         }
     }
