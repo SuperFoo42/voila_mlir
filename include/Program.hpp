@@ -26,12 +26,16 @@
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
 #include <llvm/IR/Module.h>
 #include <llvm/Support/ErrorOr.h>
+#include <llvm/Support/Host.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/ExecutionEngine/MemRefUtils.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/CodeGen/CommandFlags.h>
 #include <mlir/IR/AsmState.h>
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/Dialect.h>

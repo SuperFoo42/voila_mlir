@@ -190,7 +190,7 @@ namespace voila::mlir::lowering
         Value res;
         if (sumOpAdaptor.indices() && op->getResultTypes().front().isa<TensorType>())
         {
-            res = groupedSumLowering(op, loc, sumOpAdaptor, rewriter);
+            res = groupedSumLowering(op, loc, sumOpAdaptor, rewriter); //grouped aggreagation is a pipeline breaker
         }
         else
         {

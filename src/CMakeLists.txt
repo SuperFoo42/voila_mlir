@@ -48,7 +48,14 @@ add_library(voila_compiler
         ShapeInferenceInterface.cpp
         TypeInferencePass.cpp
         Program.cpp
-        Config.cpp Types.cpp)
+        Config.cpp
+        Types.cpp)
+
+set(LLVM_LINK_COMPONENTS
+        LLVMCore
+        LLVMSupport
+        LLVMTarget
+        )
 
 target_link_libraries(voila_compiler
         magic_enum
@@ -60,7 +67,9 @@ target_link_libraries(voila_compiler
         cxxopts
         spdlog
         range-v3
-        MLIRExecutionEngine)
+        MLIRExecutionEngine
+        ${LLVM_LINK_COMPONENTS}
+        )
 
 target_compile_features(voila_compiler PUBLIC cxx_std_20)
 target_compile_options(voila_compiler PUBLIC

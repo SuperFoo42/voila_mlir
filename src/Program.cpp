@@ -6,14 +6,12 @@
 #include <MlirModuleVerificationError.hpp>
 #include <utility>
 
-namespace voila
-{
+namespace voila {
     using namespace ast;
     using namespace ::mlir;
     using namespace ::voila::lexer;
 
-    static std::string MLIRModuleToString(OwningModuleRef &module)
-    {
+    static std::string MLIRModuleToString(OwningModuleRef &module) {
         std::string res;
         llvm::raw_string_ostream os(res);
         module->print(os);
@@ -21,8 +19,7 @@ namespace voila
         return res;
     }
 
-    static std::string LLVMModuleToString(llvm::Module &module)
-    {
+    static std::string LLVMModuleToString(llvm::Module &module) {
         std::string res;
         llvm::raw_string_ostream os(res);
         llvm::AssemblyAnnotationWriter aw;
@@ -31,78 +28,89 @@ namespace voila
         return res;
     }
 
-    void Program::infer_type(const Expression &node)
-    {
+    void Program::infer_type(const Expression &node) {
         node.visit(inferer);
     }
 
-    void Program::infer_type(const ASTNode &node)
-    {
+    void Program::infer_type(const ASTNode &node) {
         node.visit(inferer);
     }
 
-    void Program::infer_type(const Statement &node)
-    {
+    void Program::infer_type(const Statement &node) {
         node.visit(inferer);
     }
 
-    void Program::to_dot(const std::string &fname)
-    {
-        for (auto &func : get_funcs())
-        {
+    void Program::to_dot(const std::string &fname) {
+        for (auto &func: get_funcs()) {
             DotVisualizer vis(*func, std::optional<std::reference_wrapper<TypeInferer>>(inferer));
             std::ofstream out(fname + "." + func->name + ".dot", std::ios::out);
             out << vis;
         }
     }
 
-    bool Program::has_var(const std::string &var_name)
-    {
+    bool Program::has_var(const std::string &var_name) {
         return func_vars.contains(var_name);
     }
 
-    Expression Program::get_var(const std::string &var_name)
-    {
+    Expression Program::get_var(const std::string &var_name) {
         return func_vars.at(var_name);
     }
 
-    void Program::add_var(Expression expr)
-    {
+    void Program::add_var(Expression expr) {
         assert(expr.is_variable());
         func_vars.emplace(expr.as_variable()->var, expr);
     }
 
-    const OwningModuleRef &Program::getMLIRModule() const
-    {
+    const OwningModuleRef &Program::getMLIRModule() const {
         return mlirModule;
     }
 
-    const MLIRContext &Program::getMLIRContext() const
-    {
+    const MLIRContext &Program::getMLIRContext() const {
         return context;
     }
 
-    std::unique_ptr<ExecutionEngine> &Program::getOrCreateExecutionEngine()
-    {
-        if (!maybeEngine)
-        {
+    std::unique_ptr<ExecutionEngine> &Program::getOrCreateExecutionEngine() {
+        if (!maybeEngine) {
             llvm::InitializeNativeTarget();
+            //llvm::InitializeAllTargetMCs();
             llvm::InitializeNativeTargetAsmPrinter();
 
             // Register the translation from MLIR to LLVM IR, which must happen before we
             // can JIT-compile.
             registerLLVMDialectTranslation(*mlirModule->getContext());
+            auto TargetTriple = llvm::sys::getProcessTriple();
+            std::string Error;
+            auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
+
+            llvm::TargetOptions opt;
+            auto RM = Optional<llvm::Reloc::Model>();
+            llvm::StringMap<bool, llvm::MallocAllocator> features;
+            llvm::sys::getHostCPUFeatures(features);
+            llvm::SubtargetFeatures fString;
+            for (auto &F: features)
+                fString.AddFeature(F.first(), F.second);
+
+/*
+            for (auto const &MAttr : llvm::codegen::getMAttrs())
+                fString.AddFeature(MAttr);
+*/
+
+            auto targetMachine = Target->createTargetMachine(TargetTriple, llvm::sys::getHostCPUName(),
+                                                             fString.getString(), opt,
+                                                             RM, llvm::None, llvm::CodeGenOpt::Aggressive, true);
 
             // An optimization pipeline to use within the execution engine.
             auto optPipeline = makeOptimizingTransformer(
-                /*optLevel=*/config.optimize ? 3 : 0, /*sizeLevel=*/0,
-                /*targetMachine=*/nullptr);
+                    /*optLevel=*/config.optimize ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None, /*sizeLevel=*/
+                                 llvm::CodeModel::Tiny,
+                                 targetMachine);
 
             // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
             // the module.
             auto expectedEngine = ExecutionEngine::create(
-                *mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline,
-                config.optimize ? llvm::CodeGenOpt::Level::Aggressive : llvm::CodeGenOpt::Level::None, {}, true, false);
+                    *mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline,
+                    config.optimize ? llvm::CodeGenOpt::Level::Aggressive : llvm::CodeGenOpt::Level::None, {}, true,
+                    false);
             assert(expectedEngine && "failed to construct an execution engine");
 
             maybeEngine = std::move(*expectedEngine);
@@ -111,8 +119,7 @@ namespace voila
         return *maybeEngine;
     }
 
-    void Program::runJIT([[maybe_unused]] const std::optional<std::string> &objPath)
-    {
+    void Program::runJIT([[maybe_unused]] const std::optional<std::string> &objPath) {
         auto &engine = getOrCreateExecutionEngine();
         // FIXME: dtor of fn results in segfault
         /*
@@ -132,21 +139,18 @@ namespace voila
         auto stop = std::chrono::high_resolution_clock::now();
         float currentTime = float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
         timer = currentTime;
-        if (invocationResult)
-        {
+        if (invocationResult) {
             throw JITInvocationError();
         }
     }
 
-    void Program::convertToLLVM()
-    {
+    void Program::convertToLLVM() {
         // lower to llvm
         registerLLVMDialectTranslation(*mlirModule->getContext());
 
         // Convert the module to LLVM IR in a new LLVM IR context.
         llvmModule = translateModuleToLLVMIR(*mlirModule, llvmContext);
-        if (!llvmModule)
-        {
+        if (!llvmModule) {
             throw LLVMGenerationError();
         }
 
@@ -157,18 +161,16 @@ namespace voila
 
         /// Optionally run an optimization pipeline over the llvm module.
         auto optPipeline = makeOptimizingTransformer(
-            /*optLevel=*/config.optimize ? 3 : 0, /*sizeLevel=*/0,
-            /*targetMachine=*/nullptr);
-        if (auto err = optPipeline(llvmModule.get()))
-        {
+                /*optLevel=*/config.optimize ? 3 : 0, /*sizeLevel=*/0,
+                /*targetMachine=*/nullptr);
+        if (auto err = optPipeline(llvmModule.get())) {
             throw err; // TODO: rethrow with other exception
         }
         // TODO:
         spdlog::debug(LLVMModuleToString(*llvmModule));
     }
 
-    void Program::printLLVM(const std::string &filename)
-    {
+    void Program::printLLVM(const std::string &filename) {
         std::error_code ec;
         llvm::raw_fd_ostream os(filename + ".llvm", ec, llvm::sys::fs::OF_None);
         llvm::AssemblyAnnotationWriter aw;
@@ -176,19 +178,16 @@ namespace voila
         os.flush();
     }
 
-    void Program::printMLIR(const std::string &filename)
-    {
+    void Program::printMLIR(const std::string &filename) {
         std::error_code ec;
         llvm::raw_fd_ostream os(filename + ".mlir", ec, llvm::sys::fs::OF_None);
         mlirModule->print(os);
         os.flush();
     }
 
-    void Program::lowerMLIR()
-    {
+    void Program::lowerMLIR() {
         ::mlir::PassManager pm(&context);
-        if (config.debug)
-        {
+        if (config.debug) {
             pm.enableStatistics();
         }
         // Apply any generic pass manager command line options and run the pipeline.
@@ -208,7 +207,9 @@ namespace voila
 
         // optPM.addPass(createCanonicalizerPass());
         // optPM.addPass(createCSEPass());
+        optPM.addPass(createStdExpandOpsPass());
         optPM.addPass(createConvertElementwiseToLinalgPass());
+        optPM.addPass(createLinalgGeneralizationPass());
         optPM.addPass(createLinalgElementwiseOpFusionPass());
 
         // bufferization passes
@@ -230,15 +231,13 @@ namespace voila
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));
 
-        if (failed(state))
-        {
+        if (failed(state)) {
             throw MLIRLoweringError();
         }
 
         // FIXME: properly apply passes
         ::mlir::PassManager secondpm(&context);
-        if (config.debug)
-        {
+        if (config.debug) {
             secondpm.enableStatistics();
             // secondpm.enableIRPrinting();
         }
@@ -246,18 +245,15 @@ namespace voila
         applyPassManagerCLOptions(secondpm);
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
 
-        secondOptPM.addPass(createLinalgTilingPass());
-        secondOptPM.addPass(createLinalgTilingToTiledLoopPass());
-        secondOptPM.addPass(createLinalgTilingToParallelLoopsPass());
-        // secondOptPM.addPass(createConvertLinalgToParallelLoopsPass());
-        // secondOptPM.addPass(createConvertLinalgTiledLoopsToSCFPass());
-        // secondOptPM.addPass(createConvertLinalgToLoopsPass());
         secondOptPM.addPass(createConvertLinalgToAffineLoopsPass());
+        secondOptPM.addPass(createLinalgTilingPass());
+        secondOptPM.addPass(createConvertLinalgToParallelLoopsPass());
+        secondOptPM.addPass(createConvertLinalgTiledLoopsToSCFPass());
+        secondOptPM.addPass(createConvertLinalgToLoopsPass());
 
-        if (config.optimize)
-        {
-            // secondOptPM.addPass(createCanonicalizerPass());
-            // secondOptPM.addPass(createCSEPass());
+        if (config.optimize) {
+            secondOptPM.addPass(createCanonicalizerPass());
+            secondOptPM.addPass(createCSEPass());
             secondOptPM.addPass(createForLoopPeelingPass());
             // secondpm.addPass(createBufferResultsToOutParamsPass());
             secondpm.addPass(createNormalizeMemRefsPass());
@@ -268,11 +264,15 @@ namespace voila
             secondOptPM.addPass(createAffineParallelizePass());
             secondOptPM.addPass(createAffineScalarReplacementPass());
             secondOptPM.addPass(createLoopInvariantCodeMotionPass());
-            secondOptPM.addPass(createSuperVectorizePass(4));
+            secondOptPM.addPass(createCanonicalizerPass());
+            secondOptPM.addPass(createCSEPass());
+            std::unique_ptr<Pass> vectorizationPass = createSuperVectorizePass(llvm::makeArrayRef<int64_t>(256));
+            (void)vectorizationPass->initializeOptions("vectorize-reductions=true");
+            secondOptPM.addPass(std::move(vectorizationPass));
             secondOptPM.addPass(createLowerAffinePass());
             secondOptPM.addPass(createBufferLoopHoistingPass());
             secondOptPM.addPass(createPromoteBuffersToStackPass());
-            secondOptPM.addPass(createLoopFusionPass(0,0,true));
+            secondOptPM.addPass(createLoopFusionPass());
             secondOptPM.addPass(createLoopTilingPass());
             secondOptPM.addPass(createLoopCoalescingPass());
             secondOptPM.addPass(createLoopUnrollPass());
@@ -285,49 +285,43 @@ namespace voila
             secondOptPM.addPass(createSCCPPass());
         }
 
-        // secondOptPM.addPass(createCanonicalizerPass());
-        // secondOptPM.addPass(createCSEPass());
         secondOptPM.addPass(createFinalizingBufferizePass());
         secondpm.addPass(createNormalizeMemRefsPass());
         secondOptPM.addPass(createBufferDeallocationPass());
 
-        if (!config.debug)
-        {
+        if (!config.debug) {
             secondpm.addPass(createStripDebugInfoPass());
         }
+
         secondpm.addPass(createConvertVectorToLLVMPass());
         secondpm.addPass(createConvertAsyncToLLVMPass());
         secondOptPM.addPass(createLowerToCFGPass());
-        secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
         secondpm.addPass(createMemRefToLLVMPass());
+        secondpm.addPass(::voila::mlir::createLowerToLLVMPass());
+        secondpm.addPass(createReconcileUnrealizedCastsPass());
+
 
         state = secondpm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));
-        if (failed(state))
-        {
+        if (failed(state)) {
             throw MLIRLoweringError();
         }
     }
 
-    ::mlir::OwningModuleRef &Program::generateMLIR()
-    {
+    ::mlir::OwningModuleRef &Program::generateMLIR() {
         // Load our Dialect in this MLIR Context.
         context.getOrLoadDialect<::mlir::voila::VoilaDialect>();
-        if (config.debug)
-        {
+        if (config.debug) {
             // context.disableMultithreading(); //FIXME: with threading disabled, the program segfaults
         }
-        try
-        {
+        try {
             mlirModule = ::voila::MLIRGenerator::mlirGen(context, *this);
         }
-        catch (MLIRModuleVerificationError &err)
-        {
+        catch (MLIRModuleVerificationError &err) {
             spdlog::error(MLIRModuleToString(mlirModule));
             throw err;
         }
-        if (!mlirModule)
-        {
+        if (!mlirModule) {
             spdlog::error(MLIRModuleToString(mlirModule));
             throw ::voila::MLIRGenerationError();
         }
@@ -335,16 +329,13 @@ namespace voila
         return mlirModule;
     }
 
-    Program &Program::operator<<(Parameter param)
-    {
+    Program &Program::operator<<(Parameter param) {
         const auto &main = functions.at("main");
         Expression arg;
-        try
-        {
+        try {
             arg = main->args.at(nparam++);
         }
-        catch (std::out_of_range &ex)
-        {
+        catch (std::out_of_range &ex) {
             throw ArgsOutOfRangeError();
         }
         assert(arg.is_variable());
@@ -355,9 +346,7 @@ namespace voila
         if (param.size == 0) // scalar type
         {
             params.push_back(param.data);
-        }
-        else
-        {
+        } else {
             // store strided 1D memref as unpacked struct defined in
             // llvm/mlir/include/mlir/ExecutionEngine/CRunnerUtils.h
             // use malloc to have matching alloc-dealloc while being able to use free on void *
@@ -384,12 +373,9 @@ namespace voila
     }
 
     // either return void, scalars or pointer to strided memref types as unique_ptr
-    std::vector<Program::result_t> Program::operator()()
-    {
-        if (!maybeEngine)
-        {
-            if (config.plotAST)
-            {
+    std::vector<Program::result_t> Program::operator()() {
+        if (!maybeEngine) {
+            if (config.plotAST) {
                 to_dot(config.ASTOutFile);
             }
 
@@ -402,23 +388,20 @@ namespace voila
             // generate mlir
             generateMLIR();
             spdlog::debug("Finished mlir generation");
-            if (config.printMLIR)
-            {
+            if (config.printMLIR) {
                 printMLIR(config.MLIROutFile);
             }
             spdlog::debug("Start mlir lowering");
             // lower mlir
             lowerMLIR();
             spdlog::debug("Finished mlir lowering");
-            if (config.printLoweredMLIR)
-            {
+            if (config.printLoweredMLIR) {
                 printMLIR(config.MLIRLoweredOutFile);
             }
             spdlog::debug("Start mlir to llvm conversion");
             // lower to llvm
             convertToLLVM();
-            if (config.printLLVM)
-            {
+            if (config.printLLVM) {
                 printLLVM(config.LLVMOutFile);
             }
             spdlog::debug("Finished mlir to llvm conversion");
@@ -427,8 +410,7 @@ namespace voila
         // run jit
         const auto &main = functions.at("main");
         std::vector<result_t> res;
-        if (main->result.has_value())
-        {
+        if (main->result.has_value()) {
             auto &type = inferer.get_type(main->result.value());
             // test scalar
 
@@ -436,54 +418,43 @@ namespace voila
 
             auto types = type.getTypes();
             auto arities = type.getArities();
-            for (size_t i = 0; i < types.size(); ++i)
-            {
-                switch (types[i])
-                {
+            for (size_t i = 0; i < types.size(); ++i) {
+                switch (types[i]) {
                     case DataType::BOOL: // FIXME: I1 type is not directly mappable to C++ types
                         throw NotImplementedException();
                     case DataType::NUMERIC:
                         throw std::logic_error("Abstract type");
                     case DataType::INT32:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1) {
                             resTypes.push_back(::llvm::Type::getInt32Ty(llvmContext));
-                        }
-                        else
-                        {
+                        } else {
                             resTypes.push_back(llvm::StructType::create(
-                                llvmContext,
-                                {llvm::Type::getInt32PtrTy(llvmContext), llvm::Type::getInt32PtrTy(llvmContext),
-                                 ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
-                                 ::llvm::Type::getInt64Ty(llvmContext)}));
+                                    llvmContext,
+                                    {llvm::Type::getInt32PtrTy(llvmContext), llvm::Type::getInt32PtrTy(llvmContext),
+                                     ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
+                                     ::llvm::Type::getInt64Ty(llvmContext)}));
                         }
                         break;
                     case DataType::INT64:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1) {
                             resTypes.push_back(::llvm::Type::getInt64Ty(llvmContext));
-                        }
-                        else
-                        {
+                        } else {
                             resTypes.push_back(llvm::StructType::create(
-                                llvmContext,
-                                {llvm::Type::getInt64PtrTy(llvmContext), llvm::Type::getInt64PtrTy(llvmContext),
-                                 ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
-                                 ::llvm::Type::getInt64Ty(llvmContext)}));
+                                    llvmContext,
+                                    {llvm::Type::getInt64PtrTy(llvmContext), llvm::Type::getInt64PtrTy(llvmContext),
+                                     ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
+                                     ::llvm::Type::getInt64Ty(llvmContext)}));
                         }
                         break;
                     case DataType::DBL:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1) {
                             resTypes.push_back(::llvm::Type::getDoubleTy(llvmContext));
-                        }
-                        else
-                        {
+                        } else {
                             resTypes.push_back(llvm::StructType::create(
-                                llvmContext,
-                                {llvm::Type::getDoublePtrTy(llvmContext), llvm::Type::getDoublePtrTy(llvmContext),
-                                 ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
-                                 ::llvm::Type::getInt64Ty(llvmContext)}));
+                                    llvmContext,
+                                    {llvm::Type::getDoublePtrTy(llvmContext), llvm::Type::getDoublePtrTy(llvmContext),
+                                     ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
+                                     ::llvm::Type::getInt64Ty(llvmContext)}));
                         }
                         break;
                     case DataType::STRING:
@@ -504,62 +475,54 @@ namespace voila
             spdlog::debug("Finished Running JIT Program");
             std::shared_ptr<void> basePtr(params.pop_back_val(), ProgramResultDeleter());
 
-            for (size_t i = 0; i < types.size(); ++i)
-            {
-                switch (types[i])
-                {
+            for (size_t i = 0; i < types.size(); ++i) {
+                switch (types[i]) {
                     case DataType::INT32:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1) {
                             auto *extractedRes = reinterpret_cast<uint32_t *>(
-                                std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));
+                                    std::reinterpret_pointer_cast<char>(basePtr).get() +
+                                    resLayout->getElementOffset(i));
                             res.emplace_back(*extractedRes);
-                        }
-                        else
-                        {
+                        } else {
                             res.emplace_back(strided_memref_ptr<uint32_t, 1>(
-                                basePtr, reinterpret_cast<StridedMemRefType<uint32_t, 1> *>(
-                                             std::reinterpret_pointer_cast<char>(basePtr).get() +
-                                             resLayout->getElementOffset(i))));
+                                    basePtr, reinterpret_cast<StridedMemRefType<uint32_t, 1> *>(
+                                            std::reinterpret_pointer_cast<char>(basePtr).get() +
+                                            resLayout->getElementOffset(i))));
                             std::get_deleter<ProgramResultDeleter>(basePtr)->toDealloc.push_back(
-                                std::get<strided_memref_ptr<uint32_t, 1>>(res.back())->basePtr);
+                                    std::get<strided_memref_ptr<uint32_t, 1>>(res.back())->basePtr);
                         }
                         break;
                     case DataType::INT64:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1) {
                             auto *extractedRes = reinterpret_cast<uint64_t *>(
-                                std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));
+                                    std::reinterpret_pointer_cast<char>(basePtr).get() +
+                                    resLayout->getElementOffset(i));
                             res.emplace_back(*extractedRes);
-                        }
-                        else
-                        {
+                        } else {
                             res.emplace_back(strided_memref_ptr<uint64_t, 1>(
-                                basePtr, reinterpret_cast<StridedMemRefType<uint64_t, 1> *>(
-                                             std::reinterpret_pointer_cast<char>(basePtr).get() +
-                                             resLayout->getElementOffset(i))));
+                                    basePtr, reinterpret_cast<StridedMemRefType<uint64_t, 1> *>(
+                                            std::reinterpret_pointer_cast<char>(basePtr).get() +
+                                            resLayout->getElementOffset(i))));
                             std::get_deleter<ProgramResultDeleter>(basePtr)->toDealloc.push_back(
-                                std::get<strided_memref_ptr<uint64_t, 1>>(res.back())->basePtr);
+                                    std::get<strided_memref_ptr<uint64_t, 1>>(res.back())->basePtr);
                             /*                            std::get_deleter<ProgramResultDeleter
                                *>(basePtr)->toDealloc.push_back( std::get<strided_memref_ptr<uint64_t,
                                1>>(res.back())->basePtr);*/
                         }
                         break;
                     case DataType::DBL:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
+                        if (!arities[i].is_undef() && arities[i].get_size() <= 1) {
                             auto *extractedRes = reinterpret_cast<double *>(
-                                std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));
+                                    std::reinterpret_pointer_cast<char>(basePtr).get() +
+                                    resLayout->getElementOffset(i));
                             res.emplace_back(*extractedRes);
-                        }
-                        else
-                        {
+                        } else {
                             res.emplace_back(strided_memref_ptr<double, 1>(
-                                basePtr, reinterpret_cast<StridedMemRefType<double, 1> *>(
-                                             std::reinterpret_pointer_cast<char>(basePtr).get() +
-                                             resLayout->getElementOffset(i))));
+                                    basePtr, reinterpret_cast<StridedMemRefType<double, 1> *>(
+                                            std::reinterpret_pointer_cast<char>(basePtr).get() +
+                                            resLayout->getElementOffset(i))));
                             std::get_deleter<ProgramResultDeleter>(basePtr)->toDealloc.push_back(
-                                std::get<strided_memref_ptr<double, 1>>(res.back())->basePtr);
+                                    std::get<strided_memref_ptr<double, 1>>(res.back())->basePtr);
                         }
                         break;
                     default:
@@ -570,73 +533,63 @@ namespace voila
         // TODO: separate functions for cleanup in future
         params.clear();
         nparam = 0;
-        for (auto elem : toDealloc)
-        {
+        for (auto elem: toDealloc) {
             std::free(elem);
         }
         toDealloc.clear();
         return res;
     }
 
-    void Program::add_func(ast::Fun *f)
-    {
+    void Program::add_func(ast::Fun *f) {
         functions.emplace(f->name, f);
         f->variables = std::move(func_vars);
         func_vars.clear();
     }
 
-    void Program::inferTypes()
-    {
+    void Program::inferTypes() {
         TypeInferencePass typeInference(inferer);
         typeInference.inferTypes(*this);
     }
 
     Program::Program(std::string_view source_path, Config config) :
-        func_vars(),
-        context(),
-        llvmContext(),
-        mlirModule(),
-        llvmModule(),
-        maybeEngine(std::nullopt),
-        functions(),
-        config{std::move(config)},
-        inferer()
-    {
+            func_vars(),
+            context(),
+            llvmContext(),
+            mlirModule(),
+            llvmModule(),
+            maybeEngine(std::nullopt),
+            functions(),
+            config{std::move(config)},
+            inferer() {
         std::ifstream fst(source_path.data(), std::ios::in);
 
-        if (fst.is_open())
-        {
+        if (fst.is_open()) {
             lexer = new Lexer(fst);        // read file, decode UTF-8/16/32 format
             lexer->filename = source_path; // the filename to display with error locations
 
             ::voila::parser::Parser parser(*lexer, *this);
             if (parser() != 0)
                 throw ::voila::ParsingError();
-        }
-        else
-        {
+        } else {
             spdlog::error("failed to open {}", source_path);
         }
     }
 
     Program::Program(Config config) :
-        func_vars(),
-        context(),
-        llvmContext(),
-        mlirModule(),
-        llvmModule(),
-        maybeEngine(std::nullopt),
-        functions(),
-        config{std::move(config)},
-        lexer{new Lexer()},
-        inferer()
-    {
+            func_vars(),
+            context(),
+            llvmContext(),
+            mlirModule(),
+            llvmModule(),
+            maybeEngine(std::nullopt),
+            functions(),
+            config{std::move(config)},
+            lexer{new Lexer()},
+            inferer() {
     }
 
-    Program::~Program()
-    {
-        for (auto elem : toDealloc)
-        {
+    Program::~Program() {
+        for (auto elem: toDealloc) {
             std::free(elem);
         }
     }
@@ -647,8 +600,7 @@ namespace voila
      * @param type data type compatible to values in @link{data}
      * @return
      */
-    Parameter make_param(void *data, size_t size, DataType type)
-    {
+    Parameter make_param(void *data, size_t size, DataType type) {
         return Parameter(data, size, type);
     }
 } // namespace voila

@@ -384,6 +384,8 @@ The "pred" is expected to have the same shape as "values".
 let arguments = (ins AnyTensor:$values ,I1Tensor:$pred);
 let results = (outs AnyTensor);
 
+let hasCanonicalizeMethod = 1;
+
 // Specify a parser and printer method.
 //let parser = [{ return ::parseBinaryOp(parser, result); }];
 //let printer = [{ return ::printBinaryOp(p, *this); }];
