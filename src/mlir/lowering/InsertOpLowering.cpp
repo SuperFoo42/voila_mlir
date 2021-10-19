@@ -2,6 +2,7 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
+    using namespace ::mlir::arith;
     using ::mlir::voila::InsertOp;
     using ::mlir::voila::InsertOpAdaptor;
     InsertOpLowering::InsertOpLowering(MLIRContext *ctx) : ConversionPattern(InsertOp::getOperationName(), 1, ctx) {}
@@ -28,23 +29,23 @@ namespace voila::mlir::lowering
          * v |= v >> 32;
          * v++;
          */
-        auto firstOr = rewriter.create<OrOp>(
+        auto firstOr = rewriter.create<OrIOp>(
             loc, insertSize,
-            rewriter.create<UnsignedShiftRightOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
-        auto secondOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
+        auto secondOr = rewriter.create<OrIOp>(
             loc, firstOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
-        auto thirdOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
+        auto thirdOr = rewriter.create<OrIOp>(
             loc, secondOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
-        auto fourthOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
+        auto fourthOr = rewriter.create<OrIOp>(
             loc, thirdOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
-        auto fithOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
+        auto fithOr = rewriter.create<OrIOp>(
             loc, fourthOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
-        auto sixthOr = rewriter.create<OrOp>(
-            loc, fithOr, rewriter.create<UnsignedShiftRightOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
+            rewriter.create<ShRUIOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
+        auto sixthOr = rewriter.create<OrIOp>(
+            loc, fithOr, rewriter.create<ShRUIOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
         SmallVector<Value, 1> htSize;
         htSize.push_back(rewriter.create<AddIOp>(loc, sixthOr, rewriter.create<ConstantIndexOp>(loc, 1)));
 
@@ -80,7 +81,7 @@ namespace voila::mlir::lowering
         Value anyNotEmpty =  empties[0];
         for (size_t i = 1; i < empties.size(); ++i)
         {
-            anyNotEmpty = builder.create<AndOp>(loc, anyNotEmpty, empties[i]);
+            anyNotEmpty = builder.create<AndIOp>(loc, anyNotEmpty, empties[i]);
         }
 
         SmallVector<Value> founds;
@@ -92,10 +93,10 @@ namespace voila::mlir::lowering
         Value allFound = founds[0];
         for (size_t i = 1; i < founds.size(); ++i)
         {
-            allFound = builder.create<AndOp>(loc, allFound, founds[i]);
+            allFound = builder.create<AndIOp>(loc, allFound, founds[i]);
         }
 
-        return builder.create<OrOp>(loc, builder.getI1Type(), anyNotEmpty, allFound);
+        return builder.create<OrIOp>(loc, builder.getI1Type(), anyNotEmpty, allFound);
     }
 
     ::mlir::LogicalResult InsertOpLowering::matchAndRewrite(Operation *op,
@@ -184,7 +185,7 @@ namespace voila::mlir::lowering
 
                 auto nextIdx = afterBuilder.create<AddIOp>(loc, afterBlock->getArgument(0),
                                                            afterBuilder.create<ConstantIndexOp>(loc, 1));
-                auto nextIndexWrapOver = afterBuilder.create<AndOp>(loc, nextIdx, modSize);
+                auto nextIndexWrapOver = afterBuilder.create<AndIOp>(loc, nextIdx, modSize);
                 SmallVector<Value, 1> res;
                 res.push_back(nextIndexWrapOver);
                 afterBuilder.create<scf::YieldOp>(loc, res);

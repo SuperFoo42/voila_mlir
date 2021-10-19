@@ -3,6 +3,7 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
+    using namespace ::mlir::arith;
     using ::mlir::voila::LookupOp;
     using ::mlir::voila::LookupOpAdaptor;
 
@@ -77,7 +78,7 @@ namespace voila::mlir::lowering
             SmallVector<Type, 1> resType;
             resType.push_back(builder.getI64Type());
             SmallVector<Value, 1> hashVal;
-            hashVal.push_back(builder.create<AndOp>(loc, hashVals, intMod));
+            hashVal.push_back(builder.create<AndIOp>(loc, hashVals, intMod));
             // probing with do while
             // Maybe we should keep track of the max probing count during generation and iterate only so many times
             auto loop = builder.create<scf::WhileOp>(loc, resType, hashVal);
@@ -102,19 +103,19 @@ namespace voila::mlir::lowering
             {
                 auto tmp = builder.create<CmpIOp>(loc, CmpIPredicate::eq, entries[i],
                                                   builder.create<ConstantIntOp>(loc, 0, entries[i].getType()));
-                isEmpty = builder.create<AndOp>(loc, isEmpty, tmp);
+                isEmpty = builder.create<AndIOp>(loc, isEmpty, tmp);
                 auto tmp2 = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entries[i], values[i]);
-                notFound = builder.create<OrOp>(loc, isEmpty, tmp2);
+                notFound = builder.create<OrIOp>(loc, isEmpty, tmp2);
             }
 
             condBuilder.create<scf::ConditionOp>(
-                loc, condBuilder.create<OrOp>(loc, builder.getI1Type(), isEmpty, notFound), loop->getOperands());
+                loc, condBuilder.create<OrIOp>(loc, builder.getI1Type(), isEmpty, notFound), loop->getOperands());
             // body
             auto afterBlock = builder.createBlock(&loop.after());
             afterBlock->addArgument(loop->getOperands().front().getType());
             auto bodyBuilder = OpBuilder::atBlockEnd(afterBlock);
             SmallVector<Value, 1> inc;
-            inc.push_back(bodyBuilder.create<AndOp>(
+            inc.push_back(bodyBuilder.create<AndIOp>(
                 loc,
                 bodyBuilder.create<AddIOp>(loc, loop.getAfterArguments().front(),
                                            builder.create<ConstantIntOp>(loc, 1, builder.getI64Type())),

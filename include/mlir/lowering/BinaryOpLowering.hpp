@@ -71,12 +71,12 @@ namespace voila::mlir::lowering
             }
             else if (isFloat(lhsType))
             {
-                auto castedFlt = builder.template create<::mlir::SIToFPOp>(loc, rhs, lhsType);
+                auto castedFlt = builder.template create<::mlir::arith::FPToSIOp>(loc, rhs, lhsType);
                 return builder.template create<FloatOp>(loc, lhs, castedFlt);
             }
             else if (isFloat(rhsType))
             {
-                auto castedFlt = builder.template create<::mlir::SIToFPOp>(loc, lhs, rhsType);
+                auto castedFlt = builder.template create<::mlir::arith::FPToSIOp>(loc, lhs, rhsType);
                 return builder.template create<FloatOp>(loc, castedFlt, rhs);
             }
             else

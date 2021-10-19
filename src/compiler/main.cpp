@@ -17,7 +17,7 @@
 #include <filesystem>
 #include <fstream>
 #include <spdlog/spdlog.h>
-
+//FIXME: this function is largely outdated
 int main(int argc, char *argv[])
 {
     spdlog::set_level(spdlog::level::warn);

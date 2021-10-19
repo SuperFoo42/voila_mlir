@@ -4,6 +4,7 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
+    using namespace ::mlir::arith;
     using ::mlir::voila::GatherOp;
     using ::mlir::voila::GatherOpAdaptor;
 

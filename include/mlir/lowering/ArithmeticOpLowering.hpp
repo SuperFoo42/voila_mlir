@@ -15,14 +15,14 @@
 namespace voila::mlir::lowering
 {
     using AddOpLowering =
-        BinaryOpLowering<::mlir::voila::AddOp, IntFloatBinOpGenerator<::mlir::AddIOp, ::mlir::AddFOp>>;
+        BinaryOpLowering<::mlir::voila::AddOp, IntFloatBinOpGenerator<::mlir::arith::AddIOp, ::mlir::arith::AddFOp>>;
     using SubOpLowering =
-        BinaryOpLowering<::mlir::voila::SubOp, IntFloatBinOpGenerator<::mlir::SubIOp, ::mlir::SubFOp>>;
+        BinaryOpLowering<::mlir::voila::SubOp, IntFloatBinOpGenerator<::mlir::arith::SubIOp, ::mlir::arith::SubFOp>>;
     using MulOpLowering =
-        BinaryOpLowering<::mlir::voila::MulOp, IntFloatBinOpGenerator<::mlir::MulIOp, ::mlir::MulFOp>>;
+        BinaryOpLowering<::mlir::voila::MulOp, IntFloatBinOpGenerator<::mlir::arith::MulIOp, ::mlir::arith::MulFOp>>;
     using DivOpLowering =
-        BinaryOpLowering<::mlir::voila::DivOp, IntFloatBinOpGenerator<::mlir::SignedDivIOp, ::mlir::DivFOp>>;
+        BinaryOpLowering<::mlir::voila::DivOp, IntFloatBinOpGenerator<::mlir::arith::DivSIOp, ::mlir::arith::DivFOp>>;
     using ModOpLowering =
-        BinaryOpLowering<::mlir::voila::ModOp, IntFloatBinOpGenerator<::mlir::SignedRemIOp, ::mlir::RemFOp>>;
+        BinaryOpLowering<::mlir::voila::ModOp, IntFloatBinOpGenerator<::mlir::arith::RemSIOp, ::mlir::arith::RemFOp>>;
 
 } // namespace voila::mlir::lowering

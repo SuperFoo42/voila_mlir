@@ -3,6 +3,7 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
+    using namespace ::mlir::arith;
     using ::mlir::voila::CountOp;
     using ::mlir::voila::CountOpAdaptor;
 
@@ -28,23 +29,23 @@ namespace voila::mlir::lowering
          * v |= v >> 32;
          * v++;
          */
-        auto firstOr = rewriter.create<OrOp>(
+        auto firstOr = rewriter.create<OrIOp>(
             loc, insertSize,
-            rewriter.create<UnsignedShiftRightOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
-        auto secondOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
+        auto secondOr = rewriter.create<OrIOp>(
             loc, firstOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
-        auto thirdOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
+        auto thirdOr = rewriter.create<OrIOp>(
             loc, secondOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
-        auto fourthOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
+        auto fourthOr = rewriter.create<OrIOp>(
             loc, thirdOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
-        auto fithOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
+        auto fithOr = rewriter.create<OrIOp>(
             loc, fourthOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
-        auto sixthOr = rewriter.create<OrOp>(
-            loc, fithOr, rewriter.create<UnsignedShiftRightOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
+            rewriter.create<ShRUIOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
+        auto sixthOr = rewriter.create<OrIOp>(
+            loc, fithOr, rewriter.create<ShRUIOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
 
         return rewriter.create<AddIOp>(loc, sixthOr, rewriter.create<ConstantIndexOp>(loc, 1));
     }

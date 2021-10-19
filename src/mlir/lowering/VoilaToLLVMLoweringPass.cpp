@@ -7,6 +7,7 @@
 namespace voila::mlir
 {
     using namespace ::mlir;
+    using namespace ::mlir::arith;
     namespace lowering
     {
         void VoilaToLLVMLoweringPass::runOnOperation()
@@ -36,9 +37,13 @@ namespace voila::mlir
             populateAffineToVectorConversionPatterns(patterns);
             populateAffineToStdConversionPatterns(patterns);
             populateLoopToStdConversionPatterns(patterns);
+            populateArithmeticToLLVMConversionPatterns(typeConverter, patterns);
+            populateVectorToLLVMConversionPatterns(typeConverter, patterns, true);
             populateStdToLLVMConversionPatterns(typeConverter, patterns);
+            populateStdToLLVMFuncOpConversionPattern(typeConverter, patterns);
             populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
-
+            populateReconcileUnrealizedCastsPatterns(patterns);
+            vector::populateVectorMultiReductionLoweringPatterns(patterns);
             // We want to completely lower to LLVM, so we use a `FullConversion`. This
             // ensures that only legal operations will remain after the conversion.
             auto module = getOperation();

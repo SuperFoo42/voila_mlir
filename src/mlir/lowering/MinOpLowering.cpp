@@ -2,6 +2,7 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
+    using namespace ::mlir::arith;
     using ::mlir::voila::MinOp;
     using ::mlir::voila::MinOpAdaptor;
 
@@ -27,23 +28,23 @@ namespace voila::mlir::lowering
          * v |= v >> 32;
          * v++;
          */
-        auto firstOr = rewriter.create<OrOp>(
+        auto firstOr = rewriter.create<OrIOp>(
             loc, insertSize,
-            rewriter.create<UnsignedShiftRightOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
-        auto secondOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
+        auto secondOr = rewriter.create<OrIOp>(
             loc, firstOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
-        auto thirdOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
+        auto thirdOr = rewriter.create<OrIOp>(
             loc, secondOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
-        auto fourthOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
+        auto fourthOr = rewriter.create<OrIOp>(
             loc, thirdOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
-        auto fithOr = rewriter.create<OrOp>(
+            rewriter.create<ShRUIOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
+        auto fithOr = rewriter.create<OrIOp>(
             loc, fourthOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
-        auto sixthOr = rewriter.create<OrOp>(
-            loc, fithOr, rewriter.create<UnsignedShiftRightOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
+            rewriter.create<ShRUIOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
+        auto sixthOr = rewriter.create<OrIOp>(
+            loc, fithOr, rewriter.create<ShRUIOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
 
         return rewriter.create<AddIOp>(loc, sixthOr, rewriter.create<ConstantIndexOp>(loc, 1));
     }
@@ -56,26 +57,13 @@ namespace voila::mlir::lowering
 
         if (op->getResultTypes().front().isa<IntegerType>())
         {
-            auto tmp = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getI64Type());
-            res.push_back(
-                rewriter
-                    .create<linalg::FillOp>(
-                        loc,
-                        rewriter.create<ConstantIntOp>(loc, std::numeric_limits<int64_t>::max(), rewriter.getI64Type()),
-                        tmp)
-                    .result());
+            res.push_back(rewriter.create<arith::ConstantOp>(loc, DenseIntElementsAttr::get(RankedTensorType::get(shape, rewriter.getI64Type()), rewriter.getI64IntegerAttr(std::numeric_limits<int64_t>::max()).getValue())));
+
         }
         else if (op->getResultTypes().front().isa<FloatType>())
         {
-            auto tmp = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getF64Type());
-            res.push_back(rewriter
-                              .create<linalg::FillOp>(
-                                  loc,
-                                  rewriter.create<ConstantFloatOp>(
-                                      loc, rewriter.getF64FloatAttr(std::numeric_limits<double>::max()).getValue(),
-                                      rewriter.getF64Type()),
-                                  tmp)
-                              .result());
+            res.push_back(rewriter.create<arith::ConstantOp>(loc, DenseFPElementsAttr::get(RankedTensorType::get(shape, rewriter.getF64Type()),
+                                         rewriter.getF64FloatAttr(std::numeric_limits<double>::max()).getValue())));
         }
         else
         {
@@ -90,14 +78,13 @@ namespace voila::mlir::lowering
 
         auto fn = [](OpBuilder &builder, Location loc, ValueRange vals)
         {
-            ::mlir::Value newIsSmaller;
+            ::mlir::Value minVal;
             if (vals.front().getType().isa<IntegerType>())
-                newIsSmaller = builder.create<CmpIOp>(loc, CmpIPredicate::sle, vals[0], vals[1]);
+                minVal = builder.create<MinSIOp>(loc, vals[0], vals[1]);
             else
-                newIsSmaller = builder.create<CmpFOp>(loc, CmpFPredicate::OLE, vals[0], vals[1]);
+                minVal = builder.create<MinFOp>(loc, vals[0], vals[1]);
 
-            builder.create<linalg::YieldOp>(loc,
-                                            builder.create<SelectOp>(loc, newIsSmaller, vals[0], vals[1]).result());
+            builder.create<linalg::YieldOp>(loc, minVal);
         };
 
         SmallVector<AffineExpr, 2> srcExprs;
@@ -169,18 +156,13 @@ namespace voila::mlir::lowering
                                                          builder.getIndexType());
             auto oldVal = builder.create<memref::LoadOp>(loc, res, ::llvm::makeArrayRef(groupIdx));
 
-            ::mlir::Value newIsSmaller;
+            ::mlir::Value minVal;
             if (toCmp.getType().isa<IntegerType>())
-            {
-                newIsSmaller = builder.create<CmpIOp>(loc, CmpIPredicate::sle, toCmp, oldVal);
-            }
+                minVal = builder.create<MinSIOp>(loc, toCmp, oldVal);
             else
-            {
-                newIsSmaller = builder.create<CmpFOp>(loc, CmpFPredicate::OLE, toCmp, oldVal);
-            }
+                minVal = builder.create<MinFOp>(loc, toCmp, oldVal);
 
-            builder.create<memref::StoreOp>(loc, builder.create<SelectOp>(loc, newIsSmaller, toCmp, oldVal).result(),
-                                            res, groupIdx);
+            builder.create<memref::StoreOp>(loc, minVal, res, groupIdx);
         };
 
         buildAffineLoopNest(rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),

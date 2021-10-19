@@ -27,7 +27,7 @@ endif (CCACHE_FOUND)
 
 CPMAddPackage(
         NAME llvm
-        GITHUB_REPOSITORY llvm/llvm-project
+        GITHUB_REPOSITORY SuperFoo42/llvm-project
         GIT_TAG main
         DOWNLOAD_ONLY
 )
@@ -80,13 +80,13 @@ endif ()
 
 #Enable sanitizers globally
 #if ($<CONFIG:Release>)
-add_compile_options($<$<CONFIG:Release>:-O3>
-        $<$<CONFIG:Debug>:-fsanitize=address>
-        $<$<CONFIG:Debug>:-fsanitize=undefined>
-        -Wno-ambiguous-reversed-operator)
-add_link_options(-fuse-ld=lld
-        $<$<CONFIG:Debug>:-fsanitize=address>
-        $<$<CONFIG:Debug>:-fsanitize=undefined>) #need to use lld, for some reason ld complains about invalid symbols.
+#add_compile_options($<$<CONFIG:Release>:-O3>
+        #$<$<CONFIG:Debug>:-fsanitize=address>
+        #$<$<CONFIG:Debug>:-fsanitize=undefined>
+        #-Wno-ambiguous-reversed-operator)
+add_link_options(-fuse-ld=lld)
+        #$<$<CONFIG:Debug>:-fsanitize=address>
+        #$<$<CONFIG:Debug>:-fsanitize=undefined>) #need to use lld, for some reason ld complains about invalid symbols.
 #[[else()
     add_compile_options(-fsanitize=address -fsanitize=undefined -Wno-ambiguous-reversed-operator)
     add_link_options(-fuse-ld=lld -fsanitize=address -fsanitize=undefined) #need to use lld, for some reason ld complains about invalid symbols.

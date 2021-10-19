@@ -3,6 +3,7 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
+    using namespace ::mlir::arith;
     using ::mlir::voila::SumOp;
     using ::mlir::voila::SumOpAdaptor;
 
@@ -22,23 +23,18 @@ namespace voila::mlir::lowering
          * v |= v >> 32;
          * v++;
          */
-        auto firstOr = rewriter.create<OrOp>(
-            loc, insertSize,
-            rewriter.create<UnsignedShiftRightOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
-        auto secondOr = rewriter.create<OrOp>(
-            loc, firstOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
-        auto thirdOr = rewriter.create<OrOp>(
-            loc, secondOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
-        auto fourthOr = rewriter.create<OrOp>(
-            loc, thirdOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
-        auto fithOr = rewriter.create<OrOp>(
-            loc, fourthOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
-        auto sixthOr = rewriter.create<OrOp>(
-            loc, fithOr, rewriter.create<UnsignedShiftRightOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
+        auto firstOr = rewriter.create<OrIOp>(
+            loc, insertSize, rewriter.create<ShRUIOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
+        auto secondOr = rewriter.create<OrIOp>(
+            loc, firstOr, rewriter.create<ShRUIOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
+        auto thirdOr = rewriter.create<OrIOp>(
+            loc, secondOr, rewriter.create<ShRUIOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
+        auto fourthOr = rewriter.create<OrIOp>(
+            loc, thirdOr, rewriter.create<ShRUIOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
+        auto fithOr = rewriter.create<OrIOp>(
+            loc, fourthOr, rewriter.create<ShRUIOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
+        auto sixthOr = rewriter.create<OrIOp>(
+            loc, fithOr, rewriter.create<ShRUIOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
 
         return rewriter.create<AddIOp>(loc, sixthOr, rewriter.create<ConstantIndexOp>(loc, 1));
     }
@@ -51,21 +47,15 @@ namespace voila::mlir::lowering
 
         if (op->getResultTypes().front().isa<IntegerType>())
         {
-            auto tmp = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getI64Type());
-            res.push_back(
-                rewriter.create<linalg::FillOp>(loc, rewriter.create<ConstantIntOp>(loc, 0, rewriter.getI64Type()), tmp)
-                    .result());
+            res.push_back(rewriter.create<arith::ConstantOp>(
+                loc, DenseIntElementsAttr::get(RankedTensorType::get(shape, rewriter.getI64Type()),
+                                               rewriter.getI64IntegerAttr(0).getValue())));
         }
         else if (op->getResultTypes().front().isa<FloatType>())
         {
-            auto tmp = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getF64Type());
-            res.push_back(
-                rewriter
-                    .create<linalg::FillOp>(loc,
-                                            rewriter.create<ConstantFloatOp>(
-                                                loc, rewriter.getF64FloatAttr(0).getValue(), rewriter.getF64Type()),
-                                            tmp)
-                    .result());
+            res.push_back(rewriter.create<arith::ConstantOp>(
+                loc, DenseFPElementsAttr::get(RankedTensorType::get(shape, rewriter.getF64Type()),
+                                              rewriter.getF64FloatAttr(0).getValue())));
         }
         else
         {
@@ -163,7 +153,7 @@ namespace voila::mlir::lowering
                 Value tmp = toSum;
                 if (toSum.getType() != builder.getI64Type())
                 {
-                    tmp = builder.create<SignExtendIOp>(loc, toSum, builder.getI64Type());
+                    tmp = builder.create<ExtSIOp>(loc, toSum, builder.getI64Type());
                 }
                 newVal = builder.create<AddIOp>(loc, oldVal, tmp);
             }
@@ -190,7 +180,7 @@ namespace voila::mlir::lowering
         Value res;
         if (sumOpAdaptor.indices() && op->getResultTypes().front().isa<TensorType>())
         {
-            res = groupedSumLowering(op, loc, sumOpAdaptor, rewriter); //grouped aggreagation is a pipeline breaker
+            res = groupedSumLowering(op, loc, sumOpAdaptor, rewriter); // grouped aggreagation is a pipeline breaker
         }
         else
         {

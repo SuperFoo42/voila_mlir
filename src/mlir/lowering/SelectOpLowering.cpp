@@ -5,6 +5,7 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
+    using namespace ::mlir::arith;
     using ::mlir::voila::SelectOpAdaptor;
 
     static MemRefType convertTensorToMemRef(TensorType type)

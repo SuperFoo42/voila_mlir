@@ -2,6 +2,7 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
+    using namespace ::mlir::arith;
     using ::mlir::voila::MaxOp;
     using ::mlir::voila::MaxOpAdaptor;
 
@@ -27,23 +28,18 @@ namespace voila::mlir::lowering
          * v |= v >> 32;
          * v++;
          */
-        auto firstOr = rewriter.create<OrOp>(
-            loc, insertSize,
-            rewriter.create<UnsignedShiftRightOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
-        auto secondOr = rewriter.create<OrOp>(
-            loc, firstOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
-        auto thirdOr = rewriter.create<OrOp>(
-            loc, secondOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
-        auto fourthOr = rewriter.create<OrOp>(
-            loc, thirdOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
-        auto fithOr = rewriter.create<OrOp>(
-            loc, fourthOr,
-            rewriter.create<UnsignedShiftRightOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
-        auto sixthOr = rewriter.create<OrOp>(
-            loc, fithOr, rewriter.create<UnsignedShiftRightOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
+        auto firstOr = rewriter.create<OrIOp>(
+            loc, insertSize, rewriter.create<ShRUIOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
+        auto secondOr = rewriter.create<OrIOp>(
+            loc, firstOr, rewriter.create<ShRUIOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
+        auto thirdOr = rewriter.create<OrIOp>(
+            loc, secondOr, rewriter.create<ShRUIOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
+        auto fourthOr = rewriter.create<OrIOp>(
+            loc, thirdOr, rewriter.create<ShRUIOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
+        auto fithOr = rewriter.create<OrIOp>(
+            loc, fourthOr, rewriter.create<ShRUIOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
+        auto sixthOr = rewriter.create<OrIOp>(
+            loc, fithOr, rewriter.create<ShRUIOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
 
         return rewriter.create<AddIOp>(loc, sixthOr, rewriter.create<ConstantIndexOp>(loc, 1));
     }
@@ -56,26 +52,16 @@ namespace voila::mlir::lowering
 
         if (op->getResultTypes().front().isa<IntegerType>())
         {
-            auto tmp = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getI64Type());
-            res.push_back(
-                rewriter
-                .create<linalg::FillOp>(
-                    loc,
-                    rewriter.create<ConstantIntOp>(loc, std::numeric_limits<int64_t>::min(), rewriter.getI64Type()),
-                    tmp)
-                    .result());
+            res.push_back(rewriter.create<arith::ConstantOp>(
+                loc, DenseIntElementsAttr::get(RankedTensorType::get(shape, rewriter.getI64Type()),
+                                               rewriter.getI64IntegerAttr(std::numeric_limits<int64_t>::min()).getValue())));
         }
         else if (op->getResultTypes().front().isa<FloatType>())
         {
-            auto tmp = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getF64Type());
-            res.push_back(rewriter
-            .create<linalg::FillOp>(
+            res.push_back(rewriter.create<arith::ConstantOp>(
                 loc,
-                rewriter.create<ConstantFloatOp>(
-                    loc, rewriter.getF64FloatAttr(std::numeric_limits<double>::min()).getValue(),
-                    rewriter.getF64Type()),
-                    tmp)
-                    .result());
+                DenseFPElementsAttr::get(RankedTensorType::get(shape, rewriter.getF64Type()),
+                                         rewriter.getF64FloatAttr(std::numeric_limits<double>::min()).getValue())));
         }
         else
         {
@@ -89,15 +75,15 @@ namespace voila::mlir::lowering
         iter_type.push_back(getReductionIteratorTypeName());
 
         auto fn = [](OpBuilder &builder, Location loc, ValueRange vals)
-            {
-            ::mlir::Value newIsLarger;
+        {
+            ::mlir::Value maxVal;
             if (vals.front().getType().isa<IntegerType>())
-                newIsLarger = builder.create<CmpIOp>(loc, CmpIPredicate::sge, vals[0], vals[1]);
+                maxVal = builder.create<MaxSIOp>(loc, vals[0], vals[1]);
             else
-                newIsLarger = builder.create<CmpFOp>(loc, CmpFPredicate::OGE, vals[0], vals[1]);
+                maxVal = builder.create<MaxFOp>(loc, vals[0], vals[1]);
 
-            builder.create<linalg::YieldOp>(loc, builder.create<SelectOp>(loc, newIsLarger, vals[0], vals[1]).result());
-            };
+            builder.create<linalg::YieldOp>(loc, maxVal);
+        };
 
         SmallVector<AffineExpr, 2> srcExprs;
         srcExprs.push_back(getAffineDimExpr(0, rewriter.getContext()));
@@ -117,74 +103,73 @@ namespace voila::mlir::lowering
         Value res;
         auto allocSize = getHTSize(rewriter, loc,
                                    maxOpAdaptor.input()); // FIXME: not the best solution, indices can be out of range.
-                                   if (getElementTypeOrSelf(op->getResultTypes().front()).isa<IntegerType>())
-                                   {
-                                       res = rewriter.create<memref::AllocOp>(loc, MemRefType::get(-1, rewriter.getI64Type()),
-                                                                              ::llvm::makeArrayRef(allocSize));
-                                       buildAffineLoopNest(rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),
-                                                           allocSize, {1},
-                                                           [&res, &maxOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
-                                                           {
-                                           builder.create<AffineStoreOp>(
-                                               loc,
-                                               builder.create<ConstantIntOp>(loc, std::numeric_limits<int64_t>::min(),
-                                                                             getElementTypeOrSelf(maxOpAdaptor.input())),
-                                                                             res, vals);
-                                                           });
-                                   }
-                                   else if (getElementTypeOrSelf(op->getResultTypes().front()).isa<FloatType>())
-                                   {
-                                       res = rewriter.create<memref::AllocOp>(loc, MemRefType::get(-1, rewriter.getF64Type()),
-                                                                              ::llvm::makeArrayRef(allocSize));
-                                       buildAffineLoopNest(
-                                           rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)), allocSize, {1},
-                                           [&res](OpBuilder &builder, Location loc, ValueRange vals)
-                                           {
-                                               builder.create<AffineStoreOp>(
-                                                   loc,
-                                                   builder.create<ConstantFloatOp>(loc, ::llvm::APFloat(std::numeric_limits<double>::min()),
-                                                                                   builder.getF64Type()),
-                                                                                   res, // TODO: any float type
-                                                                                   vals);
-                                           });
-                                   }
-                                   else
-                                   {
-                                       throw std::logic_error("Invalid type"); // TODO
-                                   }
+        if (getElementTypeOrSelf(op->getResultTypes().front()).isa<IntegerType>())
+        {
+            res = rewriter.create<memref::AllocOp>(loc, MemRefType::get(-1, rewriter.getI64Type()),
+                                                   ::llvm::makeArrayRef(allocSize));
+            buildAffineLoopNest(rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),
+                                allocSize, {1},
+                                [&res, &maxOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
+                                {
+                                    builder.create<AffineStoreOp>(
+                                        loc,
+                                        builder.create<ConstantIntOp>(loc, std::numeric_limits<int64_t>::min(),
+                                                                      getElementTypeOrSelf(maxOpAdaptor.input())),
+                                        res, vals);
+                                });
+        }
+        else if (getElementTypeOrSelf(op->getResultTypes().front()).isa<FloatType>())
+        {
+            res = rewriter.create<memref::AllocOp>(loc, MemRefType::get(-1, rewriter.getF64Type()),
+                                                   ::llvm::makeArrayRef(allocSize));
+            buildAffineLoopNest(
+                rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)), allocSize, {1},
+                [&res](OpBuilder &builder, Location loc, ValueRange vals)
+                {
+                    builder.create<AffineStoreOp>(
+                        loc,
+                        builder.create<ConstantFloatOp>(loc, ::llvm::APFloat(std::numeric_limits<double>::min()),
+                                                        builder.getF64Type()),
+                        res, // TODO: any float type
+                        vals);
+                });
+        }
+        else
+        {
+            throw std::logic_error("Invalid type"); // TODO
+        }
 
-                                   auto inputMemref = rewriter.create<memref::BufferCastOp>(
-                                       loc, convertTensorToMemRef(maxOpAdaptor.input().getType().dyn_cast<TensorType>()), maxOpAdaptor.input());
-                                   auto indexMemref = rewriter.create<memref::BufferCastOp>(
-                                       loc, convertTensorToMemRef(maxOpAdaptor.indices().getType().dyn_cast<TensorType>()),
-                                       maxOpAdaptor.indices());
+        auto inputMemref = rewriter.create<memref::BufferCastOp>(
+            loc, convertTensorToMemRef(maxOpAdaptor.input().getType().dyn_cast<TensorType>()), maxOpAdaptor.input());
+        auto indexMemref = rewriter.create<memref::BufferCastOp>(
+            loc, convertTensorToMemRef(maxOpAdaptor.indices().getType().dyn_cast<TensorType>()),
+            maxOpAdaptor.indices());
 
-                                   auto fn = [&res, &inputMemref, &indexMemref](OpBuilder &builder, Location loc, ValueRange vals)
-                                       {
-                                       auto idx = vals.front();
-                                       auto toCmp = builder.create<AffineLoadOp>(loc, inputMemref, idx);
-                                       Value groupIdx = builder.create<IndexCastOp>(loc, builder.create<AffineLoadOp>(loc, indexMemref, idx),
-                                                                                    builder.getIndexType());
-                                       auto oldVal = builder.create<memref::LoadOp>(loc, res, ::llvm::makeArrayRef(groupIdx));
+        auto fn = [&res, &inputMemref, &indexMemref](OpBuilder &builder, Location loc, ValueRange vals)
+        {
+            auto idx = vals.front();
+            auto toCmp = builder.create<AffineLoadOp>(loc, inputMemref, idx);
+            Value groupIdx = builder.create<IndexCastOp>(loc, builder.create<AffineLoadOp>(loc, indexMemref, idx),
+                                                         builder.getIndexType());
+            auto oldVal = builder.create<memref::LoadOp>(loc, res, ::llvm::makeArrayRef(groupIdx));
 
-                                       ::mlir::Value newIsLarger;
-                                       if (toCmp.getType().isa<IntegerType>())
-                                       {
-                                           newIsLarger = builder.create<CmpIOp>(loc, CmpIPredicate::sge, toCmp, oldVal);
-                                       }
-                                       else
-                                       {
-                                           newIsLarger = builder.create<CmpFOp>(loc, CmpFPredicate::OGE, toCmp, oldVal);
-                                       }
+            ::mlir::Value maxVal;
+            if (toCmp.getType().isa<IntegerType>())
+            {
+                maxVal = builder.create<MaxSIOp>(loc, toCmp, oldVal);
+            }
+            else
+            {
+                maxVal = builder.create<MaxFOp>(loc, toCmp, oldVal);
+            }
 
-                                       builder.create<memref::StoreOp>(loc, builder.create<SelectOp>(loc, newIsLarger, toCmp, oldVal).result(),
-                                                                       res, groupIdx);
-                                       };
+            builder.create<memref::StoreOp>(loc, maxVal, res, groupIdx);
+        };
 
-                                   buildAffineLoopNest(rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),
-                                                       rewriter.create<tensor::DimOp>(loc, maxOpAdaptor.input(), 0).result(), {1}, fn);
+        buildAffineLoopNest(rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),
+                            rewriter.create<tensor::DimOp>(loc, maxOpAdaptor.input(), 0).result(), {1}, fn);
 
-                                   return rewriter.create<memref::TensorLoadOp>(loc, res);
+        return rewriter.create<memref::TensorLoadOp>(loc, res);
     }
 
     LogicalResult

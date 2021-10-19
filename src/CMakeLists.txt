@@ -44,12 +44,11 @@ add_library(voila_compiler
         MLIRGenerator.cpp
         MLIRGeneratorImpl.cpp
         VoilaInlinerInterface.cpp
-        ShapeInferencePass.cpp
-        ShapeInferenceInterface.cpp
         TypeInferencePass.cpp
         Program.cpp
         Config.cpp
         Types.cpp)
+
 
 set(LLVM_LINK_COMPONENTS
         LLVMCore

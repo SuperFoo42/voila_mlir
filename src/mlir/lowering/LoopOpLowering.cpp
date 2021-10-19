@@ -3,6 +3,7 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
+    using namespace ::mlir::arith;
     using ::mlir::voila::LoopOp;
     using ::mlir::voila::LoopOpAdaptor;
 

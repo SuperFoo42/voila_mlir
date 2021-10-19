@@ -4,28 +4,30 @@
 #include "benchmark_defs.hpp.inc"
 
 #include <xxhash.h>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-override"
+
 #include <benchmark/benchmark.h>
+
 #pragma GCC diagnostic pop
 
 std::random_device rd;
 std::mt19937 gen(rd());
 
-static int32_t getQ6Date()
-{
+static int32_t getQ6Date() {
     constexpr auto dates = std::to_array({19930101, 19930101, 19950101, 19960101, 19970101});
     std::uniform_int_distribution<unsigned int> dateSelect(0, dates.size() - 1);
     return dates[dateSelect(gen)];
 }
 
-static double getQ6Discount()
-{
+static double getQ6Discount() {
     constexpr auto discounts = std::to_array({0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09});
     std::uniform_int_distribution<unsigned int> discountSelect(0, discounts.size() - 1);
     return discounts[discountSelect(gen)];
 }
 
+/*
 static int32_t getQ1Date()
 {
     constexpr auto dates = std::to_array(
@@ -38,9 +40,9 @@ static int32_t getQ1Date()
     std::uniform_int_distribution<unsigned int> dateSelect(0, dates.size() - 1);
     return dates[dateSelect(gen)];
 }
+*/
 
-static int32_t getQ6Quantity()
-{
+static int32_t getQ6Quantity() {
     constexpr auto quantities = std::to_array({24, 25});
     std::uniform_int_distribution<unsigned int> quantitySelect(0, quantities.size() - 1);
     return quantities[quantitySelect(gen)];
@@ -49,7 +51,7 @@ static int32_t getQ6Quantity()
 // TODO: global vars and so on...
 auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin"));
 
-static void Q1(benchmark::State &state)
+/*static void Q1(benchmark::State &state)
 {
     using namespace voila;
 
@@ -86,21 +88,20 @@ static void Q1(benchmark::State &state)
         queryTime += prog.getExecTime();
     }
     state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
-}
+}*/
 
 constexpr int32_t INVALID = static_cast<int32_t>(std::numeric_limits<uint64_t>::max());
+
 template<class T1, class T2>
 static size_t probeAndInsert(size_t key,
                              const size_t size,
                              const T1 val1,
                              const T2 val2,
                              std::vector<T1> &vals1,
-                             std::vector<T2> &vals2)
-{
+                             std::vector<T2> &vals2) {
     key %= size;
     // probing
-    while (vals1[key % size] != INVALID && !(vals1[key % size] == val1 && vals2[key % size] == val2))
-    {
+    while (vals1[key % size] != INVALID && !(vals1[key % size] == val1 && vals2[key % size] == val2)) {
         key += 1;
         key %= size;
     }
@@ -112,15 +113,14 @@ static size_t probeAndInsert(size_t key,
 }
 
 template<class T1, class T2>
-static size_t hash(T1 val1, T2 val2)
-{
+static size_t hash(T1 val1, T2 val2) {
     std::array<char, sizeof(T1) + sizeof(T2)> data{};
     std::copy_n(reinterpret_cast<char *>(&val1), sizeof(T1), data.data());
     std::copy_n(reinterpret_cast<char *>(&val2), sizeof(T2), data.data() + sizeof(T1));
     return XXH3_64bits(data.data(), sizeof(T1) + sizeof(T2));
 }
 
-static void Q1_Baseline(benchmark::State &state)
+/*static void Q1_Baseline(benchmark::State &state)
 {
     using namespace voila;
 
@@ -165,10 +165,9 @@ static void Q1_Baseline(benchmark::State &state)
             }
         }
     }
-}
+}*/
 
-static void Q6(benchmark::State &state)
-{
+static void Q6(benchmark::State &state) {
     using namespace voila;
 
     auto l_quantity = lineitem.getColumn<int32_t>(4);
@@ -183,8 +182,7 @@ static void Q6(benchmark::State &state)
     double queryTime = 0;
 
     Program prog(query, config);
-    for ([[maybe_unused]] auto _ : state)
-    {
+    for ([[maybe_unused]] auto _: state) {
         auto startDate = getQ6Date();
         auto endDate = startDate + 10000;
         auto quantity = getQ6Quantity();
@@ -209,8 +207,7 @@ static void Q6(benchmark::State &state)
     state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
 }
 
-static void Q6_Baseline(benchmark::State &state)
-{
+static void Q6_Baseline(benchmark::State &state) {
     using namespace voila;
 
     auto l_quantity = lineitem.getColumn<int32_t>(4);
@@ -218,8 +215,7 @@ static void Q6_Baseline(benchmark::State &state)
     auto l_discount = lineitem.getColumn<double>(6);
     auto l_shipdate = lineitem.getColumn<int32_t>(10);
 
-    for ([[maybe_unused]] auto _ : state)
-    {
+    for ([[maybe_unused]] auto _: state) {
         const auto startDate = getQ6Date();
         const auto endDate = startDate + 10000;
         const auto quantity = getQ6Quantity();
@@ -227,18 +223,16 @@ static void Q6_Baseline(benchmark::State &state)
         const auto minDiscount = discount - 0.01;
         const auto maxDiscount = discount + 0.01;
         double res = 0;
-        for (size_t i = 0; i < l_quantity.size(); ++i)
-        {
+        for (size_t i = 0; i < l_quantity.size(); ++i) {
             if (l_shipdate[i] >= startDate && l_shipdate[i] < endDate && l_quantity[i] < quantity &&
-                l_discount[i] >= minDiscount && l_discount[i] <= maxDiscount)
-            {
+                l_discount[i] >= minDiscount && l_discount[i] <= maxDiscount) {
                 ::benchmark::DoNotOptimize(res += l_extendedprice[i] * l_discount[i]);
             }
         }
     }
 }
 
-BENCHMARK(Q1)->Unit(benchmark::kMillisecond);
+//BENCHMARK(Q1)->Unit(benchmark::kMillisecond);
 BENCHMARK(Q6)->Unit(benchmark::kMillisecond);
-BENCHMARK(Q1_Baseline)->Unit(benchmark::kMillisecond);
+//BENCHMARK(Q1_Baseline)->Unit(benchmark::kMillisecond);
 BENCHMARK(Q6_Baseline)->Unit(benchmark::kMillisecond);

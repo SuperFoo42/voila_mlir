@@ -3,21 +3,25 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
+
 #include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/InitAllDialects.h>
 #include <mlir/InitAllPasses.h>
 #include <mlir/VoilaDialect.h>
 #include <spdlog/spdlog.h>
+
 #pragma GCC diagnostic pop
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     // setup mlir
+    //llvm::DebugFlag = true;
     mlir::registerAllPasses();
     mlir::DialectRegistry registry;
     registry.insert<mlir::voila::VoilaDialect>();
     registry.insert<mlir::StandardOpsDialect>();
+    registry.insert<mlir::arith::ArithmeticDialect>();
+    registry.insert<mlir::vector::VectorDialect>();
     ::mlir::registerAllDialects(registry);
     mlir::registerMLIRContextCLOptions();
     spdlog::set_level(spdlog::level::debug);

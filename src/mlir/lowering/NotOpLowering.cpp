@@ -2,6 +2,7 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
+    using namespace ::mlir::arith;
     using ::mlir::voila::NotOp;
     using ::mlir::voila::NotOpAdaptor;
 
@@ -138,17 +139,17 @@ namespace voila::mlir::lowering
                     value = binaryAdaptor.value();
                 }
 
-                auto oneConst = builder.create<ConstantOp>(loc, builder.getIntegerAttr(builder.getI1Type(), 1));
+                auto oneConst = builder.create<arith::ConstantOp>(loc, builder.getIntegerAttr(builder.getI1Type(), 1));
                 if (value.getType().isa<MemRefType>())
                 {
                     auto loadedLhs = builder.create<AffineLoadOp>(loc, value, loopIvs);
                     // Create the binary operation performed on the loaded values.
-                    return builder.create<XOrOp>(loc, loadedLhs, oneConst);
+                    return builder.create<XOrIOp>(loc, loadedLhs, oneConst);
                 }
                 else
                 {
                     // Create the binary operation performed on the loaded values.
-                    return builder.create<XOrOp>(loc, binaryAdaptor.value().getType(), binaryAdaptor.value(), oneConst);
+                    return builder.create<XOrIOp>(loc, binaryAdaptor.value().getType(), binaryAdaptor.value(), oneConst);
                 }
             });
         return success();

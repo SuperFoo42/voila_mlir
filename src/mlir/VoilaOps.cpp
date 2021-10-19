@@ -24,7 +24,7 @@
 
 #define GET_OP_CLASSES
 #include "mlir/VoilaOps.cpp.inc"
-
+using namespace ::mlir::arith;
 mlir::TensorType static inferShapesFromBinaryOp(mlir::Type lhsType, mlir::Type rhsType)
 {
     int64_t dimSize = 1;
@@ -84,76 +84,6 @@ bool mlir::voila::CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
         return false;
     // The shape is required to match if both types are ranked.
     return !input.hasRank() || !output.hasRank() || input == output;
-}
-
-void mlir::voila::AddOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::SubOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::MulOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::DivOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::ModOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::AndOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::OrOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::NotOp::inferShapes()
-{
-    getResult().setType(value().getType());
-}
-
-void mlir::voila::EqOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::NeqOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::LeOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::LeqOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::GeOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
-}
-
-void mlir::voila::GeqOp::inferShapes()
-{
-    getResult().setType(::inferShapesFromBinaryOp(lhs().getType(), rhs().getType()));
 }
 
 ::mlir::LogicalResult mlir::voila::SelectOp::canonicalize(SelectOp op, PatternRewriter &rewriter)

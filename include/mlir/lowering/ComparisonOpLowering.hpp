@@ -20,34 +20,34 @@ namespace voila::mlir::lowering
         static constexpr auto getIntCmpPred()
         {
             if constexpr (std::is_same_v<CmpOp, ::mlir::voila::EqOp>)
-                return ::mlir::CmpIPredicate::eq;
+                return ::mlir::arith::CmpIPredicate::eq;
             else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::NeqOp>)
-                return ::mlir::CmpIPredicate::ne;
+                return ::mlir::arith::CmpIPredicate::ne;
             else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeOp>)
-                return ::mlir::CmpIPredicate::slt;
+                return ::mlir::arith::CmpIPredicate::slt;
             else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeqOp>)
-                return ::mlir::CmpIPredicate::sle;
+                return ::mlir::arith::CmpIPredicate::sle;
             else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeqOp>)
-                return ::mlir::CmpIPredicate::sge;
+                return ::mlir::arith::CmpIPredicate::sge;
             else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeOp>)
-                return ::mlir::CmpIPredicate::sgt;
+                return ::mlir::arith::CmpIPredicate::sgt;
             else
                 throw std::logic_error("Sth. went wrong");
         }
         static constexpr auto getFltCmpPred()
         {
             if constexpr (std::is_same_v<CmpOp, ::mlir::voila::EqOp>)
-                return ::mlir::CmpFPredicate::OEQ;
+                return ::mlir::arith::CmpFPredicate::OEQ;
             else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::NeqOp>)
-                return ::mlir::CmpFPredicate::ONE;
+                return ::mlir::arith::CmpFPredicate::ONE;
             else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeOp>)
-                return ::mlir::CmpFPredicate::OLT;
+                return ::mlir::arith::CmpFPredicate::OLT;
             else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeqOp>)
-                return ::mlir::CmpFPredicate::OLE;
+                return ::mlir::arith::CmpFPredicate::OLE;
             else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeqOp>)
-                return ::mlir::CmpFPredicate::OGE;
+                return ::mlir::arith::CmpFPredicate::OGE;
             else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeOp>)
-                return ::mlir::CmpFPredicate::OGT;
+                return ::mlir::arith::CmpFPredicate::OGT;
             else
                 throw std::logic_error("Sth. went wrong");
         }
@@ -91,21 +91,21 @@ namespace voila::mlir::lowering
 
             if (isFloat(lhsType) && isFloat(rhsType))
             {
-                return builder.create<::mlir::CmpFOp>(loc, getFltCmpPred(), lhs, rhs);
+                return builder.create<::mlir::arith::CmpFOp>(loc, getFltCmpPred(), lhs, rhs);
             }
             else if (isFloat(lhsType))
             {
-                auto castedFlt = builder.template create<::mlir::SIToFPOp>(loc, rhs, getFloatType(builder, lhsType));
-                return builder.create<::mlir::CmpFOp>(loc, getFltCmpPred(), lhs, castedFlt);
+                auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(loc, rhs, getFloatType(builder, lhsType));
+                return builder.create<::mlir::arith::CmpFOp>(loc, getFltCmpPred(), lhs, castedFlt);
             }
             else if (isFloat(rhsType))
             {
-                auto castedFlt = builder.template create<::mlir::SIToFPOp>(loc, lhs, getFloatType(builder, rhsType));
-                return builder.create<::mlir::CmpFOp>(loc, getFltCmpPred(), castedFlt, rhs);
+                auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(loc, lhs, getFloatType(builder, rhsType));
+                return builder.create<::mlir::arith::CmpFOp>(loc, getFltCmpPred(), castedFlt, rhs);
             }
             else
             {
-                return builder.create<::mlir::CmpIOp>(loc, getIntCmpPred(), lhs, rhs);
+                return builder.create<::mlir::arith::CmpIOp>(loc, getIntCmpPred(), lhs, rhs);
             }
         }
 

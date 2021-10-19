@@ -32,8 +32,6 @@ set(LIBS
 
 add_llvm_executable(voila
         main.cpp
-        DEPENDS
-        MLIRShapeInferenceInterfaceIncGen
         )
 
 target_compile_options(voila PUBLIC
