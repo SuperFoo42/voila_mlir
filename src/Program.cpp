@@ -12,6 +12,27 @@ namespace voila
     using namespace ::mlir;
     using namespace ::voila::lexer;
 
+    template<typename T>
+    static auto &resolveAndFetchResult(Arity arity,
+                                       std::shared_ptr<void> &basePtr,
+                                       void *elemPtr,
+                                       std::vector<Program::result_t> &res)
+    {
+        if (!arity.is_undef() && arity.get_size() <= 1)
+        {
+            auto *extractedRes = reinterpret_cast<T *>(elemPtr);
+            res.emplace_back(*extractedRes);
+        }
+        else
+        {
+            res.emplace_back(strided_memref_ptr<T, 1>(basePtr, reinterpret_cast<StridedMemRefType<T, 1> *>(elemPtr)));
+            std::get_deleter<ProgramResultDeleter>(basePtr)->toDealloc.push_back(
+                std::get<strided_memref_ptr<T, 1>>(res.back())->basePtr);
+        }
+
+        return res;
+    }
+
     static std::string MLIRModuleToString(OwningModuleRef &module)
     {
         std::string res;
@@ -148,12 +169,16 @@ namespace voila
 
         /*if (objPath.has_value())
             engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));*/
+
         // Invoke the JIT-compiled function.
-        auto start = std::chrono::high_resolution_clock::now();
+        Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, Events::TLB_MISSES,
+                 Events::NO_INST_COMPLETE, Events::CY_STALLED, Events::REF_CYCLES, Events::TOT_CYCLES,
+                 Events::INS_ISSUED, Events::PREFETCH_MISS>
+            prof;
+        prof.start();
         auto invocationResult = engine->invokePacked("main", params);
-        auto stop = std::chrono::high_resolution_clock::now();
-        float currentTime = float(std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count());
-        timer = currentTime;
+        prof.stop();
+        std::cout << prof;
         if (invocationResult)
         {
             throw JITInvocationError();
@@ -224,6 +249,7 @@ namespace voila
         optPM.addPass(createCSEPass());
 
         // Partially lower voila to linalg
+
         optPM.addPass(::voila::mlir::createLowerToLinalgPass());
         // Partially lower voila to affine with a few cleanups
         optPM.addPass(::voila::mlir::createLowerToAffinePass());
@@ -240,26 +266,24 @@ namespace voila
         pm.addPass(createLinalgComprehensiveModuleBufferizePass());
         optPM.addPass(arith::createArithmeticBufferizePass());
         pm.addPass(createTensorConstantBufferizePass());
-
-       /* optPM.addPass(createSCFBufferizePass());
-        optPM.addPass(createLinalgDetensorizePass());
-        optPM.addPass(createLinalgBufferizePass());
+        /*        optPM.addPass(createTensorBufferizePass());
+                optPM.addPass(createLinalgBufferizePass());
+                optPM.addPass(createStdBufferizePass());
+                optPM.addPass(createSCFBufferizePass());*/
         // optPM.addPass(createCanonicalizerPass());
         // optPM.addPass(createCSEPass());
-        optPM.addPass(createStdBufferizePass());
-        // optPM.addPass(arith::createArithmeticBufferizePass());
-        // optPM.addPass(createTensorBufferizePass());
         pm.addPass(createFuncBufferizePass());
         optPM.addPass(createCanonicalizerPass());
-        optPM.addPass(createCSEPass());*/
+        optPM.addPass(createCSEPass());
         /*        pm.addPass(createNormalizeMemRefsPass());
         optPM.addPass(createPipelineDataTransferPass());
         optPM.addPass(createLinalgStrategyVectorizePass());
         optPM.addPass(createCanonicalizerPass());
         optPM.addPass(createCSEPass());*/
+        // pm.addPass(createBufferResultsToOutParamsPass());//?
         optPM.addPass(createBufferHoistingPass());
         pm.addPass(createNormalizeMemRefsPass());
-        // optPM.addPass(createPromoteBuffersToStackPass());
+        optPM.addPass(createPromoteBuffersToStackPass());
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));
 
@@ -278,7 +302,7 @@ namespace voila
         // Apply any generic pass manager command line options and run the pipeline.
         applyPassManagerCLOptions(secondpm);
         ::mlir::OpPassManager &secondOptPM = secondpm.nest<FuncOp>();
-
+        secondOptPM.addPass(createSimplifyAffineStructuresPass());
         secondOptPM.addPass(createLinalgStrategyVectorizePass());
         // secondOptPM.addPass(createCanonicalizerPass());
         // secondOptPM.addPass(createCSEPass());
@@ -291,7 +315,7 @@ namespace voila
         //             secondOptPM.addPass(createCanonicalizerPass());
         //             secondOptPM.addPass(createCSEPass());*/
         //             secondOptPM.addPass(createForLoopPeelingPass());
-        secondpm.addPass(createBufferResultsToOutParamsPass());
+        // secondpm.addPass(createBufferResultsToOutParamsPass());
         secondOptPM.addPass(createSimplifyAffineStructuresPass());
         secondOptPM.addPass(createAffineScalarReplacementPass());
         secondOptPM.addPass(createAffineLoopInvariantCodeMotionPass());
@@ -491,60 +515,63 @@ namespace voila
             auto arities = type.getArities();
             for (size_t i = 0; i < types.size(); ++i)
             {
-                switch (types[i])
+                if (!arities[i].is_undef() && arities[i].get_size() <= 1)
                 {
-                    case DataType::BOOL: // FIXME: I1 type is not directly mappable to C++ types
-                        throw NotImplementedException();
-                    case DataType::NUMERIC:
-                        throw std::logic_error("Abstract type");
-                    case DataType::INT32:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
+                    switch (types[i])
+                    {
+                        case DataType::INT32:
                             resTypes.push_back(::llvm::Type::getInt32Ty(llvmContext));
-                        }
-                        else
-                        {
+                            break;
+                        case DataType::INT64:
+                            resTypes.push_back(::llvm::Type::getInt64Ty(llvmContext));
+                            break;
+                        case DataType::DBL:
+                            resTypes.push_back(::llvm::Type::getDoubleTy(llvmContext));
+                            break;
+                        case DataType::BOOL:
+                        case DataType::STRING:
+                            throw NotImplementedException();
+                        case DataType::NUMERIC:
+                        case DataType::VOID:
+                            break;
+                        case DataType::UNKNOWN:
+                            throw std::logic_error("");
+                    }
+                }
+                else
+                {
+                    switch (types[i])
+                    {
+                        case DataType::INT32:
                             resTypes.push_back(llvm::StructType::create(
                                 llvmContext,
                                 {llvm::Type::getInt32PtrTy(llvmContext), llvm::Type::getInt32PtrTy(llvmContext),
                                  ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
                                  ::llvm::Type::getInt64Ty(llvmContext)}));
-                        }
-                        break;
-                    case DataType::INT64:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
-                            resTypes.push_back(::llvm::Type::getInt64Ty(llvmContext));
-                        }
-                        else
-                        {
+                            break;
+                        case DataType::INT64:
                             resTypes.push_back(llvm::StructType::create(
                                 llvmContext,
                                 {llvm::Type::getInt64PtrTy(llvmContext), llvm::Type::getInt64PtrTy(llvmContext),
                                  ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
                                  ::llvm::Type::getInt64Ty(llvmContext)}));
-                        }
-                        break;
-                    case DataType::DBL:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
-                            resTypes.push_back(::llvm::Type::getDoubleTy(llvmContext));
-                        }
-                        else
-                        {
+                            break;
+                        case DataType::DBL:
                             resTypes.push_back(llvm::StructType::create(
                                 llvmContext,
                                 {llvm::Type::getDoublePtrTy(llvmContext), llvm::Type::getDoublePtrTy(llvmContext),
                                  ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
                                  ::llvm::Type::getInt64Ty(llvmContext)}));
-                        }
-                        break;
-                    case DataType::STRING:
-                        throw NotImplementedException();
-                    case DataType::VOID:
-                        break;
-                    case DataType::UNKNOWN:
-                        throw std::logic_error("");
+                            break;
+                        case DataType::BOOL:
+                        case DataType::STRING:
+                            throw NotImplementedException();
+                        case DataType::VOID:
+                        case DataType::NUMERIC:
+                            break;
+                        case DataType::UNKNOWN:
+                            throw std::logic_error("");
+                    }
                 }
             }
 
@@ -562,58 +589,19 @@ namespace voila
                 switch (types[i])
                 {
                     case DataType::INT32:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
-                            auto *extractedRes = reinterpret_cast<uint32_t *>(
-                                std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));
-                            res.emplace_back(*extractedRes);
-                        }
-                        else
-                        {
-                            res.emplace_back(strided_memref_ptr<uint32_t, 1>(
-                                basePtr, reinterpret_cast<StridedMemRefType<uint32_t, 1> *>(
-                                             std::reinterpret_pointer_cast<char>(basePtr).get() +
-                                             resLayout->getElementOffset(i))));
-                            std::get_deleter<ProgramResultDeleter>(basePtr)->toDealloc.push_back(
-                                std::get<strided_memref_ptr<uint32_t, 1>>(res.back())->basePtr);
-                        }
+                        res = resolveAndFetchResult<uint32_t>(
+                            arities[i], basePtr,
+                            std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i), res);
                         break;
                     case DataType::INT64:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
-                            auto *extractedRes = reinterpret_cast<uint64_t *>(
-                                std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));
-                            res.emplace_back(*extractedRes);
-                        }
-                        else
-                        {
-                            res.emplace_back(strided_memref_ptr<uint64_t, 1>(
-                                basePtr, reinterpret_cast<StridedMemRefType<uint64_t, 1> *>(
-                                             std::reinterpret_pointer_cast<char>(basePtr).get() +
-                                             resLayout->getElementOffset(i))));
-                            std::get_deleter<ProgramResultDeleter>(basePtr)->toDealloc.push_back(
-                                std::get<strided_memref_ptr<uint64_t, 1>>(res.back())->basePtr);
-                            /*                            std::get_deleter<ProgramResultDeleter
-                               *>(basePtr)->toDealloc.push_back( std::get<strided_memref_ptr<uint64_t,
-                               1>>(res.back())->basePtr);*/
-                        }
+                        res = resolveAndFetchResult<uint64_t>(
+                            arities[i], basePtr,
+                            std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i), res);
                         break;
                     case DataType::DBL:
-                        if (!arities[i].is_undef() && arities[i].get_size() <= 1)
-                        {
-                            auto *extractedRes = reinterpret_cast<double *>(
-                                std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i));
-                            res.emplace_back(*extractedRes);
-                        }
-                        else
-                        {
-                            res.emplace_back(strided_memref_ptr<double, 1>(
-                                basePtr, reinterpret_cast<StridedMemRefType<double, 1> *>(
-                                             std::reinterpret_pointer_cast<char>(basePtr).get() +
-                                             resLayout->getElementOffset(i))));
-                            std::get_deleter<ProgramResultDeleter>(basePtr)->toDealloc.push_back(
-                                std::get<strided_memref_ptr<double, 1>>(res.back())->basePtr);
-                        }
+                        res = resolveAndFetchResult<double>(
+                            arities[i], basePtr,
+                            std::reinterpret_pointer_cast<char>(basePtr).get() + resLayout->getElementOffset(i), res);
                         break;
                     default:
                         throw std::logic_error("");

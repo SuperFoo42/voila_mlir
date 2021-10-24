@@ -80,13 +80,14 @@ endif ()
 
 #Enable sanitizers globally
 #if ($<CONFIG:Release>)
-#add_compile_options($<$<CONFIG:Release>:-O3>
-        #$<$<CONFIG:Debug>:-fsanitize=address>
-        #$<$<CONFIG:Debug>:-fsanitize=undefined>
+add_compile_options(#$<$<CONFIG:Release>:-O3>
+        -fsanitize=address
+        -fsanitize=undefined
         #-Wno-ambiguous-reversed-operator)
-add_link_options(-fuse-ld=lld)
-        #$<$<CONFIG:Debug>:-fsanitize=address>
-        #$<$<CONFIG:Debug>:-fsanitize=undefined>) #need to use lld, for some reason ld complains about invalid symbols.
+        )
+add_link_options(-fuse-ld=lld
+        -fsanitize=address
+        -fsanitize=undefined) #need to use lld, for some reason ld complains about invalid symbols.
 #[[else()
     add_compile_options(-fsanitize=address -fsanitize=undefined -Wno-ambiguous-reversed-operator)
     add_link_options(-fuse-ld=lld -fsanitize=address -fsanitize=undefined) #need to use lld, for some reason ld complains about invalid symbols.
@@ -122,6 +123,25 @@ if (reflex_ADDED)
     cmake_policy(SET CMP0004 OLD) # workaround for underscore in reflex lib path
     target_link_libraries(reflex INTERFACE "${reflex_SOURCE_DIR}/lib/libreflex.a")
 endif ()
+
+CPMAddPackage("bb:icl/papi#papi-6-0-0-1-t")
+if (papi_ADDED)
+    execute_process(
+            COMMAND sh ./configure --prefix=${papi_BINARY_DIR} #TODO: add components for amd or nvidia gpus if needed
+            WORKING_DIRECTORY ${papi_SOURCE_DIR}/src
+    )
+    execute_process(COMMAND make
+            WORKING_DIRECTORY ${papi_SOURCE_DIR}/src
+            )
+    execute_process(COMMAND make install
+            WORKING_DIRECTORY ${papi_SOURCE_DIR}/src
+            )
+    include_directories("${papi_BINARY_DIR}/include")
+    #TODO: properly import without static name
+    add_library(papi STATIC IMPORTED)
+    set_property(TARGET papi PROPERTY IMPORTED_LOCATION "${papi_BINARY_DIR}/lib/libpapi.a")
+endif ()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_subdirectory(src)

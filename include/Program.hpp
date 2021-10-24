@@ -53,6 +53,8 @@
 #include <mlir/lowering/VoilaToLLVMLoweringPass.hpp>
 #include <mlir/lowering/VoilaToLinalgLoweringPass.hpp>
 #pragma GCC diagnostic pop
+#include "Profiler.hpp"
+
 #include <memory>
 #include <range/v3/all.hpp>
 #include <unordered_map>
@@ -81,8 +83,11 @@ namespace voila
 
         void operator()(void *b)
         {
-            for (auto ptr : toDealloc)
+            for (auto &ptr : toDealloc)
+            {
                 std::free(ptr);
+                ptr = nullptr;
+            }
             std::free(b);
         }
     };

@@ -9,6 +9,7 @@ namespace voila
     Config::Config() :
         debug(false),
         optimize(true),
+        profile(true),
         plotAST(false),
         printMLIR(false),
         printLoweredMLIR(false),

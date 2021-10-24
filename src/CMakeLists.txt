@@ -68,6 +68,7 @@ target_link_libraries(voila_compiler
         range-v3
         MLIRExecutionEngine
         ${LLVM_LINK_COMPONENTS}
+        papi
         )
 
 target_compile_features(voila_compiler PUBLIC cxx_std_20)

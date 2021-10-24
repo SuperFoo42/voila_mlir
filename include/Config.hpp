@@ -13,6 +13,7 @@ namespace voila
     {
         bool debug;
         bool optimize;
+        bool profile;
         bool plotAST;
         bool printMLIR;
         bool printLoweredMLIR;
