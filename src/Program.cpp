@@ -171,8 +171,8 @@ namespace voila
             engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));*/
 
         // Invoke the JIT-compiled function.
-        Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, Events::TLB_MISSES,
-                 Events::NO_INST_COMPLETE, Events::CY_STALLED, Events::REF_CYCLES, Events::TOT_CYCLES,
+        Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
+                 Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
                  Events::INS_ISSUED, Events::PREFETCH_MISS>
             prof;
         prof.start();
@@ -260,16 +260,16 @@ namespace voila
         optPM.addPass(createConvertElementwiseToLinalgPass());
         optPM.addPass(createLinalgGeneralizationPass());
         optPM.addPass(createLinalgElementwiseOpFusionPass());
-        // optPM.addPass(createLinalgTilingPass({4})); // TODO: correct tiling size
+        //optPM.addPass(createLinalgTilingPass({4})); // TODO: correct tiling size
 
         // bufferization passes
-        pm.addPass(createLinalgComprehensiveModuleBufferizePass());
+        // pm.addPass(createLinalgComprehensiveModuleBufferizePass());
         optPM.addPass(arith::createArithmeticBufferizePass());
         pm.addPass(createTensorConstantBufferizePass());
-        /*        optPM.addPass(createTensorBufferizePass());
-                optPM.addPass(createLinalgBufferizePass());
-                optPM.addPass(createStdBufferizePass());
-                optPM.addPass(createSCFBufferizePass());*/
+        optPM.addPass(createTensorBufferizePass());
+        optPM.addPass(createLinalgBufferizePass());
+        optPM.addPass(createStdBufferizePass());
+        optPM.addPass(createSCFBufferizePass());
         // optPM.addPass(createCanonicalizerPass());
         // optPM.addPass(createCSEPass());
         pm.addPass(createFuncBufferizePass());
@@ -283,7 +283,7 @@ namespace voila
         // pm.addPass(createBufferResultsToOutParamsPass());//?
         optPM.addPass(createBufferHoistingPass());
         pm.addPass(createNormalizeMemRefsPass());
-        optPM.addPass(createPromoteBuffersToStackPass());
+        // optPM.addPass(createPromoteBuffersToStackPass());
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));
 
@@ -337,7 +337,7 @@ namespace voila
         secondOptPM.addPass(createLoopUnrollAndJamPass());
         secondOptPM.addPass(createForLoopSpecializationPass());
         secondOptPM.addPass(createParallelLoopFusionPass());
-        secondOptPM.addPass(createParallelLoopCollapsingPass());
+        // secondOptPM.addPass(createParallelLoopCollapsingPass());
         secondOptPM.addPass(createParallelLoopTilingPass());
         secondOptPM.addPass(createParallelLoopSpecializationPass());
         // secondpm.addPass(createAsyncParallelForPass());
@@ -353,8 +353,8 @@ namespace voila
         //        if (!config.debug) {
         secondpm.addPass(createStripDebugInfoPass());
         //        }
-        // secondOptPM.addPass(createCanonicalizerPass());
-        // secondOptPM.addPass(createCSEPass());
+        secondOptPM.addPass(createCanonicalizerPass());
+        secondOptPM.addPass(createCSEPass());
         secondOptPM.addPass(mlir::createLowerVectorMultiReductionPass());
         secondOptPM.addPass(createConvertVectorToSCFPass());
 
@@ -367,7 +367,9 @@ namespace voila
 
         secondOptPM.addPass(arith::createArithmeticExpandOpsPass());
         secondOptPM.addPass(createStdExpandOpsPass());
+
         secondOptPM.addPass(arith::createConvertArithmeticToLLVMPass());
+        secondOptPM.addPass(createLowerAffinePass());
         secondpm.addPass(::mlir::createLowerToLLVMPass());
 
         //  secondpm.addPass(createConvertAsyncToLLVMPass());

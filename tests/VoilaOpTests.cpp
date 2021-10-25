@@ -125,7 +125,7 @@ TEST(HashTableTests, ScalarHash)
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_hash.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr uint64_t TENSOR_VALS = 123;
-    constexpr uint64_t HASH = 140731490285272;//7668608003591710536;
+    constexpr uint64_t HASH = 7668608003591710536;
     Program prog(file, config);
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
