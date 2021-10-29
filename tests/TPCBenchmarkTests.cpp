@@ -106,19 +106,19 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q1.voila";
     Program prog(query, config);
 
-    prog << ::voila::make_param(l_returnflag.data(), l_returnflag.size(), DataType::INT32);
-    prog << ::voila::make_param(l_linestatus.data(), l_linestatus.size(), DataType::INT32);
-    prog << ::voila::make_param(l_quantity.data(), l_quantity.size(), DataType::INT32);
-    prog << ::voila::make_param(l_extendedprice.data(), l_extendedprice.size(), DataType::DBL);
-    prog << ::voila::make_param(l_discount.data(), l_discount.size(), DataType::DBL);
-    prog << ::voila::make_param(l_tax.data(), l_tax.size(), DataType::DBL);
-    prog << ::voila::make_param(l_shipdate.data(), l_shipdate.size(), DataType::INT32);
-    prog << ::voila::make_param(&date, 0, DataType::INT32);
+    prog << l_returnflag;
+    prog << l_linestatus;
+    prog << l_quantity;
+    prog << l_extendedprice;
+    prog << l_discount;
+    prog << l_tax;
+    prog << l_shipdate;
+    prog << &date;
 
     // run in jit
     auto res = prog();
     auto ht_returnflag_res = std::get<strided_memref_ptr<uint32_t, 1>>(res[0]);
-    size_t res_idx = 0;
+    int64_t res_idx = 0;
     while (ht_returnflag_res->operator[](res_idx) == std::numeric_limits<uint32_t>::max())
     {
         ++res_idx;
@@ -145,6 +145,7 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     EXPECT_DOUBLE_EQ(avg_disc_res->operator[](res_idx), 0.04998529583825443);
     EXPECT_EQ(count_order_res->operator[](res_idx), 1478493);
 }
+
 TEST(TPCBenchmarkTests, Q6_Qualification)
 {
     auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin"));
@@ -165,15 +166,15 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
     double minDiscount = discount - 0.01;
     double maxDiscount = discount + 0.01;
 
-    prog << ::voila::make_param(l_quantity.data(), l_quantity.size(), DataType::INT32);
-    prog << ::voila::make_param(l_discount.data(), l_discount.size(), DataType::DBL);
-    prog << ::voila::make_param(l_shipdate.data(), l_shipdate.size(), DataType::INT32);
-    prog << ::voila::make_param(l_extendedprice.data(), l_extendedprice.size(), DataType::DBL);
-    prog << ::voila::make_param(&startDate, 0, DataType::INT32);
-    prog << ::voila::make_param(&endDate, 0, DataType::INT32);
-    prog << ::voila::make_param(&quantity, 0, DataType::INT32);
-    prog << ::voila::make_param(&minDiscount, 0, DataType::DBL);
-    prog << ::voila::make_param(&maxDiscount, 0, DataType::DBL);
+    prog << l_quantity;
+    prog << l_discount;
+    prog << l_shipdate;
+    prog << l_extendedprice;
+    prog << &startDate;
+    prog << &endDate;
+    prog << &quantity;
+    prog << &minDiscount;
+    prog << &maxDiscount;
     auto res = std::get<double>(prog()[0]);
 
     double ref = 0;

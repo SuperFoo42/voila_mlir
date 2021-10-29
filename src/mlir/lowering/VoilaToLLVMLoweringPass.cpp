@@ -43,7 +43,6 @@ namespace voila::mlir
             populateStdToLLVMFuncOpConversionPattern(typeConverter, patterns);
             populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
             populateReconcileUnrealizedCastsPatterns(patterns);
-            vector::populateVectorMultiReductionLoweringPatterns(patterns);
             // We want to completely lower to LLVM, so we use a `FullConversion`. This
             // ensures that only legal operations will remain after the conversion.
             auto module = getOperation();

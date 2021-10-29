@@ -22,8 +22,8 @@ TEST(AddTests, TensorTensorTest)
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
     auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg2.get(), TENSOR_SIZE, TENSOR_VALS);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
-    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
+    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
@@ -90,8 +90,8 @@ TEST(SubTests, TensorTensorTest)
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
     auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg2.get(), TENSOR_SIZE, TENSOR_VALS);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
-    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
+    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
@@ -130,7 +130,7 @@ TEST(HashTableTests, ScalarHash)
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
@@ -160,8 +160,8 @@ TEST(HashTableTests, VariadicHash)
     auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS1);
     std::fill_n(arg2.get(), TENSOR_SIZE, TENSOR_VALS2);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
-    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
+    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
@@ -201,7 +201,7 @@ TEST(HashTableTests, ScalarInsert)
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
@@ -258,8 +258,8 @@ TEST(HashTableTests, ComplexInsert)
     auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS1);
     std::fill_n(arg2.get(), TENSOR_SIZE, TENSOR_VALS2);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
-    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
+    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = prog();
@@ -290,7 +290,7 @@ TEST(HashTableTests, SimpleLookup)
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
@@ -320,8 +320,8 @@ TEST(HashTableTests, ComplexLookup)
     auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS1);
     std::fill_n(arg2.get(), TENSOR_SIZE, TENSOR_VALS2);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
-    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
+    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
@@ -349,7 +349,7 @@ TEST(AggregateTests, SumTest)
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<uint64_t>(prog()[0]);
@@ -376,7 +376,7 @@ TEST(AggregateTests, MinTest)
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_VALS.size()]);
     std::copy(TENSOR_VALS.begin(), TENSOR_VALS.end(), arg.get());
-    prog << ::voila::make_param(arg.get(), TENSOR_VALS.size(), voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_VALS.size());
 
     // run in jit
     auto res = std::get<uint64_t>(prog()[0]);
@@ -403,7 +403,7 @@ TEST(AggregateTests, MaxTest)
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_VALS.size()]);
     std::copy(TENSOR_VALS.begin(), TENSOR_VALS.end(), arg.get());
-    prog << ::voila::make_param(arg.get(), TENSOR_VALS.size(), voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_VALS.size());
 
     // run in jit
     auto res = std::get<uint64_t>(prog()[0]);
@@ -426,7 +426,7 @@ TEST(AggregateTests, AvgTest)
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<double[]>(new double[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::DBL);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<double>(prog()[0]);
@@ -448,7 +448,7 @@ TEST(AggregateTests, CountTest)
     // alloc dummy data to pass to program args
     auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<uint64_t>(prog()[0]);
@@ -479,8 +479,8 @@ TEST(AggregateTests, GroupSumTest)
     auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
     std::fill_n(arg2.get(), TENSOR_SIZE, INDICES);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
-    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
+    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
@@ -530,8 +530,8 @@ TEST(AggregateTests, GroupMinTest)
     auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::copy(TENSOR_VALS.begin(), TENSOR_VALS.end(), arg.get());
     std::fill_n(arg2.get(), TENSOR_SIZE, INDICES);
-    prog << ::voila::make_param(arg.get(), TENSOR_VALS.size(), voila::DataType::INT64);
-    prog << ::voila::make_param(arg2.get(), TENSOR_VALS.size(), voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_VALS.size());
+    prog << ::voila::make_param(arg2.get(), TENSOR_VALS.size());
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
@@ -581,8 +581,8 @@ TEST(AggregateTests, GroupMaxTest)
     auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::copy(TENSOR_VALS.begin(), TENSOR_VALS.end(), arg.get());
     std::fill_n(arg2.get(), TENSOR_SIZE, INDICES);
-    prog << ::voila::make_param(arg.get(), TENSOR_VALS.size(), voila::DataType::INT64);
-    prog << ::voila::make_param(arg2.get(), TENSOR_VALS.size(), voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_VALS.size());
+    prog << ::voila::make_param(arg2.get(), TENSOR_VALS.size());
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
@@ -614,8 +614,8 @@ TEST(AggregateTests, GroupAvgTest)
     auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
     std::fill_n(arg2.get(), TENSOR_SIZE, INDICES);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::DBL);
-    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
+    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<strided_memref_ptr<double, 1>>(prog()[0]);
@@ -656,8 +656,8 @@ TEST(AggregateTests, GroupCountTest)
     auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
     std::fill_n(arg2.get(), TENSOR_SIZE, INDICES);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE, voila::DataType::INT64);
-    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE, voila::DataType::INT64);
+    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
+    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE);
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);

@@ -7,17 +7,22 @@ namespace voila::mlir
     {
         return std::make_unique<VectorMultiReductionPass>();
     }
+
     StringRef VectorMultiReductionPass::getDescription() const
     {
         return "Test conversion patterns to lower vector.multi_reduction to other "
                "vector ops";
     }
+
     void VectorMultiReductionPass::runOnFunction()
     {
         RewritePatternSet patterns(&getContext());
-        populateVectorMultiReductionLoweringPatterns(patterns, !useOuterReductions);
+        populateVectorMultiReductionLoweringPatterns(patterns, useOuterReductions ?
+                                                                   VectorMultiReductionLowering::InnerParallel :
+                                                                   VectorMultiReductionLowering::InnerReduction);
         (void) applyPatternsAndFoldGreedily(getFunction(), std::move(patterns));
     }
+
     void VectorMultiReductionPass::getDependentDialects(DialectRegistry &registry) const
     {
         registry.insert<memref::MemRefDialect>();

@@ -71,9 +71,9 @@ namespace voila
         size_t size;
         DataType type;
         Parameter(void *data, size_t size, DataType type) : data{data}, size{size}, type{type} {}
+        friend Parameter make_param(void *, size_t, DataType);
 
       public:
-        friend Parameter make_param(void *, size_t, DataType);
         friend class Program;
     };
 
@@ -94,6 +94,44 @@ namespace voila
 
     template<class T, int N>
     using strided_memref_ptr = std::shared_ptr<StridedMemRefType<T, N>>;
+
+
+    template<typename T>
+    Parameter make_param(T *val, size_t size)
+    {
+        if constexpr (std::is_same_v<int32_t, T>)
+        {
+            return make_param(val, size, DataType::INT32);
+        }
+        else if constexpr (std::is_same_v<int64_t, T>)
+        {
+            return make_param(val, size, DataType::INT64);
+        }
+        else if constexpr (std::is_same_v<double, T>)
+        {
+            return make_param(val, size, DataType::DBL);
+        }
+        else if constexpr (std::is_same_v<bool, T>)
+        {
+            return make_param(val, size, DataType::BOOL);
+        }
+        else
+        {
+            assert(false && "Could not deduce type of parameter");
+        }
+    }
+
+    template<typename T>
+    Parameter make_param(std::vector<T> &val)
+    {
+        return make_param(val.data(), val.size());
+    }
+
+    template<typename T>
+    Parameter make_param(T *val)
+    {
+        return make_param(val, 0);
+    }
 
     class Program
     {
@@ -170,6 +208,19 @@ namespace voila
 
         Program &operator<<(Parameter param);
 
+
+        template<class T>
+        Program &operator<<(T param) requires std::is_pointer_v<T>
+        {
+            return *this << make_param(param);
+        }
+
+        template<class T>
+        Program &operator<<(T &param)
+        {
+            return *this << make_param(param);
+        }
+
         std::vector<result_t> operator()();
 
         double getExecTime()
@@ -181,4 +232,5 @@ namespace voila
     };
 
     Parameter make_param(void *, size_t, DataType);
+
 } // namespace voila

@@ -80,14 +80,15 @@ endif ()
 
 #Enable sanitizers globally
 #if ($<CONFIG:Release>)
-add_compile_options(#$<$<CONFIG:Release>:-O3>
-        -fsanitize=address
-        -fsanitize=undefined
+#add_compile_options(#$<$<CONFIG:Release>:-O3>
+        #-fsanitize=address
+        #-fsanitize=undefined
         #-Wno-ambiguous-reversed-operator)
-        )
+#        )
 add_link_options(-fuse-ld=lld
-        -fsanitize=address
-        -fsanitize=undefined) #need to use lld, for some reason ld complains about invalid symbols.
+#        -fsanitize=address
+#        -fsanitize=undefined) #need to use lld, for some reason ld complains about invalid symbols.
+        )
 #[[else()
     add_compile_options(-fsanitize=address -fsanitize=undefined -Wno-ambiguous-reversed-operator)
     add_link_options(-fuse-ld=lld -fsanitize=address -fsanitize=undefined) #need to use lld, for some reason ld complains about invalid symbols.

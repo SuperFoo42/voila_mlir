@@ -114,38 +114,17 @@ namespace voila
             // Register the translation from MLIR to LLVM IR, which must happen before we
             // can JIT-compile.
             registerLLVMDialectTranslation(*mlirModule->getContext());
-            auto TargetTriple = llvm::sys::getProcessTriple();
-            std::string Error;
-            auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
-
-            llvm::TargetOptions opt;
-            auto RM = Optional<llvm::Reloc::Model>();
-            llvm::StringMap<bool, llvm::MallocAllocator> features;
-            llvm::sys::getHostCPUFeatures(features);
-            llvm::SubtargetFeatures fString;
-            for (auto &F : features)
-                fString.AddFeature(F.first(), F.second);
-
-            /*
-                        for (auto const &MAttr : llvm::codegen::getMAttrs())
-                            fString.AddFeature(MAttr);
-            */
-
-            auto targetMachine =
-                Target->createTargetMachine(TargetTriple, llvm::sys::getHostCPUName(), fString.getString(), opt, RM,
-                                            llvm::None, llvm::CodeGenOpt::Aggressive, true);
 
             // An optimization pipeline to use within the execution engine.
             auto optPipeline = makeOptimizingTransformer(
-                /*optLevel=*/config.optimize ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None, /*sizeLevel=*/
-                llvm::CodeModel::Kernel, targetMachine);
+                /*optLevel=*/config.optimize ? 3 : 0, /*sizeLevel=*/0,
+                /*targetMachine=*/nullptr);
 
             // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
             // the module.
-            auto expectedEngine = ExecutionEngine::create(*mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline,
-                                                          config.optimize ? llvm::CodeGenOpt::Level::Aggressive :
-                                                                            llvm::CodeGenOpt::Level::None,
-                                                          {}, true, false, false);
+            auto expectedEngine = ExecutionEngine::create(
+                *mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline,
+                config.optimize ? llvm::CodeGenOpt::Level::Aggressive : llvm::CodeGenOpt::Level::None, {}, true, false);
             assert(expectedEngine && "failed to construct an execution engine");
 
             maybeEngine = std::move(*expectedEngine);
@@ -183,6 +162,7 @@ namespace voila
         {
             throw JITInvocationError();
         }
+        engine->dumpToObjectFile(std::string("main.o"));
     }
 
     void Program::convertToLLVM()
@@ -260,19 +240,21 @@ namespace voila
         optPM.addPass(createConvertElementwiseToLinalgPass());
         optPM.addPass(createLinalgGeneralizationPass());
         optPM.addPass(createLinalgElementwiseOpFusionPass());
-        //optPM.addPass(createLinalgTilingPass({4})); // TODO: correct tiling size
+        optPM.addPass(createLinalgTilingPass({4})); // TODO: correct tiling size
 
         // bufferization passes
-        // pm.addPass(createLinalgComprehensiveModuleBufferizePass());
-        optPM.addPass(arith::createArithmeticBufferizePass());
-        pm.addPass(createTensorConstantBufferizePass());
-        optPM.addPass(createTensorBufferizePass());
-        optPM.addPass(createLinalgBufferizePass());
-        optPM.addPass(createStdBufferizePass());
-        optPM.addPass(createSCFBufferizePass());
-        // optPM.addPass(createCanonicalizerPass());
-        // optPM.addPass(createCSEPass());
-        pm.addPass(createFuncBufferizePass());
+        auto bufferize = createLinalgComprehensiveModuleBufferizePass();
+        (void) bufferize->initializeOptions("allow-return-memref=true");
+        pm.addPass(std::move(bufferize));
+        /*        optPM.addPass(arith::createArithmeticBufferizePass());
+                pm.addPass(createTensorConstantBufferizePass());
+                optPM.addPass(createTensorBufferizePass());
+                optPM.addPass(createLinalgBufferizePass());
+                optPM.addPass(createStdBufferizePass());
+                optPM.addPass(createSCFBufferizePass());
+                // optPM.addPass(createCanonicalizerPass());
+                // optPM.addPass(createCSEPass());
+                pm.addPass(createFuncBufferizePass());*/
         optPM.addPass(createCanonicalizerPass());
         optPM.addPass(createCSEPass());
         /*        pm.addPass(createNormalizeMemRefsPass());
@@ -306,8 +288,8 @@ namespace voila
         secondOptPM.addPass(createLinalgStrategyVectorizePass());
         // secondOptPM.addPass(createCanonicalizerPass());
         // secondOptPM.addPass(createCSEPass());
-        secondOptPM.addPass(createConvertLinalgToAffineLoopsPass());
-        // secondOptPM.addPass(createConvertLinalgToParallelLoopsPass());
+        // secondOptPM.addPass(createConvertLinalgToAffineLoopsPass());
+        secondOptPM.addPass(createConvertLinalgToParallelLoopsPass());
         // secondOptPM.addPass(createConvertLinalgTiledLoopsToSCFPass());
         // secondOptPM.addPass(createConvertLinalgToLoopsPass());
         //
@@ -324,7 +306,7 @@ namespace voila
         secondOptPM.addPass(createLoopInvariantCodeMotionPass());
         //            secondOptPM.addPass(createCanonicalizerPass());
         //            secondOptPM.addPass(createCSEPass());
-        std::unique_ptr<Pass> vectorizationPass = createSuperVectorizePass(llvm::makeArrayRef<int64_t>(256));
+        std::unique_ptr<Pass> vectorizationPass = createSuperVectorizePass(llvm::makeArrayRef<int64_t>(4));
         (void) vectorizationPass->initializeOptions("vectorize-reductions=true");
         secondOptPM.addPass(std::move(vectorizationPass));
         secondOptPM.addPass(createLowerAffinePass());
@@ -345,8 +327,8 @@ namespace voila
         secondOptPM.addPass(createCanonicalizerPass());
         secondOptPM.addPass(createCSEPass());
         optPM.addPass(createFinalizingBufferizePass());
-        secondOptPM.addPass(createBufferDeallocationPass());
-        //         }
+        // secondOptPM.addPass(createBufferDeallocationPass());
+        //          }
         //
 
         //
@@ -358,10 +340,12 @@ namespace voila
         secondOptPM.addPass(mlir::createLowerVectorMultiReductionPass());
         secondOptPM.addPass(createConvertVectorToSCFPass());
 
+        secondpm.addPass(createConvertSCFToOpenMPPass());
+
         secondpm.addPass(createConvertVectorToLLVMPass(LowerVectorToLLVMOptions()
-                                                           .setEnableIndexOptimizations(true)
-                                                           .setReassociateFPReductions(true)
-                                                           .setEnableX86Vector(true)));
+                                                           .enableIndexOptimizations(true)
+                                                           .enableReassociateFPReductions(true)
+                                                           .enableX86Vector(true)));
         secondpm.addPass(createMemRefToLLVMPass());
         secondOptPM.addPass(createLowerToCFGPass());
 
@@ -369,6 +353,7 @@ namespace voila
         secondOptPM.addPass(createStdExpandOpsPass());
 
         secondOptPM.addPass(arith::createConvertArithmeticToLLVMPass());
+        secondpm.addPass(createConvertOpenMPToLLVMPass());
         secondOptPM.addPass(createLowerAffinePass());
         secondpm.addPass(::mlir::createLowerToLLVMPass());
 
