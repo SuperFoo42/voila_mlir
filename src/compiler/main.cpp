@@ -122,8 +122,8 @@ int main(int argc, char *argv[])
 
         // run in jit
         auto res = prog();
-        for (auto elem : *(*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res)))
-            std::cout << elem << std::endl;
+/*        for (auto elem : *(*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res)))
+            std::cout << elem << std::endl;*/
     }
     catch (const cxxopts::OptionException &e)
     {

@@ -128,7 +128,7 @@ TEST(HashTableTests, ScalarHash)
     constexpr uint64_t HASH = 7668608003591710536;
     Program prog(file, config);
     // alloc dummy data to pass to program args
-    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
+    auto arg = std::unique_ptr<int64_t[]>(new int64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
 
@@ -343,11 +343,11 @@ TEST(AggregateTests, SumTest)
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_sum.voila";
     constexpr size_t TENSOR_SIZE = 100;
-    constexpr uint64_t TENSOR_VALS = 123;
+    constexpr int64_t TENSOR_VALS = 123;
     constexpr uint64_t TENSOR_SUM = TENSOR_SIZE * TENSOR_VALS;
     Program prog(file, config);
     // alloc dummy data to pass to program args
-    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
+    auto arg = std::unique_ptr<int64_t[]>(new int64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
 

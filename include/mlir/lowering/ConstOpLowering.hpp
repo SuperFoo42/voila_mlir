@@ -43,7 +43,7 @@ namespace voila::mlir::lowering
                 return ::mlir::failure();
             }
 
-            rewriter.template replaceOpWithNewOp<::mlir::ConstantOp>(op, valAttr);
+            rewriter.template replaceOpWithNewOp<::mlir::arith::ConstantOp>(op, valAttr);
 
             return ::mlir::success();
         }

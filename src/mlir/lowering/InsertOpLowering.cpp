@@ -30,20 +30,15 @@ namespace voila::mlir::lowering
          * v++;
          */
         auto firstOr = rewriter.create<OrIOp>(
-            loc, insertSize,
-            rewriter.create<ShRUIOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
+            loc, insertSize, rewriter.create<ShRUIOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
         auto secondOr = rewriter.create<OrIOp>(
-            loc, firstOr,
-            rewriter.create<ShRUIOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
+            loc, firstOr, rewriter.create<ShRUIOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
         auto thirdOr = rewriter.create<OrIOp>(
-            loc, secondOr,
-            rewriter.create<ShRUIOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
+            loc, secondOr, rewriter.create<ShRUIOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
         auto fourthOr = rewriter.create<OrIOp>(
-            loc, thirdOr,
-            rewriter.create<ShRUIOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
+            loc, thirdOr, rewriter.create<ShRUIOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
         auto fithOr = rewriter.create<OrIOp>(
-            loc, fourthOr,
-            rewriter.create<ShRUIOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
+            loc, fourthOr, rewriter.create<ShRUIOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
         auto sixthOr = rewriter.create<OrIOp>(
             loc, fithOr, rewriter.create<ShRUIOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
         SmallVector<Value, 1> htSize;
@@ -78,7 +73,7 @@ namespace voila::mlir::lowering
                                                      hashInvalidConsts[i]));
         }
 
-        Value anyNotEmpty =  empties[0];
+        Value anyNotEmpty = empties[0];
         for (size_t i = 1; i < empties.size(); ++i)
         {
             anyNotEmpty = builder.create<AndIOp>(loc, anyNotEmpty, empties[i]);
@@ -87,8 +82,7 @@ namespace voila::mlir::lowering
         SmallVector<Value> founds;
         for (size_t i = 0; i < bucketVals.size(); ++i)
         {
-            founds.push_back(
-                builder.create<CmpIOp>(loc, CmpIPredicate::eq, bucketVals[i], toStores[i]));
+            founds.push_back(builder.create<CmpIOp>(loc, CmpIPredicate::eq, bucketVals[i], toStores[i]));
         }
         Value allFound = founds[0];
         for (size_t i = 1; i < founds.size(); ++i)
@@ -116,20 +110,17 @@ namespace voila::mlir::lowering
 
         SmallVector<Value> hashInvalidConsts;
         for (auto val : insertOpAdaptor.values())
-        {//FIXME: floats
-            hashInvalidConsts.push_back(rewriter.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), getElementTypeOrSelf(val)));
+        { // FIXME: floats
+            hashInvalidConsts.push_back(
+                rewriter.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), getElementTypeOrSelf(val)));
         }
 
         lb.push_back(rewriter.create<ConstantIndexOp>(loc, 0));
 
-        buildAffineLoopNest(rewriter, loc, lb, htSize, {1},
-                            [&hts, &hashInvalidConsts](OpBuilder &builder, Location loc, ValueRange vals)
-                            {
-                                for (size_t i = 0; i < hts.size(); ++i)
-                                {
-                                    builder.create<AffineStoreOp>(loc, hashInvalidConsts[i], hts[i], vals);
-                                }
-                            });
+        for (size_t i = 0; i < hts.size(); ++i)
+        {
+            rewriter.create<linalg::FillOp>(loc, hashInvalidConsts[i], hts[i]);
+        }
 
         // hash values
         auto hashVals = insertOpAdaptor.hashValues();

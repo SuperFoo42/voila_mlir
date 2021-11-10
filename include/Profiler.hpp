@@ -128,7 +128,7 @@ class Profiler
             os << eventToString(ev.first) << ": " << std::to_string(ev.second) << std::endl;
         }
         os << "TIME : " << std::to_string(profiler.time) << std::endl;
-        os << "CYCLES : " << std::to_string(profiler.cycles) << std::endl;
+        os << "CYCLES : " << std::to_string(profiler.cycles);
         return os;
     }
 
