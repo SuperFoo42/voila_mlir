@@ -4,6 +4,7 @@ namespace voila::mlir::lowering
 {
     using namespace ::mlir;
     using namespace ::mlir::arith;
+    using namespace ::mlir::bufferization;
     using ::mlir::voila::LookupOp;
     using ::mlir::voila::LookupOpAdaptor;
 
@@ -42,7 +43,7 @@ namespace voila::mlir::lowering
         auto modSize = rewriter.create<SubIOp>(loc, htSizes, rewriter.create<ConstantIndexOp>(loc, 1));
         auto intMod = rewriter.create<IndexCastOp>(loc, modSize, rewriter.getI64Type());
 
-        auto hashesBuffer = rewriter.create<memref::BufferCastOp>(
+        auto hashesBuffer = rewriter.create<ToMemrefOp>(
             loc, convertTensorToMemRef(lookupOpAdaptor.hashes().getType().dyn_cast<TensorType>()),
             lookupOpAdaptor.hashes());
 
@@ -50,7 +51,7 @@ namespace voila::mlir::lowering
         std::transform(
             lookupOpAdaptor.values().begin(), lookupOpAdaptor.values().end(), std::back_inserter(valueBuffers),
             [&rewriter, &loc](auto elem) -> auto {
-                return rewriter.create<memref::BufferCastOp>(
+                return rewriter.create<ToMemrefOp>(
                     loc, convertTensorToMemRef(elem.getType().template dyn_cast<TensorType>()), elem);
             });
 
@@ -58,7 +59,7 @@ namespace voila::mlir::lowering
         std::transform(
             lookupOpAdaptor.hashtables().begin(), lookupOpAdaptor.hashtables().end(),
             std::back_inserter(hashtableBuffers), [&rewriter, &loc](auto elem) -> auto {
-                return rewriter.create<memref::BufferCastOp>(
+                return rewriter.create<ToMemrefOp>(
                     loc, convertTensorToMemRef(elem.getType().template dyn_cast<TensorType>()), elem);
             });
 
@@ -132,7 +133,7 @@ namespace voila::mlir::lowering
 
         buildAffineLoopNest(rewriter, loc, lb, ub, 1, lookupFunc);
 
-        rewriter.replaceOpWithNewOp<memref::TensorLoadOp>(op, outMemref);
+        rewriter.replaceOpWithNewOp<ToTensorOp>(op, outMemref);
         return success();
     }
 

@@ -2,6 +2,7 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
+    using namespace ::mlir::bufferization;
     using ::mlir::voila::MoveOp;
     using ::mlir::voila::MoveOpAdaptor;
 
@@ -21,7 +22,7 @@ namespace voila::mlir::lowering
         Value src, dest;
         if (adaptor.input().getType().isa<TensorType>())
         {
-            src = rewriter.create<memref::BufferCastOp>(loc, convertTensorToMemRef(adaptor.input().getType().dyn_cast<TensorType>()),adaptor.input());
+            src = rewriter.create<ToMemrefOp>(loc, convertTensorToMemRef(adaptor.input().getType().dyn_cast<TensorType>()),adaptor.input());
         }
         else if (adaptor.input().getType().isa<MemRefType>())
         {
@@ -34,7 +35,7 @@ namespace voila::mlir::lowering
 
         if (adaptor.out().getType().isa<TensorType>())
         {
-            dest = rewriter.create<memref::BufferCastOp>(loc, convertTensorToMemRef(adaptor.out().getType().dyn_cast<TensorType>()),adaptor.out());
+            dest = rewriter.create<ToMemrefOp>(loc, convertTensorToMemRef(adaptor.out().getType().dyn_cast<TensorType>()),adaptor.out());
         }
         else if (adaptor.out().getType().isa<MemRefType>())
         {

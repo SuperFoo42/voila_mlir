@@ -5,6 +5,7 @@ namespace voila::mlir::lowering
 {
     using namespace ::mlir;
     using namespace ::mlir::arith;
+    using namespace ::mlir::bufferization;
     using ::mlir::voila::GatherOp;
     using ::mlir::voila::GatherOpAdaptor;
 
@@ -72,7 +73,7 @@ namespace voila::mlir::lowering
         Value idxs;
         if (gatherOpAdaptor.indices().getType().isa<TensorType>())
         {
-            idxs = rewriter.create<memref::BufferCastOp>(
+            idxs = rewriter.create<ToMemrefOp>(
                 loc, convertTensorToMemRef(gatherOpAdaptor.indices().getType().dyn_cast<TensorType>()),
                 gatherOpAdaptor.indices());
         }
@@ -123,7 +124,7 @@ namespace voila::mlir::lowering
                 Value idxs;
                 if (gatherOpAdaptor.column().getType().isa<TensorType>())
                 {
-                    values = builder.create<memref::BufferCastOp>(
+                    values = builder.create<ToMemrefOp>(
                         loc, convertTensorToMemRef(gatherOpAdaptor.column().getType().dyn_cast<TensorType>()),
                         gatherOpAdaptor.column());
                 }
@@ -134,7 +135,7 @@ namespace voila::mlir::lowering
 
                 if (gatherOpAdaptor.indices().getType().isa<TensorType>())
                 {
-                    idxs = builder.create<memref::BufferCastOp>(
+                    idxs = builder.create<ToMemrefOp>(
                         loc, convertTensorToMemRef(gatherOpAdaptor.indices().getType().dyn_cast<TensorType>()),
                         gatherOpAdaptor.indices());
                 }

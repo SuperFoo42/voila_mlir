@@ -3,6 +3,7 @@ namespace voila::mlir::lowering
 {
     using namespace ::mlir;
     using namespace ::mlir::arith;
+    using namespace ::mlir::bufferization;
     using ::mlir::voila::MaxOp;
     using ::mlir::voila::MaxOpAdaptor;
 
@@ -139,9 +140,9 @@ namespace voila::mlir::lowering
             throw std::logic_error("Invalid type"); // TODO
         }
 
-        auto inputMemref = rewriter.create<memref::BufferCastOp>(
+        auto inputMemref = rewriter.create<ToMemrefOp>(
             loc, convertTensorToMemRef(maxOpAdaptor.input().getType().dyn_cast<TensorType>()), maxOpAdaptor.input());
-        auto indexMemref = rewriter.create<memref::BufferCastOp>(
+        auto indexMemref = rewriter.create<ToMemrefOp>(
             loc, convertTensorToMemRef(maxOpAdaptor.indices().getType().dyn_cast<TensorType>()),
             maxOpAdaptor.indices());
 
@@ -169,7 +170,7 @@ namespace voila::mlir::lowering
         buildAffineLoopNest(rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),
                             rewriter.create<tensor::DimOp>(loc, maxOpAdaptor.input(), 0).result(), {1}, fn);
 
-        return rewriter.create<memref::TensorLoadOp>(loc, res);
+        return rewriter.create<ToTensorOp>(loc, res);
     }
 
     LogicalResult

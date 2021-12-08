@@ -4,6 +4,8 @@ namespace voila::mlir::lowering
 {
     using namespace ::mlir;
     using namespace ::mlir::arith;
+    using namespace ::mlir::tensor;
+    using namespace ::mlir::bufferization;
     using ::mlir::voila::CountOp;
     using ::mlir::voila::CountOpAdaptor;
 
@@ -17,7 +19,7 @@ namespace voila::mlir::lowering
 
     static Value getHTSize(ConversionPatternRewriter &rewriter, Location loc, Value values)
     {
-        auto insertSize = rewriter.create<tensor::DimOp>(loc, values, 0);
+        auto insertSize = rewriter.create<DimOp>(loc, values, 0);
         /** algorithm to find the next power of 2 taken from
          *  https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
          *
@@ -52,7 +54,7 @@ namespace voila::mlir::lowering
 
     static Value scalarCountLowering(Location loc, CountOpAdaptor &countOpAdaptor, ConversionPatternRewriter &rewriter)
     {
-        auto cnt = rewriter.create<tensor::DimOp>(loc, countOpAdaptor.input(), 0);
+        auto cnt = rewriter.create<DimOp>(loc, countOpAdaptor.input(), 0);
         return rewriter.create<IndexCastOp>(loc, cnt, rewriter.getI64Type());
     }
 
@@ -75,7 +77,7 @@ namespace voila::mlir::lowering
                                     loc, builder.create<ConstantIntOp>(loc, 0, builder.getI64Type()), res, vals);
                             });
 
-        auto indexMemref = rewriter.create<memref::BufferCastOp>(
+        auto indexMemref = rewriter.create<ToMemrefOp>(
             loc, convertTensorToMemRef(countOpAdaptor.indices().getType().dyn_cast<TensorType>()),
             countOpAdaptor.indices());
 
@@ -92,9 +94,9 @@ namespace voila::mlir::lowering
         };
 
         buildAffineLoopNest(rewriter, loc, ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),
-                            rewriter.create<tensor::DimOp>(loc, countOpAdaptor.input(), 0).result(), {1}, fn);
+                            rewriter.create<DimOp>(loc, countOpAdaptor.input(), 0).result(), {1}, fn);
 
-        return rewriter.create<memref::TensorLoadOp>(loc, res);
+        return rewriter.create<ToTensorOp>(loc, res);
     }
 
     LogicalResult

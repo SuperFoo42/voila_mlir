@@ -3,6 +3,7 @@ namespace voila::mlir::lowering
 {
     using namespace ::mlir;
     using namespace ::mlir::arith;
+    using namespace ::mlir::bufferization;
     using ::mlir::voila::ReadOp;
     using ::mlir::voila::ReadOpAdaptor;
 
@@ -29,7 +30,7 @@ namespace voila::mlir::lowering
         // TODO: only for tensors
         if (readOpAdaptor.column().getType().isa<TensorType>())
         {
-            col = rewriter.create<memref::BufferCastOp>(
+            col = rewriter.create<ToMemrefOp>(
                 loc, convertTensorToMemRef(readOpAdaptor.column().getType().dyn_cast<TensorType>()),
                 readOpAdaptor.column());
         }

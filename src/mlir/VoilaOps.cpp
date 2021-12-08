@@ -25,39 +25,6 @@
 #define GET_OP_CLASSES
 #include "mlir/VoilaOps.cpp.inc"
 using namespace ::mlir::arith;
-mlir::TensorType static inferShapesFromBinaryOp(mlir::Type lhsType, mlir::Type rhsType)
-{
-    int64_t dimSize = 1;
-    mlir::Type elemType;
-    if (lhsType.isa<mlir::TensorType>() && lhsType.dyn_cast<mlir::TensorType>().getElementType().isa<mlir::FloatType>())
-    {
-        elemType = lhsType.dyn_cast<mlir::TensorType>().getElementType();
-    }
-
-    else if (lhsType.isa<mlir::FloatType>())
-    {
-        elemType = lhsType;
-    }
-    else if (rhsType.isa<mlir::TensorType>())
-    {
-        elemType = rhsType.dyn_cast<mlir::TensorType>().getElementType();
-    }
-    else
-    {
-        elemType = rhsType;
-    }
-
-    if (lhsType.isa<mlir::TensorType>())
-    {
-        dimSize = lhsType.dyn_cast<mlir::TensorType>().getDimSize(0);
-    }
-    if (rhsType.isa<mlir::TensorType>())
-    {
-        dimSize = std::max(dimSize, rhsType.dyn_cast<mlir::TensorType>().getDimSize(0));
-    }
-
-    return mlir::RankedTensorType::get(dimSize, elemType);
-}
 
 /// Return the callee of the generic call operation, this is required by the
 /// call interface.

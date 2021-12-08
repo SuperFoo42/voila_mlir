@@ -6,6 +6,7 @@ namespace voila::mlir::lowering
 {
     using namespace ::mlir;
     using namespace ::mlir::arith;
+    using namespace ::mlir::bufferization;
     using ::mlir::voila::SelectOpAdaptor;
 
     static MemRefType convertTensorToMemRef(TensorType type)
@@ -100,7 +101,7 @@ namespace voila::mlir::lowering
         auto res = rewriter.create<memref::ReinterpretCastOp>(
             loc, MemRefType::get(-1, alloc.getType().dyn_cast<MemRefType>().getElementType()), alloc, zeroConst, sizes,
             indices);
-        rewriter.replaceOpWithNewOp<memref::TensorLoadOp>(
+        rewriter.replaceOpWithNewOp<ToTensorOp>(
             op, res);
     }
 
@@ -118,7 +119,7 @@ namespace voila::mlir::lowering
                            Value pred;
                            if (binaryAdaptor.values().getType().isa<TensorType>())
                            {
-                               values = builder.create<memref::BufferCastOp>(
+                               values = builder.create<ToMemrefOp>(
                                    loc, convertTensorToMemRef(binaryAdaptor.values().getType().dyn_cast<TensorType>()),
                                    binaryAdaptor.values());
                            }
@@ -129,7 +130,7 @@ namespace voila::mlir::lowering
 
                            if (binaryAdaptor.pred().getType().isa<TensorType>())
                            {
-                               pred = builder.create<memref::BufferCastOp>(
+                               pred = builder.create<ToMemrefOp>(
                                    loc, convertTensorToMemRef(binaryAdaptor.pred().getType().dyn_cast<TensorType>()),
                                    binaryAdaptor.pred());
                            }

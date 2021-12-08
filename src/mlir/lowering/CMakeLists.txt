@@ -18,6 +18,8 @@ add_library(voila_lowering
         HashOpLowering.cpp
         InsertOpLowering.cpp
         LookupOpLowering.cpp
+        LinalgTiledLoopsToAffineForPass.cpp
+        LinalgTiledLoopsToAffineForPattern.cpp
         )
 
 target_link_libraries(voila_lowering fmt range-v3 MLIRVoila)

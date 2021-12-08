@@ -48,6 +48,7 @@
 #include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
 #include <mlir/VoilaDialect.h>
+#include <mlir/lowering/LinalgTiledLoopsToAffineForPass.hpp>
 #include <mlir/lowering/VectorMultiReductionPass.hpp>
 #include <mlir/lowering/VoilaToAffineLoweringPass.hpp>
 #include <mlir/lowering/VoilaToLLVMLoweringPass.hpp>

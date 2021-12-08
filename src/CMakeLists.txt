@@ -56,7 +56,7 @@ set(LLVM_LINK_COMPONENTS
         LLVMTarget
         )
 
-target_link_libraries(voila_compiler
+target_link_libraries(voila_compiler voila_lowering
         magic_enum
         reflex
         fmt

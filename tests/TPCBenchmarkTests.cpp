@@ -177,7 +177,13 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
     prog << &maxDiscount;
     auto res = std::get<double>(prog()[0]);
 
+
     double ref = 0;
+    Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
+             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
+             Events::INS_ISSUED, Events::PREFETCH_MISS>
+        prof;
+    prof.start();
     for (size_t i = 0; i < l_quantity.size(); ++i)
     {
         if (l_shipdate[i] >= startDate && l_shipdate[i] < endDate && l_quantity[i] < quantity &&
@@ -186,6 +192,8 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
             ref += l_extendedprice[i] * l_discount[i];
         }
     }
+    prof.stop();
+    std::cout << prof << std::endl;
 
     EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
     EXPECT_DOUBLE_EQ(res, ref);

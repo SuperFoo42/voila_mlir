@@ -3,6 +3,7 @@ namespace voila::mlir::lowering
 {
     using namespace ::mlir;
     using namespace ::mlir::arith;
+    using namespace ::mlir::bufferization;
     using ::mlir::voila::NotOp;
     using ::mlir::voila::NotOpAdaptor;
 
@@ -126,7 +127,7 @@ namespace voila::mlir::lowering
                 Value value;
                 if (binaryAdaptor.value().getType().isa<TensorType>())
                 {
-                    value = builder.create<memref::BufferCastOp>(
+                    value = builder.create<ToMemrefOp>(
                         loc, convertTensorToMemRef(binaryAdaptor.value().getType().template dyn_cast<TensorType>()),
                         binaryAdaptor.value());
                 }

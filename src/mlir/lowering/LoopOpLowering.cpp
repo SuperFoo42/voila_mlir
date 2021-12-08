@@ -4,6 +4,7 @@ namespace voila::mlir::lowering
 {
     using namespace ::mlir;
     using namespace ::mlir::arith;
+    using namespace ::mlir::bufferization;
     using ::mlir::voila::LoopOp;
     using ::mlir::voila::LoopOpAdaptor;
 
@@ -38,7 +39,7 @@ namespace voila::mlir::lowering
         Value cond;
         if (loopOpAdaptor.cond().getType().isa<TensorType>())
         {
-            cond = rewriter.create<memref::BufferCastOp>(
+            cond = rewriter.create<ToMemrefOp>(
                 loc, convertTensorToMemRef(loopOpAdaptor.cond().getType().dyn_cast<TensorType>()),
                 loopOpAdaptor.cond());
             upperBound = rewriter.create<AddIOp>(loc, rewriter.create<memref::DimOp>(loc, loopOpAdaptor.cond(), 0), rewriter.create<ConstantIndexOp>(loc, 1));

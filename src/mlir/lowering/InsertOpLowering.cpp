@@ -3,6 +3,7 @@ namespace voila::mlir::lowering
 {
     using namespace ::mlir;
     using namespace ::mlir::arith;
+    using namespace ::mlir::bufferization;
     using ::mlir::voila::InsertOp;
     using ::mlir::voila::InsertOpAdaptor;
     InsertOpLowering::InsertOpLowering(MLIRContext *ctx) : ConversionPattern(InsertOp::getOperationName(), 1, ctx) {}
@@ -133,13 +134,13 @@ namespace voila::mlir::lowering
         auto indexMappedHashVals = rewriter.create<IndexCastOp>(
             loc, mappedHashVals,
             RankedTensorType::get(hashVals.getType().dyn_cast<TensorType>().getShape(), rewriter.getIndexType()));
-        auto mappedHashValsMemref = rewriter.create<memref::BufferCastOp>(
+        auto mappedHashValsMemref = rewriter.create<ToMemrefOp>(
             loc, convertTensorToMemRef(indexMappedHashVals.getType().dyn_cast<TensorType>()), indexMappedHashVals);
         SmallVector<Value> keyMemrefs;
         for (auto val : insertOpAdaptor.values())
         {
-            keyMemrefs.push_back(rewriter.create<memref::BufferCastOp>(
-                loc, convertTensorToMemRef(val.getType().dyn_cast<TensorType>()), val));
+            keyMemrefs.push_back(
+                rewriter.create<ToMemrefOp>(loc, convertTensorToMemRef(val.getType().dyn_cast<TensorType>()), val));
         }
         // insert values in ht
         buildAffineLoopNest(
@@ -192,7 +193,7 @@ namespace voila::mlir::lowering
         SmallVector<Value> ret;
         for (size_t i = 0; i < hts.size(); ++i)
         {
-            ret.push_back(rewriter.create<memref::TensorLoadOp>(loc, hts[i]));
+            ret.push_back(rewriter.create<ToTensorOp>(loc, hts[i]));
         }
         rewriter.replaceOp(op, ret);
 
