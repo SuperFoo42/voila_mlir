@@ -13,7 +13,6 @@
 #include "mlir/lowering/LoopOpLowering.hpp"
 #include "mlir/lowering/MaxOpLowering.hpp"
 #include "mlir/lowering/MinOpLowering.hpp"
-#include "mlir/lowering/MoveOpLowering.hpp"
 #include "mlir/lowering/NotOpLowering.hpp"
 #include "mlir/lowering/ReadOpLowering.hpp"
 #include "mlir/lowering/SelectOpLowering.hpp"

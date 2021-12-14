@@ -179,6 +179,18 @@ class Profiler
 
     int eventSet;
     long long cycles;
+
+  public:
+    [[nodiscard]] long long int getCycles() const
+    {
+        return cycles;
+    }
+    [[nodiscard]] long long getTime() const
+    {
+        return time/1000;
+    }
+
+  private:
     long long time;
     constexpr static auto events = std::experimental::make_array(evs...);
     std::array<long long, sizeof...(evs)> values;

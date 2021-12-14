@@ -220,15 +220,8 @@ namespace voila::mlir
             auto dest = assign.dests[i];
             auto value = val[i];
 
-            if (dest.is_variable())
-            {
-                symbolTable.insert(dest.as_variable()->var, value);
-            }
-            else
-            {
-                builder.create<::mlir::voila::MoveOp>(value.getLoc(), value,
-                                                      symbolTable.lookup(dest.as_reference()->ref.as_variable()->var));
-            }
+            symbolTable.insert((dest.is_variable() ? dest.as_variable() : dest.as_reference()->ref.as_variable())->var,
+                               value);
         }
     }
 

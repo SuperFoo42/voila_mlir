@@ -94,6 +94,7 @@ namespace voila::mlir::lowering
         return builder.create<OrIOp>(loc, builder.getI1Type(), anyNotEmpty, allFound);
     }
 
+    //TODO: use atomic compare exchange
     ::mlir::LogicalResult InsertOpLowering::matchAndRewrite(Operation *op,
                                                             ArrayRef<Value> operands,
                                                             ConversionPatternRewriter &rewriter) const

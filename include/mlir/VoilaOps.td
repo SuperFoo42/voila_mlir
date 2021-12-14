@@ -531,16 +531,6 @@ let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Opti
 let results = (outs AnyTypeOf<[F64, 1DTensorOf<[F64]>]>:$output);
 }
 
-def MoveOp : Voila_Op<"move", [SameTypeOperands, SameOperandsShape]> {
-let summary = "move result from one ssa value to other in order to keep track of references";
-let description = [{
-//TODO
-}];
-
-let arguments = (ins AnyType:$input, AnyType:$out);
-}
-
-
 def HashOp : Voila_Op<"hash", [NoSideEffect]> {
 let summary = "hash input values for use with hash tables";
 let description = [{

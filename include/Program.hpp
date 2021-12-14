@@ -148,7 +148,7 @@ namespace voila
         std::unordered_map<std::string, std::unique_ptr<ast::Fun>> functions;
         Config config;
         lexer::Lexer *lexer;
-        double timer = 0;
+        long_long timer = 0;
 
       public:
         using result_t = std::variant<strided_memref_ptr<uint32_t, 1>,

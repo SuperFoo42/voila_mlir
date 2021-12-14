@@ -159,12 +159,22 @@ namespace voila
         prof.start();
         auto invocationResult = engine->invokePacked("main", params);
         prof.stop();
-        //std::cout << prof << std::endl;
+        //
+        if (config.debug)
+        {
+            std::cout << prof << std::endl;
+        }
+        if (config.profile)
+        {
+            timer = prof.getTime();
+            //TODO: store profiling results
+        }
+
         if (invocationResult)
         {
             throw JITInvocationError();
         }
-        if (this->config.debug && objPath)
+        if (config.debug && objPath)
             engine->dumpToObjectFile(*objPath);
     }
 
@@ -300,7 +310,9 @@ namespace voila
         pm.addNestedPass<FuncOp>(createAffineLoopNormalizePass());
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
-        pm.addNestedPass<FuncOp>(createAffineParallelizePass());
+        /*std::unique_ptr<Pass> parallelizationPass = createAffineParallelizePass();
+        (void) parallelizationPass->initializeOptions("parallel-reductions=true");
+        pm.addNestedPass<FuncOp>(std::move(parallelizationPass));*/
         pm.addNestedPass<FuncOp>(createLoopInvariantCodeMotionPass());
         // pm.addNestedPass<FuncOp>(createAffineForToGPUPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());

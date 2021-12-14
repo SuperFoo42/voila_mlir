@@ -119,7 +119,7 @@ if (reflex_ADDED)
     execute_process(COMMAND sh ./build.sh
             WORKING_DIRECTORY ${reflex_SOURCE_DIR}
             )
-    add_library(reflex INTERFACE IMPORTED include/mlir/lowering/LogicalOpLowering.hpp include/mlir/lowering/MoveOpLowering.cpp include/mlir/lowering/MoveOpLowering.hpp include/ast/Hash.cpp include/ast/Hash.hpp)
+    add_library(reflex INTERFACE IMPORTED include/mlir/lowering/LogicalOpLowering.hpp include/ast/Hash.cpp include/ast/Hash.hpp)
     target_include_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/include")
     cmake_policy(SET CMP0004 OLD) # workaround for underscore in reflex lib path
     target_link_libraries(reflex INTERFACE "${reflex_SOURCE_DIR}/lib/libreflex.a")

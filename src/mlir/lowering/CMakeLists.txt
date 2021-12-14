@@ -14,7 +14,6 @@ add_library(voila_lowering
         ReadOpLowering.cpp
         GatherOpLowering.cpp
         LoopOpLowering.cpp
-        MoveOpLowering.cpp
         HashOpLowering.cpp
         InsertOpLowering.cpp
         LookupOpLowering.cpp

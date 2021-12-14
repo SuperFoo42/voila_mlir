@@ -18,7 +18,7 @@ namespace voila::mlir::lowering
         assert(type.hasRank() && "expected only ranked shapes");
         return MemRefType::get(type.getShape(), type.getElementType());
     }
-
+    //TODO: use parallel generic
     ::mlir::LogicalResult LookupOpLowering::matchAndRewrite(::mlir::Operation *op,
                                                             llvm::ArrayRef<::mlir::Value> operands,
                                                             ConversionPatternRewriter &rewriter) const
