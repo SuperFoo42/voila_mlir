@@ -201,7 +201,7 @@ namespace voila
 
         void to_dot(const std::string &);
 
-        void add_var(ast::Expression expr);
+        void add_var(const ast::Expression &expr);
 
         ast::Expression get_var(const std::string &var_name);
 
