@@ -158,11 +158,11 @@ namespace voila
                                       uint64_t,
                                       double>;
 
-        const ::mlir::MLIRContext &getMLIRContext() const;
+        [[maybe_unused]] const ::mlir::MLIRContext &getMLIRContext() const;
 
-        const ::mlir::OwningModuleRef &getMLIRModule() const;
+        [[maybe_unused]] const ::mlir::OwningModuleRef &getMLIRModule() const;
 
-        explicit Program(Config config = Config());
+        explicit Program(const Config &config = Config());
 
         explicit Program(std::string_view source_path, Config config = Config());
 

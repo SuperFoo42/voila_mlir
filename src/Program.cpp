@@ -98,7 +98,7 @@ namespace voila
         return mlirModule;
     }
 
-    const MLIRContext &Program::getMLIRContext() const
+    [[maybe_unused]] const MLIRContext &Program::getMLIRContext() const
     {
         return context;
     }
@@ -327,7 +327,7 @@ namespace voila
         // pm.addNestedPass<FuncOp>(createLoopCoalescingPass());
         // pm.addNestedPass<FuncOp>(createForLoopPeelingPass());
         // pm.addNestedPass<FuncOp>(createLoopUnrollPass(8));
-        pm.addNestedPass<FuncOp>(createLoopUnrollAndJamPass(8));
+        /* pm.addNestedPass<FuncOp>(createLoopUnrollAndJamPass(8));
         pm.addNestedPass<FuncOp>(createForLoopSpecializationPass());
         pm.addNestedPass<FuncOp>(createParallelLoopFusionPass());
         pm.addNestedPass<FuncOp>(createParallelLoopCollapsingPass());
@@ -335,7 +335,7 @@ namespace voila
         pm.addNestedPass<FuncOp>(createParallelLoopSpecializationPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());
         pm.addPass(createAsyncParallelForPass(true, 16, 1));
-        /*
+
         pm.addNestedPass<FuncOp>(createBufferLoopHoistingPass());
         pm.addNestedPass<FuncOp>(createPromoteBuffersToStackPass());
         pm.addNestedPass<FuncOp>(createLoopFusionPass());
@@ -656,7 +656,7 @@ namespace voila
         }
     }
 
-    Program::Program(const Config config) :
+    Program::Program(const Config &config) :
         func_vars(),
         context(),
         llvmContext(),
@@ -664,7 +664,7 @@ namespace voila
         llvmModule(),
         maybeEngine(std::nullopt),
         functions(),
-        config{std::move(config)},
+        config{config},
         lexer{new Lexer()},
         inferer()
     {

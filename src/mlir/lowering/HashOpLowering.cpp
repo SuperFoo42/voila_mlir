@@ -280,28 +280,28 @@ namespace voila::mlir::lowering
         return XXH3_avalanche(builder, loc, acc);
     }
 
-    /* TODO
-     * static auto mediumHashFunc(OpBuilder &builder, Location loc, ValueRange vals)
+    /* TODO:
+       static auto mediumHashFunc(OpBuilder &builder, Location loc, ValueRange vals)
 
         {
             return;
         }
-        */
+    */
 
     static auto hashFunc(OpBuilder &builder, Location loc, ValueRange vals)
     {
         SmallVector<Value> intVals;
         unsigned int size = 0;
-        for (size_t i = 0; i < vals.size() - 1; ++i)
+        for (const auto &val : vals)
         {
-            if (vals[i].getType().isIntOrFloat())
+            if (val.getType().isIntOrFloat())
             {
                 intVals.push_back(builder.create<BitcastOp>(
-                    loc, vals[i], builder.getIntegerType(vals[i].getType().getIntOrFloatBitWidth())));
+                    loc, val, builder.getIntegerType(val.getType().getIntOrFloatBitWidth())));
             }
-            else if (vals[i].getType().isIndex())
+            else if (val.getType().isIndex())
             {
-                intVals.push_back(builder.create<IndexCastOp>(loc, vals[i], builder.getI64Type()));
+                intVals.push_back(builder.create<IndexCastOp>(loc, val, builder.getI64Type()));
             }
             else
             {
@@ -344,7 +344,7 @@ namespace voila::mlir::lowering
     {
         HashOpAdaptor hashOpAdaptor(operands);
         auto loc = op->getLoc();
-        // TODO: murmur3 for strings
+
         const auto &shape = hashOpAdaptor.input().front().getType().dyn_cast<::mlir::TensorType>().getShape();
         for (const auto &in : hashOpAdaptor.input())
         {

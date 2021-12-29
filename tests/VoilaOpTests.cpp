@@ -5,6 +5,11 @@
 #include <gtest/gtest.h>
 using namespace voila;
 
+TEST(ProgramTest, MakeParam)
+{
+    //::voila::make_param(arg);
+}
+
 TEST(AddTests, TensorTensorTest)
 {
     Config config;
@@ -14,16 +19,14 @@ TEST(AddTests, TensorTensorTest)
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_add.voila";
     constexpr size_t TENSOR_SIZE = 100;
-    constexpr uint64_t TENSOR_VALS = 123;
-    constexpr uint64_t TENSOR_SUM = TENSOR_VALS + TENSOR_VALS;
+    constexpr int64_t TENSOR_VALS = 123;
+    constexpr int64_t TENSOR_SUM = TENSOR_VALS + TENSOR_VALS;
     Program prog(file, config);
     // alloc dummy data to pass to program args
-    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
-    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
-    auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
-    std::fill_n(arg2.get(), TENSOR_SIZE, TENSOR_VALS);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
-    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE);
+    std::vector<int64_t> arg(TENSOR_SIZE, TENSOR_VALS);
+    std::vector<int64_t> arg2(TENSOR_SIZE, TENSOR_VALS);
+    prog << ::voila::make_param(arg);
+    prog << ::voila::make_param(arg2);
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
@@ -284,11 +287,11 @@ TEST(HashTableTests, SimpleLookup)
     config.optimize = true;
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_lookup.voila";
     constexpr size_t TENSOR_SIZE = 100;
-    constexpr uint64_t TENSOR_VALS = 123;
+    constexpr int64_t TENSOR_VALS = 123;
     constexpr size_t VALUE_POS = 72;
     Program prog(file, config);
     // alloc dummy data to pass to program args
-    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
+    auto arg = std::unique_ptr<int64_t[]>(new int64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
 
