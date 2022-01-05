@@ -1,16 +1,18 @@
 #pragma once
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
-#include "mlir/Dialect/Utils/StructuredOpsUtils.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
-#include "mlir/Transforms/DialectConversion.h"
-#include "mlir/VoilaDialect.h"
-#include "mlir/VoilaOps.h"
 
-#include "llvm/ADT/Sequence.h"
+#include "mlir/Transforms/DialectConversion.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+
+namespace mlir::voila
+{
+    class EqOp;
+    class NeqOp;
+    class LeOp;
+    class LeqOp;
+    class GeqOp;
+    class GeOp;
+}
 
 namespace voila::mlir::lowering
 {
@@ -110,7 +112,7 @@ namespace voila::mlir::lowering
         }
 
       public:
-        explicit ComparisonOpLowering(::mlir::MLIRContext *ctx) : ConversionPattern(CmpOp::getOperationName(), 1, ctx)
+        [[maybe_unused]] explicit ComparisonOpLowering(::mlir::MLIRContext *ctx) : ConversionPattern(CmpOp::getOperationName(), 1, ctx)
         {
         }
 

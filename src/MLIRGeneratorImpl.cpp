@@ -4,6 +4,7 @@
 #include "NotImplementedException.hpp"
 
 #include <mlir/IR/BuiltinTypes.h>
+#include "mlir/IR/VoilaOps.h"
 
 namespace voila::mlir
 {
@@ -200,7 +201,7 @@ namespace voila::mlir
         }
         // TODO: allow more than only a single return type
         result = builder.create<::mlir::voila::GenericCallOp>(location, call.fun, operands,
-                                                              funcTable.at(call.fun).getType().getResult(0));
+                                                              funcTable.lookup(call.fun).getType().getResult(0));
     }
 
     void MLIRGeneratorImpl::operator()(const Assign &assign)
@@ -471,7 +472,7 @@ namespace voila::mlir
 
         auto func_type = builder.getFunctionType(arg_types, llvm::None);
         auto function = ::mlir::FuncOp::create(location, fun.name, func_type);
-        funcTable.emplace(fun.name, function);
+        funcTable.insert(std::make_pair(fun.name, function));
         assert(function);
 
         auto &entryBlock = *function.addEntryBlock();
@@ -738,6 +739,34 @@ namespace voila::mlir
         }
 
         return values;
+    }
+    llvm::ArrayRef<int64_t> MLIRGeneratorImpl::getShape(const Value &lhs, const Value &rhs)
+    {
+        llvm::ArrayRef<int64_t> shape;
+        if (lhs.getType().isa<::mlir::TensorType>() &&
+            lhs.getType().dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
+        {
+            shape = lhs.getType().dyn_cast<::mlir::RankedTensorType>().getShape();
+        }
+        else if (rhs.getType().isa<::mlir::TensorType>() &&
+                 rhs.getType().dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
+        {
+            shape = rhs.getType().dyn_cast<::mlir::RankedTensorType>().getShape();
+        }
+        else
+        {
+            shape = llvm::SmallVector<int64_t, 1>{-1};
+        }
+        return shape;
+    }
+    MLIRGeneratorImpl::MLIRGeneratorImpl(OpBuilder &builder,
+                                         ModuleOp &module,
+                                         llvm::ScopedHashTable<llvm::StringRef, ::mlir::Value> &symbolTable,
+                                         llvm::StringMap<::mlir::FuncOp> &funcTable,
+                                         const TypeInferer &inferer) :
+        builder{builder}, module{module}, symbolTable{symbolTable}, funcTable{funcTable}, inferer{inferer}, result{}
+    {
+        (void) module;
     }
 
 } // namespace voila::mlir

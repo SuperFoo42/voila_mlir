@@ -47,12 +47,11 @@
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
-#include <mlir/VoilaDialect.h>
+#include <mlir/IR/VoilaDialect.h>
 #include <mlir/lowering/LinalgTiledLoopsToAffineForPass.hpp>
-#include <mlir/lowering/VectorMultiReductionPass.hpp>
-#include <mlir/lowering/VoilaToAffineLoweringPass.hpp>
-#include <mlir/lowering/VoilaToLLVMLoweringPass.hpp>
-#include <mlir/lowering/VoilaToLinalgLoweringPass.hpp>
+#include <mlir/Passes/VoilaToAffineLoweringPass.hpp>
+#include <mlir/Passes/VoilaToLLVMLoweringPass.hpp>
+#include <mlir/Passes/VoilaToLinalgLoweringPass.hpp>
 #pragma GCC diagnostic pop
 #include "Profiler.hpp"
 

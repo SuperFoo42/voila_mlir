@@ -126,7 +126,7 @@ namespace voila
             auto expectedEngine = ExecutionEngine::create(*mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline,
                                                           config.optimize ? llvm::CodeGenOpt::Level::Aggressive :
                                                                             llvm::CodeGenOpt::Level::None,
-                                                          {}, true, false, false);
+                                                          {}, true, config.debug, config.profile);
             assert(expectedEngine && "failed to construct an execution engine");
 
             maybeEngine = std::move(*expectedEngine);
@@ -244,7 +244,7 @@ namespace voila
         pm.addNestedPass<FuncOp>(::voila::mlir::createLowerToLinalgPass());
         // Partially lower voila to affine with a few cleanups
         pm.addNestedPass<FuncOp>(::voila::mlir::createLowerToAffinePass());
-
+        /*
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
 
@@ -257,13 +257,13 @@ namespace voila
         pm.addNestedPass<FuncOp>(createLinalgStrategyPromotePass());
 
         // pm.addNestedPass<FuncOp>(mlir::createLinalgTiledPeelingPass());
-        /*                        pm.addNestedPass<FuncOp>(
-                            createLinalgStrategyTilePass("", linalg::LinalgTilingOptions()
-                                                                               .setTileSizes({400080})
-                                                                               .setLoopType(linalg::LinalgTilingLoopType::TiledLoops)
-                                                                 .setDistributionTypes({"CyclicNumProcsEqNumIters"})
-                                                                               .setPeeledLoops({0})
-                                                         ));*/
+        //                        pm.addNestedPass<FuncOp>(
+                            //createLinalgStrategyTilePass("", linalg::LinalgTilingOptions()
+                              //                                                 .setTileSizes({400080})
+                                // .setLoopType(linalg::LinalgTilingLoopType::TiledLoops)
+                                  //                               .setDistributionTypes({"CyclicNumProcsEqNumIters"})
+                                    //                                           .setPeeledLoops({0})
+                                      //                   ));
 
         pm.addNestedPass<FuncOp>(createLinalgStrategyInterchangePass());
 
@@ -300,7 +300,7 @@ namespace voila
         pm.addNestedPass<FuncOp>(createCSEPass());
 
         pm.addNestedPass<FuncOp>(createConvertLinalgToAffineLoopsPass());
-                if (config.optimize && config.vectorize)
+        if (config.optimize && config.vectorize)
         {
             std::unique_ptr<Pass> vectorizationPass = createSuperVectorizePass(llvm::makeArrayRef<int64_t>(8));
             (void) vectorizationPass->initializeOptions("vectorize-reductions=true");
@@ -399,7 +399,7 @@ namespace voila
             pm.addPass(createConvertAsyncToLLVMPass());
         pm.addPass(::mlir::createLowerToLLVMPass());
 
-        pm.addPass(createReconcileUnrealizedCastsPass());
+        pm.addPass(createReconcileUnrealizedCastsPass());*/
 
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));

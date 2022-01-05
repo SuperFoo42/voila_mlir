@@ -1,46 +1,39 @@
-#include "mlir/VoilaOps.h"
+#include "mlir/IR/VoilaOps.h"
 
-#include "mlir/Analysis/AffineStructures.h"
 #include "mlir/Analysis/SliceAnalysis.h"
-#include "mlir/Dialect/Affine/IR/AffineValueMap.h"
-#include "mlir/Dialect/Affine/Utils.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/Linalg/Transforms/Hoisting.h"
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/SCF/Utils.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/Vector/VectorOps.h"
-#include "mlir/Dialect/Vector/VectorUtils.h"
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/Dominance.h"
-#include "mlir/IR/OpImplementation.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 #include "mlir/Transforms/LoopUtils.h"
 
 #define GET_OP_CLASSES
 #include "mlir/VoilaOps.cpp.inc"
+using namespace ::mlir;
 using namespace ::mlir::arith;
-
+using namespace mlir::voila;
 /// Return the callee of the generic call operation, this is required by the
 /// call interface.
-mlir::CallInterfaceCallable mlir::voila::GenericCallOp::getCallableForCallee()
+[[maybe_unused]] mlir::CallInterfaceCallable mlir::voila::GenericCallOp::getCallableForCallee()
 {
     return callee();
 }
 
 /// Get the argument operands to the called function, this is required by the
 /// call interface.
-mlir::Operation::operand_range mlir::voila::GenericCallOp::getArgOperands()
+[[maybe_unused]] mlir::Operation::operand_range mlir::voila::GenericCallOp::getArgOperands()
 {
     return inputs();
 }
 
-bool mlir::voila::CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
+bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
 {
     if (inputs.size() != 1 || outputs.size() != 1)
         return false;
@@ -53,7 +46,7 @@ bool mlir::voila::CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
     return !input.hasRank() || !output.hasRank() || input == output;
 }
 
-::mlir::LogicalResult mlir::voila::SelectOp::canonicalize(SelectOp op, PatternRewriter &rewriter)
+LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, PatternRewriter &rewriter)
 {
     SmallVector<std::reference_wrapper<OpOperand>> uses;
     for (auto &use : op->getUses())
@@ -63,18 +56,13 @@ bool mlir::voila::CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
         OpOperand &use = uses.pop_back_val();
         Operation *user = use.getOwner();
         // test if replacement with select operation would produce unsafe results
-        if (::mlir::isa<mlir::voila::InsertOp>(user) || ::mlir::isa<mlir::voila::EmitOp>(user) ||
-            ::mlir::isa<mlir::voila::HashOp>(user) || ::mlir::isa<mlir::voila::ReadOp>(user) ||
-            ::mlir::isa<mlir::voila::WriteOp>(user) || ::mlir::isa<mlir::voila::LookupOp>(user) ||
-            ::mlir::isa<mlir::voila::EqOp>(user) || ::mlir::isa<mlir::voila::GeOp>(user) ||
-            ::mlir::isa<mlir::voila::GeOp>(user) || ::mlir::isa<mlir::voila::GeqOp>(user) ||
-            ::mlir::isa<mlir::voila::LeOp>(user) || ::mlir::isa<mlir::voila::LeqOp>(user) ||
-            ::mlir::isa<mlir::voila::NeqOp>(user) || ::mlir::isa<mlir::voila::AvgOp>(user))
+        if (isa<InsertOp>(user) || isa<EmitOp>(user) || isa<HashOp>(user) || isa<ReadOp>(user) || isa<WriteOp>(user) ||
+            isa<LookupOp>(user) || isa<EqOp>(user) || isa<GeOp>(user) || isa<GeOp>(user) || isa<GeqOp>(user) ||
+            isa<LeOp>(user) || isa<LeqOp>(user) || isa<NeqOp>(user) || isa<AvgOp>(user))
         {
             return failure();
         }
-        else if (::mlir::isa<mlir::voila::SumOp>(user) || ::mlir::isa<mlir::voila::CountOp>(user) ||
-                 ::mlir::isa<mlir::voila::MinOp>(user) || ::mlir::isa<mlir::voila::MaxOp>(user))
+        else if (isa<SumOp>(user) || isa<CountOp>(user) || isa<MinOp>(user) || isa<MaxOp>(user))
         {
             continue;
         }

@@ -1,14 +1,8 @@
-CPMAddPackage("gh:Neargye/magic_enum@0.7.2")
-CPMAddPackage("gh:jarro2783/cxxopts@2.2.1")
-CPMAddPackage("gh:gabime/spdlog@1.8.5")
+CPMAddPackage("gh:Neargye/magic_enum@0.7.3")
+CPMAddPackage("gh:jarro2783/cxxopts@3.0.0")
+CPMAddPackage("gh:gabime/spdlog@1.9.2")
 CPMAddPackage("gh:ericniebler/range-v3#0.11.0")
-
-
-CPMAddPackage(
-        NAME fmt
-        GIT_TAG 7.1.3
-        GITHUB_REPOSITORY fmtlib/fmt
-)
+CPMAddPackage("gh:fmtlib/fmt#8.1.0")
 
 if (fmt_ADDED)
     # enable c++20 to avoid compilation errors
@@ -43,7 +37,6 @@ add_library(voila_compiler
         DotVisualizer.cpp
         MLIRGenerator.cpp
         MLIRGeneratorImpl.cpp
-        VoilaInlinerInterface.cpp
         TypeInferencePass.cpp
         Program.cpp
         Config.cpp

@@ -1,4 +1,10 @@
 #include "mlir/lowering/NotOpLowering.hpp"
+
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/IR/VoilaOps.h"
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -150,7 +156,8 @@ namespace voila::mlir::lowering
                 else
                 {
                     // Create the binary operation performed on the loaded values.
-                    return builder.create<XOrIOp>(loc, binaryAdaptor.value().getType(), binaryAdaptor.value(), oneConst);
+                    return builder.create<XOrIOp>(loc, binaryAdaptor.value().getType(), binaryAdaptor.value(),
+                                                  oneConst);
                 }
             });
         return success();

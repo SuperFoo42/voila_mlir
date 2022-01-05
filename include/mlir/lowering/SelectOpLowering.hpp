@@ -1,22 +1,15 @@
 #pragma once
-
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
-#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/VoilaDialect.h"
-#include "mlir/VoilaOps.h"
-#include "mlir/Dialect/SCF/SCF.h"
-#include "llvm/ADT/Sequence.h"
+
 namespace voila::mlir::lowering
 {
     class SelectOpLowering : public ::mlir::ConversionPattern
     {
-        using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs, ::mlir::Value iter_var, ::mlir::Value dest)>;
+        using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter,
+                                                                   ::mlir::ValueRange memRefOperands,
+                                                                   ::mlir::ValueRange loopIvs,
+                                                                   ::mlir::Value iter_var,
+                                                                   ::mlir::Value dest)>;
         /// This defines the function type used to process an iteration of a lowered
         /// loop. It takes as input an OpBuilder, an range of memRefOperands
         /// corresponding to the operands of the input operation, and the range of loop
@@ -28,10 +21,10 @@ namespace voila::mlir::lowering
                                    LoopIterationFn processIteration);
 
       public:
-        explicit SelectOpLowering(::mlir::MLIRContext *ctx) : ConversionPattern(::mlir::voila::SelectOp::getOperationName(), 1, ctx) {}
+        explicit SelectOpLowering(::mlir::MLIRContext *ctx);
 
         ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                      ::mlir::ArrayRef<::mlir::Value> operands,
+                                              ::mlir::ArrayRef<::mlir::Value> operands,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final;
     };
-} // namespace voila::mlir::lowerin
+} // namespace voila::mlir::lowering

@@ -1,14 +1,6 @@
 #pragma once
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Linalg//IR/Linalg.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
-#include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/VoilaDialect.h"
-#include "mlir/VoilaOps.h"
-
-#include "llvm/ADT/Sequence.h"
+#include "mlir/IR/VoilaOps.h"
 
 namespace voila::mlir::lowering
 {

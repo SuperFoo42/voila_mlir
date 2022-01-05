@@ -1,4 +1,8 @@
 #include "mlir/lowering/EmitOpLowering.hpp"
+
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/IR/VoilaOps.h"
+
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;

@@ -1,8 +1,21 @@
-#include "mlir/lowering/VoilaToAffineLoweringPass.hpp"
+#include "mlir/Passes/VoilaToAffineLoweringPass.hpp"
+
+#include "mlir/IR/VoilaDialect.h"
+#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/lowering/ComparisonOpLowering.hpp"
+#include "mlir/lowering/ConstOpLowering.hpp"
+#include "mlir/lowering/EmitOpLowering.hpp"
+#include "mlir/lowering/GatherOpLowering.hpp"
+#include "mlir/lowering/InsertOpLowering.hpp"
+#include "mlir/lowering/LoopOpLowering.hpp"
+#include "mlir/lowering/ReadOpLowering.hpp"
+#include "mlir/lowering/SelectOpLowering.hpp"
 
 namespace voila::mlir
 {
     using namespace ::mlir;
+    using namespace ::mlir::voila;
     namespace lowering
     {
         void VoilaToAffineLoweringPass::runOnFunction()
@@ -21,13 +34,14 @@ namespace voila::mlir
             // We define the specific operations, or dialects, that are legal targets for
             // this lowering.
             target.addLegalDialect<AffineDialect, memref::MemRefDialect, StandardOpsDialect, linalg::LinalgDialect,
-                                   scf::SCFDialect, arith::ArithmeticDialect, bufferization::BufferizationDialect, tensor::TensorDialect>();
+                                   scf::SCFDialect, arith::ArithmeticDialect, bufferization::BufferizationDialect,
+                                   tensor::TensorDialect>();
 
             // We also define the dialect as Illegal so that the conversion will fail
             // if any of these operations are *not* converted. Given that we actually want
             // a partial lowering, we explicitly mark the Toy operations that don't want
             // to lower, `toy.print`, as `legal`.
-            target.addIllegalDialect<::mlir::voila::VoilaDialect>();
+            target.addIllegalDialect<VoilaDialect>();
             // Now that the conversion target has been defined, we just need to provide
             // the set of patterns that will lower the Toy operations.
             RewritePatternSet patterns(&getContext());

@@ -1,34 +1,13 @@
 #pragma once
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
-#include "mlir/Dialect/Utils/StructuredOpsUtils.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/VoilaDialect.h"
-#include "mlir/VoilaOps.h"
 
-#include "llvm/ADT/Sequence.h"
 namespace voila::mlir::lowering
 {
     static inline auto isFloat(const ::mlir::Type &t)
     {
         return t.isF64() || t.isF32() || t.isF128() || t.isF80();
-    }
-
-    static inline ::mlir::Type getFloatType(const ::mlir::OpBuilder &builder, const ::mlir::Type &t)
-    {
-        if (t.isF64())
-            return ::mlir::Float64Type::get(builder.getContext());
-        if (t.isF32())
-            return ::mlir::Float32Type::get(builder.getContext());
-        if (t.isF128())
-            return ::mlir::Float128Type::get(builder.getContext());
-        if (t.isF80())
-            return ::mlir::Float80Type::get(builder.getContext());
-        throw std::logic_error("No float type");
     }
 
     struct BinOpGenerator
@@ -104,7 +83,10 @@ namespace voila::mlir::lowering
         using GenClass::operator();
 
       public:
-        explicit BinaryOpLowering(::mlir::MLIRContext *ctx) : ConversionPattern(BinaryOp::getOperationName(), 1, ctx) {}
+        [[maybe_unused]] explicit BinaryOpLowering(::mlir::MLIRContext *ctx) :
+            ConversionPattern(BinaryOp::getOperationName(), 1, ctx)
+        {
+        }
 
         ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
                                               llvm::ArrayRef<::mlir::Value> operands,
@@ -112,13 +94,10 @@ namespace voila::mlir::lowering
         {
             typename BinaryOp::Adaptor opAdaptor(operands);
             auto loc = op->getLoc();
+            ::mlir::Value newVal;
 
             if (opAdaptor.lhs().getType().template isa<::mlir::TensorType>() &&
-                opAdaptor.rhs().getType().template isa<::mlir::TensorType>())
-            {
-                rewriter.replaceOp(op, operator()(rewriter, loc, opAdaptor.lhs(), opAdaptor.rhs()));
-            }
-            else if (opAdaptor.lhs().getType().template isa<::mlir::TensorType>())
+                !opAdaptor.rhs().getType().template isa<::mlir::TensorType>())
             {
                 ::mlir::Value other;
                 if (opAdaptor.lhs().getType().template dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
@@ -135,9 +114,10 @@ namespace voila::mlir::lowering
                         rewriter.template create<::mlir::linalg::InitTensorOp>(loc, size, opAdaptor.rhs().getType());
                 }
                 auto filledOther = rewriter.create<::mlir::linalg::FillOp>(loc, opAdaptor.rhs(), other);
-                rewriter.replaceOp(op, operator()(rewriter, loc, opAdaptor.lhs(), filledOther.result()));
+                newVal = operator()(rewriter, loc, opAdaptor.lhs(), filledOther.result());
             }
-            else if (opAdaptor.rhs().getType().template isa<::mlir::TensorType>())
+            else if (opAdaptor.rhs().getType().template isa<::mlir::TensorType>() &&
+                     !opAdaptor.lhs().getType().template isa<::mlir::TensorType>())
             {
                 ::mlir::Value other;
                 if (opAdaptor.rhs().getType().template dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
@@ -154,12 +134,13 @@ namespace voila::mlir::lowering
                         rewriter.template create<::mlir::linalg::InitTensorOp>(loc, size, opAdaptor.lhs().getType());
                 }
                 auto filledOther = rewriter.create<::mlir::linalg::FillOp>(loc, opAdaptor.lhs(), other);
-                rewriter.replaceOp(op, operator()(rewriter, loc, filledOther.result(), opAdaptor.rhs()));
+                newVal = operator()(rewriter, loc, filledOther.result(), opAdaptor.rhs());
             }
-            else // no tensors as params
+            else // no tensors or all tensors as params
             {
-                rewriter.replaceOp(op, operator()(rewriter, loc, opAdaptor.lhs(), opAdaptor.rhs()));
+                newVal = operator()(rewriter, loc, opAdaptor.lhs(), opAdaptor.rhs());
             }
+            rewriter.replaceOp(op, newVal);
             return ::mlir::success();
         }
     };

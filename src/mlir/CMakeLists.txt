@@ -1,6 +1,7 @@
 add_mlir_dialect_library(MLIRVoila
         VoilaDialect.cpp
-        VoilaOps.cpp
+        IR/VoilaOps.cpp
+        Interfaces/VoilaInlinerInterface.cpp
 
         ADDITIONAL_HEADER_DIRS
         ${PROJECT_SOURCE_DIR}/include/mlir
@@ -12,4 +13,9 @@ add_mlir_dialect_library(MLIRVoila
         MLIRIR
         )
 
+add_library(voila_lowering)
+
+target_link_libraries(voila_lowering fmt range-v3 MLIRVoila)
+
 add_subdirectory(lowering)
+add_subdirectory(Passes)

@@ -10,13 +10,10 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/MLIRContext.h"
-#include "mlir/IR/Verifier.h"
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopedHashTable.h"
-#include "llvm/Support/raw_ostream.h"
-#include "mlir/VoilaOps.h"
+#include "llvm/ADT/StringMap.h"
 #pragma GCC diagnostic pop
 namespace voila
 {
@@ -27,7 +24,7 @@ namespace voila
         ::mlir::OpBuilder builder;
         ::mlir::ModuleOp module;
         llvm::ScopedHashTable<llvm::StringRef, mlir::Value> symbolTable;
-        std::unordered_map<std::string, ::mlir::FuncOp> funcTable;
+        llvm::StringMap<::mlir::FuncOp> funcTable;
 
         explicit MLIRGenerator(::mlir::MLIRContext &ctx);
 

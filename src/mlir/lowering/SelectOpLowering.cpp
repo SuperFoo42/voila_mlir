@@ -1,6 +1,13 @@
 #include "mlir/lowering/SelectOpLowering.hpp"
 
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/IR/IntegerSet.h"
+#include "mlir/IR/VoilaOps.h"
 
 namespace voila::mlir::lowering
 {
@@ -101,8 +108,7 @@ namespace voila::mlir::lowering
         auto res = rewriter.create<memref::ReinterpretCastOp>(
             loc, MemRefType::get(-1, alloc.getType().dyn_cast<MemRefType>().getElementType()), alloc, zeroConst, sizes,
             indices);
-        rewriter.replaceOpWithNewOp<ToTensorOp>(
-            op, res);
+        rewriter.replaceOpWithNewOp<ToTensorOp>(op, res);
     }
 
     LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
@@ -220,5 +226,9 @@ namespace voila::mlir::lowering
                            }
                        });
         return success();
+    }
+    SelectOpLowering::SelectOpLowering(::mlir::MLIRContext *ctx) :
+            ConversionPattern(::mlir::voila::SelectOp::getOperationName(), 1, ctx)
+    {
     }
 } // namespace voila::mlir::lowering

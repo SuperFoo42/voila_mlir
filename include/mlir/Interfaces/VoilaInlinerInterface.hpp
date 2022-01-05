@@ -5,7 +5,7 @@
 #include <mlir/Transforms/InliningUtils.h>
 #include <mlir/IR/Builders.h>
 #include <mlir/Pass/Pass.h>
-#include "VoilaOps.h"
+#include "mlir/IR/VoilaOps.h"
 #pragma GCC diagnostic pop
 
 

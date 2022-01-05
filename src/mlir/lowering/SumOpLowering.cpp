@@ -1,5 +1,11 @@
 #include "mlir/lowering/SumOpLowering.hpp"
 
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/Vector/VectorOps.h"
+#include "mlir/IR/VoilaOps.h"
+
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -181,7 +187,7 @@ namespace voila::mlir::lowering
         Value res;
         if (sumOpAdaptor.indices() && op->getResultTypes().front().isa<TensorType>())
         {
-            res = groupedSumLowering(op, loc, sumOpAdaptor, rewriter); // grouped aggreagation is a pipeline breaker
+            res = groupedSumLowering(op, loc, sumOpAdaptor, rewriter); // grouped aggregation is a pipeline breaker
         }
         else
         {

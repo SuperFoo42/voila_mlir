@@ -1,5 +1,10 @@
 #include "mlir/lowering/HashOpLowering.hpp"
 
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/IR/VoilaOps.h"
+
+#include <fmt/format.h>
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -296,8 +301,8 @@ namespace voila::mlir::lowering
         {
             if (val.getType().isIntOrFloat())
             {
-                intVals.push_back(builder.create<BitcastOp>(
-                    loc, val, builder.getIntegerType(val.getType().getIntOrFloatBitWidth())));
+                intVals.push_back(
+                    builder.create<BitcastOp>(loc, val, builder.getIntegerType(val.getType().getIntOrFloatBitWidth())));
             }
             else if (val.getType().isIndex())
             {

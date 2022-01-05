@@ -1,5 +1,11 @@
 #include "mlir/lowering/LoopOpLowering.hpp"
 
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/IR/VoilaOps.h"
+
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -42,7 +48,8 @@ namespace voila::mlir::lowering
             cond = rewriter.create<ToMemrefOp>(
                 loc, convertTensorToMemRef(loopOpAdaptor.cond().getType().dyn_cast<TensorType>()),
                 loopOpAdaptor.cond());
-            upperBound = rewriter.create<AddIOp>(loc, rewriter.create<memref::DimOp>(loc, loopOpAdaptor.cond(), 0), rewriter.create<ConstantIndexOp>(loc, 1));
+            upperBound = rewriter.create<AddIOp>(loc, rewriter.create<memref::DimOp>(loc, loopOpAdaptor.cond(), 0),
+                                                 rewriter.create<ConstantIndexOp>(loc, 1));
         }
         else
         {
@@ -74,7 +81,8 @@ namespace voila::mlir::lowering
                 if (cond.getType().isa<MemRefType>())
                 {
                     SmallVector<Value> loadedCond;
-                    loadedCond.push_back(rewriter.create<AffineLoadOp>(loc, cond, ivs)); //FIXME: oob load in last iteration - add affine if
+                    loadedCond.push_back(rewriter.create<AffineLoadOp>(
+                        loc, cond, ivs)); // FIXME: oob load in last iteration - add affine if
                     rewriter.create<AffineYieldOp>(loc, loadedCond);
                 }
                 else
@@ -88,18 +96,19 @@ namespace voila::mlir::lowering
     LoopOpLowering::matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const
     {
         auto loc = op->getLoc();
-        lowerOpToLoops(op, operands, rewriter,
-                       [op, loc](PatternRewriter &builder, ValueRange memRefOperands, ValueRange loopIvs, Value iter_var)
-                       {
-                           LoopOpAdaptor loopOpAdaptor(memRefOperands);
-                           auto ifOp = builder.create<scf::IfOp>(loc, iter_var, false);
+        lowerOpToLoops(
+            op, operands, rewriter,
+            [op, loc](PatternRewriter &builder, ValueRange memRefOperands, ValueRange loopIvs, Value iter_var)
+            {
+                LoopOpAdaptor loopOpAdaptor(memRefOperands);
+                auto ifOp = builder.create<scf::IfOp>(loc, iter_var, false);
 
-                         builder.inlineRegionBefore(op->getRegion(0), &ifOp.getThenRegion().back());
-                         builder.eraseBlock(&ifOp.getThenRegion().back());
-                         OpBuilder thenBuilder(&ifOp.getThenRegion().back().back());
-                         thenBuilder.setInsertionPointAfter(&ifOp.getThenRegion().back().back());
-                         thenBuilder.create<scf::YieldOp>(loc);
-                       });
+                builder.inlineRegionBefore(op->getRegion(0), &ifOp.getThenRegion().back());
+                builder.eraseBlock(&ifOp.getThenRegion().back());
+                OpBuilder thenBuilder(&ifOp.getThenRegion().back().back());
+                thenBuilder.setInsertionPointAfter(&ifOp.getThenRegion().back().back());
+                thenBuilder.create<scf::YieldOp>(loc);
+            });
         return success();
     }
 } // namespace voila::mlir::lowering

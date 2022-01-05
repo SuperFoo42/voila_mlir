@@ -1,4 +1,11 @@
 #include "mlir/lowering/MaxOpLowering.hpp"
+
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/IR/VoilaOps.h"
+
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -54,8 +61,9 @@ namespace voila::mlir::lowering
         if (op->getResultTypes().front().isa<IntegerType>())
         {
             res.push_back(rewriter.create<arith::ConstantOp>(
-                loc, DenseIntElementsAttr::get(RankedTensorType::get(shape, rewriter.getI64Type()),
-                                               rewriter.getI64IntegerAttr(std::numeric_limits<int64_t>::min()).getValue())));
+                loc,
+                DenseIntElementsAttr::get(RankedTensorType::get(shape, rewriter.getI64Type()),
+                                          rewriter.getI64IntegerAttr(std::numeric_limits<int64_t>::min()).getValue())));
         }
         else if (op->getResultTypes().front().isa<FloatType>())
         {

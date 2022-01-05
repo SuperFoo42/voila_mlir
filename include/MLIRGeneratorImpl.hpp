@@ -3,24 +3,12 @@
 #include "Program.hpp"
 
 #include <NotInferedException.hpp>
-#include <mlir/IR/Types.h>
-#include <mlir/IR/Value.h>
 #include <variant>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
 #include "VariableAlreadyDeclaredException.hpp"
-#include "mlir/Dialect/Tensor/IR/Tensor.h"
-#include "mlir/IR/Attributes.h"
-#include "mlir/IR/Builders.h"
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/MLIRContext.h"
-#include "mlir/IR/Verifier.h"
-#include "mlir/VoilaOps.h"
 
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/ScopedHashTable.h"
 #include "llvm/Support/raw_ostream.h"
 #pragma GCC diagnostic pop
 namespace voila::mlir
@@ -30,7 +18,7 @@ namespace voila::mlir
         ::mlir::OpBuilder &builder;
         ::mlir::ModuleOp &module;
         llvm::ScopedHashTable<llvm::StringRef, ::mlir::Value> &symbolTable;
-        std::unordered_map<std::string, ::mlir::FuncOp> &funcTable;
+        llvm::StringMap<::mlir::FuncOp> &funcTable;
         const TypeInferer &inferer;
         using result_variant =
             std::variant<std::monostate,
@@ -48,7 +36,6 @@ namespace voila::mlir
 
         std::vector<::mlir::Type> getTypes(const ast::ASTNode &node);
 
-        // TODO: implement
         ::mlir::Type convert(const Type &t);
 
         // TODO: is this correct?
@@ -70,25 +57,7 @@ namespace voila::mlir
 
         result_variant visitor_gen(const std::vector<ast::Statement> &nodes);
 
-        static llvm::ArrayRef<int64_t> getShape(const ::mlir::Value &lhs, const ::mlir::Value &rhs)
-        {
-            llvm::ArrayRef<int64_t> shape;
-            if (lhs.getType().isa<::mlir::TensorType>() &&
-                lhs.getType().dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
-            {
-                shape = lhs.getType().dyn_cast<::mlir::RankedTensorType>().getShape();
-            }
-            else if (rhs.getType().isa<::mlir::TensorType>() &&
-                     rhs.getType().dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
-            {
-                shape = rhs.getType().dyn_cast<::mlir::RankedTensorType>().getShape();
-            }
-            else
-            {
-                shape = llvm::SmallVector<int64_t, 1>{-1};
-            }
-            return shape;
-        }
+        static llvm::ArrayRef<int64_t> getShape(const ::mlir::Value &lhs, const ::mlir::Value &rhs);
 
         template<class Op>
         ::mlir::Value getCmpOp(const ast::Comparison &cmpNode)
@@ -116,12 +85,8 @@ namespace voila::mlir
         MLIRGeneratorImpl(::mlir::OpBuilder &builder,
                           ::mlir::ModuleOp &module,
                           ::llvm::ScopedHashTable<llvm::StringRef, ::mlir::Value> &symbolTable,
-                          std::unordered_map<std::string, ::mlir::FuncOp> &funcTable,
-                          const TypeInferer &inferer) :
-            builder{builder}, module{module}, symbolTable{symbolTable}, funcTable{funcTable}, inferer{inferer}, result{}
-        {
-            (void) module;
-        }
+                          llvm::StringMap<::mlir::FuncOp> &funcTable,
+                          const TypeInferer &inferer);
 
         result_variant getValue()
         {

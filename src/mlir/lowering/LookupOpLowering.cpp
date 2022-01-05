@@ -1,5 +1,10 @@
 #include "mlir/lowering/LookupOpLowering.hpp"
 
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/IR/VoilaOps.h"
+
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -47,7 +52,8 @@ namespace voila::mlir::lowering
             auto beforeBlock = builder.createBlock(&loop.getBefore());
             beforeBlock->addArgument(loop->getOperands().front().getType());
             auto condBuilder = OpBuilder::atBlockEnd(beforeBlock);
-            Value probeIdx = condBuilder.create<IndexCastOp>(loc, loop.getBefore().getArgument(0), builder.getIndexType());
+            Value probeIdx =
+                condBuilder.create<IndexCastOp>(loc, loop.getBefore().getArgument(0), builder.getIndexType());
 
             // lookup entries
             SmallVector<Value> entries;

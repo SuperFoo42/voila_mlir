@@ -4,6 +4,7 @@
 #include <magic_enum.hpp>
 #include <ostream>
 #include <utility>
+#include <vector>
 namespace voila
 {
     class TypeInferer;

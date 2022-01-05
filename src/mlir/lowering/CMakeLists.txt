@@ -1,8 +1,4 @@
-add_library(voila_lowering
-        VoilaToAffineLoweringPass.cpp
-        VoilaToLLVMLoweringPass.cpp
-        VoilaToLinalgLoweringPass.cpp
-        VectorMultiReductionPass.cpp
+target_sources(voila_lowering PRIVATE
         SelectOpLowering.cpp
         AvgOpLowering.cpp
         MaxOpLowering.cpp
@@ -19,6 +15,4 @@ add_library(voila_lowering
         LookupOpLowering.cpp
         LinalgTiledLoopsToAffineForPass.cpp
         LinalgTiledLoopsToAffineForPattern.cpp
-        )
-
-target_link_libraries(voila_lowering fmt range-v3 MLIRVoila)
+)

@@ -1,5 +1,10 @@
 #include "mlir/lowering/InsertOpLowering.hpp"
-
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/IR/VoilaOps.h"
 #include <bit>
 
 namespace voila::mlir::lowering

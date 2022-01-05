@@ -1,18 +1,18 @@
 CPMAddPackage(
         NAME benchmark
         GITHUB_REPOSITORY google/benchmark
-        VERSION 1.5.6
+        VERSION 1.6.0
         OPTIONS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}" "BENCHMARK_ENABLE_TESTING Off"
 )
 CPMAddPackage(
         NAME cereal
-        VERSION 1.3.0
+        TAG master
         GITHUB_REPOSITORY USCiLab/cereal
         OPTIONS "SKIP_PORTABILITY_TEST ON" "JUST_INSTALL_CEREAL ON"
 )
 CPMAddPackage("gh:d99kris/rapidcsv#v8.53")
 
-CPMAddPackage("gh:Cyan4973/xxHash#v0.8.0")
+CPMAddPackage("gh:Cyan4973/xxHash#v0.8.1")
 
 if (benchmark_ADDED)
     # enable c++11 to avoid compilation errors

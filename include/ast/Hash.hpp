@@ -5,6 +5,7 @@
 #include "IExpression.hpp"
 
 #include <utility>
+#include <vector>
 
 namespace voila::ast
 {

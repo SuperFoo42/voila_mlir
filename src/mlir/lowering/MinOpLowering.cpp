@@ -1,4 +1,11 @@
 #include "mlir/lowering/MinOpLowering.hpp"
+
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/IR/VoilaOps.h"
+
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -30,20 +37,15 @@ namespace voila::mlir::lowering
          * v++;
          */
         auto firstOr = rewriter.create<OrIOp>(
-            loc, insertSize,
-            rewriter.create<ShRUIOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
+            loc, insertSize, rewriter.create<ShRUIOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
         auto secondOr = rewriter.create<OrIOp>(
-            loc, firstOr,
-            rewriter.create<ShRUIOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
+            loc, firstOr, rewriter.create<ShRUIOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
         auto thirdOr = rewriter.create<OrIOp>(
-            loc, secondOr,
-            rewriter.create<ShRUIOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
+            loc, secondOr, rewriter.create<ShRUIOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
         auto fourthOr = rewriter.create<OrIOp>(
-            loc, thirdOr,
-            rewriter.create<ShRUIOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
+            loc, thirdOr, rewriter.create<ShRUIOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
         auto fithOr = rewriter.create<OrIOp>(
-            loc, fourthOr,
-            rewriter.create<ShRUIOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
+            loc, fourthOr, rewriter.create<ShRUIOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
         auto sixthOr = rewriter.create<OrIOp>(
             loc, fithOr, rewriter.create<ShRUIOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
 
@@ -58,12 +60,16 @@ namespace voila::mlir::lowering
 
         if (op->getResultTypes().front().isa<IntegerType>())
         {
-            res.push_back(rewriter.create<arith::ConstantOp>(loc, DenseIntElementsAttr::get(RankedTensorType::get(shape, rewriter.getI64Type()), rewriter.getI64IntegerAttr(std::numeric_limits<int64_t>::max()).getValue())));
-
+            res.push_back(rewriter.create<arith::ConstantOp>(
+                loc,
+                DenseIntElementsAttr::get(RankedTensorType::get(shape, rewriter.getI64Type()),
+                                          rewriter.getI64IntegerAttr(std::numeric_limits<int64_t>::max()).getValue())));
         }
         else if (op->getResultTypes().front().isa<FloatType>())
         {
-            res.push_back(rewriter.create<arith::ConstantOp>(loc, DenseFPElementsAttr::get(RankedTensorType::get(shape, rewriter.getF64Type()),
+            res.push_back(rewriter.create<arith::ConstantOp>(
+                loc,
+                DenseFPElementsAttr::get(RankedTensorType::get(shape, rewriter.getF64Type()),
                                          rewriter.getF64FloatAttr(std::numeric_limits<double>::max()).getValue())));
         }
         else

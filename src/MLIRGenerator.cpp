@@ -1,8 +1,10 @@
 #include "MLIRGenerator.hpp"
 
 #include "MLIRGeneratorImpl.hpp"
-#include "MlirModuleVerificationError.hpp"
 #include "MlirGenerationException.hpp"
+#include "MlirModuleVerificationError.hpp"
+
+#include <mlir/IR/Verifier.h>
 namespace voila
 {
     using namespace ast;
