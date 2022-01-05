@@ -9,8 +9,7 @@
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/InitAllDialects.h>
 #include <mlir/InitAllPasses.h>
-#include <mlir/VoilaDialect.h>
-#include <spdlog/spdlog.h>
+#include <mlir/IR/VoilaDialect.h>
 #pragma GCC diagnostic pop
 
 int main(int argc, char **argv)

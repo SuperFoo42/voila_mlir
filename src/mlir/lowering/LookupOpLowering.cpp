@@ -39,7 +39,7 @@ namespace voila::mlir::lowering
         auto lookupFunc = [&](OpBuilder &builder, Location loc, ValueRange vals)
         {
             auto hashVal = vals.take_front();
-
+            vals = vals.drop_front();
             // probing
             SmallVector<Type, 1> resType;
             resType.push_back(builder.getI64Type());
@@ -66,12 +66,15 @@ namespace voila::mlir::lowering
                 loc, CmpIPredicate::eq, entries[0],
                 builder.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), entries[0].getType()));
             Value notFound = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entries[0], vals[0]);
-            for (size_t i = 1; i < entries.size(); ++i)
+
+            for (auto &en : llvm::enumerate(llvm::zip(entries, vals)))
             {
-                auto tmp = builder.create<CmpIOp>(loc, CmpIPredicate::eq, entries[i],
-                                                  builder.create<ConstantIntOp>(loc, 0, entries[i].getType()));
+                Value entry, value;
+                std::tie(entry, value) = en.value();
+                auto tmp = builder.create<CmpIOp>(loc, CmpIPredicate::eq, entry,
+                                                  builder.create<ConstantIntOp>(loc, 0, entry.getType()));
                 isEmpty = builder.create<AndIOp>(loc, isEmpty, tmp);
-                auto tmp2 = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entries[i], vals[i]);
+                auto tmp2 = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entry, value);
                 notFound = builder.create<OrIOp>(loc, isEmpty, tmp2);
             }
 
