@@ -531,7 +531,7 @@ let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Opti
 let results = (outs AnyTypeOf<[F64, 1DTensorOf<[F64]>]>:$output);
 }
 
-def HashOp : Voila_Op<"hash", [NoSideEffect]> {
+def HashOp : Voila_Op<"hash", [NoSideEffect,SameVariadicOperandSize]> {
 let summary = "hash input values for use with hash tables";
 let description = [{
 //TODO
@@ -541,7 +541,7 @@ let arguments = (ins Variadic<1DTensorOf<[AnyType]>>:$input);
 let results = (outs I64Tensor:$output);
 }
 
-def InsertOp : Voila_Op<"insert"> {
+def InsertOp : Voila_Op<"insert", [SameVariadicOperandSize]> {
 let summary = "insert values in a hash table";
 let description = [{
 This is a convenience function, allocating a hashtable, hashing and scatter + linear probing for collision resolution

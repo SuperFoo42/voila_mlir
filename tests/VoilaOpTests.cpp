@@ -124,10 +124,10 @@ TEST(HashTableTests, ScalarHash)
     Config config;
 
     config.debug = true;
-    config.optimize = true;
+    config.optimize = false;
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_hash.voila";
     constexpr size_t TENSOR_SIZE = 100;
-    constexpr uint64_t TENSOR_VALS = 123;
+    constexpr int64_t TENSOR_VALS = 123;
     constexpr uint64_t HASH = 7668608003591710536;
     Program prog(file, config);
     // alloc dummy data to pass to program args
@@ -182,13 +182,13 @@ TEST(HashTableTests, ScalarInsert)
     Config config;
 
     config.debug = true;
-    config.optimize = true;
+    config.optimize = false;
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_insert.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr size_t NEXTPOW = 128;
-    constexpr uint64_t TENSOR_VALS = 123;
-    constexpr auto INVALID = 18446744073709551615ULL;
-    constexpr auto ref = std::to_array<uint64_t>(
+    constexpr int64_t TENSOR_VALS = 123;
+    constexpr int64_t INVALID = 18446744073709551615ULL;
+    constexpr auto ref = std::to_array<int64_t>(
         {INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID,
          INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID,
          INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID,
@@ -202,7 +202,7 @@ TEST(HashTableTests, ScalarInsert)
          INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID, INVALID});
     Program prog(file, config);
     // alloc dummy data to pass to program args
-    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
+    auto arg = std::unique_ptr<int64_t[]>(new int64_t[TENSOR_SIZE]);
     std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
     prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
 
@@ -284,7 +284,7 @@ TEST(HashTableTests, SimpleLookup)
     Config config;
     //::llvm::DebugFlag = true;
     config.debug = true;
-    config.optimize = true;
+    config.optimize = false;
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_lookup.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr int64_t TENSOR_VALS = 123;

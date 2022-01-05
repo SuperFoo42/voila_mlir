@@ -44,10 +44,10 @@ namespace voila::mlir::lowering
             auto loop = builder.create<scf::WhileOp>(loc, resType, idx);
             // condition
 
-            auto beforeBlock = builder.createBlock(&loop.before());
+            auto beforeBlock = builder.createBlock(&loop.getBefore());
             beforeBlock->addArgument(loop->getOperands().front().getType());
             auto condBuilder = OpBuilder::atBlockEnd(beforeBlock);
-            Value probeIdx = condBuilder.create<IndexCastOp>(loc, loop.before().getArgument(0), builder.getIndexType());
+            Value probeIdx = condBuilder.create<IndexCastOp>(loc, loop.getBefore().getArgument(0), builder.getIndexType());
 
             // lookup entries
             SmallVector<Value> entries;
@@ -72,7 +72,7 @@ namespace voila::mlir::lowering
             condBuilder.create<scf::ConditionOp>(
                 loc, condBuilder.create<OrIOp>(loc, builder.getI1Type(), isEmpty, notFound), loop->getOperands());
             // body
-            auto afterBlock = builder.createBlock(&loop.after());
+            auto afterBlock = builder.createBlock(&loop.getAfter());
             afterBlock->addArgument(loop->getOperands().front().getType());
             auto bodyBuilder = OpBuilder::atBlockEnd(afterBlock);
             SmallVector<Value, 1> inc;

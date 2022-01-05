@@ -94,10 +94,10 @@ namespace voila::mlir::lowering
                            LoopOpAdaptor loopOpAdaptor(memRefOperands);
                            auto ifOp = builder.create<scf::IfOp>(loc, iter_var, false);
 
-                         builder.inlineRegionBefore(op->getRegion(0), &ifOp.thenRegion().back());
-                         builder.eraseBlock(&ifOp.thenRegion().back());
-                         OpBuilder thenBuilder(&ifOp.thenRegion().back().back());
-                         thenBuilder.setInsertionPointAfter(&ifOp.thenRegion().back().back());
+                         builder.inlineRegionBefore(op->getRegion(0), &ifOp.getThenRegion().back());
+                         builder.eraseBlock(&ifOp.getThenRegion().back());
+                         OpBuilder thenBuilder(&ifOp.getThenRegion().back().back());
+                         thenBuilder.setInsertionPointAfter(&ifOp.getThenRegion().back().back());
                          thenBuilder.create<scf::YieldOp>(loc);
                        });
         return success();

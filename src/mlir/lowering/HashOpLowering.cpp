@@ -292,7 +292,7 @@ namespace voila::mlir::lowering
     {
         SmallVector<Value> intVals;
         unsigned int size = 0;
-        for (const auto &val : vals)
+        for (const auto &val : vals.drop_back())
         {
             if (val.getType().isIntOrFloat())
             {
