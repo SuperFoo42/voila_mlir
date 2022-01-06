@@ -18,12 +18,6 @@ namespace voila::mlir::lowering
 
     CountOpLowering::CountOpLowering(MLIRContext *ctx) : ConversionPattern(CountOp::getOperationName(), 1, ctx) {}
 
-    static auto convertTensorToMemRef(TensorType type)
-    {
-        assert(type.hasRank() && "expected only ranked shapes");
-        return MemRefType::get(type.getShape(), type.getElementType());
-    }
-
     static Value getHTSize(ConversionPatternRewriter &rewriter, Location loc, Value values)
     {
         auto insertSize = rewriter.create<DimOp>(loc, values, 0);
@@ -79,15 +73,10 @@ namespace voila::mlir::lowering
                                     loc, builder.create<ConstantIntOp>(loc, 0, builder.getI64Type()), res, vals);
                             });
 
-        auto indexMemref = rewriter.create<ToMemrefOp>(
-            loc, convertTensorToMemRef(countOpAdaptor.indices().getType().dyn_cast<TensorType>()),
-            countOpAdaptor.indices());
-
-        auto fn = [&res, &indexMemref](OpBuilder &builder, Location loc, ValueRange vals)
+        auto fn = [&res, &countOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
         {
             auto idx = vals.front();
-            Value groupIdx = builder.create<IndexCastOp>(loc, builder.create<AffineLoadOp>(loc, indexMemref, idx),
-                                                         builder.getIndexType());
+            Value groupIdx =  builder.create<tensor::ExtractOp>(loc, countOpAdaptor.indices(), idx);
             auto oldVal = builder.create<memref::LoadOp>(loc, res, ::llvm::makeArrayRef(groupIdx));
             Value newVal =
                 builder.create<AddIOp>(loc, oldVal, builder.create<ConstantIntOp>(loc, 1, builder.getI64Type()));

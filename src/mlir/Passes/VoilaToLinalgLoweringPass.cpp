@@ -5,16 +5,11 @@
 #include "mlir/IR/VoilaDialect.h"
 #include "mlir/IR/VoilaOps.h"
 #include "mlir/lowering/ArithmeticOpLowering.hpp"
-#include "mlir/lowering/AvgOpLowering.hpp"
 #include "mlir/lowering/ComparisonOpLowering.hpp"
-#include "mlir/lowering/CountOpLowering.hpp"
 #include "mlir/lowering/HashOpLowering.hpp"
 #include "mlir/lowering/LogicalOpLowering.hpp"
 #include "mlir/lowering/LookupOpLowering.hpp"
-#include "mlir/lowering/MaxOpLowering.hpp"
-#include "mlir/lowering/MinOpLowering.hpp"
 #include "mlir/lowering/NotOpLowering.hpp"
-#include "mlir/lowering/SumOpLowering.hpp"
 
 namespace voila::mlir
 {
@@ -37,7 +32,7 @@ namespace voila::mlir
 
             // We define the specific operations, or dialects, that are legal targets for
             // this lowering.
-            target.addLegalDialect<AffineDialect, memref::MemRefDialect, StandardOpsDialect, linalg::LinalgDialect,
+            target.addLegalDialect<BuiltinDialect,AffineDialect, memref::MemRefDialect, StandardOpsDialect, linalg::LinalgDialect,
                                    tensor::TensorDialect, scf::SCFDialect, vector::VectorDialect,
                                    arith::ArithmeticDialect>();
 
@@ -47,15 +42,13 @@ namespace voila::mlir
             // to lower, `toy.print`, as `legal`.
             target.addIllegalDialect<VoilaDialect>();
             target.addLegalOp<EmitOp, BoolConstOp, IntConstOp, FltConstOp, ::mlir::voila::SelectOp, ReadOp, GatherOp,
-                              LoopOp>();
-            target.addLegalOp<InsertOp>();
+                              LoopOp, SumOp, CountOp, MinOp, MaxOp, AvgOp, InsertOp>();
             // Now that the conversion target has been defined, we just need to provide
             // the set of patterns that will lower the Toy operations.
             RewritePatternSet patterns(&getContext());
             patterns.add<AndOpLowering, OrOpLowering, NotOpLowering, AddOpLowering, SubOpLowering, MulOpLowering,
                          DivOpLowering, ModOpLowering, EqOpLowering, NeqOpLowering, LeOpLowering, LeqOpLowering,
-                         GeOpLowering, GeqOpLowering, HashOpLowering, LookupOpLowering, SumOpLowering, CountOpLowering,
-                         MinOpLowering, MaxOpLowering, AvgOpLowering>(&getContext());
+                         GeOpLowering, GeqOpLowering, HashOpLowering, LookupOpLowering>(&getContext());
 
             // With the target and rewrite patterns defined, we can now attempt the
             // conversion. The conversion will signal failure if any of our `illegal`

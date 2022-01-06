@@ -16,12 +16,6 @@ namespace voila::mlir::lowering
 
     MinOpLowering::MinOpLowering(MLIRContext *ctx) : ConversionPattern(MinOp::getOperationName(), 1, ctx) {}
 
-    static auto convertTensorToMemRef(TensorType type)
-    {
-        assert(type.hasRank() && "expected only ranked shapes");
-        return MemRefType::get(type.getShape(), type.getElementType());
-    }
-
     static Value getHTSize(ConversionPatternRewriter &rewriter, Location loc, Value values)
     {
         auto insertSize = rewriter.create<tensor::DimOp>(loc, values, 0);
@@ -149,18 +143,11 @@ namespace voila::mlir::lowering
             throw std::logic_error("Invalid type"); // TODO
         }
 
-        auto inputMemref = rewriter.create<ToMemrefOp>(
-            loc, convertTensorToMemRef(minOpAdaptor.input().getType().dyn_cast<TensorType>()), minOpAdaptor.input());
-        auto indexMemref = rewriter.create<ToMemrefOp>(
-            loc, convertTensorToMemRef(minOpAdaptor.indices().getType().dyn_cast<TensorType>()),
-            minOpAdaptor.indices());
-
-        auto fn = [&res, &inputMemref, &indexMemref](OpBuilder &builder, Location loc, ValueRange vals)
+        auto fn = [&res, &minOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
         {
             auto idx = vals.front();
-            auto toCmp = builder.create<AffineLoadOp>(loc, inputMemref, idx);
-            Value groupIdx = builder.create<IndexCastOp>(loc, builder.create<AffineLoadOp>(loc, indexMemref, idx),
-                                                         builder.getIndexType());
+            auto toCmp = builder.create<tensor::ExtractOp>(loc, minOpAdaptor.input(), idx);
+            Value groupIdx = builder.create<tensor::ExtractOp>(loc, minOpAdaptor.indices(), idx);
             auto oldVal = builder.create<memref::LoadOp>(loc, res, ::llvm::makeArrayRef(groupIdx));
 
             ::mlir::Value minVal;

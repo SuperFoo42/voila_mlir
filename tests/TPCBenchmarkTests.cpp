@@ -103,6 +103,7 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     Config config;
     config.debug = true;
     config.optimize = true;
+    config.tile = false;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q1.voila";
     Program prog(query, config);
 
@@ -139,7 +140,7 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     EXPECT_EQ(sum_qty_res->operator[](res_idx), 37734107);
     EXPECT_DOUBLE_EQ(sum_base_price_res->operator[](res_idx), 56586554400.729897);
     EXPECT_DOUBLE_EQ(sum_disc_price_res->operator[](res_idx), 53758257134.865143);
-    EXPECT_DOUBLE_EQ(sum_charge_res->operator[](res_idx), 55909065222.825607);
+    EXPECT_DOUBLE_EQ(sum_charge_res->operator[](res_idx), 55895670983.629333);
     EXPECT_DOUBLE_EQ(avg_qty_res->operator[](res_idx), 25.522005853257337);
     EXPECT_DOUBLE_EQ(avg_price_res->operator[](res_idx), 38273.129734621602);
     EXPECT_DOUBLE_EQ(avg_disc_res->operator[](res_idx), 0.04998529583825443);

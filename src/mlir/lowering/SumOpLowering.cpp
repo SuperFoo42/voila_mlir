@@ -140,18 +140,11 @@ namespace voila::mlir::lowering
             throw std::logic_error("Invalid type"); // TODO
         }
 
-        auto inputMemref = rewriter.create<ToMemrefOp>(
-            loc, convertTensorToMemRef(sumOpAdaptor.input().getType().dyn_cast<TensorType>()), sumOpAdaptor.input());
-        auto indexMemref = rewriter.create<ToMemrefOp>(
-            loc, convertTensorToMemRef(sumOpAdaptor.indices().getType().dyn_cast<TensorType>()),
-            sumOpAdaptor.indices());
-
-        auto fn = [&res, &inputMemref, &indexMemref](OpBuilder &builder, Location loc, ValueRange vals)
+        auto fn = [&res, &sumOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
         {
             auto idx = vals.front();
-            auto toSum = builder.create<AffineLoadOp>(loc, inputMemref, idx);
-            Value groupIdx = builder.create<IndexCastOp>(loc, builder.create<AffineLoadOp>(loc, indexMemref, idx),
-                                                         builder.getIndexType());
+            auto toSum = builder.create<tensor::ExtractOp>(loc, sumOpAdaptor.input(), idx);
+            Value groupIdx =  builder.create<tensor::ExtractOp>(loc, sumOpAdaptor.indices(), idx);
             auto oldVal = builder.create<memref::LoadOp>(loc, res, ::llvm::makeArrayRef(groupIdx));
             Value newVal;
 
