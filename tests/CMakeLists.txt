@@ -27,7 +27,6 @@ set(LIBS
         MLIRTargetLLVMIRExport
         voila_compiler
         cxxopts
-        fmt
         reflex
         spdlog
         gtest

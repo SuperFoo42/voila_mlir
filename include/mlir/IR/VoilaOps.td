@@ -129,7 +129,7 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$r
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def MulOp : Voila_Op<"mul",[NoSideEffect, Commutative]> {
+def MulOp : Voila_Op<"mul",[NoSideEffect, Commutative, SameOperandsAndResultShape]> {
   let summary = "element-wise multiplication operation";
   let description = [{
     The "mul" operation performs element-wise multiplication between two tensors.

@@ -15,19 +15,21 @@
 std::random_device rd;
 std::mt19937 gen(rd());
 
-static int32_t getQ6Date() {
-    constexpr auto dates = std::to_array({19930101, 19930101, 19950101, 19960101, 19970101});
-    std::uniform_int_distribution<unsigned int> dateSelect(0, dates.size() - 1);
-    return dates[dateSelect(gen)];
-}
+// TODO: global vars and so on...
+auto part = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/part1g_compressed.bin"));
+auto supplier = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/supplier1g_compressed.bin"));
+auto partsupp = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/partsupp1g_compressed.bin"));
+auto customer = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/customer1g_compressed.bin"));
+auto orders = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/orders1g_compressed.bin"));
+auto lineitem = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin"));
+auto nation = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/nation1g_compressed.bin"));
+auto region = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/region1g_compressed.bin"));
+auto wide_customer_orders_lineitem = CompressedTable::makeWideTable(
+    {customer, orders, lineitem},
+    {std::make_pair(static_cast<size_t>(customer_cols::C_CUSTKEY), static_cast<size_t>(orders_cols::O_CUSTKEY)),
+     std::make_pair(static_cast<size_t>(orders_cols::O_ORDERKEY), static_cast<size_t>(lineitem_cols::L_ORDERKEY))});
 
-static double getQ6Discount() {
-    constexpr auto discounts = std::to_array({0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09});
-    std::uniform_int_distribution<unsigned int> discountSelect(0, discounts.size() - 1);
-    return discounts[discountSelect(gen)];
-}
-
-/*
+// substitution parameter generators
 static int32_t getQ1Date()
 {
     constexpr auto dates = std::to_array(
@@ -40,18 +42,84 @@ static int32_t getQ1Date()
     std::uniform_int_distribution<unsigned int> dateSelect(0, dates.size() - 1);
     return dates[dateSelect(gen)];
 }
-*/
 
-static int32_t getQ6Quantity() {
+[[maybe_unused]] static int32_t getQ3Segment()
+{
+    constexpr auto segments = std::to_array({"AUTOMOBILE", "BUILDING", "FURNITURE", "MACHINERY", "HOUSEHOLD"});
+    constexpr size_t c_mktsegment = 6;
+    std::uniform_int_distribution<unsigned int> segmentSelect(0, segments.size() - 1);
+    return customer.getDictionary(c_mktsegment).at(segments.at(segmentSelect(gen)));
+}
+
+[[maybe_unused]] static int32_t getQ3Date()
+{
+    constexpr auto dates = std::to_array(
+        {19950301, 19950302, 19950303, 19950304, 19950305, 19950306, 19950307, 19950308, 19950309, 19950310, 19950311,
+         19950312, 19950313, 19950314, 19950315, 19950316, 19950317, 19950318, 19950319, 19950320, 19950321, 19950322,
+         19950323, 19950324, 19950325, 19950326, 19950327, 19950328, 19950329, 19950330, 19950331});
+    std::uniform_int_distribution<unsigned int> dateSelect(0, dates.size() - 1);
+    return dates[dateSelect(gen)];
+}
+
+static int32_t getQ6Date()
+{
+    constexpr auto dates = std::to_array({19930101, 19930101, 19950101, 19960101, 19970101});
+    std::uniform_int_distribution<unsigned int> dateSelect(0, dates.size() - 1);
+    return dates[dateSelect(gen)];
+}
+
+static double getQ6Discount()
+{
+    constexpr auto discounts = std::to_array({0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09});
+    std::uniform_int_distribution<unsigned int> discountSelect(0, discounts.size() - 1);
+    return discounts[discountSelect(gen)];
+}
+
+static int32_t getQ6Quantity()
+{
     constexpr auto quantities = std::to_array({24, 25});
     std::uniform_int_distribution<unsigned int> quantitySelect(0, quantities.size() - 1);
     return quantities[quantitySelect(gen)];
 }
 
-// TODO: global vars and so on...
-auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin"));
+[[maybe_unused]] static std::vector<int32_t> getQ9Color()
+{
+    constexpr auto colors = std::to_array(
+        {"almond",    "antique",    "aquamarine", "azure",     "beige",     "bisque",     "black",     "blanched",
+         "blue",      "blush",      "brown",      "burlywood", "burnished", "chartreuse", "chiffon",   "chocolate",
+         "coral",     "cornflower", "cornsilk",   "cream",     "cyan",      "dark",       "deep",      "dim",
+         "dodger",    "drab",       "firebrick",  "floral",    "forest",    "frosted",    "gainsboro", "ghost",
+         "goldenrod", "green",      "grey",       "honeydew",  "hot",       "indian",     "ivory",     "khaki",
+         "lace",      "lavender",   "lawn",       "lemon",     "light",     "lime",       "linen",     "magenta",
+         "maroon",    "medium",     "metallic",   "midnight",  "mint",      "misty",      "moccasin",  "navajo",
+         "navy",      "olive",      "orange",     "orchid",    "pale",      "papaya",     "peach",     "peru",
+         "pink",      "plum",       "powder",     "puff",      "purple",    "red",        "rose",      "rosy",
+         "royal",     "saddle",     "salmon",     "sandy",     "seashell",  "sienna",     "sky",       "slate",
+         "smoke",     "snow",       "spring",     "steel",     "tan",       "thistle",    "tomato",    "turquoise",
+         "violet",    "wheat",      "white",      "yellow"});
+    std::uniform_int_distribution<unsigned int> colorSelect(0, colors.size() - 1);
+    const auto color = colors.at(colorSelect(gen));
+    constexpr size_t p_name = 1;
+    const auto &dict = part.getDictionary(p_name);
+    std::vector<int32_t> colorSet;
+    for (auto &elem : dict)
+    {
+        if (elem.first.find(color) != std::string::npos)
+        {
+            colorSet.push_back(elem.second);
+        }
+    }
 
-/*static void Q1(benchmark::State &state)
+    return colorSet;
+}
+
+[[maybe_unused]] static int32_t getQ18Quantity()
+{
+    std::uniform_int_distribution<int32_t> quantitySelect(312, 315);
+    return quantitySelect(gen);
+}
+
+static void Q1(benchmark::State &state)
 {
     using namespace voila;
 
@@ -66,6 +134,7 @@ auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineite
     Config config;
     config.debug = false;
     config.optimize = true;
+    config.tile = false;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q1.voila";
     double queryTime = 0;
     Program prog(query, config);
@@ -73,14 +142,14 @@ auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineite
     for ([[maybe_unused]] auto _ : state)
     {
         auto date = getQ1Date();
-        prog << ::voila::make_param(l_returnflag.data(), l_returnflag.size(), DataType::INT32);
-        prog << ::voila::make_param(l_linestatus.data(), l_linestatus.size(), DataType::INT32);
-        prog << ::voila::make_param(l_quantity.data(), l_quantity.size(), DataType::INT32);
-        prog << ::voila::make_param(l_extendedprice.data(), l_extendedprice.size(), DataType::DBL);
-        prog << ::voila::make_param(l_discount.data(), l_discount.size(), DataType::DBL);
-        prog << ::voila::make_param(l_tax.data(), l_tax.size(), DataType::DBL);
-        prog << ::voila::make_param(l_shipdate.data(), l_shipdate.size(), DataType::INT32);
-        prog << ::voila::make_param(&date, 0, DataType::INT32);
+        prog << l_returnflag;
+        prog << l_linestatus;
+        prog << l_quantity;
+        prog << l_extendedprice;
+        prog << l_discount;
+        prog << l_tax;
+        prog << l_shipdate;
+        prog << &date;
 
         // run in jit
         auto res = prog();
@@ -88,7 +157,7 @@ auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineite
         queryTime += prog.getExecTime();
     }
     state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
-}*/
+}
 
 constexpr int32_t INVALID = static_cast<int32_t>(std::numeric_limits<uint64_t>::max());
 
@@ -98,10 +167,12 @@ static size_t probeAndInsert(size_t key,
                              const T1 val1,
                              const T2 val2,
                              std::vector<T1> &vals1,
-                             std::vector<T2> &vals2) {
+                             std::vector<T2> &vals2)
+{
     key %= size;
     // probing
-    while (vals1[key % size] != INVALID && !(vals1[key % size] == val1 && vals2[key % size] == val2)) {
+    while (vals1[key % size] != INVALID && !(vals1[key % size] == val1 && vals2[key % size] == val2))
+    {
         key += 1;
         key %= size;
     }
@@ -113,14 +184,15 @@ static size_t probeAndInsert(size_t key,
 }
 
 template<class T1, class T2>
-static size_t hash(T1 val1, T2 val2) {
+static size_t hash(T1 val1, T2 val2)
+{
     std::array<char, sizeof(T1) + sizeof(T2)> data{};
     std::copy_n(reinterpret_cast<char *>(&val1), sizeof(T1), data.data());
     std::copy_n(reinterpret_cast<char *>(&val2), sizeof(T2), data.data() + sizeof(T1));
     return XXH3_64bits(data.data(), sizeof(T1) + sizeof(T2));
 }
 
-/*static void Q1_Baseline(benchmark::State &state)
+static void Q1_Baseline(benchmark::State &state)
 {
     using namespace voila;
 
@@ -165,9 +237,10 @@ static size_t hash(T1 val1, T2 val2) {
             }
         }
     }
-}*/
+}
 
-static void Q6(benchmark::State &state) {
+static void Q6(benchmark::State &state)
+{
     using namespace voila;
 
     auto l_quantity = lineitem.getColumn<int32_t>(4);
@@ -182,7 +255,8 @@ static void Q6(benchmark::State &state) {
     double queryTime = 0;
 
     Program prog(query, config);
-    for ([[maybe_unused]] auto _: state) {
+    for ([[maybe_unused]] auto _ : state)
+    {
         auto startDate = getQ6Date();
         auto endDate = startDate + 10000;
         auto quantity = getQ6Quantity();
@@ -190,15 +264,15 @@ static void Q6(benchmark::State &state) {
         auto minDiscount = discount - 0.01;
         auto maxDiscount = discount + 0.01;
 
-        prog << ::voila::make_param(l_quantity.data(), l_quantity.size(), DataType::INT32);
-        prog << ::voila::make_param(l_discount.data(), l_discount.size(), DataType::DBL);
-        prog << ::voila::make_param(l_shipdate.data(), l_shipdate.size(), DataType::INT32);
-        prog << ::voila::make_param(l_extendedprice.data(), l_extendedprice.size(), DataType::DBL);
-        prog << ::voila::make_param(&startDate, 0, DataType::INT32);
-        prog << ::voila::make_param(&endDate, 0, DataType::INT32);
-        prog << ::voila::make_param(&quantity, 0, DataType::INT32);
-        prog << ::voila::make_param(&minDiscount, 0, DataType::DBL);
-        prog << ::voila::make_param(&maxDiscount, 0, DataType::DBL);
+        prog << l_quantity;
+        prog << l_discount;
+        prog << l_shipdate;
+        prog << l_extendedprice;
+        prog << &startDate;
+        prog << &endDate;
+        prog << &quantity;
+        prog << &minDiscount;
+        prog << &maxDiscount;
 
         // run in jit
         auto res = prog();
@@ -207,7 +281,8 @@ static void Q6(benchmark::State &state) {
     state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
 }
 
-static void Q6_Baseline(benchmark::State &state) {
+static void Q6_Baseline(benchmark::State &state)
+{
     using namespace voila;
 
     auto l_quantity = lineitem.getColumn<int32_t>(4);
@@ -215,7 +290,8 @@ static void Q6_Baseline(benchmark::State &state) {
     auto l_discount = lineitem.getColumn<double>(6);
     auto l_shipdate = lineitem.getColumn<int32_t>(10);
 
-    for ([[maybe_unused]] auto _: state) {
+    for ([[maybe_unused]] auto _ : state)
+    {
         const auto startDate = getQ6Date();
         const auto endDate = startDate + 10000;
         const auto quantity = getQ6Quantity();
@@ -223,16 +299,18 @@ static void Q6_Baseline(benchmark::State &state) {
         const auto minDiscount = discount - 0.01;
         const auto maxDiscount = discount + 0.01;
         double res = 0;
-        for (size_t i = 0; i < l_quantity.size(); ++i) {
+        for (size_t i = 0; i < l_quantity.size(); ++i)
+        {
             if (l_shipdate[i] >= startDate && l_shipdate[i] < endDate && l_quantity[i] < quantity &&
-                l_discount[i] >= minDiscount && l_discount[i] <= maxDiscount) {
+                l_discount[i] >= minDiscount && l_discount[i] <= maxDiscount)
+            {
                 ::benchmark::DoNotOptimize(res += l_extendedprice[i] * l_discount[i]);
             }
         }
     }
 }
 
-//BENCHMARK(Q1)->Unit(benchmark::kMillisecond);
+BENCHMARK(Q1)->Unit(benchmark::kMillisecond);
 BENCHMARK(Q6)->Unit(benchmark::kMillisecond);
-//BENCHMARK(Q1_Baseline)->Unit(benchmark::kMillisecond);
+BENCHMARK(Q1_Baseline)->Unit(benchmark::kMillisecond);
 BENCHMARK(Q6_Baseline)->Unit(benchmark::kMillisecond);

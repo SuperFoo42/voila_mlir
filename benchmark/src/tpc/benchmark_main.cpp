@@ -23,6 +23,7 @@ int main(int argc, char **argv)
     //spdlog::set_level(spdlog::level::debug);
 
     ::benchmark::Initialize(&argc, argv);
+    //TODO: add argument for benchmark data path
     if (::benchmark::ReportUnrecognizedArguments(argc, argv))
         return 1;
     ::benchmark::RunSpecifiedBenchmarks();

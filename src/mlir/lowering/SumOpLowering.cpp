@@ -99,12 +99,6 @@ namespace voila::mlir::lowering
         return rewriter.create<tensor::ExtractOp>(loc, linalgOp->getResult(0));
     }
 
-    static auto convertTensorToMemRef(TensorType type)
-    {
-        assert(type.hasRank() && "expected only ranked shapes");
-        return MemRefType::get(type.getShape(), type.getElementType());
-    }
-
     static Value
     groupedSumLowering(Operation *op, Location loc, SumOpAdaptor &sumOpAdaptor, ConversionPatternRewriter &rewriter)
     {

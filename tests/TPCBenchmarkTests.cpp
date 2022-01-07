@@ -157,6 +157,7 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
     Config config;
     config.debug = true;
     config.optimize = true;
+    config.parallelize = false;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
     Program prog(query, config);
 
@@ -166,6 +167,59 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
     double discount = 0.06;
     double minDiscount = discount - 0.01;
     double maxDiscount = discount + 0.01;
+
+    prog << l_quantity;
+    prog << l_discount;
+    prog << l_shipdate;
+    prog << l_extendedprice;
+    prog << &startDate;
+    prog << &endDate;
+    prog << &quantity;
+    prog << &minDiscount;
+    prog << &maxDiscount;
+    auto res = std::get<double>(prog()[0]);
+
+
+    double ref = 0;
+    Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
+             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
+             Events::INS_ISSUED, Events::PREFETCH_MISS>
+        prof;
+    prof.start();
+    for (size_t i = 0; i < l_quantity.size(); ++i)
+    {
+        if (l_shipdate[i] >= startDate && l_shipdate[i] < endDate && l_quantity[i] < quantity &&
+            l_discount[i] >= minDiscount && l_discount[i] <= maxDiscount)
+        {
+            ref += l_extendedprice[i] * l_discount[i];
+        }
+    }
+    prof.stop();
+    std::cout << prof << std::endl;
+
+    EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
+    EXPECT_DOUBLE_EQ(res, ref);
+}
+
+TEST(TPCBenchmarkTests, Q3_Qualification)
+{
+    auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin"));
+    auto orders = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/orders1g_compressed.bin"));
+    auto customer = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/customer1g_compressed.bin"));
+    auto wide_table = join()
+    auto l_quantity = lineitem.getColumn<int32_t>(4);
+    auto l_extendedprice = lineitem.getColumn<double>(5);
+    auto l_discount = lineitem.getColumn<double>(6);
+    auto l_shipdate = lineitem.getColumn<int32_t>(10);
+    Config config;
+    config.debug = true;
+    config.optimize = true;
+    config.parallelize = false;
+    constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q3.voila";
+    Program prog(query, config);
+
+    int32_t segment = 19940101;
+    int32_t date = 19950101;
 
     prog << l_quantity;
     prog << l_discount;

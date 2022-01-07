@@ -24,7 +24,6 @@ set(LIBS
         MLIRLLVMToLLVMIRTranslation
         MLIRTargetLLVMIRExport
         voila_compiler
-        fmt
         reflex
         spdlog
         benchmark::benchmark
@@ -36,6 +35,8 @@ set(LIBS
 add_executable(tpc-benchmark
         TPCHBenchmark.cpp
         benchmark_main.cpp
+        ../tools/DateReformatter.cpp
+        ../tools/DictionaryCompressor.cpp
         )
 
 target_link_libraries(tpc-benchmark PRIVATE ${LIBS})

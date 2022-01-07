@@ -25,24 +25,8 @@ namespace voila::mlir::lowering
                                  ::mlir::Value lhs,
                                  ::mlir::Value rhs) const override
         {
-            ::mlir::Type lhsType, rhsType;
-            if (lhs.getType().template isa<::mlir::TensorType>())
-            {
-                lhsType = lhs.getType().template dyn_cast<::mlir::TensorType>().getElementType();
-            }
-            else
-            {
-                lhsType = lhs.getType();
-            }
-
-            if (rhs.getType().template isa<::mlir::TensorType>())
-            {
-                rhsType = rhs.getType().template dyn_cast<::mlir::TensorType>().getElementType();
-            }
-            else
-            {
-                rhsType = rhs.getType();
-            }
+            auto lhsType = getElementTypeOrSelf(lhs);
+            auto rhsType = getElementTypeOrSelf(rhs);
 
             if (isFloat(lhsType) && isFloat(rhsType))
             {
@@ -140,7 +124,17 @@ namespace voila::mlir::lowering
             {
                 newVal = operator()(rewriter, loc, opAdaptor.lhs(), opAdaptor.rhs());
             }
-            rewriter.replaceOp(op, newVal);
+
+            // TODO: replace with TypeConverter
+            if (op->getResult(0).getType() != newVal.getType())
+            {
+                ::mlir::Value castRes = rewriter.create<::mlir::tensor::CastOp>(loc, op->getResult(0).getType(), newVal);
+                rewriter.replaceOp(op, castRes);
+            }
+            else
+            {
+                rewriter.replaceOp(op, newVal);
+            }
             return ::mlir::success();
         }
     };
