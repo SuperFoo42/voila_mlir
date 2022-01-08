@@ -24,10 +24,6 @@ auto orders = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "
 auto lineitem = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz"));
 auto nation = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/nation1g_compressed.bin.xz"));
 auto region = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/region1g_compressed.bin.xz"));
-auto wide_customer_orders_lineitem = CompressedTable::makeWideTable(
-    {customer, orders, lineitem},
-    {std::make_pair(static_cast<size_t>(customer_cols::C_CUSTKEY), static_cast<size_t>(orders_cols::O_CUSTKEY)),
-     std::make_pair(static_cast<size_t>(orders_cols::O_ORDERKEY), static_cast<size_t>(lineitem_cols::L_ORDERKEY))});
 
 // substitution parameter generators
 static int32_t getQ1Date()
@@ -123,13 +119,13 @@ static void Q1(benchmark::State &state)
 {
     using namespace voila;
 
-    auto l_quantity = lineitem.getColumn<int32_t>(4);
-    auto l_extendedprice = lineitem.getColumn<double>(5);
-    auto l_discount = lineitem.getColumn<double>(6);
-    auto l_tax = lineitem.getColumn<double>(7);
-    auto l_returnflag = lineitem.getColumn<int32_t>(8);
-    auto l_linestatus = lineitem.getColumn<int32_t>(9);
-    auto l_shipdate = lineitem.getColumn<int32_t>(10);
+    auto l_quantity = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_QUANTITY));
+    auto l_extendedprice = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_EXTENDEDPRICE));
+    auto l_discount = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_DISCOUNT));
+    auto l_tax = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_TAX));
+    auto l_returnflag = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_RETURNFLAG));
+    auto l_linestatus = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_LINESTATUS));
+    auto l_shipdate = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_SHIPDATE));
 
     Config config;
     config.debug = false;
@@ -196,13 +192,13 @@ static void Q1_Baseline(benchmark::State &state)
 {
     using namespace voila;
 
-    auto l_quantity = lineitem.getColumn<int32_t>(4);
-    auto l_extendedprice = lineitem.getColumn<double>(5);
-    auto l_discount = lineitem.getColumn<double>(6);
-    auto l_tax = lineitem.getColumn<double>(7);
-    auto l_returnflag = lineitem.getColumn<int32_t>(8);
-    auto l_linestatus = lineitem.getColumn<int32_t>(9);
-    auto l_shipdate = lineitem.getColumn<int32_t>(10);
+    auto l_quantity = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_QUANTITY));
+    auto l_extendedprice = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_EXTENDEDPRICE));
+    auto l_discount = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_DISCOUNT));
+    auto l_tax = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_TAX));
+    auto l_returnflag = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_RETURNFLAG));
+    auto l_linestatus = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_LINESTATUS));
+    auto l_shipdate = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_SHIPDATE));
     const auto htSizes = std::bit_ceil(l_quantity.size());
     for ([[maybe_unused]] auto _ : state)
     {
@@ -243,10 +239,10 @@ static void Q6(benchmark::State &state)
 {
     using namespace voila;
 
-    auto l_quantity = lineitem.getColumn<int32_t>(4);
-    auto l_extendedprice = lineitem.getColumn<double>(5);
-    auto l_discount = lineitem.getColumn<double>(6);
-    auto l_shipdate = lineitem.getColumn<int32_t>(10);
+    auto l_quantity = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_QUANTITY));
+    auto l_extendedprice = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_EXTENDEDPRICE));
+    auto l_discount = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_DISCOUNT));
+    auto l_shipdate = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_SHIPDATE));
     Config config;
     config.debug = false;
     config.optimize = true;
@@ -285,10 +281,10 @@ static void Q6_Baseline(benchmark::State &state)
 {
     using namespace voila;
 
-    auto l_quantity = lineitem.getColumn<int32_t>(4);
-    auto l_extendedprice = lineitem.getColumn<double>(5);
-    auto l_discount = lineitem.getColumn<double>(6);
-    auto l_shipdate = lineitem.getColumn<int32_t>(10);
+    auto l_quantity = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_QUANTITY));
+    auto l_extendedprice = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_EXTENDEDPRICE));
+    auto l_discount = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_DISCOUNT));
+    auto l_shipdate = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_SHIPDATE));
 
     for ([[maybe_unused]] auto _ : state)
     {

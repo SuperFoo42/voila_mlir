@@ -1,8 +1,8 @@
 #pragma once
 
-#include "mlir/Transforms/DialectConversion.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Transforms/DialectConversion.h"
 
 namespace mlir::voila
 {
@@ -12,7 +12,7 @@ namespace mlir::voila
     class LeqOp;
     class GeqOp;
     class GeOp;
-}
+} // namespace mlir::voila
 
 namespace voila::mlir::lowering
 {
@@ -53,56 +53,25 @@ namespace voila::mlir::lowering
             else
                 throw std::logic_error("Sth. went wrong");
         }
-        static inline auto isFloat(const ::mlir::Type &t)
-        {
-            return t.isF64() || t.isF32() || t.isF128() || t.isF80();
-        }
-
-        static inline ::mlir::Type getFloatType(const ::mlir::OpBuilder &builder, const ::mlir::Type &t)
-        {
-            if (t.isF64())
-                return ::mlir::Float64Type::get(builder.getContext());
-            if (t.isF32())
-                return ::mlir::Float32Type::get(builder.getContext());
-            if (t.isF128())
-                return ::mlir::Float128Type::get(builder.getContext());
-            if (t.isF80())
-                return ::mlir::Float80Type::get(builder.getContext());
-            throw std::logic_error("No float type");
-        }
 
         static inline ::mlir::Value
         createTypedCmpOp(::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::Value lhs, ::mlir::Value rhs)
         {
-            ::mlir::Type lhsType, rhsType;
-            if (lhs.getType().template isa<::mlir::TensorType>())
-            {
-                lhsType = lhs.getType().template dyn_cast<::mlir::TensorType>().getElementType();
-            }
-            else
-            {
-                lhsType = lhs.getType();
-            }
-
-            if (rhs.getType().template isa<::mlir::TensorType>())
-            {
-                rhsType = rhs.getType().template dyn_cast<::mlir::TensorType>().getElementType();
-            }
-            else
-                rhsType = rhs.getType();
+            auto lhsType = ::mlir::getElementTypeOrSelf(lhs);
+            auto rhsType = ::mlir::getElementTypeOrSelf(rhs);
 
             if (isFloat(lhsType) && isFloat(rhsType))
             {
                 return builder.create<::mlir::arith::CmpFOp>(loc, getFltCmpPred(), lhs, rhs);
             }
-            else if (isFloat(lhsType))
+            else if (lhsType.template isa<::mlir::FloatType>())
             {
-                auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(loc, rhs, getFloatType(builder, lhsType));
+                auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(loc, rhs, lhs.getType());
                 return builder.create<::mlir::arith::CmpFOp>(loc, getFltCmpPred(), lhs, castedFlt);
             }
-            else if (isFloat(rhsType))
+            else if (rhsType.template isa<::mlir::FloatType>())
             {
-                auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(loc, lhs, getFloatType(builder, rhsType));
+                auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(loc, lhs, rhs.getType());
                 return builder.create<::mlir::arith::CmpFOp>(loc, getFltCmpPred(), castedFlt, rhs);
             }
             else
@@ -112,7 +81,8 @@ namespace voila::mlir::lowering
         }
 
       public:
-        [[maybe_unused]] explicit ComparisonOpLowering(::mlir::MLIRContext *ctx) : ConversionPattern(CmpOp::getOperationName(), 1, ctx)
+        [[maybe_unused]] explicit ComparisonOpLowering(::mlir::MLIRContext *ctx) :
+            ConversionPattern(CmpOp::getOperationName(), 1, ctx)
         {
         }
 

@@ -42,14 +42,14 @@ static size_t probeAndInsert(size_t key,
 
 TEST(TPCBenchmarkTests, Q1_Qualification)
 {
-    auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin"));
-    auto l_quantity = lineitem.getColumn<int32_t>(4);
-    auto l_extendedprice = lineitem.getColumn<double>(5);
-    auto l_discount = lineitem.getColumn<double>(6);
-    auto l_tax = lineitem.getColumn<double>(7);
-    auto l_returnflag = lineitem.getColumn<int32_t>(8);
-    auto l_linestatus = lineitem.getColumn<int32_t>(9);
-    auto l_shipdate = lineitem.getColumn<int32_t>(10);
+    auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz"));
+    auto l_quantity = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_QUANTITY));
+    auto l_extendedprice = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_EXTENDEDPRICE));
+    auto l_discount = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_DISCOUNT));
+    auto l_tax = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_TAX));
+    auto l_returnflag = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_RETURNFLAG));
+    auto l_linestatus = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_LINESTATUS));
+    auto l_shipdate = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_SHIPDATE));
     const auto htSizes = std::bit_ceil(l_quantity.size());
 
     // tpc qualification date
@@ -149,11 +149,11 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
 
 TEST(TPCBenchmarkTests, Q6_Qualification)
 {
-    auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin"));
-    auto l_quantity = lineitem.getColumn<int32_t>(4);
-    auto l_extendedprice = lineitem.getColumn<double>(5);
-    auto l_discount = lineitem.getColumn<double>(6);
-    auto l_shipdate = lineitem.getColumn<int32_t>(10);
+    auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz"));
+    auto l_quantity = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_QUANTITY));
+    auto l_extendedprice = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_EXTENDEDPRICE));
+    auto l_discount = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_DISCOUNT));
+    auto l_shipdate = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_SHIPDATE));
     Config config;
     config.debug = true;
     config.optimize = true;
@@ -201,11 +201,12 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
     EXPECT_DOUBLE_EQ(res, ref);
 }
 
+/*
 TEST(TPCBenchmarkTests, Q3_Qualification)
 {
-    auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin"));
-    auto orders = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/orders1g_compressed.bin"));
-    auto customer = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/customer1g_compressed.bin"));
+    auto lineitem = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz"));
+    auto orders = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/orders1g_compressed.bin.xz"));
+    auto customer = Table::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/customer1g_compressed.bin.xz"));
     auto wide_table = join()
     auto l_quantity = lineitem.getColumn<int32_t>(4);
     auto l_extendedprice = lineitem.getColumn<double>(5);
@@ -234,8 +235,12 @@ TEST(TPCBenchmarkTests, Q3_Qualification)
 
 
     double ref = 0;
-    Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
-             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
+    Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, */
+/*Events::TLB_MISSES,*//*
+
+             Events::NO_INST_COMPLETE, */
+/*Events::CY_STALLED,*//*
+ Events::REF_CYCLES, Events::TOT_CYCLES,
              Events::INS_ISSUED, Events::PREFETCH_MISS>
         prof;
     prof.start();
@@ -252,4 +257,4 @@ TEST(TPCBenchmarkTests, Q3_Qualification)
 
     EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
     EXPECT_DOUBLE_EQ(res, ref);
-}
+}*/
