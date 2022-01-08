@@ -16,14 +16,14 @@ std::random_device rd;
 std::mt19937 gen(rd());
 
 // TODO: global vars and so on...
-auto part = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/part1g_compressed.bin"));
-auto supplier = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/supplier1g_compressed.bin"));
-auto partsupp = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/partsupp1g_compressed.bin"));
-auto customer = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/customer1g_compressed.bin"));
-auto orders = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/orders1g_compressed.bin"));
-auto lineitem = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin"));
-auto nation = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/nation1g_compressed.bin"));
-auto region = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/region1g_compressed.bin"));
+auto part = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/part1g_compressed.bin.xz"));
+auto supplier = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/supplier1g_compressed.bin.xz"));
+auto partsupp = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/partsupp1g_compressed.bin.xz"));
+auto customer = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/customer1g_compressed.bin.xz"));
+auto orders = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/orders1g_compressed.bin.xz"));
+auto lineitem = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz"));
+auto nation = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/nation1g_compressed.bin.xz"));
+auto region = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/region1g_compressed.bin.xz"));
 auto wide_customer_orders_lineitem = CompressedTable::makeWideTable(
     {customer, orders, lineitem},
     {std::make_pair(static_cast<size_t>(customer_cols::C_CUSTKEY), static_cast<size_t>(orders_cols::O_CUSTKEY)),

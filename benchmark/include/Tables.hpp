@@ -16,13 +16,16 @@
 #include <string>
 #include <variant>
 #include <vector>
+
+#include <bxzstr.hpp>
+
 class Table
 {
   public:
     static Table readTable(const std::string &path)
     {
-        std::ifstream file(path, std::ios::binary);
-        cereal::PortableBinaryInputArchive inputArchive(file);
+        bxz::ifstream decompressor(path);
+        cereal::PortableBinaryInputArchive inputArchive(decompressor);
         Table tbl;
         inputArchive(tbl);
         return tbl;
@@ -30,8 +33,8 @@ class Table
 
     static void writeTable(const std::string &path, const Table &tbl)
     {
-        std::ofstream file(path, std::ios::binary);
-        cereal::PortableBinaryOutputArchive outputArchive(file);
+        bxz::ofstream compressor(path, bxz::lzma, 9);
+        cereal::PortableBinaryOutputArchive outputArchive(compressor);
         outputArchive(tbl);
     }
 
@@ -239,8 +242,8 @@ class CompressedTable : public Table
 
     static CompressedTable readTable(const std::string &path)
     {
-        std::ifstream file(path, std::ios::binary);
-        cereal::PortableBinaryInputArchive inputArchive(file);
+        bxz::ifstream decompressor(path);
+        cereal::PortableBinaryInputArchive inputArchive(decompressor);
         Table tbl;
         inputArchive(tbl);
         return dynamic_cast<CompressedTable &>(tbl);

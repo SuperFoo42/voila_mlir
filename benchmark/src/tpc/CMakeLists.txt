@@ -30,6 +30,7 @@ set(LIBS
         benchmark::benchmark_main
         cereal
         xxhash
+        bxzstr
         )
 
 add_executable(tpc-benchmark

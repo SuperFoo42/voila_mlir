@@ -3,5 +3,5 @@ add_executable(preprocessor
         DateReformatter.cpp
         DictionaryCompressor.cpp)
 
-target_link_libraries(preprocessor rapidcsv cereal cxxopts magic_enum range-v3)
+target_link_libraries(preprocessor rapidcsv cereal cxxopts magic_enum range-v3 bxzstr)
 target_compile_features(preprocessor PUBLIC cxx_std_20)

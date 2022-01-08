@@ -10,6 +10,7 @@ Out of tree MLIR dialect for adaptive reprogramming database queries.
 - gcc >= 9 / clang >= 8
 - python
 - make
+- liblzma
 
 ### Optional
 - ccache
