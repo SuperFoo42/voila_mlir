@@ -123,40 +123,23 @@ namespace voila::mlir::lowering
                            SelectOpAdaptor binaryAdaptor(memRefOperands);
                            Value values;
                            Value pred;
-                           if (binaryAdaptor.values().getType().isa<TensorType>())
-                           {
-                               values = builder.create<ToMemrefOp>(
-                                   loc, convertTensorToMemRef(binaryAdaptor.values().getType().dyn_cast<TensorType>()),
-                                   binaryAdaptor.values());
-                           }
-                           else
-                           {
-                               values = binaryAdaptor.values();
-                           }
 
-                           if (binaryAdaptor.pred().getType().isa<TensorType>())
-                           {
-                               pred = builder.create<ToMemrefOp>(
-                                   loc, convertTensorToMemRef(binaryAdaptor.pred().getType().dyn_cast<TensorType>()),
-                                   binaryAdaptor.pred());
-                           }
-                           else
-                           {
-                               pred = binaryAdaptor.pred();
-                           }
+                           values = binaryAdaptor.values();
 
-                           if (values.getType().isa<MemRefType>() && pred.getType().isa<MemRefType>())
+                           pred = binaryAdaptor.pred();
+
+                           if (values.getType().isa<TensorType>() && pred.getType().isa<TensorType>())
                            {
-                               auto loadedRhs = builder.create<AffineLoadOp>(loc, pred, loopIvs);
+                               auto cond = builder.create<tensor::ExtractOp>(loc, pred, loopIvs);
                                // Create the binary operation performed on the loaded values.
 
-                               auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), loadedRhs, true);
+                               auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), cond, true);
                                auto thenBuilder = ifOp.getElseBodyBuilder();
                                auto thenBranch = thenBuilder.create<scf::YieldOp>(loc, iter_var);
                                thenBuilder.setInsertionPoint(thenBranch);
                                auto elseBuilder = ifOp.getThenBodyBuilder();
                                // value is constant
-                               auto valToStore = elseBuilder.create<AffineLoadOp>(loc, values, loopIvs);
+                               auto valToStore = elseBuilder.create<tensor::ExtractOp>(loc, values, loopIvs);
                                elseBuilder.create<AffineStoreOp>(loc, valToStore, dest, iter_var);
                                auto oneConst = elseBuilder.create<ConstantIndexOp>(loc, 1);
                                SmallVector<Value> res;
@@ -166,7 +149,7 @@ namespace voila::mlir::lowering
                                elseBuilder.setInsertionPoint(oneConst);
                                return ifOp.getResult(0); // only new index to return
                            }
-                           else if (values.getType().isa<MemRefType>())
+                           else if (values.getType().isa<TensorType>())
                            {
                                // Create the binary operation performed on the loaded values.
                                auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), pred, true);
@@ -175,7 +158,7 @@ namespace voila::mlir::lowering
                                thenBuilder.setInsertionPoint(thenBranch);
                                auto elseBuilder = ifOp.getThenBodyBuilder();
                                // value is constant
-                               auto valToStore = elseBuilder.create<AffineLoadOp>(loc, values, loopIvs);
+                               auto valToStore = elseBuilder.create<tensor::ExtractOp>(loc, values, loopIvs);
                                elseBuilder.create<AffineStoreOp>(loc, valToStore, dest, iter_var);
                                auto oneConst = elseBuilder.create<ConstantIndexOp>(loc, 1);
                                SmallVector<Value> res;
@@ -185,11 +168,11 @@ namespace voila::mlir::lowering
                                elseBuilder.setInsertionPoint(oneConst);
                                return ifOp.getResult(0); // only new index to return
                            }
-                           else if (pred.getType().isa<MemRefType>())
+                           else if (pred.getType().isa<TensorType>())
                            {
-                               auto loadedRhs = builder.create<AffineLoadOp>(loc, pred, loopIvs);
+                               auto cond = builder.create<tensor::ExtractOp>(loc, pred, loopIvs);
                                // Create the binary operation performed on the loaded values.
-                               auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), loadedRhs, true);
+                               auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), cond, true);
                                auto ifBuilder = ifOp.getThenBodyBuilder();
                                // value is constant
                                auto valToStore = values;
@@ -228,7 +211,7 @@ namespace voila::mlir::lowering
         return success();
     }
     SelectOpLowering::SelectOpLowering(::mlir::MLIRContext *ctx) :
-            ConversionPattern(::mlir::voila::SelectOp::getOperationName(), 1, ctx)
+        ConversionPattern(::mlir::voila::SelectOp::getOperationName(), 1, ctx)
     {
     }
 } // namespace voila::mlir::lowering

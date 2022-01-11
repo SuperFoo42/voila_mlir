@@ -9,6 +9,7 @@
 #include <cereal/types/unordered_map.hpp>
 #include <cxxopts.hpp>
 #include <iostream>
+
 #include <rapidcsv.h>
 #include <string>
 #include <unordered_map>
@@ -37,6 +38,8 @@ class TableReader
                     tbl.addColumn(doc.GetColumn<int32_t>(i), colTypes[i]);
                     break;
                 case ColumnTypes::STRING:
+                    tbl.addColumn(doc.GetColumn<std::string>(i), colTypes[i]);
+                    break;
                 case ColumnTypes::DATE:
                     tbl.addColumn(doc.GetColumn<std::string>(i), colTypes[i]);
                     break;

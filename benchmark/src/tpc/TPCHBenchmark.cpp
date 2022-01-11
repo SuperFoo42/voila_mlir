@@ -16,14 +16,11 @@ std::random_device rd;
 std::mt19937 gen(rd());
 
 // TODO: global vars and so on...
-auto part = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/part1g_compressed.bin.xz"));
-auto supplier = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/supplier1g_compressed.bin.xz"));
-auto partsupp = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/partsupp1g_compressed.bin.xz"));
-auto customer = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/customer1g_compressed.bin.xz"));
-auto orders = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/orders1g_compressed.bin.xz"));
 auto lineitem = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz"));
-auto nation = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/nation1g_compressed.bin.xz"));
-auto region = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/region1g_compressed.bin.xz"));
+auto customer_orders_lineitem =
+    CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/customer_orders_lineitem1g_compressed.bin.xz"));
+auto part_supplier_lineitem_partsupp_orders_nation =
+    CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/q9_wide_table.bin.xz"));
 
 // substitution parameter generators
 static int32_t getQ1Date()
@@ -44,7 +41,7 @@ static int32_t getQ1Date()
     constexpr auto segments = std::to_array({"AUTOMOBILE", "BUILDING", "FURNITURE", "MACHINERY", "HOUSEHOLD"});
     constexpr size_t c_mktsegment = 6;
     std::uniform_int_distribution<unsigned int> segmentSelect(0, segments.size() - 1);
-    return customer.getDictionary(c_mktsegment).at(segments.at(segmentSelect(gen)));
+    return customer_orders_lineitem.getDictionary(c_mktsegment).at(segments.at(segmentSelect(gen)));
 }
 
 [[maybe_unused]] static int32_t getQ3Date()
@@ -96,7 +93,7 @@ static int32_t getQ6Quantity()
     std::uniform_int_distribution<unsigned int> colorSelect(0, colors.size() - 1);
     const auto color = colors.at(colorSelect(gen));
     constexpr size_t p_name = 1;
-    const auto &dict = part.getDictionary(p_name);
+    const auto &dict = part_supplier_lineitem_partsupp_orders_nation.getDictionary(p_name);
     std::vector<int32_t> colorSet;
     for (auto &elem : dict)
     {
@@ -119,13 +116,15 @@ static void Q1(benchmark::State &state)
 {
     using namespace voila;
 
-    auto l_quantity = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_QUANTITY));
-    auto l_extendedprice = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_EXTENDEDPRICE));
-    auto l_discount = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_DISCOUNT));
-    auto l_tax = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_TAX));
-    auto l_returnflag = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_RETURNFLAG));
-    auto l_linestatus = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_LINESTATUS));
-    auto l_shipdate = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_SHIPDATE));
+    auto l_quantity = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(lineitem_cols::L_QUANTITY);
+    auto l_extendedprice =
+        lineitem.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(lineitem_cols::L_EXTENDEDPRICE);
+    auto l_discount = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(lineitem_cols::L_DISCOUNT);
+    auto l_tax = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_TAX>>(lineitem_cols::L_TAX);
+    auto l_returnflag = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_RETURNFLAG>>(
+        static_cast<const size_t>(lineitem_cols::L_RETURNFLAG));
+    auto l_linestatus = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_LINESTATUS>>(lineitem_cols::L_LINESTATUS);
+    auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
 
     Config config;
     config.debug = false;
@@ -192,13 +191,14 @@ static void Q1_Baseline(benchmark::State &state)
 {
     using namespace voila;
 
-    auto l_quantity = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_QUANTITY));
-    auto l_extendedprice = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_EXTENDEDPRICE));
-    auto l_discount = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_DISCOUNT));
-    auto l_tax = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_TAX));
-    auto l_returnflag = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_RETURNFLAG));
-    auto l_linestatus = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_LINESTATUS));
-    auto l_shipdate = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_SHIPDATE));
+    auto l_quantity = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(lineitem_cols::L_QUANTITY);
+    auto l_extendedprice =
+        lineitem.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(lineitem_cols::L_EXTENDEDPRICE);
+    auto l_discount = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(lineitem_cols::L_DISCOUNT);
+    auto l_tax = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_TAX>>(lineitem_cols::L_TAX);
+    auto l_returnflag = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_RETURNFLAG>>(lineitem_cols::L_RETURNFLAG);
+    auto l_linestatus = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_LINESTATUS>>(lineitem_cols::L_LINESTATUS);
+    auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
     const auto htSizes = std::bit_ceil(l_quantity.size());
     for ([[maybe_unused]] auto _ : state)
     {
@@ -235,14 +235,122 @@ static void Q1_Baseline(benchmark::State &state)
     }
 }
 
+static void Q3(benchmark::State &state)
+{
+    using namespace voila;
+
+    constexpr auto orders_offset = magic_enum::enum_count<customer_cols>();
+    constexpr auto lineitem_offset = magic_enum::enum_count<customer_cols>() + magic_enum::enum_count<orders_cols>();
+    auto l_orderkey = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(
+        lineitem_offset + lineitem_cols::L_ORDERKEY);
+    auto l_extendedprice = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(
+        lineitem_offset + lineitem_cols::L_EXTENDEDPRICE);
+    auto l_discount = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(
+        lineitem_offset + lineitem_cols::L_DISCOUNT);
+    auto l_shipdate = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(
+        lineitem_offset + lineitem_cols::L_SHIPDATE);
+    auto c_mktsegment =
+        customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_MKTSEGMENT>>(customer_cols::C_MKTSEGMENT);
+    auto c_custkey =
+        customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_CUSTKEY>>(customer_cols::C_CUSTKEY);
+    auto o_custkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_CUSTKEY>>(orders_offset +
+                                                                                                orders_cols::O_CUSTKEY);
+    auto o_orderkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERKEY>>(
+        orders_offset + orders_cols::O_ORDERKEY);
+    auto o_orderdate = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERDATE>>(
+        orders_offset + orders_cols::O_ORDERDATE);
+    auto o_shippriority = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_SHIPPRIORITY>>(
+        orders_offset + orders_cols::O_SHIPPRIORITY);
+    Config config;
+    config.debug = false;
+    config.optimize = true;
+    constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
+
+    double queryTime = 0;
+
+    Program prog(query, config);
+    for ([[maybe_unused]] auto _ : state)
+    {
+        auto startDate = getQ6Date();
+        auto endDate = startDate + 10000;
+        auto quantity = getQ6Quantity();
+        auto discount = getQ6Discount();
+        auto minDiscount = discount - 0.01;
+        auto maxDiscount = discount + 0.01;
+
+        prog << l_quantity;
+        prog << l_discount;
+        prog << l_shipdate;
+        prog << l_extendedprice;
+        prog << &startDate;
+        prog << &endDate;
+        prog << &quantity;
+        prog << &minDiscount;
+        prog << &maxDiscount;
+
+        // run in jit
+        auto res = prog();
+        queryTime += prog.getExecTime();
+    }
+    state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
+}
+
+static void Q3_Baseline(benchmark::State &state)
+{
+    using namespace voila;
+
+    constexpr auto orders_offset = magic_enum::enum_count<customer_cols>();
+    constexpr auto lineitem_offset = magic_enum::enum_count<customer_cols>() + magic_enum::enum_count<orders_cols>();
+    auto l_orderkey = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(
+        lineitem_offset + lineitem_cols::L_ORDERKEY);
+    auto l_extendedprice = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(
+        lineitem_offset + lineitem_cols::L_EXTENDEDPRICE);
+    auto l_discount = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(
+        lineitem_offset + lineitem_cols::L_DISCOUNT);
+    auto l_shipdate = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(
+        lineitem_offset + lineitem_cols::L_SHIPDATE);
+    auto c_mktsegment =
+        customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_MKTSEGMENT>>(customer_cols::C_MKTSEGMENT);
+    auto c_custkey =
+        customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_CUSTKEY>>(customer_cols::C_CUSTKEY);
+    auto o_custkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_CUSTKEY>>(orders_offset +
+                                                                                                orders_cols::O_CUSTKEY);
+    auto o_orderkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERKEY>>(
+        orders_offset + orders_cols::O_ORDERKEY);
+    auto o_orderdate = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERDATE>>(
+        orders_offset + orders_cols::O_ORDERDATE);
+    auto o_shippriority = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_SHIPPRIORITY>>(
+        orders_offset + orders_cols::O_SHIPPRIORITY);
+
+    for ([[maybe_unused]] auto _ : state)
+    {
+        const auto startDate = getQ6Date();
+        const auto endDate = startDate + 10000;
+        const auto quantity = getQ6Quantity();
+        const auto discount = getQ6Discount();
+        const auto minDiscount = discount - 0.01;
+        const auto maxDiscount = discount + 0.01;
+        double res = 0;
+        for (size_t i = 0; i < l_quantity.size(); ++i)
+        {
+            if (l_shipdate[i] >= startDate && l_shipdate[i] < endDate && l_quantity[i] < quantity &&
+                l_discount[i] >= minDiscount && l_discount[i] <= maxDiscount)
+            {
+                ::benchmark::DoNotOptimize(res += l_extendedprice[i] * l_discount[i]);
+            }
+        }
+    }
+}
+
 static void Q6(benchmark::State &state)
 {
     using namespace voila;
 
-    auto l_quantity = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_QUANTITY));
-    auto l_extendedprice = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_EXTENDEDPRICE));
-    auto l_discount = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_DISCOUNT));
-    auto l_shipdate = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_SHIPDATE));
+    auto l_quantity = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(lineitem_cols::L_QUANTITY);
+    auto l_extendedprice =
+        lineitem.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(lineitem_cols::L_EXTENDEDPRICE);
+    auto l_discount = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(lineitem_cols::L_DISCOUNT);
+    auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
     Config config;
     config.debug = false;
     config.optimize = true;
@@ -281,10 +389,275 @@ static void Q6_Baseline(benchmark::State &state)
 {
     using namespace voila;
 
-    auto l_quantity = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_QUANTITY));
-    auto l_extendedprice = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_EXTENDEDPRICE));
-    auto l_discount = lineitem.getColumn<double>(static_cast<const size_t>(lineitem_cols::L_DISCOUNT));
-    auto l_shipdate = lineitem.getColumn<int32_t>(static_cast<const size_t>(lineitem_cols::L_SHIPDATE));
+    auto l_quantity = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(lineitem_cols::L_QUANTITY);
+    auto l_extendedprice =
+        lineitem.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(lineitem_cols::L_EXTENDEDPRICE);
+    auto l_discount = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(lineitem_cols::L_DISCOUNT);
+    auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
+
+    for ([[maybe_unused]] auto _ : state)
+    {
+        const auto startDate = getQ6Date();
+        const auto endDate = startDate + 10000;
+        const auto quantity = getQ6Quantity();
+        const auto discount = getQ6Discount();
+        const auto minDiscount = discount - 0.01;
+        const auto maxDiscount = discount + 0.01;
+        double res = 0;
+        for (size_t i = 0; i < l_quantity.size(); ++i)
+        {
+            if (l_shipdate[i] >= startDate && l_shipdate[i] < endDate && l_quantity[i] < quantity &&
+                l_discount[i] >= minDiscount && l_discount[i] <= maxDiscount)
+            {
+                ::benchmark::DoNotOptimize(res += l_extendedprice[i] * l_discount[i]);
+            }
+        }
+    }
+}
+
+static void Q9(benchmark::State &state)
+{
+    using namespace voila;
+
+    constexpr auto supplier_offset = magic_enum::enum_count<part_cols>();
+    constexpr auto lineitem_offset = supplier_offset + magic_enum::enum_count<supplier_cols>();
+    constexpr auto partsupp_offset = lineitem_offset + magic_enum::enum_count<lineitem_cols>();
+    constexpr auto orders_offset = partsupp_offset + magic_enum::enum_count<partsupp_cols>();
+    constexpr auto nations_offset = orders_offset + magic_enum::enum_count<orders_cols>();
+    auto n_name = part_supplier_lineitem_partsupp_orders_nation.getColumn<nation_types_t<nation_cols::N_NAME>>(
+        nations_offset + nation_cols::N_NAME);
+    auto o_orderdate =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<orders_types_t<orders_cols::O_ORDERDATE>>(
+            orders_offset + orders_cols::O_ORDERDATE);
+    auto l_extendedprice =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(
+            lineitem_offset + lineitem_cols::L_EXTENDEDPRICE);
+    auto l_discount =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(
+            lineitem_offset + lineitem_cols::L_DISCOUNT);
+    auto ps_supplycost =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<partsupp_cols::PS_SUPPLYCOST>>(
+            partsupp_offset + partsupp_cols::PS_SUPPLYCOST);
+    auto l_quantity =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(
+            lineitem_offset + lineitem_cols::L_QUANTITY);
+    auto s_suppkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<supplier_types_t<supplier_cols::S_SUPPKEY>>(
+            supplier_offset + supplier_cols::S_SUPPKEY);
+    auto l_suppkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_SUPPKEY>>(
+            lineitem_offset + lineitem_cols::L_SUPPKEY);
+    auto ps_suppkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<partsupp_cols::PS_SUPPKEY>>(
+            partsupp_offset + partsupp_cols::PS_SUPPKEY);
+    auto ps_partkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<partsupp_cols::PS_PARTKEY>>(
+            partsupp_offset + partsupp_cols::PS_PARTKEY);
+    auto l_partkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_PARTKEY>>(
+            lineitem_offset + lineitem_cols::L_PARTKEY);
+    auto p_partkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<part_types_t<part_cols::P_PARTKEY>>(
+        part_cols::P_PARTKEY);
+    auto o_orderkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<orders_types_t<orders_cols::O_ORDERKEY>>(
+        orders_offset + orders_cols::O_ORDERKEY);
+    auto l_orderkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(
+            lineitem_offset + lineitem_cols::L_ORDERKEY);
+    auto s_nationkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<supplier_types_t<supplier_cols::S_NATIONKEY>>(
+            supplier_offset + supplier_cols::S_NATIONKEY);
+    auto n_nationkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<nation_types_t<nation_cols::N_NATIONKEY>>(
+            nations_offset + nation_cols::N_NATIONKEY);
+    auto p_name = part_supplier_lineitem_partsupp_orders_nation.getColumn<int32_t>(part_cols::P_NAME);
+
+    Config config;
+    config.debug = false;
+    config.optimize = true;
+    constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
+
+    double queryTime = 0;
+
+    Program prog(query, config);
+    for ([[maybe_unused]] auto _ : state)
+    {
+        auto startDate = getQ6Date();
+        auto endDate = startDate + 10000;
+        auto quantity = getQ6Quantity();
+        auto discount = getQ6Discount();
+        auto minDiscount = discount - 0.01;
+        auto maxDiscount = discount + 0.01;
+
+        prog << l_quantity;
+        prog << l_discount;
+        prog << l_shipdate;
+        prog << l_extendedprice;
+        prog << &startDate;
+        prog << &endDate;
+        prog << &quantity;
+        prog << &minDiscount;
+        prog << &maxDiscount;
+
+        // run in jit
+        auto res = prog();
+        queryTime += prog.getExecTime();
+    }
+    state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
+}
+
+static void Q9_Baseline(benchmark::State &state)
+{
+    using namespace voila;
+
+    constexpr auto supplier_offset = magic_enum::enum_count<part_cols>();
+    constexpr auto lineitem_offset = supplier_offset + magic_enum::enum_count<supplier_cols>();
+    constexpr auto partsupp_offset = lineitem_offset + magic_enum::enum_count<lineitem_cols>();
+    constexpr auto orders_offset = partsupp_offset + magic_enum::enum_count<partsupp_cols>();
+    constexpr auto nations_offset = orders_offset + magic_enum::enum_count<orders_cols>();
+    auto n_name = part_supplier_lineitem_partsupp_orders_nation.getColumn<nation_types_t<nation_cols::N_NAME>>(
+        nations_offset + nation_cols::N_NAME);
+    auto o_orderdate =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<orders_types_t<orders_cols::O_ORDERDATE>>(
+            orders_offset + orders_cols::O_ORDERDATE);
+    auto l_extendedprice =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(
+            lineitem_offset + lineitem_cols::L_EXTENDEDPRICE);
+    auto l_discount =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(
+            lineitem_offset + lineitem_cols::L_DISCOUNT);
+    auto ps_supplycost =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<partsupp_cols::PS_SUPPLYCOST>>(
+            partsupp_offset + partsupp_cols::PS_SUPPLYCOST);
+    auto l_quantity =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(
+            lineitem_offset + lineitem_cols::L_QUANTITY);
+    auto s_suppkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<supplier_types_t<supplier_cols::S_SUPPKEY>>(
+            supplier_offset + supplier_cols::S_SUPPKEY);
+    auto l_suppkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_SUPPKEY>>(
+            lineitem_offset + lineitem_cols::L_SUPPKEY);
+    auto ps_suppkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<partsupp_cols::PS_SUPPKEY>>(
+            partsupp_offset + partsupp_cols::PS_SUPPKEY);
+    auto ps_partkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<partsupp_cols::PS_PARTKEY>>(
+            partsupp_offset + partsupp_cols::PS_PARTKEY);
+    auto l_partkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_PARTKEY>>(
+            lineitem_offset + lineitem_cols::L_PARTKEY);
+    auto p_partkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<part_types_t<part_cols::P_PARTKEY>>(
+        part_cols::P_PARTKEY);
+    auto o_orderkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<orders_types_t<orders_cols::O_ORDERKEY>>(
+        orders_offset + orders_cols::O_ORDERKEY);
+    auto l_orderkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(
+            lineitem_offset + lineitem_cols::L_ORDERKEY);
+    auto s_nationkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<supplier_types_t<supplier_cols::S_NATIONKEY>>(
+            supplier_offset + supplier_cols::S_NATIONKEY);
+    auto n_nationkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<nation_types_t<nation_cols::N_NATIONKEY>>(
+            nations_offset + nation_cols::N_NATIONKEY);
+    auto p_name = part_supplier_lineitem_partsupp_orders_nation.getColumn<int32_t>(part_cols::P_NAME);
+
+    for ([[maybe_unused]] auto _ : state)
+    {
+        const auto startDate = getQ6Date();
+        const auto endDate = startDate + 10000;
+        const auto quantity = getQ6Quantity();
+        const auto discount = getQ6Discount();
+        const auto minDiscount = discount - 0.01;
+        const auto maxDiscount = discount + 0.01;
+        double res = 0;
+        for (size_t i = 0; i < l_quantity.size(); ++i)
+        {
+            if (l_shipdate[i] >= startDate && l_shipdate[i] < endDate && l_quantity[i] < quantity &&
+                l_discount[i] >= minDiscount && l_discount[i] <= maxDiscount)
+            {
+                ::benchmark::DoNotOptimize(res += l_extendedprice[i] * l_discount[i]);
+            }
+        }
+    }
+}
+
+static void Q18(benchmark::State &state)
+{
+    using namespace voila;
+
+    auto customer_orders_lineitem = CompressedTable::readTable(
+        std::string(VOILA_BENCHMARK_DATA_PATH "/customer_orders_lineitem1g_compressed.bin.xz"));
+    constexpr auto orders_offset = magic_enum::enum_count<customer_cols>();
+    constexpr auto lineitem_offset = magic_enum::enum_count<customer_cols>() + magic_enum::enum_count<orders_cols>();
+    auto l_orderkey = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(
+        lineitem_offset + lineitem_cols::L_ORDERKEY);
+    auto c_name = customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_NAME>>(customer_cols::C_NAME);
+    auto c_custkey =
+        customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_CUSTKEY>>(customer_cols::C_CUSTKEY);
+    auto o_custkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_CUSTKEY>>(orders_offset +
+                                                                                                orders_cols::O_CUSTKEY);
+    auto o_orderkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERKEY>>(
+        orders_offset + orders_cols::O_ORDERKEY);
+    auto o_orderdate = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERDATE>>(
+        orders_offset + orders_cols::O_ORDERDATE);
+    auto o_totalprice = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_TOTALPRICE>>(
+        orders_offset + orders_cols::O_TOTALPRICE);
+    auto l_quantity = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(
+        lineitem_offset + lineitem_cols::L_QUANTITY);
+    Config config;
+    config.debug = false;
+    config.optimize = true;
+    constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
+
+    double queryTime = 0;
+
+    Program prog(query, config);
+    for ([[maybe_unused]] auto _ : state)
+    {
+        auto startDate = getQ6Date();
+        auto endDate = startDate + 10000;
+        auto quantity = getQ6Quantity();
+        auto discount = getQ6Discount();
+        auto minDiscount = discount - 0.01;
+        auto maxDiscount = discount + 0.01;
+
+        prog << l_quantity;
+        prog << l_discount;
+        prog << l_shipdate;
+        prog << l_extendedprice;
+        prog << &startDate;
+        prog << &endDate;
+        prog << &quantity;
+        prog << &minDiscount;
+        prog << &maxDiscount;
+
+        // run in jit
+        auto res = prog();
+        queryTime += prog.getExecTime();
+    }
+    state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
+}
+
+static void Q18_Baseline(benchmark::State &state)
+{
+    using namespace voila;
+    constexpr auto orders_offset = magic_enum::enum_count<customer_cols>();
+    constexpr auto lineitem_offset = magic_enum::enum_count<customer_cols>() + magic_enum::enum_count<orders_cols>();
+    auto l_orderkey = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(
+        lineitem_offset + lineitem_cols::L_ORDERKEY);
+    auto c_name = customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_NAME>>(customer_cols::C_NAME);
+    auto c_custkey =
+        customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_CUSTKEY>>(customer_cols::C_CUSTKEY);
+    auto o_custkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_CUSTKEY>>(orders_offset +
+                                                                                                orders_cols::O_CUSTKEY);
+    auto o_orderkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERKEY>>(
+        orders_offset + orders_cols::O_ORDERKEY);
+    auto o_orderdate = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERDATE>>(
+        orders_offset + orders_cols::O_ORDERDATE);
+    auto o_totalprice = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_TOTALPRICE>>(
+        orders_offset + orders_cols::O_TOTALPRICE);
+    auto l_quantity = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(
+        lineitem_offset + lineitem_cols::L_QUANTITY);
 
     for ([[maybe_unused]] auto _ : state)
     {
@@ -307,6 +680,12 @@ static void Q6_Baseline(benchmark::State &state)
 }
 
 BENCHMARK(Q1)->Unit(benchmark::kMillisecond);
+BENCHMARK(Q3)->Unit(benchmark::kMillisecond);
 BENCHMARK(Q6)->Unit(benchmark::kMillisecond);
+BENCHMARK(Q9)->Unit(benchmark::kMillisecond);
+BENCHMARK(Q18)->Unit(benchmark::kMillisecond);
 BENCHMARK(Q1_Baseline)->Unit(benchmark::kMillisecond);
+BENCHMARK(Q3_Baseline)->Unit(benchmark::kMillisecond);
 BENCHMARK(Q6_Baseline)->Unit(benchmark::kMillisecond);
+BENCHMARK(Q9_Baseline)->Unit(benchmark::kMillisecond);
+BENCHMARK(Q18_Baseline)->Unit(benchmark::kMillisecond);

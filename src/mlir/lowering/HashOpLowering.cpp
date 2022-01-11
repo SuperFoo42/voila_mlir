@@ -105,6 +105,35 @@ namespace voila::mlir::lowering
         }
     }
 
+    static auto split(OpBuilder &builder, const Location &loc, Value val)
+    {
+        if (val.getType().isa<FloatType>())
+        {
+            val = builder.create<arith::BitcastOp>(loc, val, builder.getIntegerType(val.getType().getIntOrFloatBitWidth()));
+        }
+
+        auto lower = builder.create<arith::TruncIOp>(loc, val, builder.getI32Type());
+        auto upper = builder.create<arith::TruncIOp>(loc, builder.create<ShRUIOp>(loc, val, builder.create<ConstantIntOp>(loc, 32, builder.getI64Type())), builder.getI32Type());
+        return std::make_pair(lower, upper);
+    }
+
+    static auto combine(OpBuilder &builder, const Location &loc, Value val1, Value val2)
+    {
+        if (val1.getType().isa<FloatType>())
+        {
+            val1 = builder.create<arith::BitcastOp>(loc, val1, builder.getIntegerType(val1.getType().getIntOrFloatBitWidth()));
+        }
+        if (val2.getType().isa<FloatType>())
+        {
+            val2 = builder.create<arith::BitcastOp>(loc, val2, builder.getIntegerType(val2.getType().getIntOrFloatBitWidth()));
+        }
+        auto extended = builder.create<arith::ExtUIOp>(loc, val1, builder.getI64Type());
+        auto shifted = builder.create<arith::ShLIOp>(loc, extended, builder.create<ConstantIntOp>(loc, 32, builder.getI64Type()));
+        auto extended2 = builder.create<arith::ExtUIOp>(loc, val2, builder.getI64Type());
+        auto combined = builder.create<arith::OrIOp>(loc, shifted, extended2);
+        return combined;
+    }
+
     static Value XXH3_mul128_fold64(OpBuilder &builder, const Location loc, Value lhs, Value rhs)
     {
         auto lhs128 = builder.create<ExtSIOp>(loc, lhs, builder.getIntegerType(128));
@@ -253,12 +282,33 @@ namespace voila::mlir::lowering
 
     static Value XXH3_len_9to16_64b(OpBuilder &builder, const Location loc, ValueRange vals, const unsigned int len)
     {
-        assert(vals.size() == 2);
-        /** TODO: allow also larger sizes with smaller than 4 byte size. However, in this case we have to do a
-         * bunch of bitshifts in order to combine these values to a single 8 byte value
-         **/
-        auto input1 = getINT<64>(builder, loc, vals[0]);
-        auto input2 = getINT<64>(builder, loc, vals[1]);
+        Value input1, input2;
+        if (vals.size() == 2)
+        {
+            input1 = getINT<64>(builder,loc,vals[0]);
+            input2 = getINT<64>(builder,loc,vals[1]);
+        }
+        else if (vals.size() == 4)
+        {
+            input1 = combine(builder,loc,vals[0],vals[1]);
+            input2 = combine(builder,loc,vals[2],vals[3]);
+        }
+        else if (vals[0].getType().getIntOrFloatBitWidth() == 32 && vals[1].getType().getIntOrFloatBitWidth() == 32)
+        {
+            input1 = combine(builder,loc,vals[0],vals[1]);
+            input2 = getINT<64>(builder,loc,vals[2]);
+        }
+        else if (vals[1].getType().getIntOrFloatBitWidth() == 32 && vals[2].getType().getIntOrFloatBitWidth() == 32)
+        {
+            input1 = getINT<64>(builder,loc,vals[0]);
+            input2 = combine(builder,loc,vals[1],vals[2]);
+        }
+        else //vals[0].getType().getIntOrFloatBitWidth() == 32 && vals[1].getType().getIntOrFloatBitWidth() != 32
+        {
+            auto tmp = split(builder,loc, vals[1]);
+            input1 = combine(builder,loc,vals[0],tmp.first);
+            input2 = combine(builder,loc,tmp.second,vals[2]);
+        }
 
         auto bitflip1 = builder.create<XOrIOp>(
             loc,
@@ -283,6 +333,11 @@ namespace voila::mlir::lowering
                                    input_hi),
             XXH3_mul128_fold64(builder, loc, input_lo, input_hi));
         return XXH3_avalanche(builder, loc, acc);
+    }
+
+    static Value XXH3_len_17to32_64b(OpBuilder &builder, const Location loc, ValueRange vals, const unsigned int len)
+    {
+        // TODO
     }
 
     /* TODO:

@@ -34,6 +34,7 @@ set(LIBS
         gmock
         xxhash
         benchmark_headers
+        benchmark_utils
         )
 
 add_llvm_executable(voila_tests

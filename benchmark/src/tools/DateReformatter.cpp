@@ -6,6 +6,8 @@
 static int32_t parseDate(std::string &date)
 {
     tm t = {};
+    if (date == "NULL")
+        return 0;
     std::istringstream ss(date);
     // ss.imbue(std::locale(date));
     ss >> std::get_time(&t, "%Y-%m-%d");

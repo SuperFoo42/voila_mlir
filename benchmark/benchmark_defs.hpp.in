@@ -1,8 +1,12 @@
 #pragma once
 #define VOILA_BENCHMARK_SOURCES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/queries"
 #define VOILA_BENCHMARK_DATA_PATH "${CMAKE_CURRENT_SOURCE_DIR}/data"
+#include <cstddef>
+#include <cstdint>
+#include <tuple>
+#include <type_traits>
 
-enum class part_cols : size_t
+enum part_cols : size_t
 {
     P_PARTKEY,
     P_NAME,
@@ -15,7 +19,7 @@ enum class part_cols : size_t
     P_COMMENT
 };
 
-enum class supplier_cols : size_t
+enum supplier_cols : size_t
 {
     S_SUPPKEY,
     S_NAME,
@@ -26,7 +30,7 @@ enum class supplier_cols : size_t
     S_COMMENT
 };
 
-enum class partsupp_cols : size_t
+enum partsupp_cols : size_t
 {
     PS_PARTKEY,
     PS_SUPPKEY,
@@ -35,7 +39,7 @@ enum class partsupp_cols : size_t
     PS_COMMENT
 };
 
-enum class customer_cols : size_t
+enum customer_cols : size_t
 {
     C_CUSTKEY,
     C_NAME,
@@ -47,7 +51,7 @@ enum class customer_cols : size_t
     C_COMMENT
 };
 
-enum class orders_cols : size_t
+enum orders_cols : size_t
 {
     O_ORDERKEY,
     O_CUSTKEY,
@@ -60,7 +64,7 @@ enum class orders_cols : size_t
     O_COMMENT
 };
 
-enum class lineitem_cols : size_t
+enum lineitem_cols : size_t
 {
     L_ORDERKEY,
     L_PARTKEY,
@@ -80,7 +84,7 @@ enum class lineitem_cols : size_t
     L_COMMENT
 };
 
-enum class nation_cols : size_t
+enum nation_cols : size_t
 {
     N_NATIONKEY,
     N_NAME,
@@ -88,9 +92,57 @@ enum class nation_cols : size_t
     N_COMMENT
 };
 
-enum class region_cols : size_t
+enum region_cols : size_t
 {
     R_REGIONKEY,
     R_NAME,
     R_COMMENT
 };
+
+std::tuple<int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, double, int32_t> part_types;
+template<part_cols col>
+using part_types_t = std::decay_t<decltype(std::get<col>(part_types))>;
+
+std::tuple<int32_t, int32_t, int32_t, int32_t, int32_t, double, int32_t> supplier_types;
+template<supplier_cols col>
+using supplier_types_t = std::decay_t<decltype(std::get<col>(supplier_types))>;
+
+std::tuple<int32_t, int32_t, int32_t, double, int32_t> partsupp_types;
+template<partsupp_cols col>
+using partsupp_types_t = std::decay_t<decltype(std::get<col>(partsupp_types))>;
+
+std::tuple<int32_t, int32_t, int32_t, int32_t, int32_t, double, int32_t, int32_t> customer_types;
+template<customer_cols col>
+using customer_types_t = std::decay_t<decltype(std::get<col>(customer_types))>;
+
+std::tuple<int32_t, int32_t, int32_t, double, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t> orders_types;
+template<orders_cols col>
+using orders_types_t = std::decay_t<decltype(std::get<col>(orders_types))>;
+
+std::tuple<int32_t,
+           int32_t,
+           int32_t,
+           int32_t,
+           double,
+           double,
+           double,
+           double,
+           int32_t,
+           int32_t,
+           int32_t,
+           int32_t,
+           int32_t,
+           int32_t,
+           int32_t,
+           int32_t>
+    lineitem_types;
+template<lineitem_cols col>
+using lineitem_types_t = std::decay_t<decltype(std::get<col>(lineitem_types))>;
+
+std::tuple<int32_t, int32_t, int32_t, int32_t> nation_types;
+template<nation_cols col>
+using nation_types_t = std::decay_t<decltype(std::get<col>(nation_types))>;
+
+std::tuple<int32_t, int32_t, int32_t> region_types;
+template<region_cols col>
+using region_types_t = std::decay_t<decltype(std::get<col>(region_types))>;

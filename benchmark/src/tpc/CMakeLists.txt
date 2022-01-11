@@ -28,16 +28,13 @@ set(LIBS
         spdlog
         benchmark::benchmark
         benchmark::benchmark_main
-        cereal
         xxhash
-        bxzstr
+        benchmark_utils
         )
 
 add_executable(tpc-benchmark
         TPCHBenchmark.cpp
         benchmark_main.cpp
-        ../tools/DateReformatter.cpp
-        ../tools/DictionaryCompressor.cpp
         )
 
 target_link_libraries(tpc-benchmark PRIVATE ${LIBS})

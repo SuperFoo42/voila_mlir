@@ -1,0 +1,18 @@
+main(l_orderkey, l_extendedprice, l_discount,o_orderdate,o_shippriority,c_mktsegment,c_custkey,o_custkey,o_orderkey,l_shipdate,segment,date)
+{
+    to_select = eq(c_mktsegment, segment);
+    to_select = and(eq(c_custkey,o_custkey), to_select);
+    to_select = and(eq(l_orderkey,o_orderkey), to_select);
+    to_select = and(le(o_orderdate,date), to_select);
+    to_select = and(ge(l_shipdate,date), to_select);
+    sel_orderkey = select(l_orderkey,to_select);
+    sel_orderdate = select(o_orderdate,to_select);
+    sel_shippriority = select(o_shippriority,to_select);
+    sel_extendedprice = select(l_extendedprice,to_select);
+    sel_discount= select(l_discount,to_select);
+    h = hash(sel_orderkey,sel_orderdate,sel_shippriority);
+    ht_orderkey, ht_orderdate,ht_shippriority = insert(h,sel_orderkey, sel_orderdate, sel_shippriority);
+    groups = lookup(sel_orderkey, sel_orderdate,sel_shippriority, ht_orderkey, ht_orderdate, ht_shippriority, h);
+    ag = aggr(sum, mul(sel_extendedprice,sub(1.0,sel_discount)), groups);#FIXME: sel_discount is not replaced with select 0 or value
+    emit ht_orderkey,ag,ht_orderdate,ht_shippriority;
+}
