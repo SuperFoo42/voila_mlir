@@ -6,7 +6,7 @@ CPMAddPackage(
 )
 CPMAddPackage(
         NAME cereal
-        TAG master
+        GIT_TAG master
         GITHUB_REPOSITORY USCiLab/cereal
         OPTIONS "SKIP_PORTABILITY_TEST ON" "JUST_INSTALL_CEREAL ON"
 )
@@ -18,7 +18,7 @@ CPMAddPackage("gh:Cyan4973/xxHash#v0.8.1")
 
 CPMAddPackage(
         NAME bxzstr
-        TAG master
+        GIT_TAG master
         GITHUB_REPOSITORY tmaklin/bxzstr
         OPTIONS "ZLIB_FOUND FALSE" "BZIP2_FOUND FALSE"
 )

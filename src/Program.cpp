@@ -247,7 +247,7 @@ namespace voila
 
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
-/*
+
         pm.addNestedPass<FuncOp>(createConvertElementwiseToLinalgPass());
         pm.addNestedPass<FuncOp>(createLinalgStrategyEnablePass());
         pm.addNestedPass<FuncOp>(createLinalgStrategyGeneralizePass());
@@ -399,7 +399,7 @@ namespace voila
             pm.addPass(createConvertAsyncToLLVMPass());
         pm.addPass(::mlir::createLowerToLLVMPass());
 
-        pm.addPass(createReconcileUnrealizedCastsPass());*/
+        pm.addPass(createReconcileUnrealizedCastsPass());
 
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));

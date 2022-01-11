@@ -15,7 +15,7 @@
 #include "mlir/Transforms/LoopUtils.h"
 
 #define GET_OP_CLASSES
-#include "mlir/VoilaOps.cpp.inc"
+#include "mlir/IR/VoilaOps.cpp.inc"
 using namespace ::mlir;
 using namespace ::mlir::arith;
 using namespace mlir::voila;
@@ -45,6 +45,7 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
     // The shape is required to match if both types are ranked.
     return !input.hasRank() || !output.hasRank() || input == output;
 }
+/*
 
 LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, PatternRewriter &rewriter)
 {
@@ -111,4 +112,4 @@ LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, Patt
     rewriter.replaceOpWithNewOp<::mlir::SelectOp>(op, op.pred(), op.values(), falseSel);
 
     return success();
-}
+}*/

@@ -6,4 +6,4 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/PatternMatch.h"
 #define GET_OP_CLASSES
-#include "mlir/VoilaOps.h.inc"
+#include "mlir/IR/VoilaOps.h.inc"

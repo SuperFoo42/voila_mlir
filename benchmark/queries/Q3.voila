@@ -13,6 +13,6 @@ main(l_orderkey, l_extendedprice, l_discount,o_orderdate,o_shippriority,c_mktseg
     h = hash(sel_orderkey,sel_orderdate,sel_shippriority);
     ht_orderkey, ht_orderdate,ht_shippriority = insert(h,sel_orderkey, sel_orderdate, sel_shippriority);
     groups = lookup(sel_orderkey, sel_orderdate,sel_shippriority, ht_orderkey, ht_orderdate, ht_shippriority, h);
-    ag = aggr(sum, mul(sel_extendedprice,sub(1.0,sel_discount)), groups);#FIXME: sel_discount is not replaced with select 0 or value
+    ag = aggr(sum, mul(sel_extendedprice,sub(1.0,sel_discount)), groups);
     emit ht_orderkey,ag,ht_orderdate,ht_shippriority;
 }
