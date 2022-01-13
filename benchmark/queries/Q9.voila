@@ -1,0 +1,24 @@
+main(n_name, o_orderdate, l_extendedprice, l_discount, ps_supplycost, l_quantity, s_suppkey, l_suppkey, ps_suppkey, ps_partkey, l_partkey, p_partkey, o_orderkey, l_orderkey, s_nationkey, n_nationkey, p_name, needle)
+{
+    h_needle = hash(needle);
+    ht_needle = insert(h_needle, needle);
+    to_select = eq(s_suppkey, l_suppkey);
+    to_select = and(eq(ps_suppkey,l_suppkey), to_select);
+    to_select = and(eq(ps_partkey,l_partkey), to_select);
+    to_select = and(eq(p_partkey,l_partkey), to_select);
+    to_select = and(eq(o_orderkey,l_orderkey), to_select);
+    to_select = and(eq(s_nationkey,n_nationkey), to_select);
+    sel_h = hash(p_name);
+    contains = neq(lookup(needle,ht_needle, sel_h), -1);
+    to_select = and(to_select, contains);
+    sel_orderkey = select(l_orderkey,to_select);
+    sel_orderdate = select(o_orderdate,to_select);
+    sel_shippriority = select(o_shippriority,to_select);
+    sel_extendedprice = select(l_extendedprice,to_select);
+    sel_discount= select(l_discount,to_select);
+    h = hash(sel_orderkey,sel_orderdate,sel_shippriority);
+    ht_orderkey, ht_orderdate,ht_shippriority = insert(h,sel_orderkey, sel_orderdate, sel_shippriority);
+    groups = lookup(sel_orderkey, sel_orderdate,sel_shippriority, ht_orderkey, ht_orderdate, ht_shippriority, h);
+    ag = aggr(sum, mul(sel_extendedprice,sub(1.0,sel_discount)), groups);
+    emit ht_orderkey,ag,ht_orderdate,ht_shippriority;
+}

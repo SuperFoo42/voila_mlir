@@ -57,6 +57,7 @@ namespace voila
         [[nodiscard]] virtual bool convertible(const DataType &) const = 0;
         [[nodiscard]] virtual std::vector<DataType> getTypes() const = 0;
         [[nodiscard]] virtual std::vector<Arity> getArities() const = 0;
+        [[nodiscard]] virtual std::vector<Arity> setAritiy(size_t idx, Arity ar) = 0;
         [[nodiscard]] bool compatible(const Type &other) const
         {
             return convertible(other) || other.convertible(*this);
@@ -82,6 +83,7 @@ namespace voila
         [[nodiscard]] bool compatible(const DataType &other) const override;
         [[nodiscard]] std::vector<DataType> getTypes() const override;
         [[nodiscard]] std::vector<Arity> getArities() const override;
+        std::vector<Arity> setAritiy(size_t idx, Arity arity) override;
     };
 
     class FunctionType : public Type
@@ -98,6 +100,7 @@ namespace voila
         [[nodiscard]] bool compatible(const DataType &other) const override;
         [[nodiscard]] std::vector<DataType> getTypes() const override;
         [[nodiscard]] std::vector<Arity> getArities() const override;
+        std::vector<Arity> setAritiy(size_t idx, Arity ar) override;
         std::vector<type_id_t> paramTypeIds;
         std::vector<type_id_t> returnTypeIDs;
     };

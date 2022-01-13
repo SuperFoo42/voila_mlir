@@ -22,6 +22,12 @@ static size_t hash(Ts... t)
     tpl.
     return XXH3_64bits(data.data(), sum<sizeof(Ts)...>::value);
 }*/
+
+template<class T>
+static size_t hash(T val1)
+{
+    return XXH3_64bits(&val1, sizeof(T));
+}
 template<class T1, class T2>
 static size_t hash(T1 val1, T2 val2)
 {
@@ -64,6 +70,21 @@ static size_t probeAndInsert(size_t key,
     return key;
 }
 
+template<class T>
+static size_t contains(size_t key, T val, std::vector<T> &vals)
+{
+    const auto size = vals.size();
+    key %= size;
+    // probing
+    while (vals[key % size] != INVALID && vals[key % size] != val)
+    {
+        key += 1;
+        key %= size;
+    }
+
+    return vals[key % size] == val;
+}
+
 template<class T1, class T2, class T3>
 static size_t probeAndInsert(size_t key,
                              const size_t size,
@@ -86,6 +107,22 @@ static size_t probeAndInsert(size_t key,
     vals1[key] = val1;
     vals2[key] = val2;
     vals3[key] = val3;
+
+    return key;
+}
+
+template<class T1>
+static size_t probeAndInsert(size_t key, const size_t size, const T1 val1, std::vector<T1> &vals1)
+{
+    key %= size;
+    // probing
+    while (vals1[key % size] != INVALID && !(vals1[key % size] == val1))
+    {
+        key += 1;
+        key %= size;
+    }
+
+    vals1[key] = val1;
 
     return key;
 }
@@ -146,7 +183,7 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     EXPECT_DOUBLE_EQ(sum_base_price_ref[ref_idx], 56586554400.729897);
     EXPECT_DOUBLE_EQ(sum_disc_price_ref[ref_idx], 53758257134.865143);
     EXPECT_DOUBLE_EQ(sum_charge_ref[ref_idx], 55909065222.825607);
-    EXPECT_DOUBLE_EQ(avg_qty_ref[ref_idx], 25);
+    EXPECT_DOUBLE_EQ(avg_qty_ref[ref_idx], 25.522005853257337);
     EXPECT_DOUBLE_EQ(avg_price_ref[ref_idx], 38273.129734621602);
     EXPECT_DOUBLE_EQ(avg_disc_ref[ref_idx], 0.04998529583825443);
     EXPECT_EQ(count_order_ref[ref_idx], 1478493);
@@ -188,6 +225,11 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     auto count_order_res = std::get<strided_memref_ptr<uint64_t, 1>>(res[9]);
     EXPECT_EQ(ht_returnflag_res->operator[](res_idx), 0);
     EXPECT_EQ(ht_linestatus_res->operator[](res_idx), 0);
+    for (const auto &elem : *sum_qty_res)
+    {
+        if (elem != 0)
+            std::cout << elem << " ";
+    }
     EXPECT_EQ(sum_qty_res->operator[](res_idx), 37734107);
     EXPECT_DOUBLE_EQ(sum_base_price_res->operator[](res_idx), 56586554400.729897);
     EXPECT_DOUBLE_EQ(sum_disc_price_res->operator[](res_idx), 53758257134.865143);
@@ -284,27 +326,27 @@ TEST(TPCBenchmarkTests, Q3_Qualification)
     int32_t date = 19950315;
 
     // voila calculations
-        Config config;
-        config.debug = true;
-        config.optimize = true;
-        config.tile = false;
-        config.parallelize = false;
-        constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q3.voila";
-        Program prog(query, config);
-        prog << l_orderkey;
-        prog << l_extendedprice;
-        prog << l_discount;
-        prog << l_shipdate;
-        prog << c_mktsegment;
-        prog << c_custkey;
-        prog << o_custkey;
-        prog << o_orderkey;
-        prog << o_orderdate;
-        prog << o_shippriority;
-        prog << &segment;
-        prog << &date;
+    Config config;
+    config.debug = true;
+    config.optimize = true;
+    config.tile = false;
+    config.parallelize = false;
+    constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q3.voila";
+    Program prog(query, config);
+    prog << l_orderkey;
+    prog << l_extendedprice;
+    prog << l_discount;
+    prog << l_shipdate;
+    prog << c_mktsegment;
+    prog << c_custkey;
+    prog << o_custkey;
+    prog << o_orderkey;
+    prog << o_orderdate;
+    prog << o_shippriority;
+    prog << &segment;
+    prog << &date;
 
-        auto res = prog();
+    auto res = prog();
 
     // reference impl
     double ref = 0;
@@ -312,19 +354,11 @@ TEST(TPCBenchmarkTests, Q3_Qualification)
     std::vector<int32_t> ht_l_orderkey_ref(htSizes, static_cast<int32_t>(INVALID));
     std::vector<int32_t> ht_o_orderdate_ref(htSizes, static_cast<int32_t>(INVALID));
     std::vector<int32_t> ht_o_shippriority_ref(htSizes, static_cast<int32_t>(INVALID));
-    std::vector<double> sum_qty_ref(htSizes, 0);
-    std::vector<double> sum_base_price_ref(htSizes, 0);
     std::vector<double> sum_disc_price_ref(htSizes, 0);
-    std::vector<double> sum_charge_ref(htSizes, 0);
-    std::vector<double> sum_discount_ref(htSizes, 0);
-    std::vector<double> avg_qty_ref(htSizes, 0);
-    std::vector<double> avg_price_ref(htSizes, 0);
-    std::vector<double> avg_disc_ref(htSizes, 0);
-    std::vector<double> count_order_ref(htSizes, 0);
 
     Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
-             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES, Events::INS_ISSUED,
-             Events::PREFETCH_MISS>
+             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
+             Events::INS_ISSUED, Events::PREFETCH_MISS>
         prof;
     prof.start();
 
@@ -414,66 +448,62 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
     }
 
     // voila calculations
-    /*    Config config;
-        config.debug = true;
-        config.optimize = true;
-        config.parallelize = false;
-        constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q9.voila";
-        Program prog(query, config);
-        prog << l_orderkey;
-        prog << l_extendedprice;
-        prog << l_discount;
-        prog << n_name;
-        prog << ps_supplycost;
-        prog << l_quantity;
-        prog << s_suppkey;
-        prog << o_orderkey;
-        prog << o_orderdate;
-        prog << l_suppkey;
-        prog << ps_suppkey;
-        prog << ps_partkey;
-        prog << l_partkey;
-        prog << p_partkey;
-        prog << s_nationkey;
-        prog << n_nationkey;
-        prog << needle;
+    Config config;
+    config.debug = true;
+    config.optimize = true;
+    config.parallelize = false;
+    constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q9.voila";
+    Program prog(query, config);
+    prog << n_name;
+    prog << o_orderdate;
+    prog << l_extendedprice;
+    prog << l_discount;
+    prog << ps_supplycost;
+    prog << l_quantity;
+    prog << s_suppkey;
+    prog << l_suppkey;
+    prog << ps_suppkey;
+    prog << ps_partkey;
+    prog << l_partkey;
+    prog << p_partkey;
+    prog << o_orderkey;
+    prog << l_orderkey;
+    prog << s_nationkey;
+    prog << n_nationkey;
+    prog << p_name;
+    prog << needle;
 
-        auto res = prog();*/
+    auto res = prog();
 
     // reference impl
     double ref = 0;
     const auto htSizes = std::bit_ceil(l_orderkey.size());
-    std::vector<int32_t> ht_l_orderkey_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<int32_t> ht_n_name_ref(htSizes, static_cast<int32_t>(INVALID));
     std::vector<int32_t> ht_o_orderdate_ref(htSizes, static_cast<int32_t>(INVALID));
-    std::vector<int32_t> ht_o_shippriority_ref(htSizes, static_cast<int32_t>(INVALID));
-    std::vector<double> sum_qty_ref(htSizes, 0);
-    std::vector<double> sum_base_price_ref(htSizes, 0);
+    std::vector<int32_t> ht_needle_ref(std::bit_ceil(needle.size()), static_cast<int32_t>(INVALID));
     std::vector<double> sum_disc_price_ref(htSizes, 0);
-    std::vector<double> sum_charge_ref(htSizes, 0);
-    std::vector<double> sum_discount_ref(htSizes, 0);
-    std::vector<double> avg_qty_ref(htSizes, 0);
-    std::vector<double> avg_price_ref(htSizes, 0);
-    std::vector<double> avg_disc_ref(htSizes, 0);
-    std::vector<double> count_order_ref(htSizes, 0);
 
     Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
-             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES, Events::INS_ISSUED,
-             Events::PREFETCH_MISS>
+             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
+             Events::INS_ISSUED, Events::PREFETCH_MISS>
         prof;
     prof.start();
-    /*
-        for (size_t i = 0; i < l_orderkey.size(); ++i)
-        {
-            if (c_mktsegment[i] == segment && c_custkey[i] == o_custkey[i] && l_orderkey[i] == o_orderkey[i] &&
-                o_orderdate[i] < date && l_shipdate[i] > date)
-            {
-                const auto idx = probeAndInsert(hash(l_orderkey[i], o_orderdate[i], o_shippriority[i]), htSizes,
-                                                l_orderkey[i], o_orderdate[i], o_shippriority[i], ht_l_orderkey_ref,
-                                                ht_o_orderdate_ref, ht_o_shippriority_ref);
+    for (auto &elem : needle)
+    {
+        probeAndInsert(hash(elem), ht_needle_ref.size(), elem, ht_needle_ref);
+    }
 
-                sum_disc_price_ref[idx] += l_extendedprice[i] * (1 - l_discount[i]);
-            }
-        }*/
+    for (size_t i = 0; i < l_orderkey.size(); ++i)
+    {
+        if (s_nationkey[i] == n_nationkey[i] && o_orderkey[i] == l_orderkey[i] && p_partkey[i] == l_partkey[i] &&
+            ps_partkey[i] == l_partkey[i] && ps_suppkey[i] == l_suppkey[i] && s_suppkey[i] == l_suppkey[i] &&
+            contains(hash(p_name[i]), p_name[i], ht_needle_ref))
+        {
+            const auto idx = probeAndInsert(hash(n_name[i], o_orderdate[i] / 10000), htSizes, n_name[i],
+                                            o_orderdate[i] / 10000, ht_n_name_ref, ht_o_orderdate_ref);
+            sum_disc_price_ref[idx] += l_extendedprice[i] * (1 - l_discount[i]) - ps_supplycost[i] * l_quantity[i];
+        }
+    }
     prof.stop();
     std::cout << prof << std::endl;
 
@@ -542,8 +572,8 @@ TEST(TPCBenchmarkTests, Q18_Qualification)
     std::vector<double> count_order_ref(htSizes, 0);
 
     Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
-             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES, Events::INS_ISSUED,
-             Events::PREFETCH_MISS>
+             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
+             Events::INS_ISSUED, Events::PREFETCH_MISS>
         prof;
     prof.start();
 

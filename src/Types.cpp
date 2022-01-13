@@ -55,8 +55,8 @@ namespace voila
                 return false;
             else
             {
-                return convertibleDataTypes(
-                    this->t, inferer.types.at(functionType.returnTypeIDs.front())->getTypes().front());
+                return convertibleDataTypes(this->t,
+                                            inferer.types.at(functionType.returnTypeIDs.front())->getTypes().front());
             }
         }
     }
@@ -75,6 +75,14 @@ namespace voila
     std::vector<Arity> ScalarType::getArities() const
     {
         return {ar};
+    }
+    std::vector<Arity> ScalarType::setAritiy(size_t idx, Arity arity)
+    {
+        if (idx != 0)
+        {
+            throw std::runtime_error("Out of Bounds");
+        }
+        ar = arity;
     }
 
     std::ostream &operator<<(std::ostream &os, const FunctionType &type)
@@ -164,11 +172,14 @@ namespace voila
         for (const auto &t : returnTypeIDs)
         {
             auto tmp = inferer.types.at(t)->getArities();
-            types.insert(types.end(), tmp.begin(),
-                         tmp.end());
+            types.insert(types.end(), tmp.begin(), tmp.end());
         }
 
         return types;
+    }
+    std::vector<Arity> FunctionType::setAritiy(size_t idx, Arity ar)
+    {
+        return std::vector<Arity>();
     }
     bool Type::convertibleDataTypes(DataType t1, DataType t2)
     {

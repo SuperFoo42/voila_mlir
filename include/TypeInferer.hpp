@@ -8,6 +8,7 @@
 
 namespace voila
 {
+    //TODO pimpl
     class TypeInferer : public ast::ASTVisitor
     {
       public:

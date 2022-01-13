@@ -63,23 +63,21 @@ namespace voila::mlir::lowering
                  probeIdx](auto elem) -> auto { return builder.create<tensor::ExtractOp>(loc, elem, probeIdx); });
 
             Value isEmpty = builder.create<CmpIOp>(
-                loc, CmpIPredicate::eq, entries[0],
+                loc, CmpIPredicate::ne, entries[0],
                 builder.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), entries[0].getType()));
             Value notFound = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entries[0], vals[0]);
-
             for (auto &en : llvm::enumerate(llvm::zip(entries, vals)))
             {
                 Value entry, value;
                 std::tie(entry, value) = en.value();
-                auto tmp = builder.create<CmpIOp>(loc, CmpIPredicate::eq, entry,
+                auto tmp = builder.create<CmpIOp>(loc, CmpIPredicate::ne, entry,
                                                   builder.create<ConstantIntOp>(loc, 0, entry.getType()));
                 isEmpty = builder.create<AndIOp>(loc, isEmpty, tmp);
                 auto tmp2 = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entry, value);
                 notFound = builder.create<OrIOp>(loc, isEmpty, tmp2);
             }
-
             condBuilder.create<scf::ConditionOp>(
-                loc, condBuilder.create<OrIOp>(loc, builder.getI1Type(), isEmpty, notFound), loop->getOperands());
+                loc, condBuilder.create<AndIOp>(loc, builder.getI1Type(), isEmpty, notFound), loop->getOperands());
             // body
             auto afterBlock = builder.createBlock(&loop.getAfter());
             afterBlock->addArgument(loop->getOperands().front().getType());
@@ -92,9 +90,28 @@ namespace voila::mlir::lowering
                 intMod));
             bodyBuilder.create<scf::YieldOp>(loc, inc);
             builder.setInsertionPointAfter(loop);
+            // check index empty
+
+            entries.clear();
+            Value resIdx = builder.create<IndexCastOp>(loc, loop->getResults().front(), builder.getIndexType());
+            std::transform(
+                lookupOpAdaptor.hashtables().begin(), lookupOpAdaptor.hashtables().end(), std::back_inserter(entries),
+                [&builder, &loc, &
+                 resIdx](auto elem) -> auto { return builder.create<tensor::ExtractOp>(loc, elem, resIdx); });
+            Value empty = builder.create<CmpIOp>(
+                loc, CmpIPredicate::ne, entries[0],
+                builder.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), entries[0].getType()));
+            for (auto &en : entries)
+            {
+                auto tmp = builder.create<CmpIOp>(loc, CmpIPredicate::ne, en,
+                                                  builder.create<ConstantIntOp>(loc, 0, en.getType()));
+                empty = builder.create<AndIOp>(loc, empty, tmp);
+            }
+            Value res = builder.create<SelectOp>(
+                loc, empty,
+                builder.create<ConstantIndexOp>(loc, std::numeric_limits<uint64_t>::max()), resIdx);
             // store result
-            builder.create<linalg::YieldOp>(loc, llvm::makeArrayRef<Value>(builder.create<IndexCastOp>(
-                                                     loc, loop->getResults().front(), builder.getIndexType())));
+            builder.create<linalg::YieldOp>(loc, res);
         };
 
         llvm::SmallVector<AffineMap> indexing_maps(/*hashes+outTensor*/ 2 + lookupOpAdaptor.values().size(),

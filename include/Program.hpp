@@ -40,18 +40,18 @@
 #include <mlir/IR/BuiltinOps.h>
 #include <mlir/IR/Dialect.h>
 #include <mlir/IR/MLIRContext.h>
+#include <mlir/IR/VoilaDialect.h>
 #include <mlir/InitAllDialects.h>
 #include <mlir/InitAllPasses.h>
 #include <mlir/Pass/Pass.h>
 #include <mlir/Pass/PassManager.h>
-#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
-#include <mlir/Target/LLVMIR/Export.h>
-#include <mlir/Transforms/Passes.h>
-#include <mlir/IR/VoilaDialect.h>
-#include <mlir/lowering/LinalgTiledLoopsToAffineForPass.hpp>
 #include <mlir/Passes/VoilaToAffineLoweringPass.hpp>
 #include <mlir/Passes/VoilaToLLVMLoweringPass.hpp>
 #include <mlir/Passes/VoilaToLinalgLoweringPass.hpp>
+#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
+#include <mlir/Target/LLVMIR/Export.h>
+#include <mlir/Transforms/Passes.h>
+#include <mlir/lowering/LinalgTiledLoopsToAffineForPass.hpp>
 #pragma GCC diagnostic pop
 #include "Profiler.hpp"
 
@@ -94,7 +94,6 @@ namespace voila
 
     template<class T, int N>
     using strided_memref_ptr = std::shared_ptr<StridedMemRefType<T, N>>;
-
 
     template<typename T>
     Parameter make_param(T *val, size_t size)
@@ -207,7 +206,6 @@ namespace voila
         bool has_var(const std::string &var_name);
 
         Program &operator<<(Parameter param);
-
 
         template<class T>
         Program &operator<<(T param) requires std::is_pointer_v<T>

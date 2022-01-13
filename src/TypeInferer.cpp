@@ -683,21 +683,31 @@ namespace voila
         comparison.lhs.visit(*this);
         comparison.rhs.visit(*this);
 
-        auto &left_type = dynamic_cast<ScalarType &>(get_type(*comparison.lhs.as_expr()));
-        auto &right_type = dynamic_cast<ScalarType &>(get_type(*comparison.rhs.as_expr()));
-        // TODO: insert for all binary preds
-        if (left_type.ar.is_undef() xor right_type.ar.is_undef())
+        auto &left_type = get_type(*comparison.lhs.as_expr());
+        auto &right_type = get_type(*comparison.rhs.as_expr());
+        const auto &leftArities = left_type.getArities();
+        const auto &rightArities = left_type.getArities();
+        if (leftArities.size() != 1)
         {
-            if (left_type.ar.is_undef())
+            throw NonMatchingArityException();
+        }
+        if (rightArities.size() != 1)
+        {
+            throw NonMatchingArityException();
+        }
+        // TODO: insert for all binary preds
+        if (leftArities.front().is_undef() xor rightArities.front().is_undef())
+        {
+            if (leftArities.front().is_undef())
             {
-                left_type.ar = right_type.ar;
+                left_type.getArities().front() = right_type.getArities().front();
             }
             else
             {
                 right_type.ar = left_type.ar;
             }
         }
-        if (left_type.ar != right_type.ar)
+        if (left_type.getArities() != right_type.getArities())
         {
             throw NonMatchingArityException();
         }

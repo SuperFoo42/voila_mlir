@@ -6,5 +6,6 @@ namespace voila
     {
       public:
         NotImplementedException() : std::runtime_error("Functionality not implemented") {}
+        explicit NotImplementedException(const std::string &msg) : std::runtime_error("Functionality not implemented: " + msg) {}
     };
 } // namespace voila

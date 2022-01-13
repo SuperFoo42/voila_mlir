@@ -487,6 +487,12 @@ namespace voila
     // either return void, scalars or pointer to strided memref types as unique_ptr
     std::vector<Program::result_t> Program::operator()()
     {
+        const auto &main = functions.at("main");
+        if (nparam < main->args.size())
+        {
+            throw std::runtime_error("Not enough parameters supplied");
+        }
+
         if (!maybeEngine)
         {
             if (config.plotAST)
@@ -526,7 +532,6 @@ namespace voila
         }
 
         // run jit
-        const auto &main = functions.at("main");
         std::vector<result_t> res;
         if (main->result.has_value())
         {

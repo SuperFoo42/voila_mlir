@@ -1,5 +1,6 @@
 #include "mlir/lowering/HashOpLowering.hpp"
 
+#include "NotImplementedException.hpp"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/IR/VoilaOps.h"
@@ -14,20 +15,19 @@ namespace voila::mlir::lowering
 
     HashOpLowering::HashOpLowering(MLIRContext *ctx) : ConversionPattern(HashOp::getOperationName(), 1, ctx) {}
 
-    static constexpr auto XXH_SECRET_DEFAULT_SIZE = 192;
-
-    static constexpr std::array<uint8_t, XXH_SECRET_DEFAULT_SIZE> XXH_SECRET = {
-        0xb8, 0xfe, 0x6c, 0x39, 0x23, 0xa4, 0x4b, 0xbe, 0x7c, 0x01, 0x81, 0x2c, 0xf7, 0x21, 0xad, 0x1c, 0xde, 0xd4,
-        0x6d, 0xe9, 0x83, 0x90, 0x97, 0xdb, 0x72, 0x40, 0xa4, 0xa4, 0xb7, 0xb3, 0x67, 0x1f, 0xcb, 0x79, 0xe6, 0x4e,
-        0xcc, 0xc0, 0xe5, 0x78, 0x82, 0x5a, 0xd0, 0x7d, 0xcc, 0xff, 0x72, 0x21, 0xb8, 0x08, 0x46, 0x74, 0xf7, 0x43,
-        0x24, 0x8e, 0xe0, 0x35, 0x90, 0xe6, 0x81, 0x3a, 0x26, 0x4c, 0x3c, 0x28, 0x52, 0xbb, 0x91, 0xc3, 0x00, 0xcb,
-        0x88, 0xd0, 0x65, 0x8b, 0x1b, 0x53, 0x2e, 0xa3, 0x71, 0x64, 0x48, 0x97, 0xa2, 0x0d, 0xf9, 0x4e, 0x38, 0x19,
-        0xef, 0x46, 0xa9, 0xde, 0xac, 0xd8, 0xa8, 0xfa, 0x76, 0x3f, 0xe3, 0x9c, 0x34, 0x3f, 0xf9, 0xdc, 0xbb, 0xc7,
-        0xc7, 0x0b, 0x4f, 0x1d, 0x8a, 0x51, 0xe0, 0x4b, 0xcd, 0xb4, 0x59, 0x31, 0xc8, 0x9f, 0x7e, 0xc9, 0xd9, 0x78,
-        0x73, 0x64, 0xea, 0xc5, 0xac, 0x83, 0x34, 0xd3, 0xeb, 0xc3, 0xc5, 0x81, 0xa0, 0xff, 0xfa, 0x13, 0x63, 0xeb,
-        0x17, 0x0d, 0xdd, 0x51, 0xb7, 0xf0, 0xda, 0x49, 0xd3, 0x16, 0x55, 0x26, 0x29, 0xd4, 0x68, 0x9e, 0x2b, 0x16,
-        0xbe, 0x58, 0x7d, 0x47, 0xa1, 0xfc, 0x8f, 0xf8, 0xb8, 0xd1, 0x7a, 0xd0, 0x31, 0xce, 0x45, 0xcb, 0x3a, 0x8f,
-        0x95, 0x16, 0x04, 0x28, 0xaf, 0xd7, 0xfb, 0xca, 0xbb, 0x4b, 0x40, 0x7e};
+    static constexpr auto XXH_PRIME64_1 = 0x9E3779B185EBCA87ULL;
+    static constexpr auto XXH_SECRET = std::to_array<uint8_t>(
+        {0xb8, 0xfe, 0x6c, 0x39, 0x23, 0xa4, 0x4b, 0xbe, 0x7c, 0x01, 0x81, 0x2c, 0xf7, 0x21, 0xad, 0x1c, 0xde, 0xd4,
+         0x6d, 0xe9, 0x83, 0x90, 0x97, 0xdb, 0x72, 0x40, 0xa4, 0xa4, 0xb7, 0xb3, 0x67, 0x1f, 0xcb, 0x79, 0xe6, 0x4e,
+         0xcc, 0xc0, 0xe5, 0x78, 0x82, 0x5a, 0xd0, 0x7d, 0xcc, 0xff, 0x72, 0x21, 0xb8, 0x08, 0x46, 0x74, 0xf7, 0x43,
+         0x24, 0x8e, 0xe0, 0x35, 0x90, 0xe6, 0x81, 0x3a, 0x26, 0x4c, 0x3c, 0x28, 0x52, 0xbb, 0x91, 0xc3, 0x00, 0xcb,
+         0x88, 0xd0, 0x65, 0x8b, 0x1b, 0x53, 0x2e, 0xa3, 0x71, 0x64, 0x48, 0x97, 0xa2, 0x0d, 0xf9, 0x4e, 0x38, 0x19,
+         0xef, 0x46, 0xa9, 0xde, 0xac, 0xd8, 0xa8, 0xfa, 0x76, 0x3f, 0xe3, 0x9c, 0x34, 0x3f, 0xf9, 0xdc, 0xbb, 0xc7,
+         0xc7, 0x0b, 0x4f, 0x1d, 0x8a, 0x51, 0xe0, 0x4b, 0xcd, 0xb4, 0x59, 0x31, 0xc8, 0x9f, 0x7e, 0xc9, 0xd9, 0x78,
+         0x73, 0x64, 0xea, 0xc5, 0xac, 0x83, 0x34, 0xd3, 0xeb, 0xc3, 0xc5, 0x81, 0xa0, 0xff, 0xfa, 0x13, 0x63, 0xeb,
+         0x17, 0x0d, 0xdd, 0x51, 0xb7, 0xf0, 0xda, 0x49, 0xd3, 0x16, 0x55, 0x26, 0x29, 0xd4, 0x68, 0x9e, 0x2b, 0x16,
+         0xbe, 0x58, 0x7d, 0x47, 0xa1, 0xfc, 0x8f, 0xf8, 0xb8, 0xd1, 0x7a, 0xd0, 0x31, 0xce, 0x45, 0xcb, 0x3a, 0x8f,
+         0x95, 0x16, 0x04, 0x28, 0xaf, 0xd7, 0xfb, 0xca, 0xbb, 0x4b, 0x40, 0x7e});
 
     // TODO: check if this becomes a bswap instruction when compiled
     static Value XXH_swap64(OpBuilder &builder, const Location &loc, Value x)
@@ -109,11 +109,14 @@ namespace voila::mlir::lowering
     {
         if (val.getType().isa<FloatType>())
         {
-            val = builder.create<arith::BitcastOp>(loc, val, builder.getIntegerType(val.getType().getIntOrFloatBitWidth()));
+            val = builder.create<arith::BitcastOp>(loc, val,
+                                                   builder.getIntegerType(val.getType().getIntOrFloatBitWidth()));
         }
 
         auto lower = builder.create<arith::TruncIOp>(loc, val, builder.getI32Type());
-        auto upper = builder.create<arith::TruncIOp>(loc, builder.create<ShRUIOp>(loc, val, builder.create<ConstantIntOp>(loc, 32, builder.getI64Type())), builder.getI32Type());
+        auto upper = builder.create<arith::TruncIOp>(
+            loc, builder.create<ShRUIOp>(loc, val, builder.create<ConstantIntOp>(loc, 32, builder.getI64Type())),
+            builder.getI32Type());
         return std::make_pair(lower, upper);
     }
 
@@ -121,14 +124,17 @@ namespace voila::mlir::lowering
     {
         if (val1.getType().isa<FloatType>())
         {
-            val1 = builder.create<arith::BitcastOp>(loc, val1, builder.getIntegerType(val1.getType().getIntOrFloatBitWidth()));
+            val1 = builder.create<arith::BitcastOp>(loc, val1,
+                                                    builder.getIntegerType(val1.getType().getIntOrFloatBitWidth()));
         }
         if (val2.getType().isa<FloatType>())
         {
-            val2 = builder.create<arith::BitcastOp>(loc, val2, builder.getIntegerType(val2.getType().getIntOrFloatBitWidth()));
+            val2 = builder.create<arith::BitcastOp>(loc, val2,
+                                                    builder.getIntegerType(val2.getType().getIntOrFloatBitWidth()));
         }
         auto extended = builder.create<arith::ExtUIOp>(loc, val1, builder.getI64Type());
-        auto shifted = builder.create<arith::ShLIOp>(loc, extended, builder.create<ConstantIntOp>(loc, 32, builder.getI64Type()));
+        auto shifted =
+            builder.create<arith::ShLIOp>(loc, extended, builder.create<ConstantIntOp>(loc, 32, builder.getI64Type()));
         auto extended2 = builder.create<arith::ExtUIOp>(loc, val2, builder.getI64Type());
         auto combined = builder.create<arith::OrIOp>(loc, shifted, extended2);
         return combined;
@@ -157,6 +163,21 @@ namespace voila::mlir::lowering
             loc, h64_2,
             builder.create<ShRUIOp>(loc, h64_2, builder.create<ConstantIntOp>(loc, 32, builder.getI64Type())));
         return h64_3;
+    }
+
+    static Value XXH3_mix16B(OpBuilder &builder, const Location loc, ValueRange vs, const size_t secret_offset)
+    {
+        auto lo = vs[0];
+        auto hi = vs[1];
+        return XXH3_mul128_fold64(
+            builder, loc,
+            builder.create<XOrIOp>(
+                loc, lo,
+                builder.create<ConstantIntOp>(loc, *reinterpret_cast<const int64_t *>(&XXH_SECRET[secret_offset]), 64)),
+            builder.create<XOrIOp>(
+                loc, hi,
+                builder.create<ConstantIntOp>(
+                    loc, *reinterpret_cast<const int64_t *>(&XXH_SECRET[secret_offset + sizeof(int64_t)]), 64)));
     }
 
     static Value XXH3_rrmxmx(OpBuilder &builder, const Location loc, Value h64, unsigned int len)
@@ -285,29 +306,29 @@ namespace voila::mlir::lowering
         Value input1, input2;
         if (vals.size() == 2)
         {
-            input1 = getINT<64>(builder,loc,vals[0]);
-            input2 = getINT<64>(builder,loc,vals[1]);
+            input1 = getINT<64>(builder, loc, vals[0]);
+            input2 = getINT<64>(builder, loc, vals[1]);
         }
         else if (vals.size() == 4)
         {
-            input1 = combine(builder,loc,vals[0],vals[1]);
-            input2 = combine(builder,loc,vals[2],vals[3]);
+            input1 = combine(builder, loc, vals[0], vals[1]);
+            input2 = combine(builder, loc, vals[2], vals[3]);
         }
         else if (vals[0].getType().getIntOrFloatBitWidth() == 32 && vals[1].getType().getIntOrFloatBitWidth() == 32)
         {
-            input1 = combine(builder,loc,vals[0],vals[1]);
-            input2 = getINT<64>(builder,loc,vals[2]);
+            input1 = combine(builder, loc, vals[0], vals[1]);
+            input2 = getINT<64>(builder, loc, vals[2]);
         }
         else if (vals[1].getType().getIntOrFloatBitWidth() == 32 && vals[2].getType().getIntOrFloatBitWidth() == 32)
         {
-            input1 = getINT<64>(builder,loc,vals[0]);
-            input2 = combine(builder,loc,vals[1],vals[2]);
+            input1 = getINT<64>(builder, loc, vals[0]);
+            input2 = combine(builder, loc, vals[1], vals[2]);
         }
-        else //vals[0].getType().getIntOrFloatBitWidth() == 32 && vals[1].getType().getIntOrFloatBitWidth() != 32
+        else // vals[0].getType().getIntOrFloatBitWidth() == 32 && vals[1].getType().getIntOrFloatBitWidth() != 32
         {
-            auto tmp = split(builder,loc, vals[1]);
-            input1 = combine(builder,loc,vals[0],tmp.first);
-            input2 = combine(builder,loc,tmp.second,vals[2]);
+            auto tmp = split(builder, loc, vals[1]);
+            input1 = combine(builder, loc, vals[0], tmp.first);
+            input2 = combine(builder, loc, tmp.second, vals[2]);
         }
 
         auto bitflip1 = builder.create<XOrIOp>(
@@ -337,16 +358,50 @@ namespace voila::mlir::lowering
 
     static Value XXH3_len_17to32_64b(OpBuilder &builder, const Location loc, ValueRange vals, const unsigned int len)
     {
-        // TODO
-    }
-
-    /* TODO:
-       static auto mediumHashFunc(OpBuilder &builder, Location loc, ValueRange vals)
-
+        Value acc = builder.create<ConstantIntOp>(loc, len * XXH_PRIME64_1, 64);
+        llvm::SmallVector<Value, 4> v64;
+        auto iter = vals.begin();
+        while (iter != vals.end())
         {
-            return;
+            if ((*iter).getType().getIntOrFloatBitWidth() == 64)
+            {
+                v64.push_back(*iter);
+                ++iter;
+            }
+            else if (iter + 1 == vals.end())
+            {
+                v64.push_back(builder.create<ExtUIOp>(loc, *iter, builder.getI64Type()));
+                ++iter;
+            }
+            else
+            {
+                if ((*(iter + 1)).getType().getIntOrFloatBitWidth() == 32)
+                {
+                    auto upper = builder.create<ExtUIOp>(loc, *iter++, builder.getI64Type());
+                    v64.push_back(builder.create<OrIOp>(
+                        loc, builder.create<ShLIOp>(loc, upper, builder.create<ConstantIntOp>(loc, 32, 64)), *iter));
+                    ++iter;
+                }
+                else
+                {
+                    auto upper = builder.create<ExtUIOp>(loc, *iter++, builder.getI64Type());
+                    auto sp = split(builder, loc, *(iter));
+                    v64.push_back(builder.create<OrIOp>(
+                        loc, builder.create<ShLIOp>(loc, upper, builder.create<ConstantIntOp>(loc, 32, 64)), sp.first));
+                    *iter = sp.second; // TODO: this could be broken
+                }
+            }
         }
-    */
+
+        if (len < 32)
+        {
+            v64.push_back(builder.create<ConstantIntOp>(loc, 0, 64));
+        }
+
+        acc = builder.create<AddIOp>(loc, acc, XXH3_mix16B(builder, loc, {v64[0], v64[1]}, 0));
+        acc = builder.create<AddIOp>(loc, acc, XXH3_mix16B(builder, loc, {v64[2], v64[3]}, 16));
+        return XXH3_avalanche(builder, loc, acc);
+    }
 
     static auto hashFunc(OpBuilder &builder, Location loc, ValueRange vals)
     {
@@ -386,14 +441,13 @@ namespace voila::mlir::lowering
         {
             res.push_back(XXH3_len_9to16_64b(builder, loc, intVals, size));
         }
-
-        /*TODO
-         * else if (size <= 128)
-            res.push_back(mediumHashFunc(builder, loc, vals, size));
-            */
+        else if (size <= 32)
+        {
+            res.push_back(XXH3_len_17to32_64b(builder, loc, vals, size));
+        }
         else
         {
-            throw std::logic_error("Hash func not implemented for size larger than 128 byte");
+            throw NotImplementedException("Hash func not implemented for size larger than 128 byte");
         }
 
         builder.create<linalg::YieldOp>(loc, res);
