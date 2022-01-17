@@ -1,10 +1,13 @@
 #include "mlir/lowering/InsertOpLowering.hpp"
+
+#include "NotImplementedException.hpp"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/IR/VoilaOps.h"
+
 #include <bit>
 
 namespace voila::mlir::lowering
@@ -120,13 +123,25 @@ namespace voila::mlir::lowering
         auto htSize = tmp.second;
 
         SmallVector<Value, 1> lb;
-        // TODO: add separate bucket for 0 keys to not run into problems when inserting 0
+        // TODO: add separate bucket for 0 keys to not run into problems when inserting INVALID
 
         SmallVector<Value> hashInvalidConsts;
         for (auto val : insertOpAdaptor.values())
         { // FIXME: floats
-            hashInvalidConsts.push_back(
-                rewriter.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), getElementTypeOrSelf(val)));
+            if (getElementTypeOrSelf(val).isa<IntegerType>())
+
+            {
+                if (getElementTypeOrSelf(val).getIntOrFloatBitWidth() == 32)
+                    hashInvalidConsts.push_back(rewriter.create<ConstantIntOp>(
+                        loc, std::numeric_limits<uint32_t>::max(), getElementTypeOrSelf(val)));
+                else if (getElementTypeOrSelf(val).getIntOrFloatBitWidth() == 64)
+                    hashInvalidConsts.push_back(rewriter.create<ConstantIntOp>(
+                        loc, std::numeric_limits<uint64_t>::max(), getElementTypeOrSelf(val)));
+                else
+                    throw NotImplementedException();
+            }
+            else
+                throw NotImplementedException();
         }
 
         lb.push_back(rewriter.create<ConstantIndexOp>(loc, 0));
@@ -139,15 +154,15 @@ namespace voila::mlir::lowering
         // hash values
         auto modSize = rewriter.create<SubIOp>(loc, htSize, rewriter.create<ConstantIndexOp>(loc, 1));
 
-
         // insert values in ht
         // we can not use affine loads here, as this would lead to comprehensive bufferize complain about RaW conflicts.
-        auto loopFunc = [&modSize, &hts, &hashInvalidConsts, &insertOpAdaptor](OpBuilder &builder, Location loc,
-                                                                                     ValueRange vals)
+        auto loopFunc =
+            [&modSize, &hts, &hashInvalidConsts, &insertOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
         {
             // load values
-            auto hashIdx = builder.create<IndexCastOp>(loc, builder.create<tensor::ExtractOp>(loc, insertOpAdaptor.hashValues(), vals),
-                                                       builder.getIndexType());
+            auto hashIdx = builder.create<IndexCastOp>(
+                loc, builder.create<tensor::ExtractOp>(loc, insertOpAdaptor.hashValues(), vals),
+                builder.getIndexType());
             Value correctedHashIdx = builder.create<AndIOp>(loc, hashIdx, modSize);
 
             SmallVector<Value> toStores;
@@ -191,7 +206,8 @@ namespace voila::mlir::lowering
             }
         };
 
-        buildAffineLoopNest(rewriter, loc, lb, {rewriter.create<tensor::DimOp>(loc, insertOpAdaptor.hashValues(), 0)}, {1}, loopFunc);
+        buildAffineLoopNest(rewriter, loc, lb, {rewriter.create<tensor::DimOp>(loc, insertOpAdaptor.hashValues(), 0)},
+                            {1}, loopFunc);
 
         SmallVector<Value> ret;
         for (const auto &ht : hts)

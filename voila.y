@@ -139,54 +139,53 @@ program:
 	| program func { out.add_func($2); }
 	| program main { out.add_func($2); } //TODO: main function is singleton
 
-func: FUNCTION ID LPAREN var_list RPAREN LBRACE stmts RBRACE { $$ = new ast::Fun(@1+@6,$2, $4, $7); }
+func: FUNCTION ID LPAREN var_list RPAREN LBRACE stmts RBRACE { $$ = new ast::Fun(@0+@6,$2, $4, $7); }
 
-main: MAIN LPAREN var_list RPAREN LBRACE stmts RBRACE { $$ = new ast::Main(@1+@5,$3, $6); }
+main: MAIN LPAREN var_list RPAREN LBRACE stmts RBRACE { $$ = new ast::Main(@0+@5,$3, $6); }
 
 stmts:
 	%empty { }
 	| stmts stmt { $$ = $1; $$.push_back($2); }
 
-stmt: expr COLON { $$ = ast::Statement::make<StatementWrapper>(@1,$1); }
+stmt: expr COLON { $$ = ast::Statement::make<StatementWrapper>(@0,$1); }
     | var_list ASSIGN function_call COLON { $$ = ast::Statement::make<Assign>(@2,$1, $3);  }
 	| var_list ASSIGN expr COLON { $$ = ast::Statement::make<Assign>(@2,$1, ast::Statement::make<StatementWrapper>(@3,$3));  }
-	| LOOP pred LBRACE stmts RBRACE { $$ = ast::Statement::make<Loop>(@1+@2,$2, $4); }
-	| EMIT expr_list COLON { $$ = ast::Statement::make<Emit>(@1,$2);  }
+	| LOOP pred LBRACE stmts RBRACE { $$ = ast::Statement::make<Loop>(@0+@2,$2, $4); }
+	| EMIT expr_list COLON { $$ = ast::Statement::make<Emit>(@0,$2);  }
 	| effect COLON { $$ = $1; }
 	| effect COLON pred { $$ = $1; $$.set_predicate($3); }
 	| function_call COLON { $$ = $1; }
 
-function_call: ID LPAREN var_list RPAREN { $$ = ast::Statement::make<FunctionCall>(@1+@4,$1, $3); }
+function_call: ID LPAREN var_list RPAREN { $$ = ast::Statement::make<FunctionCall>(@0+@4,$1, $3); }
 
-var: ID {$$ = out.has_var($1) ? ast::Expression::make<Ref>(@1, out.get_var($1)) : ast::Expression::make<Variable>(@1, $1); if ($$.is_variable()){ out.add_var($$);};  };
+var: ID {$$ = out.has_var($1) ? ast::Expression::make<Ref>(@0, out.get_var($1)) : ast::Expression::make<Variable>(@0, $1); if ($$.is_variable()){ out.add_var($$);};  };
 
 	/* aggregate ( result_store, variable with predicate as aggregation filter, vector_to_aggregate) */
 effect:
-	SCATTER LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Scatter>(@1+@8,$3, $5, $7); } /* dest, idxs with pred, src */
-	| WRITE LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Write>(@1+@8,$3, $5, $7); } /* src, dest, start_idx */
+	 WRITE LPAREN expr COMMA expr COMMA expr RPAREN { $$ = ast::Statement::make<Write>(@0+@8,$3, $5, $7); } /* src, dest, start_idx */
 
 aggregation:
-    AGGR LPAREN SUM COMMA expr RPAREN { $$ = ast::Expression::make<AggrSum>(@1+@6,$5); } /*simple aggregation */
-	| AGGR LPAREN CNT COMMA expr RPAREN { $$ = ast::Expression::make<AggrCnt>(@1+@6,$5); } /*simple aggregation */
-	| AGGR LPAREN AVG COMMA expr RPAREN { $$ = ast::Expression::make<AggrAvg>(@1+@6,$5); } /*simple aggregation */
-	| AGGR LPAREN MIN COMMA expr RPAREN { $$ = ast::Expression::make<AggrMin>(@1+@6,$5); } /*simple aggregation */
-	| AGGR LPAREN MAX COMMA expr RPAREN { $$ = ast::Expression::make<AggrMax>(@1+@6,$5); } /*simple aggregation */
-    | AGGR LPAREN SUM COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrSum>(@1+@8,$5, $7); } /* group based aggregation */
-    | AGGR LPAREN CNT COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrCnt>(@1+@8,$5, $7); } /* group based aggregation */
-    | AGGR LPAREN AVG COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrAvg>(@1+@8,$5, $7); } /* group based aggregation */
-    | AGGR LPAREN MIN COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrMin>(@1+@8,$5, $7); } /* group based aggregation */
-    | AGGR LPAREN MAX COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrMax>(@1+@8,$5, $7); } /* group based aggregation */
+    AGGR LPAREN SUM COMMA expr RPAREN { $$ = ast::Expression::make<AggrSum>(@0+@6,$5); } /*simple aggregation */
+	| AGGR LPAREN CNT COMMA expr RPAREN { $$ = ast::Expression::make<AggrCnt>(@0+@6,$5); } /*simple aggregation */
+	| AGGR LPAREN AVG COMMA expr RPAREN { $$ = ast::Expression::make<AggrAvg>(@0+@6,$5); } /*simple aggregation */
+	| AGGR LPAREN MIN COMMA expr RPAREN { $$ = ast::Expression::make<AggrMin>(@0+@6,$5); } /*simple aggregation */
+	| AGGR LPAREN MAX COMMA expr RPAREN { $$ = ast::Expression::make<AggrMax>(@0+@6,$5); } /*simple aggregation */
+    | AGGR LPAREN SUM COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrSum>(@0+@8,$5, $7); } /* group based aggregation */
+    | AGGR LPAREN CNT COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrCnt>(@0+@8,$5, $7); } /* group based aggregation */
+    | AGGR LPAREN AVG COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrAvg>(@0+@8,$5, $7); } /* group based aggregation */
+    | AGGR LPAREN MIN COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrMin>(@0+@8,$5, $7); } /* group based aggregation */
+    | AGGR LPAREN MAX COMMA expr COMMA expr RPAREN { $$ = ast::Expression::make<AggrMax>(@0+@8,$5, $7); } /* group based aggregation */
 
 pred: BAR pred_expr { $$ = Expression::make<Predicate>(@2,$2); }
 
 selection:
-	SELECT LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Selection>(@1+@4,$3, $5); }
+	SELECT LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Selection>(@0+@4,$3, $5); }
 
 expr: 
 	constant { $$ = $1; }
 	| var
 	| var LBRACKET INT RBRACKET { $$ = ast::Expression::make<TupleGet>(@2+@4,$1, $3); assert($1.is_reference()); }
-	| LPAREN expr_list RPAREN { $$ = ast::Expression::make<TupleCreate>(@1+@3,$2); } /* recursive tuples do not look like a good idea */
+	| LPAREN expr_list RPAREN { $$ = ast::Expression::make<TupleCreate>(@0+@3,$2); } /* recursive tuples do not look like a good idea */
 	| expr pred { $$ = $1; $$.set_predicate($2);  }
 	| arithmetic {$$ = $1; }
 	| comparison {$$ = $1;  }
@@ -194,53 +193,54 @@ expr:
 	| read_op {$$ = $1;  }
 	| selection { $$ = $1; }
 	| aggregation {$$ = $1; }
-	| HASH LPAREN expr_list RPAREN { $$ = ast::Expression::make<Hash>(@1+@4, $3); }
+	| HASH LPAREN expr_list RPAREN { $$ = ast::Expression::make<Hash>(@0+@4, $3); }
 	| LOOKUP LPAREN expr_list RPAREN {  auto hashes = $3.back(); $3.pop_back(); const auto half = $3.size() / 2;
 	                                    auto values = std::vector<ast::Expression>($3.begin(),$3.begin()+half);
 	                                    auto hashtables = std::vector<ast::Expression>($3.begin()+half,$3.end());
-	                                    $$ = ast::Expression::make<Lookup>(@1+@4, values, hashtables,hashes); } /* values, hashtables, hashes */
-	| INSERT LPAREN expr COMMA expr_list RPAREN { $$ = ast::Expression::make<Insert>(@1+@6,$3, $5); } /* keys, values */
+	                                    $$ = ast::Expression::make<Lookup>(@0+@4, values, hashtables,hashes); } /* values, hashtables, hashes */
+	| INSERT LPAREN expr COMMA expr_list RPAREN { $$ = ast::Expression::make<Insert>(@0+@6,$3, $5); } /* keys, values */
+	| SCATTER LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Scatter>(@0+@6,$3, $5); } /* idxs with pred, src */
 
 /* TODO: is this correct/complete? */
 pred_expr:
-    ID { $$ = ast::Expression::make<Ref>(@1,out.get_var($1)); }
+    ID { $$ = ast::Expression::make<Ref>(@0,out.get_var($1)); }
     | comparison {$$ = $1; }
     | logical {$$ = $1; }
     | bool_constant { $$= $1; }
 
 constant:
     bool_constant { $$= $1; }
-	| INT { $$ = ast::Expression::make<IntConst>(@1,$1);  }
-	| FLT { $$ = ast::Expression::make<FltConst>(@1,$1); }
-	| STR { $$ = ast::Expression::make<StrConst>(@1,$1); }
+	| INT { $$ = ast::Expression::make<IntConst>(@0,$1);  }
+	| FLT { $$ = ast::Expression::make<FltConst>(@0,$1); }
+	| STR { $$ = ast::Expression::make<StrConst>(@0,$1); }
 
 bool_constant:
-    TRUE { $$ = ast::Expression::make<BooleanConst>(@1,true);  }
-    | FALSE { $$ = ast::Expression::make<BooleanConst>(@1, false); }
+    TRUE { $$ = ast::Expression::make<BooleanConst>(@0,true);  }
+    | FALSE { $$ = ast::Expression::make<BooleanConst>(@0, false); }
 
 arithmetic :
-	ADD LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Add>(@1+@6,$3, $5); }
-	| SUB LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Sub>(@1+@6,$3, $5); }
-	| MUL LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Mul>(@1+@6,$3, $5); }
-	| DIV LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Div>(@1+@6,$3, $5); }
-	| MOD LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Mod>(@1+@6,$3, $5); }
+	ADD LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Add>(@0+@6,$3, $5); }
+	| SUB LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Sub>(@0+@6,$3, $5); }
+	| MUL LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Mul>(@0+@6,$3, $5); }
+	| DIV LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Div>(@0+@6,$3, $5); }
+	| MOD LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Mod>(@0+@6,$3, $5); }
 
 comparison : 
-	EQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Eq>(@1+@6,$3, $5); }
-	| NEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Neq>(@1+@6,$3, $5); }
-	| LE LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Le>(@1+@6,$3, $5); }
-	| LEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Leq>(@1+@6,$3, $5); }
-	| GE LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Ge>(@1+@6,$3, $5); }
-	| GEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Geq>(@1+@6,$3, $5); }
+	EQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Eq>(@0+@6,$3, $5); }
+	| NEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Neq>(@0+@6,$3, $5); }
+	| LE LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Le>(@0+@6,$3, $5); }
+	| LEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Leq>(@0+@6,$3, $5); }
+	| GE LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Ge>(@0+@6,$3, $5); }
+	| GEQ LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Geq>(@0+@6,$3, $5); }
 
 logical:
-	AND LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<And>(@1+@6,$3, $5); }
- 	| OR LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Or>(@1+@6,$3, $5); }
- 	| NOT LPAREN expr RPAREN {$$ = ast::Expression::make<Not>(@1+@4,$3); }
+	AND LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<And>(@0+@6,$3, $5); }
+ 	| OR LPAREN expr COMMA expr RPAREN {$$ = ast::Expression::make<Or>(@0+@6,$3, $5); }
+ 	| NOT LPAREN expr RPAREN {$$ = ast::Expression::make<Not>(@0+@4,$3); }
 
 read_op:
-	GATHER LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Gather>(@1+@6,$3, $5); }
-	| READ LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Read>(@1+@6,$3, $5); }
+	GATHER LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Gather>(@0+@6,$3, $5); }
+	| READ LPAREN expr COMMA expr RPAREN { $$ = ast::Expression::make<Read>(@0+@6,$3, $5); }
 
 expr_list: 
 	expr { $$ = std::vector<ast::Expression>(); $$.push_back($1);}

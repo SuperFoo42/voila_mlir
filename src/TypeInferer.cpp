@@ -361,17 +361,14 @@ namespace voila
     {
         scatter.src.visit(*this);
         scatter.idxs.visit(*this);
-        scatter.dest.visit(*this);
 
-        if (!get_type(scatter.src).compatible(get_type(scatter.dest)))
-            throw IncompatibleTypesException();
         if (!get_type(scatter.idxs).compatible(DataType::INT64))
             throw IncompatibleTypesException();
 
         // TODO: unification
 
-        insertNewFuncType(scatter, {get_type_id(scatter.src), get_type_id(scatter.dest), get_type_id(scatter.idxs)},
-                          DataType::VOID);
+        insertNewFuncType(scatter, {get_type_id(scatter.idxs),get_type_id(scatter.src)},
+                          get_type(scatter.src).getTypes().front(), get_type(scatter.idxs).getArities().front());
     }
 
     void TypeInferer::operator()(const ast::FunctionCall &call)
@@ -535,7 +532,7 @@ namespace voila
         if (get_type(gather.column).getTypes().front() == DataType::VOID)
             throw IncompatibleTypesException();
 
-        insertNewFuncType(gather, {get_type_id(gather.column), get_type_id(gather.idxs)}, DataType::VOID);
+        insertNewFuncType(gather, {get_type_id(gather.column), get_type_id(gather.idxs)}, get_type(gather.column).getTypes().front(), get_type(gather.idxs).getArities().front());
     }
 
     void TypeInferer::operator()(const ast::Ref &)
@@ -685,29 +682,31 @@ namespace voila
 
         auto &left_type = get_type(*comparison.lhs.as_expr());
         auto &right_type = get_type(*comparison.rhs.as_expr());
-        const auto &leftArities = left_type.getArities();
-        const auto &rightArities = left_type.getArities();
-        if (leftArities.size() != 1)
+        if (left_type.getArities().size() != 1)
         {
             throw NonMatchingArityException();
         }
-        if (rightArities.size() != 1)
+        if (right_type.getArities().size() != 1)
         {
             throw NonMatchingArityException();
         }
+        auto &leftArities = left_type.getArities().front().get();
+        auto &rightArities = right_type.getArities().front().get();
+
         // TODO: insert for all binary preds
-        if (leftArities.front().is_undef() xor rightArities.front().is_undef())
+        if (leftArities.is_undef() xor rightArities.is_undef())
         {
-            if (leftArities.front().is_undef())
+            if (leftArities.is_undef())
             {
-                left_type.getArities().front() = right_type.getArities().front();
+                leftArities = rightArities;
             }
             else
             {
-                right_type.ar = left_type.ar;
+                rightArities = leftArities;
             }
         }
-        if (left_type.getArities() != right_type.getArities())
+        if (const_cast<const Type&>(left_type).getArities() !=
+            const_cast<const Type&>(right_type).getArities())
         {
             throw NonMatchingArityException();
         }
@@ -716,7 +715,7 @@ namespace voila
                     throw IncompatibleTypesException();
                 }*/
 
-        if (left_type.t != right_type.t)
+        if (left_type.getTypes() != right_type.getTypes())
         {
             unify(comparison.lhs, comparison.rhs);
         }

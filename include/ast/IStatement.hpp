@@ -8,7 +8,6 @@
 namespace voila::ast
 {
     class Write;
-    class Scatter;
     class FunctionCall;
     class Assign;
     class Emit;
@@ -19,8 +18,7 @@ namespace voila::ast
     class IStatement : public ASTNode
     {
       public:
-        explicit IStatement(const Location loc) :
-            ASTNode(loc) {};
+        explicit IStatement(const Location loc) : ASTNode(loc){};
         ~IStatement() override = default;
 
         virtual void set_predicate(Expression);
@@ -36,8 +34,6 @@ namespace voila::ast
         [[nodiscard]] virtual bool is_emit() const;
 
         [[nodiscard]] virtual bool is_function_call() const;
-
-        [[nodiscard]] virtual bool is_scatter() const;
 
         [[nodiscard]] virtual bool is_write() const;
 
@@ -55,8 +51,6 @@ namespace voila::ast
         virtual Emit *as_emit();
 
         virtual FunctionCall *as_function_call();
-
-        virtual Scatter *as_scatter();
 
         virtual Write *as_write();
 

@@ -52,7 +52,7 @@ namespace voila::mlir
             // Now that the conversion target has been defined, we just need to provide
             // the set of patterns that will lower the Toy operations.
             RewritePatternSet patterns(&getContext());
-            patterns.add<BoolConstOpLowering, IntConstOpLowering, FltConstOpLowering, SelectOpLowering, ReadOpLowering,
+            patterns.add<SelectOpLowering, ReadOpLowering,
                          GatherOpLowering, LoopOpLowering, InsertOpLowering, SumOpLowering, CountOpLowering,
                          MinOpLowering, MaxOpLowering, AvgOpLowering>(&getContext());
             patterns.add<AndOpLowering, OrOpLowering, AddOpLowering, SubOpLowering, MulOpLowering, DivOpLowering,

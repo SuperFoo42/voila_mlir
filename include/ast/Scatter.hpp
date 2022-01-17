@@ -8,10 +8,10 @@
 
 namespace voila::ast
 {
-    class Scatter : public IStatement
+    class Scatter : public IExpression
     {
       public:
-        Scatter(Location loc, Expression src_col, Expression dest_col, Expression idxs);
+        Scatter(Location loc, Expression idxs, Expression src_col);
 
         [[nodiscard]] bool is_scatter() const final;
 
@@ -22,7 +22,6 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        Expression dest;
         Expression idxs;
         Expression src;
     };

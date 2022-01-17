@@ -1,8 +1,16 @@
 CPMAddPackage("gh:Neargye/magic_enum@0.7.3")
 CPMAddPackage("gh:jarro2783/cxxopts@3.0.0")
-CPMAddPackage("gh:gabime/spdlog@1.9.2")
-CPMAddPackage("gh:ericniebler/range-v3#0.11.0")
 CPMAddPackage("gh:fmtlib/fmt#8.1.0")
+
+CPMAddPackage(
+        NAME spdlog
+        TAG 1.9.2
+        GITHUB_REPOSITORY gabime/spdlog
+        OPTIONS "SPDLOG_FMT_EXTERNAL ON" #we already use our own fmt
+)
+
+CPMAddPackage("gh:ericniebler/range-v3#0.11.0")
+
 
 if (fmt_ADDED)
     # enable c++20 to avoid compilation errors

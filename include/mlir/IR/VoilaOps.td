@@ -21,7 +21,7 @@ def IntConstOp : Voila_Op<"integer constant", [NoSideEffect]> {
 
   // The constant operation returns a single value of TensorType.
   //TODO:
-  let results = (outs AnyTypeOf<[I32,I64]>);
+  let results = (outs AnyTypeOf<[I32,I64, TensorOf<[I64]>, TensorOf<[I32]>]>);
 
 let builders = [
 OpBuilder<(ins "mlir::IntegerAttr":$value), [{
@@ -49,7 +49,7 @@ def FltConstOp : Voila_Op<"float constant", [NoSideEffect]> {
   let arguments = (ins F64Attr:$value);
 
   // The constant operation returns a single value of TensorType.
-  let results = (outs F64);
+  let results = (outs AnyTypeOf<[F64, TensorOf<[F64]>]>);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseConstantOp(parser, result); }];
@@ -81,7 +81,7 @@ def BoolConstOp : Voila_Op<"bool constant", [NoSideEffect]> {
   let arguments = (ins I1Attr:$value);
 
   // The constant operation returns a single value of TensorType.
-  let results = (outs I1);
+  let results = (outs AnyTypeOf<[I1, TensorOf<[I1]>]>);
 
 let builders = [
 OpBuilder<(ins "mlir::IntegerAttr":$value), [{
@@ -365,7 +365,7 @@ The "scatter" operation writes data at "idxs" from "src" from to "dest".
 The "idxs" are expected to be within "dest" bounds and the shape smaller than src.
 }];
 
-let arguments = (ins AnyTensor:$src, AnyUnrankedMemRef:$dest ,IndexTensor:$idxs);
+let arguments = (ins IndexTensor:$idxs,AnyTensor:$src);
 let results = (outs AnyTensor);
 
 // Specify a parser and printer method.

@@ -81,13 +81,13 @@ endif ()
 #Enable sanitizers globally
 #if ($<CONFIG:Release>)
 add_compile_options(#$<$<CONFIG:Release>:-O3>
-        -fsanitize=address
-        -fsanitize=undefined
+        #-fsanitize=address
+        #-fsanitize=undefined
         -Wno-ambiguous-reversed-operator
         )
 add_link_options(-fuse-ld=lld
-        -fsanitize=address
-        -fsanitize=undefined #need to use lld, for some reason ld complains about invalid symbols.
+        #-fsanitize=address
+        #-fsanitize=undefined #need to use lld, for some reason ld complains about invalid symbols.
         )
 #[[else()
     add_compile_options(-fsanitize=address -fsanitize=undefined -Wno-ambiguous-reversed-operator)
@@ -109,7 +109,7 @@ find_package(BISON REQUIRED)
 CPMAddPackage(
         NAME reflex
         GITHUB_REPOSITORY Genivia/RE-flex
-        GIT_TAG v3.0.10
+        GIT_TAG v3.1.0
 )
 if (reflex_ADDED)
     execute_process(

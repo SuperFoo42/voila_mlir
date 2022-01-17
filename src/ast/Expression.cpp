@@ -10,6 +10,10 @@ namespace voila::ast
     {
         return mImpl->is_hash();
     }
+    bool Expression::is_scatter() const
+    {
+        return mImpl->is_scatter();
+    }
     bool Expression::is_select() const
     {
         return mImpl->is_select();
@@ -358,5 +362,10 @@ namespace voila::ast
     bool Expression::is_insert() const
     {
         return mImpl->is_insert();
+    }
+
+    Scatter *Expression::as_scatter() const
+    {
+        return mImpl->as_scatter();
     }
 } // namespace voila::ast

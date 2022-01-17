@@ -1,6 +1,6 @@
 #pragma once
-#include "mlir/Transforms/DialectConversion.h"
 #include "mlir/IR/VoilaOps.h"
+#include "mlir/Transforms/DialectConversion.h"
 
 namespace voila::mlir::lowering
 {
@@ -12,30 +12,30 @@ namespace voila::mlir::lowering
 
         ::mlir::LogicalResult matchAndRewrite(ConstOp op, ::mlir::PatternRewriter &rewriter) const final
         {
-            auto constantValue = op.value();
+            ::mlir::Attribute valAttr = op.valueAttr();
+            auto t = op.getType();
+            auto loc = op.getLoc();
+            if (t.template isa<::mlir::TensorType>())
+            {
+                auto tt = t.template dyn_cast<::mlir::RankedTensorType>();
 
-            ::mlir::Attribute valAttr;
-            if constexpr (std::is_same_v<ConstOp, ::mlir::voila::IntConstOp>)
-            {
-                if (std::numeric_limits<uint_least32_t>::max() >= constantValue)
-                    valAttr = rewriter.getI32IntegerAttr(constantValue);
+                ::mlir::Value cst;
+                if constexpr (std::is_same_v<ConstOp, ::mlir::voila::IntConstOp>)
+                    cst = rewriter.template create<::mlir::arith::ConstantIntOp>(loc, op.value(), tt.getElementType());
                 else
-                    valAttr = rewriter.getI64IntegerAttr(constantValue);
+                    cst = rewriter.template create<::mlir::arith::ConstantOp>(loc, valAttr, tt.getElementType());
+                auto retT =
+                    rewriter.template create<::mlir::linalg::InitTensorOp>(loc, tt.getShape(), tt.getElementType());
+                rewriter.template replaceOpWithNewOp<::mlir::linalg::FillOp>(op, cst, retT);
             }
-            else if constexpr (std::is_same_v<ConstOp, ::mlir::voila::FltConstOp>)
+            else if constexpr (std::is_same_v<ConstOp, ::mlir::voila::IntConstOp>)
             {
-                valAttr = rewriter.getF64FloatAttr(constantValue.convertToDouble());
-            }
-            else if constexpr (std::is_same_v<ConstOp, ::mlir::voila::BoolConstOp>)
-            {
-                valAttr = ::mlir::IntegerAttr::get(rewriter.getI1Type(), constantValue);
+                rewriter.template replaceOpWithNewOp<::mlir::arith::ConstantIntOp>(op, op.value(), t);
             }
             else
             {
-                return ::mlir::failure();
+                rewriter.template replaceOpWithNewOp<::mlir::arith::ConstantOp>(op, valAttr);
             }
-
-            rewriter.template replaceOpWithNewOp<::mlir::arith::ConstantOp>(op, valAttr);
 
             return ::mlir::success();
         }

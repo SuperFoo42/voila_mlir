@@ -1,5 +1,5 @@
 #include "ast/IStatement.hpp"
-
+#include <fmt/format.h>
 namespace voila::ast
 {
     void IStatement::set_predicate(Expression)
@@ -33,10 +33,7 @@ namespace voila::ast
     {
         return false;
     }
-    bool IStatement::is_scatter() const
-    {
-        return false;
-    }
+
     bool IStatement::is_function_call() const
     {
         return false;
@@ -71,10 +68,7 @@ namespace voila::ast
     {
         return nullptr;
     }
-    Scatter *IStatement::as_scatter()
-    {
-        return nullptr;
-    }
+
     Write *IStatement::as_write()
     {
         return nullptr;

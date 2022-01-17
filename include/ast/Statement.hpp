@@ -42,8 +42,6 @@ namespace voila::ast
 
         [[nodiscard]] bool is_function_call() const;
 
-        [[nodiscard]] bool is_scatter() const;
-
         [[nodiscard]] bool is_write() const;
 
 
@@ -57,8 +55,6 @@ namespace voila::ast
         [[nodiscard]] Emit *as_emit() const;
 
         [[nodiscard]] FunctionCall *as_function_call() const;
-
-        [[nodiscard]] Scatter *as_scatter() const;
 
         [[nodiscard]] Write *as_write() const;
 

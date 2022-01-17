@@ -382,7 +382,7 @@ namespace voila
                     .setVectorTransferToSCFOptions(VectorTransferToSCFOptions().enableFullUnroll())
                     .setVectorTransformsOptions(vector::VectorTransformsOptions().setVectorMultiReductionLowering(
                         vector::VectorMultiReductionLowering::InnerReduction))));
-            pm.addPass(createConvertVectorToLLVMPass(LowerVectorToLLVMOptions()
+                       pm.addPass(createConvertVectorToLLVMPass(LowerVectorToLLVMOptions()
                                                          .enableIndexOptimizations(true)
                                                          .enableReassociateFPReductions(true)
                                                          .enableX86Vector(true)));
@@ -472,7 +472,7 @@ namespace voila
             params.push_back(tmp); // offset
             toDealloc.push_back(params.back());
             tmp = static_cast<int64_t *>(std::malloc(sizeof(int64_t)));
-            *tmp = 0;
+            *tmp = param.size;
             params.push_back(tmp); // sizes
             toDealloc.push_back(params.back());
             tmp = static_cast<int64_t *>(std::malloc(sizeof(int64_t)));
@@ -541,7 +541,7 @@ namespace voila
             SmallVector<::llvm::Type *> resTypes;
 
             auto types = type.getTypes();
-            auto arities = type.getArities();
+            const std::vector<Arity> &arities = const_cast<const Type &>(type).getArities();
             for (size_t i = 0; i < types.size(); ++i)
             {
                 if (!arities[i].is_undef() && arities[i].get_size() <= 1)
@@ -689,7 +689,7 @@ namespace voila
         }
     }
 
-    Program::Program(const Config &config) :
+    Program::Program(Config config) :
         func_vars(),
         context(),
         llvmContext(),
@@ -697,7 +697,7 @@ namespace voila
         llvmModule(),
         maybeEngine(std::nullopt),
         functions(),
-        config{config},
+        config{std::move(config)},
         lexer{new Lexer()},
         inferer()
     {

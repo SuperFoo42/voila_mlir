@@ -1,5 +1,6 @@
 #include "Types.hpp"
 
+#include <fmt/format.h>
 #include "TypeInferer.hpp"
 
 #include <vector>
@@ -72,17 +73,13 @@ namespace voila
     {
         return {t};
     }
-    std::vector<Arity> ScalarType::getArities() const
+    std::vector<std::reference_wrapper<Arity>> ScalarType::getArities()
     {
         return {ar};
     }
-    std::vector<Arity> ScalarType::setAritiy(size_t idx, Arity arity)
+    std::vector<Arity> ScalarType::getArities() const
     {
-        if (idx != 0)
-        {
-            throw std::runtime_error("Out of Bounds");
-        }
-        ar = arity;
+        return {ar};
     }
 
     std::ostream &operator<<(std::ostream &os, const FunctionType &type)
@@ -166,6 +163,17 @@ namespace voila
 
         return types;
     }
+    std::vector<std::reference_wrapper<Arity>> FunctionType::getArities()
+    {
+        std::vector<std::reference_wrapper<Arity>> types;
+        for (const auto &t : returnTypeIDs)
+        {
+            auto tmp = inferer.types.at(t)->getArities();
+            types.insert(types.end(), tmp.begin(), tmp.end());
+        }
+
+        return types;
+    }
     std::vector<Arity> FunctionType::getArities() const
     {
         std::vector<Arity> types;
@@ -176,10 +184,6 @@ namespace voila
         }
 
         return types;
-    }
-    std::vector<Arity> FunctionType::setAritiy(size_t idx, Arity ar)
-    {
-        return std::vector<Arity>();
     }
     bool Type::convertibleDataTypes(DataType t1, DataType t2)
     {

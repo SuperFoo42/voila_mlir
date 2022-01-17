@@ -2,9 +2,9 @@
 
 #include "MlirGenerationException.hpp"
 #include "NotImplementedException.hpp"
+#include "mlir/IR/VoilaOps.h"
 
 #include <mlir/IR/BuiltinTypes.h>
-#include "mlir/IR/VoilaOps.h"
 
 namespace voila::mlir
 {
@@ -430,7 +430,7 @@ namespace voila::mlir
         auto location = loc(gather.get_location());
         auto col = std::get<Value>(visitor_gen(gather.column));
         auto idx = std::get<Value>(visitor_gen(gather.idxs));
-        result = builder.create<::mlir::voila::GatherOp>(location, col.getType(), col, idx);
+        result = builder.create<::mlir::voila::GatherOp>(location, col.getType(), idx, col);
     }
 
     void MLIRGeneratorImpl::operator()(const Ref &param)
@@ -522,9 +522,7 @@ namespace voila::mlir
         assert(pred.getType().isa<::mlir::TensorType>());
 
         result = builder.create<::mlir::voila::SelectOp>(
-            location,
-            ::mlir::RankedTensorType::get(-1, values.getType().dyn_cast<::mlir::TensorType>().getElementType()), values,
-            pred);
+            location, ::mlir::RankedTensorType::get(-1, getElementTypeOrSelf(values)), values, pred);
     }
 
     void MLIRGeneratorImpl::operator()(const Lookup &lookup)
@@ -656,30 +654,20 @@ namespace voila::mlir
     {
         assert(dynamic_cast<const ScalarType *>(&t) ||
                dynamic_cast<const FunctionType *>(&t)->returnTypeIDs.size() == 1);
-        switch (t.getTypes().front())
+        auto pRes = convert(t);
+        // only allow static shape
+        if (pRes.isa<TensorType>() && !pRes.dyn_cast<TensorType>().hasStaticShape())
         {
-            case DataType::BOOL:
-                return builder.getI1Type();
-
-            case DataType::INT32:
-                return builder.getI32Type();
-
-            case DataType::INT64:
-
-                return builder.getI64Type();
-            case DataType::DBL:
-
-                return builder.getF64Type();
-            default:
-                // TODO
-                throw NotImplementedException();
+            return getElementTypeOrSelf(pRes);
         }
+        return pRes;
     }
 
     ::mlir::Location MLIRGeneratorImpl::loc(Location loc)
     {
-        return ::mlir::FileLineColLoc::get(builder.getIdentifier(*loc.begin.filename), loc.begin.line,
-                                           loc.begin.column);
+        return ::mlir::FileLineColLoc::get(
+            builder.getStringAttr(loc.begin.filename == nullptr ? "" : *loc.begin.filename), loc.begin.line,
+            loc.begin.column);
     }
 
     inline void MLIRGeneratorImpl::mlirGenBody(const std::vector<Statement> &block)

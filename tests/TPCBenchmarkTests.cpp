@@ -112,14 +112,14 @@ static size_t probeAndInsert(size_t key,
 }
 
 template<class T1>
-static size_t probeAndInsert(size_t key, const size_t size, const T1 val1, std::vector<T1> &vals1)
+static size_t probeAndInsert(size_t key, const T1 val1, std::vector<T1> &vals1)
 {
-    key %= size;
+    key &= vals1.size() - 1;
     // probing
-    while (vals1[key % size] != INVALID && !(vals1[key % size] == val1))
+    while (vals1[key] != INVALID && !(vals1[key] == val1))
     {
         key += 1;
-        key %= size;
+        key &= vals1.size() - 1;
     }
 
     vals1[key] = val1;
@@ -225,11 +225,6 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     auto count_order_res = std::get<strided_memref_ptr<uint64_t, 1>>(res[9]);
     EXPECT_EQ(ht_returnflag_res->operator[](res_idx), 0);
     EXPECT_EQ(ht_linestatus_res->operator[](res_idx), 0);
-    for (const auto &elem : *sum_qty_res)
-    {
-        if (elem != 0)
-            std::cout << elem << " ";
-    }
     EXPECT_EQ(sum_qty_res->operator[](res_idx), 37734107);
     EXPECT_DOUBLE_EQ(sum_base_price_res->operator[](res_idx), 56586554400.729897);
     EXPECT_DOUBLE_EQ(sum_disc_price_res->operator[](res_idx), 53758257134.865143);
@@ -252,6 +247,7 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
     config.debug = true;
     config.optimize = true;
     config.parallelize = false;
+    config.tile = false;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
     Program prog(query, config);
 
@@ -438,8 +434,7 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
 
     // qualification data
     std::vector<int32_t> needle;
-    for (const auto &entry :
-         part_supplier_lineitem_partsupp_orders_nation.getDictionary(static_cast<size_t>(part_cols::P_NAME)))
+    for (const auto &entry : part_supplier_lineitem_partsupp_orders_nation.getDictionary(part_cols::P_NAME))
     {
         if (entry.first.find("green") != std::string::npos)
         {
@@ -447,11 +442,45 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
         }
     }
 
+    // reference impl
+    double ref = 0;
+    const auto htSizes = std::bit_ceil(l_orderkey.size());
+    std::vector<int32_t> ht_n_name_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<int32_t> ht_o_orderdate_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<int32_t> ht_needle_ref(std::bit_ceil(needle.size()), static_cast<int32_t>(INVALID));
+    std::vector<double> sum_disc_price_ref(htSizes, 0);
+
+    Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
+             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
+             Events::INS_ISSUED, Events::PREFETCH_MISS>
+        prof;
+    prof.start();
+    assert(std::ranges::all_of(
+        needle, [](const auto &e) -> auto { return e != -1 && e != 0; }));
+    for (const auto &elem : needle)
+    {
+        auto h = hash(elem);
+        probeAndInsert(h, elem, ht_needle_ref);
+    }
+
+    for (size_t i = 0; i < l_orderkey.size(); ++i)
+    {
+        if (s_nationkey[i] == n_nationkey[i] && o_orderkey[i] == l_orderkey[i] && p_partkey[i] == l_partkey[i] &&
+            ps_partkey[i] == l_partkey[i] && ps_suppkey[i] == l_suppkey[i] && s_suppkey[i] == l_suppkey[i] &&
+            contains(hash(p_name[i]), p_name[i], ht_needle_ref))
+        {
+            const auto idx = probeAndInsert(hash(n_name[i], o_orderdate[i] / 10000), htSizes, n_name[i],
+                                            o_orderdate[i] / 10000, ht_n_name_ref, ht_o_orderdate_ref);
+            sum_disc_price_ref[idx] += l_extendedprice[i] * (1 - l_discount[i]) - ps_supplycost[i] * l_quantity[i];
+        }
+    }
+    prof.stop();
+    std::cout << prof << std::endl;
+
     // voila calculations
     Config config;
     config.debug = true;
-    config.optimize = true;
-    config.parallelize = false;
+    config.optimize = false;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q9.voila";
     Program prog(query, config);
     prog << n_name;
@@ -475,38 +504,6 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
 
     auto res = prog();
 
-    // reference impl
-    double ref = 0;
-    const auto htSizes = std::bit_ceil(l_orderkey.size());
-    std::vector<int32_t> ht_n_name_ref(htSizes, static_cast<int32_t>(INVALID));
-    std::vector<int32_t> ht_o_orderdate_ref(htSizes, static_cast<int32_t>(INVALID));
-    std::vector<int32_t> ht_needle_ref(std::bit_ceil(needle.size()), static_cast<int32_t>(INVALID));
-    std::vector<double> sum_disc_price_ref(htSizes, 0);
-
-    Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
-             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
-             Events::INS_ISSUED, Events::PREFETCH_MISS>
-        prof;
-    prof.start();
-    for (auto &elem : needle)
-    {
-        probeAndInsert(hash(elem), ht_needle_ref.size(), elem, ht_needle_ref);
-    }
-
-    for (size_t i = 0; i < l_orderkey.size(); ++i)
-    {
-        if (s_nationkey[i] == n_nationkey[i] && o_orderkey[i] == l_orderkey[i] && p_partkey[i] == l_partkey[i] &&
-            ps_partkey[i] == l_partkey[i] && ps_suppkey[i] == l_suppkey[i] && s_suppkey[i] == l_suppkey[i] &&
-            contains(hash(p_name[i]), p_name[i], ht_needle_ref))
-        {
-            const auto idx = probeAndInsert(hash(n_name[i], o_orderdate[i] / 10000), htSizes, n_name[i],
-                                            o_orderdate[i] / 10000, ht_n_name_ref, ht_o_orderdate_ref);
-            sum_disc_price_ref[idx] += l_extendedprice[i] * (1 - l_discount[i]) - ps_supplycost[i] * l_quantity[i];
-        }
-    }
-    prof.stop();
-    std::cout << prof << std::endl;
-
     // TODO: comparisons
     EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
 }
@@ -514,9 +511,9 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
 TEST(TPCBenchmarkTests, Q18_Qualification)
 {
     // load data
-    CompressedTable customer_orders_lineitem(VOILA_BENCHMARK_DATA_PATH "/customer_orders_lineitem1g_compressed.bin.xz");
+    CompressedTable customer_orders_lineitem(VOILA_BENCHMARK_DATA_PATH "/customer_orders_lineitem.bin.xz");
     constexpr auto orders_offset = magic_enum::enum_count<customer_cols>();
-    constexpr auto lineitem_offset = magic_enum::enum_count<customer_cols>() + magic_enum::enum_count<orders_cols>();
+    constexpr auto lineitem_offset = orders_offset + magic_enum::enum_count<orders_cols>();
     auto l_orderkey = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(
         lineitem_offset + lineitem_cols::L_ORDERKEY);
     auto c_name = customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_NAME>>(customer_cols::C_NAME);

@@ -2,6 +2,8 @@
 
 #include "ast/Expression.hpp"
 
+#include <fmt/format.h>
+
 namespace voila::ast
 {
     void IExpression::set_predicate(Expression)
@@ -299,7 +301,14 @@ namespace voila::ast
     {
         return false;
     }
-
+    bool IExpression::is_scatter() const
+    {
+        return false;
+    }
+    bool IExpression::is_insert() const
+    {
+        return false;
+    }
     Aggregation *IExpression::as_aggr()
     {
         return nullptr;
@@ -343,11 +352,12 @@ namespace voila::ast
     {
         return nullptr;
     }
-    bool IExpression::is_insert() const
-    {
-        return false;
-    }
+
     Insert *IExpression::as_insert()
+    {
+        return nullptr;
+    }
+    Scatter *IExpression::as_scatter()
     {
         return nullptr;
     }

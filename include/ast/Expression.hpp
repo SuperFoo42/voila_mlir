@@ -35,6 +35,8 @@ namespace voila::ast
 
         [[nodiscard]] bool is_arithmetic() const;
 
+        [[nodiscard]] bool is_scatter() const;
+
         [[nodiscard]] bool is_add() const;
 
         [[nodiscard]] bool is_sub() const;
@@ -189,6 +191,9 @@ namespace voila::ast
         [[nodiscard]] bool is_insert() const;
 
         [[nodiscard]] Insert *as_insert() const;
+
+        [[nodiscard]] Scatter *as_scatter() const;
+
         [[nodiscard]] std::string type2string() const;
 
         void visit(ASTVisitor &visitor);

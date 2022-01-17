@@ -29,10 +29,7 @@ namespace voila::ast
     {
         return mImpl->is_function_call();
     }
-    bool Statement::is_scatter() const
-    {
-        return mImpl->is_scatter();
-    }
+
     bool Statement::is_write() const
     {
         return mImpl->is_write();
@@ -55,10 +52,7 @@ namespace voila::ast
     {
         return mImpl->as_emit();
     }
-    Scatter *Statement::as_scatter() const
-    {
-        return mImpl->as_scatter();
-    }
+
     Write *Statement::as_write() const
     {
         return mImpl->as_write();

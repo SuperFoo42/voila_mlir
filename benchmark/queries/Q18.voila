@@ -1,0 +1,23 @@
+main(c_name,c_custkey,o_orderkey,o_orderdate, o_totalprice, l_quantity, l_orderkey, o_custkey,quantity)
+{
+    h_quantity = hash(l_quantity);
+    ht_quantity = insert(h_quantity, l_quantity);
+    locs_quantity = lookup(l_quantity,ht_quantity, h_quantity);
+    sum_quant = aggr(sum, l_quantity, groups);
+    sums_per_row = gather(sum_quant,locs_quantity);
+    to_select = ge(sums_per_row, quantity);
+    to_select = and(to_select, eq(c_custkey,o_custkey));
+    to_select = and(to_select, eq(o_orderkey, l_orderkey));
+
+    sel_name = select(c_name,to_select);
+    sel_custkey = select(c_custkey,to_select);
+    sel_orderkey = select(o_orderkey,to_select);
+    sel_orderdate = select(o_orderdate,to_select);
+    sel_totalprice = select(o_totalprice,to_select);
+
+    h = hash(sel_name,sel_custkey,sel_orderkey,sel_orderdate,sel_totalprice);
+    ht_name, ht_custkey, ht_orderkey, ht_orderdate, ht_totalprice = insert(h,sel_name,sel_custkey,sel_orderkey,sel_orderdate,sel_totalprice);
+    ok_idx = lookup(ht_name, ht_custkey, ht_orderkey, ht_orderdate, ht_totalprice, sel_name,sel_custkey,sel_orderkey,sel_orderdate,sel_totalprice,h);
+    ht_sum = scatter(ok_idx, sums_per_row);
+    emit ht_name, ht_custkey, ht_orderkey, ht_orderdate, ht_totalprice, ht_sum;
+}

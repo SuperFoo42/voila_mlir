@@ -2,8 +2,8 @@
 
 namespace voila::ast
 {
-    Scatter::Scatter(const Location loc, Expression src_col, Expression dest_col, Expression idxs) :
-        IStatement(loc), dest{std::move(dest_col)}, idxs{std::move(idxs)}, src{std::move(src_col)}
+    Scatter::Scatter(const Location loc, Expression idxs, Expression src_col) :
+        IExpression(loc), idxs{std::move(idxs)}, src{std::move(src_col)}
     {
     }
     bool Scatter::is_scatter() const
@@ -20,7 +20,7 @@ namespace voila::ast
     }
     void Scatter::print(std::ostream &ostream) const
     {
-        ostream << "dest: " << dest;
+        ostream << "scatter( " << src << "," << idxs << ")";
     }
     void Scatter::visit(ASTVisitor &visitor) const
     {

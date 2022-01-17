@@ -67,7 +67,7 @@ namespace voila::mlir::lowering
         using GenClass::operator();
 
       public:
-        [[maybe_unused]] explicit BinaryOpLowering(::mlir::MLIRContext *ctx) :
+        explicit BinaryOpLowering(::mlir::MLIRContext *ctx) :
             ConversionPattern(BinaryOp::getOperationName(), 1, ctx)
         {
         }

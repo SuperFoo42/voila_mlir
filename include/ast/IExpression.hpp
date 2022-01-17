@@ -3,7 +3,6 @@
 #include "ASTNode.hpp"
 #include "PredicationUnsupportedException.hpp"
 
-#include <fmt/core.h>
 #include <optional>
 
 namespace voila::ast
@@ -48,6 +47,7 @@ namespace voila::ast
     class Hash;
     class Lookup;
     class Insert;
+    class Scatter;
     class IExpression : public ASTNode
     {
       public:
@@ -68,6 +68,8 @@ namespace voila::ast
         [[nodiscard]] virtual bool is_add() const;
 
         [[nodiscard]] virtual bool is_sub() const;
+
+        [[nodiscard]] virtual bool is_scatter() const;
 
         [[nodiscard]] virtual bool is_mul() const;
 
@@ -140,6 +142,8 @@ namespace voila::ast
         [[nodiscard]] virtual bool is_hash() const;
 
         [[nodiscard]] virtual bool is_lookup() const;
+
+        [[nodiscard]] virtual bool is_insert() const;
 
         // casts
         virtual IExpression *as_expr();
@@ -219,8 +223,9 @@ namespace voila::ast
         virtual Hash *as_hash();
 
         virtual Lookup *as_lookup();
-        [[nodiscard]] virtual bool is_insert() const;
 
         virtual Insert *as_insert();
+
+        virtual Scatter *as_scatter();
     };
 } // namespace voila::ast

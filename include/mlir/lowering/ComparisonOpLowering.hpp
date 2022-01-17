@@ -93,36 +93,50 @@ namespace voila::mlir::lowering
             typename CmpOp::Adaptor opAdaptor(operands);
             auto loc = op->getLoc();
 
-            if (opAdaptor.lhs().getType().template isa<::mlir::TensorType>() &&
-                opAdaptor.rhs().getType().template isa<::mlir::TensorType>())
-            {
-                auto res = createTypedCmpOp(rewriter, loc, opAdaptor.lhs(), opAdaptor.rhs());
-                rewriter.replaceOp(op, res);
-            }
-            else if (opAdaptor.lhs().getType().template isa<::mlir::TensorType>())
+            auto lhs = opAdaptor.lhs();
+            auto rhs = opAdaptor.rhs();
+
+            if (lhs.getType().template isa<::mlir::TensorType>() && !rhs.getType().template isa<::mlir::TensorType>())
             {
                 auto rhsTensor = rewriter.template create<::mlir::linalg::InitTensorOp>(
-                    loc, opAdaptor.lhs().getType().template dyn_cast<::mlir::RankedTensorType>().getShape(),
-                    opAdaptor.rhs().getType());
-                auto filledTensor = rewriter.template create<::mlir::linalg::FillOp>(loc, opAdaptor.rhs(), rhsTensor);
-
-                auto res = createTypedCmpOp(rewriter, loc, opAdaptor.lhs(), filledTensor.result());
-                rewriter.replaceOp(op, res);
+                    loc, lhs.getType().template dyn_cast<::mlir::RankedTensorType>().getShape(), rhs.getType());
+                rhs = rewriter.template create<::mlir::linalg::FillOp>(loc, rhs, rhsTensor).result();
             }
-            else if (opAdaptor.rhs().getType().template isa<::mlir::TensorType>())
+            else if (!lhs.getType().template isa<::mlir::TensorType>() &&
+                     rhs.getType().template isa<::mlir::TensorType>())
             {
                 auto lhsTensor = rewriter.template create<::mlir::linalg::InitTensorOp>(
-                    loc, opAdaptor.rhs().getType().template dyn_cast<::mlir::RankedTensorType>().getShape(),
-                    opAdaptor.lhs().getType());
-                auto filledTensor = rewriter.template create<::mlir::linalg::FillOp>(loc, opAdaptor.lhs(), lhsTensor);
-                auto res = createTypedCmpOp(rewriter, loc, filledTensor.result(), opAdaptor.rhs());
-                rewriter.replaceOp(op, res);
+                    loc, rhs.getType().template dyn_cast<::mlir::RankedTensorType>().getShape(), lhs.getType());
+                lhs = rewriter.template create<::mlir::linalg::FillOp>(loc, lhs, lhsTensor).result();
             }
-            else // no tensors as params
+
+            if (::mlir::getElementTypeOrSelf(lhs).template isa<::mlir::IndexType>() xor
+                ::mlir::getElementTypeOrSelf(rhs).template isa<::mlir::IndexType>())
             {
-                auto res = createTypedCmpOp(rewriter, loc, opAdaptor.lhs(), opAdaptor.rhs());
-                rewriter.replaceOp(op, res);
+                if (::mlir::getElementTypeOrSelf(lhs).template isa<::mlir::IndexType>())
+                {
+                    rhs = rewriter.template create<::mlir::arith::IndexCastOp>(
+                        loc, rhs,
+                        rhs.getType().template isa<::mlir::TensorType>() ?
+                            static_cast<::mlir::Type>(::mlir::RankedTensorType::get(
+                                rhs.getType().template dyn_cast<::mlir::TensorType>().getShape(),
+                                rewriter.getIndexType())) :
+                            static_cast<::mlir::Type>(rewriter.getIndexType()));
+                }
+                else
+                {
+                    lhs = rewriter.template create<::mlir::arith::IndexCastOp>(
+                        loc, lhs,
+                        lhs.getType().template isa<::mlir::TensorType>() ?
+                            static_cast<::mlir::Type>(::mlir::RankedTensorType::get(
+                                lhs.getType().template dyn_cast<::mlir::TensorType>().getShape(),
+                                rewriter.getIndexType())) :
+                            static_cast<::mlir::Type>(rewriter.getIndexType()));
+                }
             }
+
+            auto res = createTypedCmpOp(rewriter, loc, lhs, rhs);
+            rewriter.replaceOp(op, res);
             return ::mlir::success();
         }
     };
