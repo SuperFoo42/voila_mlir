@@ -40,6 +40,7 @@ namespace voila::mlir::lowering
         {
             auto hashVal = vals.take_front();
             vals = vals.drop_front();
+            vals = vals.drop_back();
             // probing
             SmallVector<Type, 1> resType;
             resType.push_back(builder.getI64Type());
@@ -57,16 +58,34 @@ namespace voila::mlir::lowering
 
             // lookup entries
             SmallVector<Value> entries;
-            std::transform(
-                lookupOpAdaptor.hashtables().begin(), lookupOpAdaptor.hashtables().end(), std::back_inserter(entries),
-                [&builder, &loc, &
-                 probeIdx](auto elem) -> auto { return builder.create<tensor::ExtractOp>(loc, elem, probeIdx); });
+            std::transform(lookupOpAdaptor.hashtables().begin(), lookupOpAdaptor.hashtables().end(),
+                           std::back_inserter(entries),
+                           [&builder, &loc, &probeIdx](auto elem) -> Value
+                           {
+                               auto res = builder.create<tensor::ExtractOp>(loc, elem, probeIdx);
+                               if (!elem.getType().template isa<IntegerType>())
+                                   return builder.create<arith::BitcastOp>(
+                                       loc, res, builder.getIntegerType(res.getType().getIntOrFloatBitWidth()));
+                               else
+                                   return res;
+                           });
+
+            SmallVector<Value> vs;
+            std::transform(vals.begin(), vals.end(), std::back_inserter(vs),
+                           [&builder, &loc](auto elem) -> Value
+                           {
+                               if (!elem.getType().template isa<IntegerType>())
+                                   return builder.create<arith::BitcastOp>(
+                                       loc, elem, builder.getIntegerType(elem.getType().getIntOrFloatBitWidth()));
+                               else
+                                   return elem;
+                           });
 
             Value isEmpty = builder.create<CmpIOp>(
                 loc, CmpIPredicate::ne, entries[0],
                 builder.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), entries[0].getType()));
-            Value notFound = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entries[0], vals[0]);
-            for (auto &en : llvm::enumerate(llvm::zip(entries, vals)))
+            Value notFound = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entries[0], vs[0]);
+            for (auto &en : llvm::enumerate(llvm::zip(entries, vs)))
             {
                 Value entry, value;
                 std::tie(entry, value) = en.value();
@@ -94,10 +113,17 @@ namespace voila::mlir::lowering
 
             entries.clear();
             Value resIdx = builder.create<IndexCastOp>(loc, loop->getResults().front(), builder.getIndexType());
-            std::transform(
-                lookupOpAdaptor.hashtables().begin(), lookupOpAdaptor.hashtables().end(), std::back_inserter(entries),
-                [&builder, &loc, &
-                 resIdx](auto elem) -> auto { return builder.create<tensor::ExtractOp>(loc, elem, resIdx); });
+            std::transform(lookupOpAdaptor.hashtables().begin(), lookupOpAdaptor.hashtables().end(),
+                           std::back_inserter(entries),
+                           [&builder, &loc, &resIdx](auto elem) -> Value
+                           {
+                               auto res = builder.create<tensor::ExtractOp>(loc, elem, resIdx);
+                               if (!elem.getType().template isa<IntegerType>())
+                                   return builder.create<arith::BitcastOp>(
+                                       loc, res, builder.getIntegerType(res.getType().getIntOrFloatBitWidth()));
+                               else
+                                   return res;
+                           });
             Value empty = builder.create<CmpIOp>(
                 loc, CmpIPredicate::ne, entries[0],
                 builder.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), entries[0].getType()));
@@ -108,8 +134,7 @@ namespace voila::mlir::lowering
                 empty = builder.create<AndIOp>(loc, empty, tmp);
             }
             Value res = builder.create<SelectOp>(
-                loc, empty,
-                builder.create<ConstantIndexOp>(loc, std::numeric_limits<uint64_t>::max()), resIdx);
+                loc, empty, builder.create<ConstantIndexOp>(loc, std::numeric_limits<uint64_t>::max()), resIdx);
             // store result
             builder.create<linalg::YieldOp>(loc, res);
         };

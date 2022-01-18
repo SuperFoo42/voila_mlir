@@ -11,6 +11,7 @@
 #include "mlir/lowering/LogicalOpLowering.hpp"
 #include "mlir/lowering/LookupOpLowering.hpp"
 #include "mlir/lowering/NotOpLowering.hpp"
+#include "mlir/lowering/GatherOpLowering.hpp"
 
 namespace voila::mlir
 {
@@ -42,7 +43,7 @@ namespace voila::mlir
             // a partial lowering, we explicitly mark the Toy operations that don't want
             // to lower, `toy.print`, as `legal`.
             target.addIllegalDialect<VoilaDialect>();
-            target.addLegalOp<EmitOp, ::mlir::voila::SelectOp, ReadOp, GatherOp, LoopOp, SumOp, CountOp, MinOp, MaxOp,
+            target.addLegalOp<EmitOp, ::mlir::voila::SelectOp, ReadOp, ScatterOp, LoopOp, SumOp, CountOp, MinOp, MaxOp,
                               AvgOp, InsertOp>();
             // Now that the conversion target has been defined, we just need to provide
             // the set of patterns that will lower the Toy operations.
@@ -50,7 +51,7 @@ namespace voila::mlir
             patterns.add<AndOpLowering, OrOpLowering, NotOpLowering, AddOpLowering, SubOpLowering, MulOpLowering,
                          DivOpLowering, ModOpLowering, EqOpLowering, NeqOpLowering, LeOpLowering, LeqOpLowering,
                          GeOpLowering, GeqOpLowering, HashOpLowering, LookupOpLowering, BoolConstOpLowering,
-                         IntConstOpLowering, FltConstOpLowering>(&getContext());
+                         IntConstOpLowering, FltConstOpLowering,GatherOpLowering>(&getContext());
 
             // With the target and rewrite patterns defined, we can now attempt the
             // conversion. The conversion will signal failure if any of our `illegal`

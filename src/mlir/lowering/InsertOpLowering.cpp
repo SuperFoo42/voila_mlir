@@ -85,8 +85,20 @@ namespace voila::mlir::lowering
         SmallVector<Value> empties;
         for (size_t i = 0; i < bucketVals.size(); ++i)
         {
-            empties.push_back(builder.create<CmpIOp>(loc, builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],
-                                                     hashInvalidConsts[i]));
+            if (hashInvalidConsts[i].getType().isa<IntegerType>())
+            {
+                empties.push_back(builder.create<CmpIOp>(loc, builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],
+                                                         hashInvalidConsts[i]));
+            }
+            else if (hashInvalidConsts[i].getType().isa<FloatType>())
+            {
+                empties.push_back(builder.create<CmpFOp>(loc, builder.getI1Type(), CmpFPredicate::UNE, bucketVals[i],
+                                                         hashInvalidConsts[i]));
+            }
+            else
+            {
+                throw NotImplementedException();
+            }
         }
 
         Value anyNotEmpty = empties[0];
@@ -98,7 +110,20 @@ namespace voila::mlir::lowering
         SmallVector<Value> founds;
         for (size_t i = 0; i < bucketVals.size(); ++i)
         {
-            founds.push_back(builder.create<CmpIOp>(loc, CmpIPredicate::eq, bucketVals[i], toStores[i]));
+            if (bucketVals[i].getType().isa<IntegerType>())
+            {
+                founds.push_back(builder.create<CmpIOp>(loc, builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],
+                                                         toStores[i]));
+            }
+            else if (bucketVals[i].getType().isa<FloatType>())
+            {
+                founds.push_back(builder.create<CmpFOp>(loc, builder.getI1Type(), CmpFPredicate::UNE, bucketVals[i],
+                                                         toStores[i]));
+            }
+            else
+            {
+                throw NotImplementedException();
+            }
         }
         Value allFound = founds[0];
         for (size_t i = 1; i < founds.size(); ++i)
@@ -106,7 +131,7 @@ namespace voila::mlir::lowering
             allFound = builder.create<AndIOp>(loc, allFound, founds[i]);
         }
 
-        return builder.create<OrIOp>(loc, builder.getI1Type(), anyNotEmpty, allFound);
+        return builder.create<AndIOp>(loc, builder.getI1Type(), anyNotEmpty, allFound);
     }
 
     // TODO: use atomic compare exchange
@@ -127,21 +152,20 @@ namespace voila::mlir::lowering
 
         SmallVector<Value> hashInvalidConsts;
         for (auto val : insertOpAdaptor.values())
-        { // FIXME: floats
-            if (getElementTypeOrSelf(val).isa<IntegerType>())
-
+        { // we uce all ones value of data type size
+            const auto &elementType = getElementTypeOrSelf(val);
+            if (elementType.isIntOrFloat())
             {
-                if (getElementTypeOrSelf(val).getIntOrFloatBitWidth() == 32)
-                    hashInvalidConsts.push_back(rewriter.create<ConstantIntOp>(
-                        loc, std::numeric_limits<uint32_t>::max(), getElementTypeOrSelf(val)));
-                else if (getElementTypeOrSelf(val).getIntOrFloatBitWidth() == 64)
-                    hashInvalidConsts.push_back(rewriter.create<ConstantIntOp>(
-                        loc, std::numeric_limits<uint64_t>::max(), getElementTypeOrSelf(val)));
-                else
-                    throw NotImplementedException();
+                hashInvalidConsts.push_back(
+                    rewriter.create<BitcastOp>(loc,
+                                               rewriter.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(),
+                                                                              elementType.getIntOrFloatBitWidth()),
+                                               elementType));
             }
             else
+            {
                 throw NotImplementedException();
+            }
         }
 
         lb.push_back(rewriter.create<ConstantIndexOp>(loc, 0));

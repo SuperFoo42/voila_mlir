@@ -481,6 +481,7 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
     Config config;
     config.debug = true;
     config.optimize = false;
+    config.tile=false;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q9.voila";
     Program prog(query, config);
     prog << n_name;
@@ -538,6 +539,7 @@ TEST(TPCBenchmarkTests, Q18_Qualification)
     config.debug = true;
     config.optimize = true;
     config.parallelize = false;
+    config.tile = false;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q18.voila";
     Program prog(query, config);
     prog << c_name;

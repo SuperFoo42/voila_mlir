@@ -379,7 +379,7 @@ namespace voila::mlir::lowering
                 {
                     auto upper = builder.create<ExtUIOp>(loc, *iter++, builder.getI64Type());
                     v64.push_back(builder.create<OrIOp>(
-                        loc, builder.create<ShLIOp>(loc, upper, builder.create<ConstantIntOp>(loc, 32, 64)), *iter));
+                        loc, builder.create<ShLIOp>(loc, upper, builder.create<ConstantIntOp>(loc, 32, 64)), builder.create<ExtUIOp>(loc, *iter, builder.getI64Type())));
                     ++iter;
                 }
                 else
@@ -409,18 +409,19 @@ namespace voila::mlir::lowering
         unsigned int size = 0;
         for (const auto &val : vals.drop_back())
         {
-            if (val.getType().isIntOrFloat())
+            const auto &type = val.getType();
+            if (type.isIntOrFloat())
             {
                 intVals.push_back(
-                    builder.create<BitcastOp>(loc, val, builder.getIntegerType(val.getType().getIntOrFloatBitWidth())));
+                    builder.create<BitcastOp>(loc, val, builder.getIntegerType(type.getIntOrFloatBitWidth())));
             }
-            else if (val.getType().isIndex())
+            else if (type.isIndex())
             {
                 intVals.push_back(builder.create<IndexCastOp>(loc, val, builder.getI64Type()));
             }
             else
             {
-                throw std::logic_error("Type can not be hashed");
+                throw std::logic_error("Type is currently not supported");
             }
             size += intVals.back().getType().getIntOrFloatBitWidth() / CHAR_BIT;
         }
@@ -443,11 +444,11 @@ namespace voila::mlir::lowering
         }
         else if (size <= 32)
         {
-            res.push_back(XXH3_len_17to32_64b(builder, loc, vals, size));
+            res.push_back(XXH3_len_17to32_64b(builder, loc, intVals, size));
         }
         else
         {
-            throw NotImplementedException("Hash func not implemented for size larger than 128 byte");
+            throw NotImplementedException("Hash func not implemented for size larger than 32 byte");
         }
 
         builder.create<linalg::YieldOp>(loc, res);

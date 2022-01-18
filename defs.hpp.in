@@ -1,0 +1,2 @@
+#pragma once
+#define MLIR_UTILS_LIB "${llvm_BINARY_DIR}/lib/libmlir_c_runner_utils.so"

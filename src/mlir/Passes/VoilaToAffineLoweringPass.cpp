@@ -9,7 +9,6 @@
 #include "mlir/lowering/ConstOpLowering.hpp"
 #include "mlir/lowering/CountOpLowering.hpp"
 #include "mlir/lowering/EmitOpLowering.hpp"
-#include "mlir/lowering/GatherOpLowering.hpp"
 #include "mlir/lowering/InsertOpLowering.hpp"
 #include "mlir/lowering/LogicalOpLowering.hpp"
 #include "mlir/lowering/LoopOpLowering.hpp"
@@ -18,6 +17,7 @@
 #include "mlir/lowering/ReadOpLowering.hpp"
 #include "mlir/lowering/SelectOpLowering.hpp"
 #include "mlir/lowering/SumOpLowering.hpp"
+#include "mlir/lowering/ScatterOpLowering.hpp"
 
 namespace voila::mlir
 {
@@ -53,7 +53,7 @@ namespace voila::mlir
             // the set of patterns that will lower the Toy operations.
             RewritePatternSet patterns(&getContext());
             patterns.add<SelectOpLowering, ReadOpLowering,
-                         GatherOpLowering, LoopOpLowering, InsertOpLowering, SumOpLowering, CountOpLowering,
+                         ScatterOpLowering, LoopOpLowering, InsertOpLowering, SumOpLowering, CountOpLowering,
                          MinOpLowering, MaxOpLowering, AvgOpLowering>(&getContext());
             patterns.add<AndOpLowering, OrOpLowering, AddOpLowering, SubOpLowering, MulOpLowering, DivOpLowering,
                          ModOpLowering, EqOpLowering, NeqOpLowering, LeOpLowering, LeqOpLowering, GeOpLowering,

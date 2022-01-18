@@ -13,6 +13,7 @@ target_sources(voila_lowering PRIVATE
         HashOpLowering.cpp
         InsertOpLowering.cpp
         LookupOpLowering.cpp
+        ScatterOpLowering.cpp
         LinalgTiledLoopsToAffineForPass.cpp
         LinalgTiledLoopsToAffineForPattern.cpp
 )

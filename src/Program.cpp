@@ -2,6 +2,7 @@
 
 #include "Config.hpp"
 #include "voila_lexer.hpp"
+#include "defs.hpp"
 
 #include <MlirModuleVerificationError.hpp>
 #include <utility>
@@ -126,7 +127,7 @@ namespace voila
             auto expectedEngine = ExecutionEngine::create(*mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline,
                                                           config.optimize ? llvm::CodeGenOpt::Level::Aggressive :
                                                                             llvm::CodeGenOpt::Level::None,
-                                                          {}, true, config.debug, config.profile);
+                                                          {MLIR_UTILS_LIB}, true, config.debug, config.profile);
             assert(expectedEngine && "failed to construct an execution engine");
 
             maybeEngine = std::move(*expectedEngine);

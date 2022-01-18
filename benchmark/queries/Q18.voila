@@ -3,7 +3,7 @@ main(c_name,c_custkey,o_orderkey,o_orderdate, o_totalprice, l_quantity, l_orderk
     h_quantity = hash(l_quantity);
     ht_quantity = insert(h_quantity, l_quantity);
     locs_quantity = lookup(l_quantity,ht_quantity, h_quantity);
-    sum_quant = aggr(sum, l_quantity, groups);
+    sum_quant = aggr(sum, l_quantity, locs_quantity);
     sums_per_row = gather(sum_quant,locs_quantity);
     to_select = ge(sums_per_row, quantity);
     to_select = and(to_select, eq(c_custkey,o_custkey));

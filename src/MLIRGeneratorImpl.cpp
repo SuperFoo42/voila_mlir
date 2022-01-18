@@ -187,7 +187,10 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const Scatter &scatter)
     {
-        ASTVisitor::operator()(scatter);
+        auto location = loc(scatter.get_location());
+        auto col = std::get<Value>(visitor_gen(scatter.src));
+        auto idx = std::get<Value>(visitor_gen(scatter.idxs));
+        result = builder.create<::mlir::voila::ScatterOp>(location, col.getType(), idx, col);
     }
 
     void MLIRGeneratorImpl::operator()(const FunctionCall &call)
@@ -430,7 +433,7 @@ namespace voila::mlir
         auto location = loc(gather.get_location());
         auto col = std::get<Value>(visitor_gen(gather.column));
         auto idx = std::get<Value>(visitor_gen(gather.idxs));
-        result = builder.create<::mlir::voila::GatherOp>(location, col.getType(), idx, col);
+        result = builder.create<::mlir::voila::GatherOp>(location, RankedTensorType::get(idx.getType().dyn_cast<TensorType>().getShape(), getElementTypeOrSelf(col)), col, idx);
     }
 
     void MLIRGeneratorImpl::operator()(const Ref &param)

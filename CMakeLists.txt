@@ -50,6 +50,7 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/bin)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/lib)
+configure_file(defs.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/defs.hpp)
 set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
@@ -81,13 +82,13 @@ endif ()
 #Enable sanitizers globally
 #if ($<CONFIG:Release>)
 add_compile_options(#$<$<CONFIG:Release>:-O3>
-        #-fsanitize=address
-        #-fsanitize=undefined
+        -fsanitize=address
+        -fsanitize=undefined
         -Wno-ambiguous-reversed-operator
         )
 add_link_options(-fuse-ld=lld
-        #-fsanitize=address
-        #-fsanitize=undefined #need to use lld, for some reason ld complains about invalid symbols.
+        -fsanitize=address
+        -fsanitize=undefined #need to use lld, for some reason ld complains about invalid symbols.
         )
 #[[else()
     add_compile_options(-fsanitize=address -fsanitize=undefined -Wno-ambiguous-reversed-operator)

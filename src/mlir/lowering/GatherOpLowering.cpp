@@ -1,7 +1,6 @@
 #include "mlir/lowering/GatherOpLowering.hpp"
 
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/Tensor//IR/Tensor.h"
 #include "mlir/IR/VoilaOps.h"
 
 namespace voila::mlir::lowering
@@ -29,14 +28,14 @@ namespace voila::mlir::lowering
         auto gatherFunc = [&gatherOpAdaptor](OpBuilder & builder, Location loc, ValueRange vals)
         {
             auto idx = vals.front();
-            auto res = builder.create<tensor::ExtractOp>(loc, idx, gatherOpAdaptor.column()).result();
+            auto res = builder.create<tensor::ExtractOp>(loc, gatherOpAdaptor.column(), idx).result();
             builder.create<linalg::YieldOp>(loc, res);
         };
 
         llvm::SmallVector<AffineMap, 2> iter_maps(2, rewriter.getDimIdentityMap());
 
         auto linalgOp = rewriter.create<linalg::GenericOp>(
-            loc, /*results*/ op->getResultTypes(),
+            loc, /*results*/ llvm::makeArrayRef(out.getType()),
             /*inputs*/ gatherOpAdaptor.indices(), /*outputs*/ llvm::makeArrayRef(out),
             /*indexing maps*/ iter_maps,
             /*iterator types*/ getParallelIteratorTypeName(), gatherFunc);

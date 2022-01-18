@@ -333,7 +333,7 @@ The "gather" operation loads data from "column" at "indices".
 The start "indices" are expected to be within "column" bounds and the shape "indices" is smaller than "column".
 }];
 
-let arguments = (ins 1DTensorOf<[AnyType]>:$column, 1DTensorOf<[AnySignlessInteger]>:$indices);
+let arguments = (ins 1DTensorOf<[AnyType]>:$column, AnyTypeOf<[1DTensorOf<[AnyInteger]>, 1DTensorOf<[Index]>]>:$indices);
 let results = (outs 1DTensorOf<[AnyType]>);
 
 // Specify a parser and printer method.
