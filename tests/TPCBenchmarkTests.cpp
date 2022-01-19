@@ -246,8 +246,6 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
     Config config;
     config.debug = true;
     config.optimize = true;
-    config.parallelize = false;
-    config.tile = false;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
     Program prog(query, config);
 

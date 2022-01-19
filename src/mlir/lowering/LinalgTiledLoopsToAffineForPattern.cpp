@@ -73,20 +73,19 @@ namespace voila::mlir
             BlockAndValueMapping bvm;
             // bvm.map(parIVs, ivs);
             bvm.map(tiledLoop.getRegionInputArgs(), tiledLoop.inputs());
-            //bvm.map(tiledLoop.getRegionOutputArgs(), tiledLoop.outputs());
+            // bvm.map(tiledLoop.getRegionOutputArgs(), tiledLoop.outputs());
 
             llvm::SmallSetVector<Operation *, 4> loads;
             llvm::SmallVector<Value> ivs;
             for (const auto &en : llvm::enumerate(llvm::zip(tiledLoop.getRegionOutputArgs(), tiledLoop.outputs())))
             {
-                Value outArg, out, iv;
+                Value outArg, out;
                 std::tie(outArg, out) = en.value();
-                auto argUsers = outArg.getUsers();
+                auto argUsers = outArg.getUsers(); // unordered
                 users.append(argUsers.begin(), argUsers.end());
 
                 auto store_count = std::count_if(users.begin(), users.end(),
-                                                 [](const auto &use) -> bool
-                                                 { return llvm::dyn_cast_or_null<memref::StoreOp>(use) != nullptr; });
+                                                 [](const auto &use) -> bool { return isa<memref::StoreOp>(use); });
                 if (store_count >
                     1 /*TODO: inspect, if last use of value is store, otherwise we can not make it an iter_arg*/)
                 {
@@ -111,10 +110,9 @@ namespace voila::mlir
                     bvm.map(redIVs, llvm::makeArrayRef(iv));
                     for (auto user : users)
                     {
-                        auto load = llvm::dyn_cast_or_null<memref::LoadOp>(user);
-                        if (load != nullptr)
+                        if (isa<memref::LoadOp>(user))
                         {
-
+                            auto load = dyn_cast<memref::LoadOp>(user);
                             bvm.map(load.result(), iter_args[useIVMap.lookup(user)]);
                             loads.insert(user);
                         }
@@ -122,17 +120,32 @@ namespace voila::mlir
                     llvm::SmallVector<Value> results;
                     for (auto &op : tiledLoop.getBody()->without_terminator())
                     {
-                        auto store = llvm::dyn_cast_or_null<memref::StoreOp>(&op);
-                        if (!loads.contains(&op) && store == nullptr)
+                        if (!loads.contains(&op) && !isa<memref::StoreOp>(&op) && !isa<memref::CopyOp>(&op))
                         {
                             builder.clone(op, bvm);
                         }
-                        else if (store != nullptr)
+                        else if (isa<memref::StoreOp>(&op))
                         {
                             // TODO: we have to determine to which iter arg this store
                             // belongs, therefore we can map the memref to the iv and
                             // then have to find the right idx
-                            results.push_back(bvm.lookup(store.value()));
+                            results.push_back(bvm.lookup(dyn_cast<memref::StoreOp>(&op).value()));
+                        }
+                        else if (isa<memref::CopyOp>(&op))
+                        {
+                            auto copy = llvm::dyn_cast_or_null<memref::CopyOp>(&op);
+                            // TODO: chek if copy is related to iter arg
+                            // if copy.dest is in tiledLoop. output and copy.src is now iter arg
+                            if (llvm::is_contained(tiledLoop.outputs(), copy.target()) &&
+                                llvm::is_contained(tiledLoop.getRegionOutputArgs(),
+                                                   copy.source()) /*&& output arg is an iter arg*/)
+                            {
+                                // skip, we don't need this op when we use an iter arg
+                            }
+                            // else if
+                            // then load src value and add to iter args
+                            else
+                                builder.clone(op, bvm);
                         }
                     }
                     builder.create<AffineYieldOp>(loc, results);
