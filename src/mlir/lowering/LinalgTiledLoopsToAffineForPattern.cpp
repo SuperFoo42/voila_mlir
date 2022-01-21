@@ -21,8 +21,6 @@ namespace voila::mlir
         // Collect loop control parameters for parallel, reduction and sequential dimensions.
         SmallVector<Value, 3> seqLBs, seqUBs, seqIVs;
         SmallVector<int64_t, 3> seqSteps;
-        SmallVector<Value, 3> parLBs, parUBs, parIVs;
-        SmallVector<int64_t, 3> parSteps;
         SmallVector<Value, 3> redLBs, redUBs, redIVs;
         SmallVector<int64_t, 3> redSteps;
         for (const auto &en : llvm::enumerate(llvm::zip(tiledLoop.lowerBound(), tiledLoop.upperBound(),
@@ -30,18 +28,7 @@ namespace voila::mlir
         {
             Value lb, ub, step, iv;
             std::tie(lb, ub, step, iv) = en.value();
-            if (tiledLoop.isParallelDimension(en.index()))
-            {
-                parLBs.push_back(lb);
-                parUBs.push_back(ub);
-                auto stepConst = getConstantIntValue(getAsOpFoldResult(step));
-                if (!stepConst)
-                    return failure();
-
-                parSteps.push_back(*stepConst);
-                parIVs.push_back(iv);
-            }
-            else if (isReductionDimension(tiledLoop, en.index()))
+            if (isReductionDimension(tiledLoop, en.index()))
             {
                 redLBs.push_back(lb);
                 redUBs.push_back(ub);
@@ -66,9 +53,10 @@ namespace voila::mlir
         }
 
         Location loc = tiledLoop.getLoc();
+        ImplicitLocOpBuilder builder(loc, rewriter);
         llvm::SmallVector<Operation *> users;
         llvm::SmallDenseMap<Operation *, size_t> useIVMap;
-        auto generateForLoopNestAndCloneBody = [&](OpBuilder &builder, Location loc)
+        auto generateForLoopNestAndCloneBody = [&](ImplicitLocOpBuilder &builder)
         {
             BlockAndValueMapping bvm;
             // bvm.map(parIVs, ivs);
@@ -86,7 +74,7 @@ namespace voila::mlir
 
                 auto store_count = std::count_if(users.begin(), users.end(),
                                                  [](const auto &use) -> bool { return isa<memref::StoreOp>(use); });
-                if (store_count >
+                if (store_count !=
                     1 /*TODO: inspect, if last use of value is store, otherwise we can not make it an iter_arg*/)
                 {
                     bvm.map(outArg, out);
@@ -98,10 +86,13 @@ namespace voila::mlir
                     {
                         useIVMap.insert(std::make_pair(argUser, en.index()));
                     }
-                    ivs.push_back(builder.create<memref::LoadOp>(loc, out));
+                    ivs.push_back(builder.create<memref::LoadOp>(out));
                 }
             }
-            // TODO: what about pars and seqs?
+            redLBs.insert(redLBs.end(), seqLBs.begin(), seqLBs.end());
+            redUBs.insert(redUBs.end(), seqUBs.begin(), seqUBs.end());
+            redSteps.insert(redSteps.end(), seqSteps.begin(), seqSteps.end());
+            redIVs.insert(redIVs.end(), seqIVs.begin(), seqIVs.end());
             return builder.create<AffineForOp>(
                 loc, redLBs, builder.getDimIdentityMap(), redUBs, builder.getDimIdentityMap(), redSteps.front(), ivs,
 
@@ -110,7 +101,7 @@ namespace voila::mlir
                     bvm.map(redIVs, llvm::makeArrayRef(iv));
                     for (auto user : users)
                     {
-                        if (isa<memref::LoadOp>(user))
+                        if (isa<memref::LoadOp>(user)) // TODO: any load instruction
                         {
                             auto load = dyn_cast<memref::LoadOp>(user);
                             bvm.map(load.result(), iter_args[useIVMap.lookup(user)]);
@@ -133,7 +124,7 @@ namespace voila::mlir
                         }
                         else if (isa<memref::CopyOp>(&op))
                         {
-                            auto copy = llvm::dyn_cast_or_null<memref::CopyOp>(&op);
+                            auto copy = llvm::dyn_cast<memref::CopyOp>(&op);
                             // TODO: chek if copy is related to iter arg
                             // if copy.dest is in tiledLoop. output and copy.src is now iter arg
                             if (llvm::is_contained(tiledLoop.outputs(), copy.target()) &&
@@ -152,13 +143,13 @@ namespace voila::mlir
                 });
         };
 
-        auto loop = generateForLoopNestAndCloneBody(rewriter, loc);
+        auto loop = generateForLoopNestAndCloneBody(builder);
 
         for (const auto &res_storage : llvm::enumerate(llvm::zip(loop.results(), tiledLoop.outputs())))
         {
             Value result, storage;
             std::tie(result, storage) = res_storage.value();
-            rewriter.create<memref::StoreOp>(loc, result, storage);
+            builder.create<memref::StoreOp>(result, storage);
         }
 
         rewriter.eraseOp(tiledLoop);

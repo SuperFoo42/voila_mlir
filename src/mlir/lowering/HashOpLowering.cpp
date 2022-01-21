@@ -30,69 +30,50 @@ namespace voila::mlir::lowering
          0x95, 0x16, 0x04, 0x28, 0xaf, 0xd7, 0xfb, 0xca, 0xbb, 0x4b, 0x40, 0x7e});
 
     // TODO: check if this becomes a bswap instruction when compiled
-    static Value XXH_swap64(OpBuilder &builder, const Location &loc, Value x)
+    static Value XXH_swap64(ImplicitLocOpBuilder &builder, Value x)
     {
         assert(x.getType().getIntOrFloatBitWidth() == 64);
 
         return builder.create<OrIOp>(
-            loc,
             builder.create<OrIOp>(
-                loc,
                 builder.create<OrIOp>(
-                    loc,
                     builder.create<OrIOp>(
-                        loc,
                         builder.create<OrIOp>(
-                            loc,
                             builder.create<OrIOp>(
-                                loc,
                                 builder.create<OrIOp>(
-                                    loc,
                                     builder.create<AndIOp>(
-                                        loc,
-                                        builder.create<ShLIOp>(
-                                            loc, x, builder.create<ConstantIntOp>(loc, 56, builder.getI64Type())),
-                                        builder.create<ConstantIntOp>(loc, 0xff00000000000000ULL,
-                                                                      builder.getI64Type())),
+                                        builder.create<ShLIOp>(x,
+                                                               builder.create<ConstantIntOp>(56, builder.getI64Type())),
+                                        builder.create<ConstantIntOp>(0xff00000000000000ULL, builder.getI64Type())),
                                     builder.create<AndIOp>(
-                                        loc,
-                                        builder.create<ShLIOp>(
-                                            loc, x, builder.create<ConstantIntOp>(loc, 40, builder.getI64Type())),
-                                        builder.create<ConstantIntOp>(loc, 0x00ff000000000000ULL,
-                                                                      builder.getI64Type()))),
+                                        builder.create<ShLIOp>(x,
+                                                               builder.create<ConstantIntOp>(40, builder.getI64Type())),
+                                        builder.create<ConstantIntOp>(0x00ff000000000000ULL, builder.getI64Type()))),
                                 builder.create<AndIOp>(
-                                    loc,
-                                    builder.create<ShLIOp>(
-                                        loc, x, builder.create<ConstantIntOp>(loc, 24, builder.getI64Type())),
-                                    builder.create<ConstantIntOp>(loc, 0x0000ff0000000000ULL, builder.getI64Type()))),
+                                    builder.create<ShLIOp>(x, builder.create<ConstantIntOp>(24, builder.getI64Type())),
+                                    builder.create<ConstantIntOp>(0x0000ff0000000000ULL, builder.getI64Type()))),
                             builder.create<AndIOp>(
-                                loc,
-                                builder.create<ShLIOp>(loc, x,
-                                                       builder.create<ConstantIntOp>(loc, 8, builder.getI64Type())),
-                                builder.create<ConstantIntOp>(loc, 0x000000ff00000000ULL, builder.getI64Type()))),
+                                builder.create<ShLIOp>(x, builder.create<ConstantIntOp>(8, builder.getI64Type())),
+                                builder.create<ConstantIntOp>(0x000000ff00000000ULL, builder.getI64Type()))),
                         builder.create<AndIOp>(
-                            loc,
-                            builder.create<ShRUIOp>(loc, x,
-                                                    builder.create<ConstantIntOp>(loc, 8, builder.getI64Type())),
-                            builder.create<ConstantIntOp>(loc, 0x00000000ff000000ULL, builder.getI64Type()))),
+                            builder.create<ShRUIOp>(x, builder.create<ConstantIntOp>(8, builder.getI64Type())),
+                            builder.create<ConstantIntOp>(0x00000000ff000000ULL, builder.getI64Type()))),
                     builder.create<AndIOp>(
-                        loc,
-                        builder.create<ShRUIOp>(loc, x, builder.create<ConstantIntOp>(loc, 24, builder.getI64Type())),
-                        builder.create<ConstantIntOp>(loc, 0x0000000000ff0000ULL, builder.getI64Type()))),
+                        builder.create<ShRUIOp>(x, builder.create<ConstantIntOp>(24, builder.getI64Type())),
+                        builder.create<ConstantIntOp>(0x0000000000ff0000ULL, builder.getI64Type()))),
                 builder.create<AndIOp>(
-                    loc, builder.create<ShRUIOp>(loc, x, builder.create<ConstantIntOp>(loc, 40, builder.getI64Type())),
-                    builder.create<ConstantIntOp>(loc, 0x000000000000ff00ULL, builder.getI64Type()))),
-            builder.create<AndIOp>(
-                loc, builder.create<ShRUIOp>(loc, x, builder.create<ConstantIntOp>(loc, 56, builder.getI64Type())),
-                builder.create<ConstantIntOp>(loc, 0x00000000000000ffULL, builder.getI64Type())));
+                    builder.create<ShRUIOp>(x, builder.create<ConstantIntOp>(40, builder.getI64Type())),
+                    builder.create<ConstantIntOp>(0x000000000000ff00ULL, builder.getI64Type()))),
+            builder.create<AndIOp>(builder.create<ShRUIOp>(x, builder.create<ConstantIntOp>(56, builder.getI64Type())),
+                                   builder.create<ConstantIntOp>(0x00000000000000ffULL, builder.getI64Type())));
     }
 
     template<int WIDTH>
-    static Value getINT(OpBuilder &builder, const Location &loc, Value val)
+    static Value getINT(ImplicitLocOpBuilder &builder, Value val)
     {
         if (val.getType().getIntOrFloatBitWidth() < WIDTH)
         {
-            return builder.create<ExtSIOp>(loc, val, builder.getIntegerType(WIDTH));
+            return builder.create<ExtSIOp>(val, builder.getIntegerType(WIDTH));
         }
         else if (val.getType().getIntOrFloatBitWidth() == WIDTH)
         {
@@ -105,126 +86,115 @@ namespace voila::mlir::lowering
         }
     }
 
-    static auto split(OpBuilder &builder, const Location &loc, Value val)
+    static auto split(ImplicitLocOpBuilder &builder, Value val)
     {
         if (val.getType().isa<FloatType>())
-        {
-            val = builder.create<arith::BitcastOp>(loc, val,
-                                                   builder.getIntegerType(val.getType().getIntOrFloatBitWidth()));
-        }
+            val = builder.create<arith::BitcastOp>(val, builder.getIntegerType(val.getType().getIntOrFloatBitWidth()));
 
-        auto lower = builder.create<arith::TruncIOp>(loc, val, builder.getI32Type());
+        auto lower = builder.create<arith::TruncIOp>(val, builder.getI32Type());
         auto upper = builder.create<arith::TruncIOp>(
-            loc, builder.create<ShRUIOp>(loc, val, builder.create<ConstantIntOp>(loc, 32, builder.getI64Type())),
+            builder.create<ShRUIOp>(val, builder.create<ConstantIntOp>(32, builder.getI64Type())),
             builder.getI32Type());
         return std::make_pair(lower, upper);
     }
 
-    static auto combine(OpBuilder &builder, const Location &loc, Value val1, Value val2)
+    static auto combine(ImplicitLocOpBuilder &builder, Value val1, Value val2)
     {
         if (val1.getType().isa<FloatType>())
         {
-            val1 = builder.create<arith::BitcastOp>(loc, val1,
-                                                    builder.getIntegerType(val1.getType().getIntOrFloatBitWidth()));
+            val1 =
+                builder.create<arith::BitcastOp>(val1, builder.getIntegerType(val1.getType().getIntOrFloatBitWidth()));
         }
         if (val2.getType().isa<FloatType>())
         {
-            val2 = builder.create<arith::BitcastOp>(loc, val2,
-                                                    builder.getIntegerType(val2.getType().getIntOrFloatBitWidth()));
+            val2 =
+                builder.create<arith::BitcastOp>(val2, builder.getIntegerType(val2.getType().getIntOrFloatBitWidth()));
         }
-        auto extended = builder.create<arith::ExtUIOp>(loc, val1, builder.getI64Type());
-        auto shifted =
-            builder.create<arith::ShLIOp>(loc, extended, builder.create<ConstantIntOp>(loc, 32, builder.getI64Type()));
-        auto extended2 = builder.create<arith::ExtUIOp>(loc, val2, builder.getI64Type());
-        auto combined = builder.create<arith::OrIOp>(loc, shifted, extended2);
+        auto extended = builder.create<arith::ExtUIOp>(val1, builder.getI64Type());
+        auto shifted = builder.create<arith::ShLIOp>(extended, builder.create<ConstantIntOp>(32, builder.getI64Type()));
+        auto extended2 = builder.create<arith::ExtUIOp>(val2, builder.getI64Type());
+        auto combined = builder.create<arith::OrIOp>(shifted, extended2);
         return combined;
     }
 
-    static Value XXH3_mul128_fold64(OpBuilder &builder, const Location loc, Value lhs, Value rhs)
+    static Value XXH3_mul128_fold64(ImplicitLocOpBuilder &builder, Value lhs, Value rhs)
     {
-        auto lhs128 = builder.create<ExtSIOp>(loc, lhs, builder.getIntegerType(128));
-        auto rhs128 = builder.create<ExtSIOp>(loc, rhs, builder.getIntegerType(128));
-        auto product = builder.create<MulIOp>(loc, lhs128, rhs128);
-        auto product_low = builder.create<TruncIOp>(loc, product, builder.getI64Type());
+        auto lhs128 = builder.create<ExtSIOp>(lhs, builder.getIntegerType(128));
+        auto rhs128 = builder.create<ExtSIOp>(rhs, builder.getIntegerType(128));
+        auto product = builder.create<MulIOp>(lhs128, rhs128);
+        auto product_low = builder.create<TruncIOp>(product, builder.getI64Type());
         auto product_high = builder.create<TruncIOp>(
-            loc, builder.create<ShRUIOp>(loc, product, builder.create<ConstantIntOp>(loc, 64, product.getType())),
+            builder.create<ShRUIOp>(product, builder.create<ConstantIntOp>(64, product.getType())),
             builder.getI64Type());
 
-        return builder.create<XOrIOp>(loc, product_low, product_high);
+        return builder.create<XOrIOp>(product_low, product_high);
     }
 
-    static Value XXH3_avalanche(OpBuilder &builder, const Location loc, Value h64)
+    static Value XXH3_avalanche(ImplicitLocOpBuilder &builder, Value h64)
     {
         auto h64_1 = builder.create<XOrIOp>(
-            loc, h64, builder.create<ShRUIOp>(loc, h64, builder.create<ConstantIntOp>(loc, 37, builder.getI64Type())));
-        auto h64_2 = builder.create<MulIOp>(
-            loc, h64_1, builder.create<ConstantIntOp>(loc, 0x165667919E3779F9ULL, builder.getI64Type()));
+            h64, builder.create<ShRUIOp>(h64, builder.create<ConstantIntOp>(37, builder.getI64Type())));
+        auto h64_2 =
+            builder.create<MulIOp>(h64_1, builder.create<ConstantIntOp>(0x165667919E3779F9ULL, builder.getI64Type()));
         auto h64_3 = builder.create<XOrIOp>(
-            loc, h64_2,
-            builder.create<ShRUIOp>(loc, h64_2, builder.create<ConstantIntOp>(loc, 32, builder.getI64Type())));
+            h64_2, builder.create<ShRUIOp>(h64_2, builder.create<ConstantIntOp>(32, builder.getI64Type())));
         return h64_3;
     }
 
-    static Value XXH3_mix16B(OpBuilder &builder, const Location loc, ValueRange vs, const size_t secret_offset)
+    static Value XXH3_mix16B(ImplicitLocOpBuilder &builder, ValueRange vs, const size_t secret_offset)
     {
         auto lo = vs[0];
         auto hi = vs[1];
         return XXH3_mul128_fold64(
-            builder, loc,
+            builder,
             builder.create<XOrIOp>(
-                loc, lo,
-                builder.create<ConstantIntOp>(loc, *reinterpret_cast<const int64_t *>(&XXH_SECRET[secret_offset]), 64)),
+                lo, builder.create<ConstantIntOp>(*reinterpret_cast<const int64_t *>(&XXH_SECRET[secret_offset]), 64)),
             builder.create<XOrIOp>(
-                loc, hi,
-                builder.create<ConstantIntOp>(
-                    loc, *reinterpret_cast<const int64_t *>(&XXH_SECRET[secret_offset + sizeof(int64_t)]), 64)));
+                hi, builder.create<ConstantIntOp>(
+                        *reinterpret_cast<const int64_t *>(&XXH_SECRET[secret_offset + sizeof(int64_t)]), 64)));
     }
 
-    static Value XXH3_rrmxmx(OpBuilder &builder, const Location loc, Value h64, unsigned int len)
+    static Value XXH3_rrmxmx(ImplicitLocOpBuilder &builder, Value h64, unsigned int len)
     {
         // rotate h64
         // TODO: check that this become a rotl instruction
         auto h64_r1 = builder.create<OrIOp>(
-            loc, builder.create<ShLIOp>(loc, h64, builder.create<ConstantIntOp>(loc, 49, builder.getI64Type())),
-            builder.create<ShRUIOp>(loc, h64, builder.create<ConstantIntOp>(loc, 15, builder.getI64Type())));
+            builder.create<ShLIOp>(h64, builder.create<ConstantIntOp>(49, builder.getI64Type())),
+            builder.create<ShRUIOp>(h64, builder.create<ConstantIntOp>(15, builder.getI64Type())));
         auto h64_r2 = builder.create<OrIOp>(
-            loc, builder.create<ShLIOp>(loc, h64, builder.create<ConstantIntOp>(loc, 24, builder.getI64Type())),
-            builder.create<ShRUIOp>(loc, h64, builder.create<ConstantIntOp>(loc, 40, builder.getI64Type())));
-        auto h64_1 = builder.create<XOrIOp>(loc, h64, builder.create<XOrIOp>(loc, h64_r1, h64_r2));
-        auto h64_2 = builder.create<MulIOp>(
-            loc, h64_1, builder.create<ConstantIntOp>(loc, 0x9FB21C651E98DF25ULL, builder.getI64Type()));
+            builder.create<ShLIOp>(h64, builder.create<ConstantIntOp>(24, builder.getI64Type())),
+            builder.create<ShRUIOp>(h64, builder.create<ConstantIntOp>(40, builder.getI64Type())));
+        auto h64_1 = builder.create<XOrIOp>(h64, builder.create<XOrIOp>(h64_r1, h64_r2));
+        auto h64_2 =
+            builder.create<MulIOp>(h64_1, builder.create<ConstantIntOp>(0x9FB21C651E98DF25ULL, builder.getI64Type()));
         auto h64_3 = builder.create<XOrIOp>(
-            loc, h64_2,
-            builder.create<AddIOp>(
-                loc, builder.create<ShRUIOp>(loc, h64_2, builder.create<ConstantIntOp>(loc, 35, builder.getI64Type())),
-                builder.create<ConstantIntOp>(loc, len, builder.getI64Type())));
-        auto h64_4 = builder.create<MulIOp>(
-            loc, h64_3, builder.create<ConstantIntOp>(loc, 0x9FB21C651E98DF25ULL, builder.getI64Type()));
+            h64_2, builder.create<AddIOp>(
+                       builder.create<ShRUIOp>(h64_2, builder.create<ConstantIntOp>(35, builder.getI64Type())),
+                       builder.create<ConstantIntOp>(len, builder.getI64Type())));
+        auto h64_4 =
+            builder.create<MulIOp>(h64_3, builder.create<ConstantIntOp>(0x9FB21C651E98DF25ULL, builder.getI64Type()));
 
         // xorshift
         return builder.create<XOrIOp>(
-            loc, h64_4,
-            builder.create<ShRUIOp>(loc, h64_4, builder.create<ConstantIntOp>(loc, 28, builder.getI64Type())));
+            h64_4, builder.create<ShRUIOp>(h64_4, builder.create<ConstantIntOp>(28, builder.getI64Type())));
     }
 
-    static Value XXH64_avalanche(OpBuilder &builder, const Location loc, Value h64)
+    static Value XXH64_avalanche(ImplicitLocOpBuilder &builder, Value h64)
     {
         auto h64_1 = builder.create<XOrIOp>(
-            loc, h64, builder.create<ShRUIOp>(loc, h64, builder.create<ConstantIntOp>(loc, 33, builder.getI64Type())));
-        auto h64_2 = builder.create<MulIOp>(
-            loc, h64_1, builder.create<ConstantIntOp>(loc, 0xC2B2AE3D27D4EB4FULL, builder.getI64Type()));
+            h64, builder.create<ShRUIOp>(h64, builder.create<ConstantIntOp>(33, builder.getI64Type())));
+        auto h64_2 =
+            builder.create<MulIOp>(h64_1, builder.create<ConstantIntOp>(0xC2B2AE3D27D4EB4FULL, builder.getI64Type()));
         auto h64_3 = builder.create<XOrIOp>(
-            loc, h64_2,
-            builder.create<ShRUIOp>(loc, h64_2, builder.create<ConstantIntOp>(loc, 28, builder.getI64Type())));
-        auto h64_4 = builder.create<MulIOp>(
-            loc, h64_3, builder.create<ConstantIntOp>(loc, 0x165667B19E3779F9ULL, builder.getI64Type()));
+            h64_2, builder.create<ShRUIOp>(h64_2, builder.create<ConstantIntOp>(28, builder.getI64Type())));
+        auto h64_4 =
+            builder.create<MulIOp>(h64_3, builder.create<ConstantIntOp>(0x165667B19E3779F9ULL, builder.getI64Type()));
         auto h64_5 = builder.create<XOrIOp>(
-            loc, h64_4,
-            builder.create<ShRUIOp>(loc, h64_4, builder.create<ConstantIntOp>(loc, 32, builder.getI64Type())));
+            h64_4, builder.create<ShRUIOp>(h64_4, builder.create<ConstantIntOp>(32, builder.getI64Type())));
         return h64_5;
     }
 
-    static auto XXH3_len_1to3_64b(OpBuilder &builder, const Location loc, ValueRange vals, const unsigned int len)
+    static auto XXH3_len_1to3_64b(ImplicitLocOpBuilder &builder, ValueRange vals, const unsigned int len)
     {
         assert(vals.size() == 1);
         /*
@@ -234,39 +204,33 @@ namespace voila::mlir::lowering
          */
         {
             auto c1 = builder.create<TruncIOp>(
-                loc,
-                builder.create<ShRUIOp>(loc, vals[0],
-                                        builder.create<ConstantIntOp>(loc, (len - 1) * CHAR_BIT, vals[0].getType())),
+                builder.create<ShRUIOp>(vals[0],
+                                        builder.create<ConstantIntOp>((len - 1) * CHAR_BIT, vals[0].getType())),
                 builder.getI8Type());
             auto c2 = builder.create<TruncIOp>(
-                loc,
-                builder.create<ShRUIOp>(loc, vals[0],
-                                        builder.create<ConstantIntOp>(loc, (len >> 1) * CHAR_BIT, vals[0].getType())),
+
+                builder.create<ShRUIOp>(vals[0],
+                                        builder.create<ConstantIntOp>((len >> 1) * CHAR_BIT, vals[0].getType())),
                 builder.getI8Type());
-            auto c3 = builder.create<TruncIOp>(loc, vals[0], builder.getI8Type());
+            auto c3 = builder.create<TruncIOp>(vals[0], builder.getI8Type());
             auto combined = builder.create<OrIOp>(
-                loc,
                 builder.create<OrIOp>(
-                    loc,
                     builder.create<OrIOp>(
-                        loc,
-                        builder.create<ShLIOp>(loc, builder.create<ExtSIOp>(loc, c1, builder.getI32Type()),
-                                               builder.create<ConstantIntOp>(loc, 16, builder.getI32Type())),
-                        builder.create<ShLIOp>(loc, builder.create<ExtSIOp>(loc, c2, builder.getI32Type()),
-                                               builder.create<ConstantIntOp>(loc, 24, builder.getI32Type()))),
-                    builder.create<ExtSIOp>(loc, c3, builder.getI32Type())),
-                builder.create<ConstantIntOp>(loc, len << 8, builder.getI32Type()));
-            auto bitflip = builder.create<ConstantIntOp>(loc,
-                                                         *reinterpret_cast<const uint32_t *>(XXH_SECRET.data()) ^
+                        builder.create<ShLIOp>(builder.create<ExtSIOp>(c1, builder.getI32Type()),
+                                               builder.create<ConstantIntOp>(16, builder.getI32Type())),
+                        builder.create<ShLIOp>(builder.create<ExtSIOp>(c2, builder.getI32Type()),
+                                               builder.create<ConstantIntOp>(24, builder.getI32Type()))),
+                    builder.create<ExtSIOp>(c3, builder.getI32Type())),
+                builder.create<ConstantIntOp>(len << 8, builder.getI32Type()));
+            auto bitflip = builder.create<ConstantIntOp>(*reinterpret_cast<const uint32_t *>(XXH_SECRET.data()) ^
                                                              *reinterpret_cast<const uint32_t *>(XXH_SECRET.data() + 4),
                                                          builder.getI64Type());
-            auto keyed =
-                builder.create<XOrIOp>(loc, builder.create<ExtSIOp>(loc, combined, builder.getI64Type()), bitflip);
-            return XXH64_avalanche(builder, loc, keyed);
+            auto keyed = builder.create<XOrIOp>(builder.create<ExtSIOp>(combined, builder.getI64Type()), bitflip);
+            return XXH64_avalanche(builder, keyed);
         }
     }
 
-    static auto XXH3_len_4to8_64b(OpBuilder &builder, const Location loc, ValueRange vals, const unsigned int len)
+    static auto XXH3_len_4to8_64b(ImplicitLocOpBuilder &builder, ValueRange vals, const unsigned int len)
     {
         assert(vals.size() <= 2);
         /** TODO: allow also larger sizes with smaller than 4 byte size. However, in this case we have to do a
@@ -275,9 +239,9 @@ namespace voila::mlir::lowering
         Value input1, input2;
         if (vals.size() == 1) // split single 8 byte value
         {
-            input1 = builder.create<TruncIOp>(loc, vals[0], builder.getI32Type());
+            input1 = builder.create<TruncIOp>(vals[0], builder.getI32Type());
             input2 = builder.create<TruncIOp>(
-                loc, builder.create<ShRUIOp>(loc, vals[0], builder.create<ConstantIntOp>(loc, 32, vals[0].getType())),
+                builder.create<ShRUIOp>(vals[0], builder.create<ConstantIntOp>(32, vals[0].getType())),
                 builder.getI32Type());
         }
         else
@@ -287,78 +251,72 @@ namespace voila::mlir::lowering
         }
 
         auto bitflip = builder.create<XOrIOp>(
-            loc,
-            builder.create<ConstantIntOp>(loc, *reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 8),
+            builder.create<ConstantIntOp>(*reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 8),
                                           builder.getI64Type()),
-            builder.create<ConstantIntOp>(loc, *reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 16),
+            builder.create<ConstantIntOp>(*reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 16),
                                           builder.getI64Type()));
 
-        auto input64 = builder.create<AddIOp>(
-            loc, builder.create<ExtSIOp>(loc, input2, builder.getI64Type()),
-            builder.create<ShLIOp>(loc, builder.create<ExtSIOp>(loc, input1, builder.getI64Type()),
-                                   builder.create<ConstantIntOp>(loc, 32, builder.getI64Type())));
-        auto keyed = builder.create<XOrIOp>(loc, input64, bitflip);
-        return XXH3_rrmxmx(builder, loc, keyed, len);
+        auto input64 =
+            builder.create<AddIOp>(builder.create<ExtSIOp>(input2, builder.getI64Type()),
+                                   builder.create<ShLIOp>(builder.create<ExtSIOp>(input1, builder.getI64Type()),
+                                                          builder.create<ConstantIntOp>(32, builder.getI64Type())));
+        auto keyed = builder.create<XOrIOp>(input64, bitflip);
+        return XXH3_rrmxmx(builder, keyed, len);
     }
 
-    static Value XXH3_len_9to16_64b(OpBuilder &builder, const Location loc, ValueRange vals, const unsigned int len)
+    static Value XXH3_len_9to16_64b(ImplicitLocOpBuilder &builder, ValueRange vals, const unsigned int len)
     {
         Value input1, input2;
         if (vals.size() == 2)
         {
-            input1 = getINT<64>(builder, loc, vals[0]);
-            input2 = getINT<64>(builder, loc, vals[1]);
+            input1 = getINT<64>(builder, vals[0]);
+            input2 = getINT<64>(builder, vals[1]);
         }
         else if (vals.size() == 4)
         {
-            input1 = combine(builder, loc, vals[0], vals[1]);
-            input2 = combine(builder, loc, vals[2], vals[3]);
+            input1 = combine(builder, vals[0], vals[1]);
+            input2 = combine(builder, vals[2], vals[3]);
         }
         else if (vals[0].getType().getIntOrFloatBitWidth() == 32 && vals[1].getType().getIntOrFloatBitWidth() == 32)
         {
-            input1 = combine(builder, loc, vals[0], vals[1]);
-            input2 = getINT<64>(builder, loc, vals[2]);
+            input1 = combine(builder, vals[0], vals[1]);
+            input2 = getINT<64>(builder, vals[2]);
         }
         else if (vals[1].getType().getIntOrFloatBitWidth() == 32 && vals[2].getType().getIntOrFloatBitWidth() == 32)
         {
-            input1 = getINT<64>(builder, loc, vals[0]);
-            input2 = combine(builder, loc, vals[1], vals[2]);
+            input1 = getINT<64>(builder, vals[0]);
+            input2 = combine(builder, vals[1], vals[2]);
         }
         else // vals[0].getType().getIntOrFloatBitWidth() == 32 && vals[1].getType().getIntOrFloatBitWidth() != 32
         {
-            auto tmp = split(builder, loc, vals[1]);
-            input1 = combine(builder, loc, vals[0], tmp.first);
-            input2 = combine(builder, loc, tmp.second, vals[2]);
+            auto tmp = split(builder, vals[1]);
+            input1 = combine(builder, vals[0], tmp.first);
+            input2 = combine(builder, tmp.second, vals[2]);
         }
 
         auto bitflip1 = builder.create<XOrIOp>(
-            loc,
-            builder.create<ConstantIntOp>(loc, *reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 24),
+            builder.create<ConstantIntOp>(*reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 24),
                                           builder.getI64Type()),
-            builder.create<ConstantIntOp>(loc, *reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 32),
+            builder.create<ConstantIntOp>(*reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 32),
                                           builder.getI64Type()));
         auto bitflip2 = builder.create<XOrIOp>(
-            loc,
-            builder.create<ConstantIntOp>(loc, *reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 40),
+            builder.create<ConstantIntOp>(*reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 40),
                                           builder.getI64Type()),
-            builder.create<ConstantIntOp>(loc, *reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 48),
+            builder.create<ConstantIntOp>(*reinterpret_cast<const uint64_t *>(XXH_SECRET.data() + 48),
                                           builder.getI64Type()));
-        const Value input_lo = builder.create<XOrIOp>(loc, input1, bitflip1);
-        const Value input_hi = builder.create<XOrIOp>(loc, input2, bitflip2);
+        const Value input_lo = builder.create<XOrIOp>(input1, bitflip1);
+        const Value input_hi = builder.create<XOrIOp>(input2, bitflip2);
         auto acc = builder.create<AddIOp>(
-            loc,
-            builder.create<AddIOp>(loc,
-                                   builder.create<AddIOp>(loc,
-                                                          builder.create<ConstantIntOp>(loc, len, builder.getI64Type()),
-                                                          XXH_swap64(builder, loc, input_lo)),
+            builder.create<AddIOp>(builder.create<AddIOp>(builder.create<ConstantIntOp>(len, builder.getI64Type()),
+                                                          XXH_swap64(builder, input_lo)),
                                    input_hi),
-            XXH3_mul128_fold64(builder, loc, input_lo, input_hi));
-        return XXH3_avalanche(builder, loc, acc);
+            XXH3_mul128_fold64(builder, input_lo, input_hi));
+        return XXH3_avalanche(builder, acc);
     }
 
-    static Value XXH3_len_17to32_64b(OpBuilder &builder, const Location loc, ValueRange vals, const unsigned int len)
+    static Value XXH3_len_17to32_64b(ImplicitLocOpBuilder &builder, ValueRange vals, const unsigned int len)
     {
-        Value acc = builder.create<ConstantIntOp>(loc, len * XXH_PRIME64_1, 64);
+        Value acc = builder.create<ConstantIntOp>(len * XXH_PRIME64_1, 64);
         llvm::SmallVector<Value, 4> v64;
         auto iter = vals.begin();
         while (iter != vals.end())
@@ -370,24 +328,25 @@ namespace voila::mlir::lowering
             }
             else if (iter + 1 == vals.end())
             {
-                v64.push_back(builder.create<ExtUIOp>(loc, *iter, builder.getI64Type()));
+                v64.push_back(builder.create<ExtUIOp>(*iter, builder.getI64Type()));
                 ++iter;
             }
             else
             {
                 if ((*(iter + 1)).getType().getIntOrFloatBitWidth() == 32)
                 {
-                    auto upper = builder.create<ExtUIOp>(loc, *iter++, builder.getI64Type());
-                    v64.push_back(builder.create<OrIOp>(
-                        loc, builder.create<ShLIOp>(loc, upper, builder.create<ConstantIntOp>(loc, 32, 64)), builder.create<ExtUIOp>(loc, *iter, builder.getI64Type())));
+                    auto upper = builder.create<ExtUIOp>(*iter++, builder.getI64Type());
+                    v64.push_back(
+                        builder.create<OrIOp>(builder.create<ShLIOp>(upper, builder.create<ConstantIntOp>(32, 64)),
+                                              builder.create<ExtUIOp>(*iter, builder.getI64Type())));
                     ++iter;
                 }
                 else
                 {
-                    auto upper = builder.create<ExtUIOp>(loc, *iter++, builder.getI64Type());
-                    auto sp = split(builder, loc, *(iter));
+                    auto upper = builder.create<ExtUIOp>(*iter++, builder.getI64Type());
+                    auto sp = split(builder, *(iter));
                     v64.push_back(builder.create<OrIOp>(
-                        loc, builder.create<ShLIOp>(loc, upper, builder.create<ConstantIntOp>(loc, 32, 64)), sp.first));
+                        builder.create<ShLIOp>(upper, builder.create<ConstantIntOp>(32, 64)), sp.first));
                     *iter = sp.second; // TODO: this could be broken
                 }
             }
@@ -395,16 +354,17 @@ namespace voila::mlir::lowering
 
         if (len < 32)
         {
-            v64.push_back(builder.create<ConstantIntOp>(loc, 0, 64));
+            v64.push_back(builder.create<ConstantIntOp>(0, 64));
         }
 
-        acc = builder.create<AddIOp>(loc, acc, XXH3_mix16B(builder, loc, {v64[0], v64[1]}, 0));
-        acc = builder.create<AddIOp>(loc, acc, XXH3_mix16B(builder, loc, {v64[2], v64[3]}, 16));
-        return XXH3_avalanche(builder, loc, acc);
+        acc = builder.create<AddIOp>(acc, XXH3_mix16B(builder, {v64[0], v64[1]}, 0));
+        acc = builder.create<AddIOp>(acc, XXH3_mix16B(builder, {v64[2], v64[3]}, 16));
+        return XXH3_avalanche(builder, acc);
     }
 
-    static auto hashFunc(OpBuilder &builder, Location loc, ValueRange vals)
+    static auto hashFunc(OpBuilder &nestedBuilder, Location loc, ValueRange vals)
     {
+        ImplicitLocOpBuilder builder(loc, nestedBuilder);
         SmallVector<Value> intVals;
         unsigned int size = 0;
         for (const auto &val : vals.drop_back())
@@ -412,12 +372,11 @@ namespace voila::mlir::lowering
             const auto &type = val.getType();
             if (type.isIntOrFloat())
             {
-                intVals.push_back(
-                    builder.create<BitcastOp>(loc, val, builder.getIntegerType(type.getIntOrFloatBitWidth())));
+                intVals.push_back(builder.create<BitcastOp>(val, builder.getIntegerType(type.getIntOrFloatBitWidth())));
             }
             else if (type.isIndex())
             {
-                intVals.push_back(builder.create<IndexCastOp>(loc, val, builder.getI64Type()));
+                intVals.push_back(builder.create<IndexCastOp>(val, builder.getI64Type()));
             }
             else
             {
@@ -432,26 +391,26 @@ namespace voila::mlir::lowering
 
         if (size <= 4)
         {
-            res.push_back(XXH3_len_1to3_64b(builder, loc, intVals, size));
+            res.push_back(XXH3_len_1to3_64b(builder, intVals, size));
         }
         else if (size <= 8)
         {
-            res.push_back(XXH3_len_4to8_64b(builder, loc, intVals, size));
+            res.push_back(XXH3_len_4to8_64b(builder, intVals, size));
         }
         else if (size <= 16)
         {
-            res.push_back(XXH3_len_9to16_64b(builder, loc, intVals, size));
+            res.push_back(XXH3_len_9to16_64b(builder, intVals, size));
         }
         else if (size <= 32)
         {
-            res.push_back(XXH3_len_17to32_64b(builder, loc, intVals, size));
+            res.push_back(XXH3_len_17to32_64b(builder, intVals, size));
         }
         else
         {
             throw NotImplementedException("Hash func not implemented for size larger than 32 byte");
         }
 
-        builder.create<linalg::YieldOp>(loc, res);
+        builder.create<linalg::YieldOp>(res);
     };
 
     LogicalResult
@@ -459,6 +418,7 @@ namespace voila::mlir::lowering
     {
         HashOpAdaptor hashOpAdaptor(operands);
         auto loc = op->getLoc();
+        ImplicitLocOpBuilder builder(loc, rewriter);
 
         const auto &shape = hashOpAdaptor.input().front().getType().dyn_cast<::mlir::TensorType>().getShape();
         for (const auto &in : hashOpAdaptor.input())
@@ -470,13 +430,13 @@ namespace voila::mlir::lowering
         ::mlir::Value outTensor;
         if (hashOpAdaptor.input().getType().front().dyn_cast<TensorType>().hasStaticShape())
         {
-            outTensor = rewriter.create<linalg::InitTensorOp>(loc, shape, rewriter.getI64Type());
+            outTensor = builder.create<linalg::InitTensorOp>(shape, builder.getI64Type());
         }
         else
         {
             SmallVector<Value, 1> outTensorSize;
-            outTensorSize.push_back(rewriter.create<tensor::DimOp>(loc, hashOpAdaptor.input().front(), 0));
-            outTensor = rewriter.create<linalg::InitTensorOp>(loc, outTensorSize, rewriter.getI64Type());
+            outTensorSize.push_back(builder.create<tensor::DimOp>(hashOpAdaptor.input().front(), 0));
+            outTensor = builder.create<linalg::InitTensorOp>(outTensorSize, builder.getI64Type());
         }
 
         SmallVector<Value, 1> res;
@@ -487,12 +447,12 @@ namespace voila::mlir::lowering
 
         SmallVector<Type, 1> ret_type;
         ret_type.push_back(outTensor.getType());
-        SmallVector<AffineMap> indexing_maps(hashOpAdaptor.input().size() + 1, rewriter.getDimIdentityMap());
+        SmallVector<AffineMap> indexing_maps(hashOpAdaptor.input().size() + 1, builder.getDimIdentityMap());
 
-        auto linalgOp = rewriter.create<linalg::GenericOp>(loc, /*results*/ ret_type,
-                                                           /*inputs*/ hashOpAdaptor.input(), /*outputs*/ res,
-                                                           /*indexing maps*/ indexing_maps,
-                                                           /*iterator types*/ iter_type, hashFunc);
+        auto linalgOp = builder.create<linalg::GenericOp>(/*results*/ ret_type,
+                                                          /*inputs*/ hashOpAdaptor.input(), /*outputs*/ res,
+                                                          /*indexing maps*/ indexing_maps,
+                                                          /*iterator types*/ iter_type, hashFunc);
 
         rewriter.replaceOp(op, linalgOp->getResults());
         return success();

@@ -15,7 +15,6 @@
 
 int main(int argc, char **argv) {
     // setup mlir
-    //llvm::DebugFlag = true;
     mlir::registerAllPasses();
     mlir::DialectRegistry registry;
     registry.insert<mlir::voila::VoilaDialect>();

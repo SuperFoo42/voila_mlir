@@ -68,9 +68,9 @@ namespace voila
     class Parameter
     {
         void *data;
-        size_t size;
+        int64_t size;
         DataType type;
-        Parameter(void *data, size_t size, DataType type) : data{data}, size{size}, type{type} {}
+        Parameter(void *data, size_t size, DataType type) : data{data}, size(size), type{type} {}
         friend Parameter make_param(void *, size_t, DataType);
 
       public:
@@ -147,6 +147,7 @@ namespace voila
         Config config;
         lexer::Lexer *lexer;
         long_long timer = 0;
+        int64_t max_in_table_size;
 
       public:
         using result_t = std::variant<strided_memref_ptr<uint32_t, 1>,

@@ -14,33 +14,34 @@ namespace voila::mlir::lowering
 
     AvgOpLowering::AvgOpLowering(MLIRContext *ctx) : ConversionPattern(AvgOp::getOperationName(), 1, ctx) {}
 
-    static Value castITensorToFTensor(Location loc, ConversionPatternRewriter &rewriter, Value tensor)
+    static Value castITensorToFTensor(ImplicitLocOpBuilder &builder, Value tensor)
     {
         Value res;
         if (tensor.getType().dyn_cast<TensorType>().hasStaticShape())
         {
-            res = rewriter.create<linalg::InitTensorOp>(loc, tensor.getType().dyn_cast<TensorType>().getShape(),
-                                                        rewriter.getF64Type());
+            res = builder.create<linalg::InitTensorOp>(tensor.getType().dyn_cast<TensorType>().getShape(),
+                                                       builder.getF64Type());
         }
         else
         {
-            Value dimSize = rewriter.create<::mlir::tensor::DimOp>(loc, tensor, 0);
-            res = rewriter.create<linalg::InitTensorOp>(loc, ::llvm::makeArrayRef(dimSize), rewriter.getF64Type());
+            Value dimSize = builder.create<::mlir::tensor::DimOp>(tensor, 0);
+            res = builder.create<linalg::InitTensorOp>(::llvm::makeArrayRef(dimSize), builder.getF64Type());
         }
 
         SmallVector<Type, 1> res_type(1, res.getType());
 
         SmallVector<StringRef, 1> iter_type(1, getParallelIteratorTypeName());
 
-        auto fn = [](OpBuilder &builder, Location loc, ValueRange vals)
+        auto fn = [](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
         {
-            Value fVal = builder.create<SIToFPOp>(loc, vals[0], builder.getF64Type());
-            builder.create<linalg::YieldOp>(loc, fVal);
+            ImplicitLocOpBuilder builder(loc, nestedBuilder);
+            Value fVal = builder.create<SIToFPOp>(vals[0], builder.getF64Type());
+            builder.create<linalg::YieldOp>(fVal);
         };
 
-        SmallVector<AffineMap, 2> maps(2, rewriter.getDimIdentityMap());
+        SmallVector<AffineMap, 2> maps(2, builder.getDimIdentityMap());
 
-        auto linalgOp = rewriter.create<linalg::GenericOp>(loc, /*results*/ res_type,
+        auto linalgOp = builder.create<linalg::GenericOp>(/*results*/ res_type,
                                                            /*inputs*/ tensor, /*outputs*/ res,
                                                            /*indexing maps*/ maps,
                                                            /*iterator types*/ iter_type, fn);
@@ -52,24 +53,24 @@ namespace voila::mlir::lowering
     {
         assert(!op->getResultTypes().empty() && op->getResultTypes().size() == 1);
         auto loc = op->getLoc();
+        ImplicitLocOpBuilder builder(loc, rewriter);
         AvgOpAdaptor adaptor(operands);
 
         // this should work as long as ieee 754 is supported and division by 0 is inf
         if (adaptor.indices() && op->getResultTypes().front().isa<TensorType>())
         {
-            auto sum = rewriter.create<::mlir::voila::SumOp>(
-                loc,
+            auto sum = builder.create<::mlir::voila::SumOp>(
                 RankedTensorType::get(-1, getElementTypeOrSelf(adaptor.input()).isa<FloatType>() ?
-                                              static_cast<Type>(rewriter.getF64Type()) :
-                                              static_cast<Type>(rewriter.getI64Type())),
+                                              static_cast<Type>(builder.getF64Type()) :
+                                              static_cast<Type>(builder.getI64Type())),
                 adaptor.input(), adaptor.indices());
-            auto count = rewriter.create<::mlir::voila::CountOp>(loc, RankedTensorType::get(-1, rewriter.getI64Type()),
+            auto count = builder.create<::mlir::voila::CountOp>(RankedTensorType::get(-1, builder.getI64Type()),
                                                                  adaptor.input(), adaptor.indices());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())
             {
-                fltCnt = castITensorToFTensor(loc, rewriter, count);
+                fltCnt = castITensorToFTensor(builder, count);
             }
             else
             {
@@ -78,27 +79,27 @@ namespace voila::mlir::lowering
 
             if (!getElementTypeOrSelf(sum).isa<FloatType>())
             {
-                fltSum = castITensorToFTensor(loc, rewriter, sum);
+                fltSum = castITensorToFTensor(builder, sum);
             }
             else
             {
                 fltSum = sum;
             }
 
-            rewriter.replaceOpWithNewOp<::mlir::voila::DivOp>(op, RankedTensorType::get(-1, rewriter.getF64Type()),
+            rewriter.replaceOpWithNewOp<::mlir::voila::DivOp>(op, RankedTensorType::get(-1, builder.getF64Type()),
                                                               fltSum, fltCnt);
         }
         else
         {
-            auto sum = rewriter.create<::mlir::voila::SumOp>(loc, getElementTypeOrSelf(adaptor.input()),
+            auto sum = builder.create<::mlir::voila::SumOp>(getElementTypeOrSelf(adaptor.input()),
                                                              adaptor.input(), adaptor.indices());
             auto count =
-                rewriter.create<::mlir::voila::CountOp>(loc, rewriter.getI64Type(), adaptor.input(), adaptor.indices());
+                builder.create<::mlir::voila::CountOp>(builder.getI64Type(), adaptor.input(), adaptor.indices());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())
             {
-                fltCnt = rewriter.create<SIToFPOp>(loc, count, rewriter.getF64Type());
+                fltCnt = builder.create<SIToFPOp>(count, builder.getF64Type());
             }
             else
             {
@@ -107,7 +108,7 @@ namespace voila::mlir::lowering
 
             if (!getElementTypeOrSelf(sum).isa<FloatType>())
             {
-                fltSum = rewriter.create<SIToFPOp>(loc, sum, rewriter.getF64Type());
+                fltSum = builder.create<SIToFPOp>(sum, builder.getF64Type());
             }
             else
             {

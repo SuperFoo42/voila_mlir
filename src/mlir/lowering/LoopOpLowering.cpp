@@ -4,6 +4,7 @@
 #include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/VoilaOps.h"
 
 namespace voila::mlir::lowering
@@ -21,7 +22,7 @@ namespace voila::mlir::lowering
     }
 
     LoopOpLowering::LoopOpLowering(MLIRContext *ctx) : ConversionPattern(LoopOp::getOperationName(), 1, ctx) {}
-
+//TODO: refactor
     static void lowerOpToLoops(Operation *op,
                                ValueRange operands,
                                PatternRewriter &rewriter,
@@ -29,13 +30,14 @@ namespace voila::mlir::lowering
     {
         LoopOpAdaptor loopOpAdaptor(operands);
         auto loc = op->getLoc();
+        ImplicitLocOpBuilder builder(loc, rewriter);
 
         // Create a nest of affine loops, with one loop per dimension of the shape.
         // The buildAffineLoopNest function takes a callback that is used to construct
         // the body of the innermost loop given a builder, a location and a range of
         // loop induction variables.
 
-        Value lowerBound = rewriter.create<ConstantIndexOp>(loc, 1);
+        Value lowerBound = builder.create<ConstantIndexOp>( 1);
         Value upperBound;
 
         // find first tensor operand and use its result type
@@ -45,23 +47,23 @@ namespace voila::mlir::lowering
         Value cond;
         if (loopOpAdaptor.cond().getType().isa<TensorType>())
         {
-            cond = rewriter.create<ToMemrefOp>(
-                loc, convertTensorToMemRef(loopOpAdaptor.cond().getType().dyn_cast<TensorType>()),
+            cond = builder.create<ToMemrefOp>(
+                 convertTensorToMemRef(loopOpAdaptor.cond().getType().dyn_cast<TensorType>()),
                 loopOpAdaptor.cond());
-            upperBound = rewriter.create<AddIOp>(loc, rewriter.create<memref::DimOp>(loc, loopOpAdaptor.cond(), 0),
-                                                 rewriter.create<ConstantIndexOp>(loc, 1));
+            upperBound = builder.create<AddIOp>( builder.create<memref::DimOp>( loopOpAdaptor.cond(), 0),
+                                                builder.create<ConstantIndexOp>( 1));
         }
         else
         {
             cond = loopOpAdaptor.cond();
-            upperBound = rewriter.create<ConstantIndexOp>(loc, 2);
+            upperBound = builder.create<ConstantIndexOp>( 2);
         }
 
         if (cond.getType().isa<MemRefType>())
         {
             SmallVector<Value> idx;
-            idx.push_back(rewriter.create<ConstantIndexOp>(loc, 0));
-            iter_args.push_back(rewriter.create<memref::LoadOp>(loc, cond, idx));
+            idx.push_back(builder.create<ConstantIndexOp>( 0));
+            iter_args.push_back(builder.create<memref::LoadOp>( cond, idx));
         }
         else
         {

@@ -24,24 +24,24 @@ namespace voila::mlir::lowering
 
     /// Insert an allocation and deallocation for the given MemRefType.
     static ::mlir::Value
-    insertAllocAndDealloc(MemRefType type, Value dynamicMemref, Location loc, PatternRewriter &rewriter)
+    insertAllocAndDealloc(MemRefType type, Value dynamicMemref, Location loc, ImplicitLocOpBuilder &builder)
     {
         // This has to be located before the loop and after participating ops
         memref::AllocOp alloc;
         if (type.hasStaticShape())
         {
-            alloc = rewriter.create<memref::AllocOp>(loc, type);
+            alloc = builder.create<memref::AllocOp>(type);
         }
         else if (dynamicMemref.getType().dyn_cast<TensorType>().isDynamicDim(0))
         {
-            auto allocSize = rewriter.create<memref::DimOp>(loc, dynamicMemref, 0);
-            alloc = rewriter.create<memref::AllocOp>(loc, type, Value(allocSize));
+            auto allocSize = builder.create<memref::DimOp>(dynamicMemref, 0);
+            alloc = builder.create<memref::AllocOp>(type, Value(allocSize));
         }
         else
         {
             auto allocSize =
-                rewriter.create<ConstantIndexOp>(loc, dynamicMemref.getType().dyn_cast<TensorType>().getDimSize(0));
-            alloc = rewriter.create<memref::AllocOp>(loc, type, Value(allocSize));
+                builder.create<ConstantIndexOp>(dynamicMemref.getType().dyn_cast<TensorType>().getDimSize(0));
+            alloc = builder.create<memref::AllocOp>(type, Value(allocSize));
         }
 
         // buffer deallocation instructions are added in the buffer deallocation pass
@@ -60,7 +60,7 @@ namespace voila::mlir::lowering
     {
         auto tensorType = (*op->result_type_begin()).template dyn_cast<TensorType>();
         auto loc = op->getLoc();
-
+        ImplicitLocOpBuilder builder(loc, rewriter);
         // Insert an allocation and deallocation for the result of this operation.
         auto memRefType = convertTensorToMemRef(tensorType);
 
@@ -74,14 +74,14 @@ namespace voila::mlir::lowering
             }
         }
 
-        auto alloc = insertAllocAndDealloc(memRefType, tensorOp, loc, rewriter);
+        auto alloc = insertAllocAndDealloc(memRefType, tensorOp, loc, builder);
 
         // Create a nest of affine loops, with one loop per dimension of the shape.
         // The buildAffineLoopNest function takes a callback that is used to construct
         // the body of the innermost loop given a builder, a location and a range of
         // loop induction variables.
 
-        auto lb = rewriter.template create<ConstantIndexOp>(loc, 0);
+        auto lb = builder.template create<ConstantIndexOp>(0);
         SmallVector<Value> lowerBounds(tensorType.getRank(), lb);
         SmallVector<Value> upperBounds;
 
@@ -92,25 +92,26 @@ namespace voila::mlir::lowering
         {
             if (tensorOp.getType().template dyn_cast<TensorType>().isDynamicDim(dim))
             {
-                upperBounds.push_back(rewriter.template create<memref::DimOp>(loc, tensorOp, dim));
+                upperBounds.push_back(builder.template create<memref::DimOp>(tensorOp, dim));
             }
             else
             {
-                upperBounds.push_back(rewriter.template create<ConstantIndexOp>(
-                    loc, tensorOp.getType().template dyn_cast<TensorType>().getDimSize(dim)));
+                upperBounds.push_back(builder.template create<ConstantIndexOp>(
+                    tensorOp.getType().template dyn_cast<TensorType>().getDimSize(dim)));
             }
         }
 
         SmallVector<int64_t> steps(tensorType.getRank(), 1);
 
-        buildAffineLoopNest(rewriter, loc, lowerBounds, upperBounds, steps,
+        buildAffineLoopNest(builder, loc, lowerBounds, upperBounds, steps,
                             [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs)
                             {
                                 // Call the processing function with the rewriter, the memref operands,
                                 // and the loop induction variables. This function will return the value
                                 // to store at the current index.
-                                Value valueToStore = processIteration(nestedBuilder, operands, ivs);
-                                nestedBuilder.create<AffineStoreOp>(loc, valueToStore, alloc, ivs);
+                                ImplicitLocOpBuilder builder(loc, nestedBuilder);
+                                Value valueToStore = processIteration(builder, operands, ivs);
+                                builder.create<AffineStoreOp>(valueToStore, alloc, ivs);
                             });
 
         // Replace this operation with the generated alloc.
@@ -123,7 +124,7 @@ namespace voila::mlir::lowering
         auto loc = op->getLoc();
         lowerOpToLoops(
             op, operands, rewriter,
-            [loc](OpBuilder &builder, ValueRange memRefOperands, ValueRange loopIvs) -> Value
+            [loc](ImplicitLocOpBuilder &builder, ValueRange memRefOperands, ValueRange loopIvs) -> Value
             {
                 // Generate an adaptor for the remapped operands of the BinaryOp. This
                 // allows for using the nice named accessors that are generated by the

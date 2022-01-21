@@ -22,24 +22,25 @@ namespace voila::mlir::lowering
         return MemRefType::get(type.getShape(), type.getElementType());
     }
 
-    static Value insertAllocAndDealloc(MemRefType type, Value dynamicMemref, Location loc, PatternRewriter &rewriter)
+    static Value
+    insertAllocAndDealloc(MemRefType type, Value dynamicMemref, Location loc, ImplicitLocOpBuilder &builder)
     {
         // This has to be located before the loop and after participating ops
         memref::AllocOp alloc;
         if (type.hasStaticShape())
         {
-            alloc = rewriter.create<memref::AllocOp>(loc, type);
+            alloc = builder.create<memref::AllocOp>(type);
         }
         else if (dynamicMemref.getType().dyn_cast<TensorType>().isDynamicDim(0))
         {
-            auto allocSize = rewriter.create<memref::DimOp>(loc, dynamicMemref, 0);
-            alloc = rewriter.create<memref::AllocOp>(loc, MemRefType::get(-1, type.getElementType()), Value(allocSize));
+            auto allocSize = builder.create<memref::DimOp>(dynamicMemref, 0);
+            alloc = builder.create<memref::AllocOp>(MemRefType::get(-1, type.getElementType()), Value(allocSize));
         }
         else
         {
             auto allocSize =
-                rewriter.create<ConstantIndexOp>(loc, dynamicMemref.getType().dyn_cast<TensorType>().getDimSize(0));
-            alloc = rewriter.create<memref::AllocOp>(loc, MemRefType::get(-1, type.getElementType()), Value(allocSize));
+                builder.create<ConstantIndexOp>(dynamicMemref.getType().dyn_cast<TensorType>().getDimSize(0));
+            alloc = builder.create<memref::AllocOp>(MemRefType::get(-1, type.getElementType()), Value(allocSize));
         }
 
         // buffer deallocation instructions are added in the buffer deallocation pass
@@ -53,20 +54,21 @@ namespace voila::mlir::lowering
     {
         auto tensorType = (*op->result_type_begin()).dyn_cast<TensorType>();
         auto loc = op->getLoc();
+        ImplicitLocOpBuilder builder(loc, rewriter);
         ::mlir::Value tensorOp;
         assert(op->getOperand(0).getType().isa<TensorType>());
         tensorOp = op->getOperand(0);
 
         // Insert an allocation and deallocation for the result of this operation.
         auto memRefType = convertTensorToMemRef(tensorType);
-        auto alloc = insertAllocAndDealloc(memRefType, tensorOp, loc, rewriter);
+        auto alloc = insertAllocAndDealloc(memRefType, tensorOp, loc, builder);
 
         // Create a nest of affine loops, with one loop per dimension of the shape.
         // The buildAffineLoopNest function takes a callback that is used to construct
         // the body of the innermost loop given a builder, a location and a range of
         // loop induction variables.
 
-        Value lowerBound = rewriter.create<ConstantIndexOp>(loc, 0);
+        Value lowerBound = builder.create<ConstantIndexOp>(0);
         Value upperBound;
 
         // find first tensor operand and use its result type
@@ -74,39 +76,40 @@ namespace voila::mlir::lowering
 
         if (tensorOp.getType().dyn_cast<TensorType>().isDynamicDim(0))
         {
-            upperBound = rewriter.create<memref::DimOp>(loc, tensorOp, 0);
+            upperBound = builder.create<memref::DimOp>(tensorOp, 0);
         }
         else
         {
-            upperBound = rewriter.create<ConstantIndexOp>(loc, tensorOp.getType().dyn_cast<TensorType>().getDimSize(0));
+            upperBound = builder.create<ConstantIndexOp>(tensorOp.getType().dyn_cast<TensorType>().getDimSize(0));
         }
 
         // start index for store
         SmallVector<Value> iter_args;
-        iter_args.push_back(rewriter.create<ConstantIndexOp>(loc, 0));
+        iter_args.push_back(builder.create<ConstantIndexOp>(0));
 
-        auto resultSize = rewriter.create<AffineForOp>(
-            loc, lowerBound, rewriter.getDimIdentityMap(), upperBound, rewriter.getDimIdentityMap(), 1, iter_args,
+        auto resultSize = builder.create<AffineForOp>(
+            lowerBound, builder.getDimIdentityMap(), upperBound, builder.getDimIdentityMap(), 1, iter_args,
             [&](OpBuilder &nestedBuilder, ::mlir::Location loc,
                 Value iter_var /*index on which to store selected value*/, ValueRange ivs) -> void
             {
                 // Call the processing function with the rewriter, the memref operands,
                 // and the loop induction variables. This function will return the value
                 // to store at the current index.
-                Value nextIdx = processIteration(nestedBuilder, operands, iter_var, ivs.front(), alloc);
+                ImplicitLocOpBuilder b(loc, nestedBuilder);
+                Value nextIdx = processIteration(b, operands, iter_var, ivs.front(), alloc);
                 nestedBuilder.create<AffineYieldOp>(loc, nextIdx);
             });
 
         // Replace this operation with the generated reshaped alloc.
-        auto resSizeMemRef = rewriter.create<memref::AllocaOp>(loc, MemRefType::get(1, rewriter.getIndexType()));
-        auto zeroConst = rewriter.create<ConstantIndexOp>(loc, 0);
+        auto resSizeMemRef = builder.create<memref::AllocaOp>(MemRefType::get(1, builder.getIndexType()));
+        auto zeroConst = builder.create<ConstantIndexOp>(0);
         SmallVector<Value> indices;
         indices.push_back(zeroConst);
         SmallVector<Value> sizes;
         sizes.push_back(resultSize.getResult(0));
-        rewriter.create<memref::StoreOp>(loc, resultSize->getResult(0), resSizeMemRef, indices);
-        auto res = rewriter.create<memref::ReinterpretCastOp>(
-            loc, MemRefType::get(-1, alloc.getType().dyn_cast<MemRefType>().getElementType()), alloc, zeroConst, sizes,
+        builder.create<memref::StoreOp>(resultSize->getResult(0), resSizeMemRef, indices);
+        auto res = builder.create<memref::ReinterpretCastOp>(
+            MemRefType::get(-1, alloc.getType().dyn_cast<MemRefType>().getElementType()), alloc, zeroConst, sizes,
             indices);
         rewriter.replaceOpWithNewOp<ToTensorOp>(op, res);
     }
@@ -117,93 +120,89 @@ namespace voila::mlir::lowering
     {
         auto loc = op->getLoc();
         lowerOpToLoops(op, operands, rewriter,
-                       [loc](OpBuilder &builder, ValueRange memRefOperands, ValueRange loopIvs, Value iter_var,
-                             Value dest) -> Value
+                       [loc](ImplicitLocOpBuilder &builder, ValueRange memRefOperands, ValueRange loopIvs,
+                             Value iter_var, Value dest) -> Value
                        {
                            SelectOpAdaptor binaryAdaptor(memRefOperands);
-                           Value values;
-                           Value pred;
-
-                           values = binaryAdaptor.values();
-
-                           pred = binaryAdaptor.pred();
+                           auto values = binaryAdaptor.values();
+                           auto pred = binaryAdaptor.pred();
 
                            if (values.getType().isa<TensorType>() && pred.getType().isa<TensorType>())
                            {
-                               auto cond = builder.create<tensor::ExtractOp>(loc, pred, loopIvs);
+                               auto cond = builder.create<tensor::ExtractOp>(pred, loopIvs);
                                // Create the binary operation performed on the loaded values.
 
-                               auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), cond, true);
-                               auto thenBuilder = ifOp.getElseBodyBuilder();
-                               auto thenBranch = thenBuilder.create<scf::YieldOp>(loc, iter_var);
+                               auto ifOp = builder.create<scf::IfOp>(builder.getIndexType(), cond, true);
+                               auto thenBuilder = ImplicitLocOpBuilder(loc, ifOp.getElseBodyBuilder());
+                               auto thenBranch = thenBuilder.create<scf::YieldOp>(iter_var);
                                thenBuilder.setInsertionPoint(thenBranch);
-                               auto elseBuilder = ifOp.getThenBodyBuilder();
+                               auto elseBuilder = ImplicitLocOpBuilder(loc, ifOp.getThenBodyBuilder());
                                // value is constant
-                               auto valToStore = elseBuilder.create<tensor::ExtractOp>(loc, values, loopIvs);
-                               elseBuilder.create<AffineStoreOp>(loc, valToStore, dest, iter_var);
-                               auto oneConst = elseBuilder.create<ConstantIndexOp>(loc, 1);
+                               auto valToStore = elseBuilder.create<tensor::ExtractOp>(values, loopIvs);
+                               elseBuilder.create<AffineStoreOp>(valToStore, dest, iter_var);
+                               auto oneConst = elseBuilder.create<ConstantIndexOp>(1);
                                SmallVector<Value> res;
-                               auto addOp = elseBuilder.create<AddIOp>(loc, iter_var, oneConst);
+                               auto addOp = elseBuilder.create<AddIOp>(iter_var, oneConst);
                                res.push_back(addOp);
-                               elseBuilder.create<scf::YieldOp>(loc, res);
+                               elseBuilder.create<scf::YieldOp>(res);
                                elseBuilder.setInsertionPoint(oneConst);
                                return ifOp.getResult(0); // only new index to return
                            }
                            else if (values.getType().isa<TensorType>())
                            {
                                // Create the binary operation performed on the loaded values.
-                               auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), pred, true);
-                               auto thenBuilder = ifOp.getElseBodyBuilder();
-                               auto thenBranch = thenBuilder.create<scf::YieldOp>(loc, iter_var);
+                               auto ifOp = builder.create<scf::IfOp>(builder.getIndexType(), pred, true);
+                               auto thenBuilder = ImplicitLocOpBuilder(loc, ifOp.getElseBodyBuilder());
+                               auto thenBranch = thenBuilder.create<scf::YieldOp>(iter_var);
                                thenBuilder.setInsertionPoint(thenBranch);
-                               auto elseBuilder = ifOp.getThenBodyBuilder();
+                               auto elseBuilder = ImplicitLocOpBuilder(loc, ifOp.getThenBodyBuilder());
                                // value is constant
-                               auto valToStore = elseBuilder.create<tensor::ExtractOp>(loc, values, loopIvs);
-                               elseBuilder.create<AffineStoreOp>(loc, valToStore, dest, iter_var);
-                               auto oneConst = elseBuilder.create<ConstantIndexOp>(loc, 1);
+                               auto valToStore = elseBuilder.create<tensor::ExtractOp>(values, loopIvs);
+                               elseBuilder.create<AffineStoreOp>(valToStore, dest, iter_var);
+                               auto oneConst = elseBuilder.create<ConstantIndexOp>(1);
                                SmallVector<Value> res;
-                               auto addOp = elseBuilder.create<AddIOp>(loc, iter_var, oneConst);
+                               auto addOp = elseBuilder.create<AddIOp>(iter_var, oneConst);
                                res.push_back(addOp);
-                               elseBuilder.create<scf::YieldOp>(loc, res);
+                               elseBuilder.create<scf::YieldOp>(res);
                                elseBuilder.setInsertionPoint(oneConst);
                                return ifOp.getResult(0); // only new index to return
                            }
                            else if (pred.getType().isa<TensorType>())
                            {
-                               auto cond = builder.create<tensor::ExtractOp>(loc, pred, loopIvs);
+                               auto cond = builder.create<tensor::ExtractOp>(pred, loopIvs);
                                // Create the binary operation performed on the loaded values.
-                               auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), cond, true);
-                               auto ifBuilder = ifOp.getThenBodyBuilder();
+                               auto ifOp = builder.create<scf::IfOp>(builder.getIndexType(), cond, true);
+                               auto ifBuilder = ImplicitLocOpBuilder(loc, ifOp.getThenBodyBuilder());
                                // value is constant
                                auto valToStore = values;
-                               ifBuilder.create<AffineStoreOp>(loc, valToStore, dest, iter_var);
-                               auto oneConst = ifBuilder.create<ConstantIndexOp>(loc, 1);
+                               ifBuilder.create<AffineStoreOp>(valToStore, dest, iter_var);
+                               auto oneConst = ifBuilder.create<ConstantIndexOp>(1);
                                SmallVector<Value> res;
-                               auto addOp = ifBuilder.create<AddIOp>(loc, iter_var, oneConst);
+                               auto addOp = ifBuilder.create<AddIOp>(iter_var, oneConst);
                                res.push_back(addOp);
-                               ifBuilder.create<scf::YieldOp>(loc, res);
+                               ifBuilder.create<scf::YieldOp>(res);
                                ifBuilder.setInsertionPoint(oneConst);
-                               auto elseBuilder = ifOp.getElseBodyBuilder();
-                               auto thenBranch = elseBuilder.create<scf::YieldOp>(loc, iter_var);
+                               auto elseBuilder = ImplicitLocOpBuilder(loc, ifOp.getElseBodyBuilder());
+                               auto thenBranch = elseBuilder.create<scf::YieldOp>(iter_var);
                                elseBuilder.setInsertionPoint(thenBranch);
                                return ifOp.getResult(0); // only new index to return
                            }
                            else
                            {
                                // Create the binary operation performed on the loaded values.
-                               auto ifOp = builder.create<scf::IfOp>(loc, builder.getIndexType(), pred, true);
-                               auto ifBuilder = ifOp.getThenBodyBuilder();
+                               auto ifOp = builder.create<scf::IfOp>(builder.getIndexType(), pred, true);
+                               auto ifBuilder = ImplicitLocOpBuilder(loc, ifOp.getThenBodyBuilder());
                                // value is constant
                                auto valToStore = values;
-                               ifBuilder.create<AffineStoreOp>(loc, valToStore, dest, iter_var);
-                               auto oneConst = ifBuilder.create<ConstantIndexOp>(loc, 1);
+                               ifBuilder.create<AffineStoreOp>(valToStore, dest, iter_var);
+                               auto oneConst = ifBuilder.create<ConstantIndexOp>(1);
                                SmallVector<Value> res;
-                               auto addOp = ifBuilder.create<AddIOp>(loc, iter_var, oneConst);
+                               auto addOp = ifBuilder.create<AddIOp>(iter_var, oneConst);
                                res.push_back(addOp);
-                               ifBuilder.create<scf::YieldOp>(loc, res);
+                               ifBuilder.create<scf::YieldOp>(res);
                                ifBuilder.setInsertionPoint(oneConst);
-                               auto elseBuilder = ifOp.getElseBodyBuilder();
-                               auto thenBranch = elseBuilder.create<scf::YieldOp>(loc, iter_var);
+                               auto elseBuilder = ImplicitLocOpBuilder(loc, ifOp.getElseBodyBuilder());
+                               auto thenBranch = elseBuilder.create<scf::YieldOp>(iter_var);
                                elseBuilder.setInsertionPoint(thenBranch);
                                return ifOp.getResult(0); // only new index to return
                            }

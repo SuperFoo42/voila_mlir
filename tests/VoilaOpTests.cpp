@@ -341,7 +341,7 @@ TEST(AggregateTests, SumTest)
 {
     Config config;
 
-    config.debug = true;
+    config.debug = false;
     config.optimize = true;
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_sum.voila";

@@ -1,11 +1,15 @@
 #pragma once
 #include "mlir/Transforms/DialectConversion.h"
 
+namespace mlir
+{
+    class ImplicitLocOpBuilder;
+}
 namespace voila::mlir::lowering
 {
     class SelectOpLowering : public ::mlir::ConversionPattern
     {
-        using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter,
+        using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::ImplicitLocOpBuilder &builder,
                                                                    ::mlir::ValueRange memRefOperands,
                                                                    ::mlir::ValueRange loopIvs,
                                                                    ::mlir::Value iter_var,

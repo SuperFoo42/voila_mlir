@@ -19,7 +19,7 @@ namespace voila::mlir::lowering
     using ::mlir::voila::InsertOpAdaptor;
     InsertOpLowering::InsertOpLowering(MLIRContext *ctx) : ConversionPattern(InsertOp::getOperationName(), 1, ctx) {}
 
-    static auto allocHashTables(ConversionPatternRewriter &rewriter, ValueRange values, Location loc)
+    static auto allocHashTables(ImplicitLocOpBuilder &rewriter, ValueRange values)
     {
         Value htSize;
         SmallVector<Value> hts;
@@ -29,11 +29,11 @@ namespace voila::mlir::lowering
         {
             auto size = std::bit_ceil<size_t>(valType.getShape().front() + 1);
             assert(size <= std::numeric_limits<int64_t>::max());
-            htSize = rewriter.create<ConstantIndexOp>(loc, size);
+            htSize = rewriter.create<ConstantIndexOp>(size);
         }
         else
         {
-            auto insertSize = rewriter.create<tensor::DimOp>(loc, values.front(), 0);
+            auto insertSize = rewriter.create<tensor::DimOp>(values.front(), 0);
             /** algorithm to find the next power of 2 taken from
              *  https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
              *
@@ -46,31 +46,30 @@ namespace voila::mlir::lowering
              * v++;
              */
             auto firstOr = rewriter.create<OrIOp>(
-                loc, insertSize, rewriter.create<ShRUIOp>(loc, insertSize, rewriter.create<ConstantIndexOp>(loc, 1)));
-            auto secondOr = rewriter.create<OrIOp>(
-                loc, firstOr, rewriter.create<ShRUIOp>(loc, firstOr, rewriter.create<ConstantIndexOp>(loc, 2)));
+                insertSize, rewriter.create<ShRUIOp>(insertSize, rewriter.create<ConstantIndexOp>(1)));
+            auto secondOr =
+                rewriter.create<OrIOp>(firstOr, rewriter.create<ShRUIOp>(firstOr, rewriter.create<ConstantIndexOp>(2)));
             auto thirdOr = rewriter.create<OrIOp>(
-                loc, secondOr, rewriter.create<ShRUIOp>(loc, secondOr, rewriter.create<ConstantIndexOp>(loc, 4)));
-            auto fourthOr = rewriter.create<OrIOp>(
-                loc, thirdOr, rewriter.create<ShRUIOp>(loc, thirdOr, rewriter.create<ConstantIndexOp>(loc, 8)));
+                secondOr, rewriter.create<ShRUIOp>(secondOr, rewriter.create<ConstantIndexOp>(4)));
+            auto fourthOr =
+                rewriter.create<OrIOp>(thirdOr, rewriter.create<ShRUIOp>(thirdOr, rewriter.create<ConstantIndexOp>(8)));
             auto fithOr = rewriter.create<OrIOp>(
-                loc, fourthOr, rewriter.create<ShRUIOp>(loc, fourthOr, rewriter.create<ConstantIndexOp>(loc, 16)));
-            auto sixthOr = rewriter.create<OrIOp>(
-                loc, fithOr, rewriter.create<ShRUIOp>(loc, fithOr, rewriter.create<ConstantIndexOp>(loc, 32)));
+                fourthOr, rewriter.create<ShRUIOp>(fourthOr, rewriter.create<ConstantIndexOp>(16)));
+            auto sixthOr =
+                rewriter.create<OrIOp>(fithOr, rewriter.create<ShRUIOp>(fithOr, rewriter.create<ConstantIndexOp>(32)));
 
-            htSize = rewriter.create<AddIOp>(loc, sixthOr, rewriter.create<ConstantIndexOp>(loc, 1));
+            htSize = rewriter.create<AddIOp>(sixthOr, rewriter.create<ConstantIndexOp>(1));
         }
         for (auto val : values)
         {
             hts.push_back(rewriter.create<memref::AllocOp>(
-                loc, MemRefType::get(-1, val.getType().dyn_cast<TensorType>().getElementType()), htSize));
+                MemRefType::get(-1, val.getType().dyn_cast<TensorType>().getElementType()), htSize));
         }
 
         return std::make_pair(hts, htSize);
     }
 
-    static auto createKeyComparisons(OpBuilder &builder,
-                                     Location loc,
+    static auto createKeyComparisons(ImplicitLocOpBuilder &builder,
                                      ValueRange hts,
                                      ValueRange hashInvalidConsts,
                                      ValueRange toStores,
@@ -79,7 +78,7 @@ namespace voila::mlir::lowering
         SmallVector<Value> bucketVals;
         for (auto ht : hts)
         {
-            bucketVals.push_back(builder.create<memref::LoadOp>(loc, ht, idx));
+            bucketVals.push_back(builder.create<memref::LoadOp>(ht, idx));
         }
 
         SmallVector<Value> empties;
@@ -87,12 +86,12 @@ namespace voila::mlir::lowering
         {
             if (hashInvalidConsts[i].getType().isa<IntegerType>())
             {
-                empties.push_back(builder.create<CmpIOp>(loc, builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],
+                empties.push_back(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],
                                                          hashInvalidConsts[i]));
             }
             else if (hashInvalidConsts[i].getType().isa<FloatType>())
             {
-                empties.push_back(builder.create<CmpFOp>(loc, builder.getI1Type(), CmpFPredicate::UNE, bucketVals[i],
+                empties.push_back(builder.create<CmpFOp>(builder.getI1Type(), CmpFPredicate::UNE, bucketVals[i],
                                                          hashInvalidConsts[i]));
             }
             else
@@ -104,7 +103,7 @@ namespace voila::mlir::lowering
         Value anyNotEmpty = empties[0];
         for (size_t i = 1; i < empties.size(); ++i)
         {
-            anyNotEmpty = builder.create<AndIOp>(loc, anyNotEmpty, empties[i]);
+            anyNotEmpty = builder.create<AndIOp>(anyNotEmpty, empties[i]);
         }
 
         SmallVector<Value> founds;
@@ -112,13 +111,13 @@ namespace voila::mlir::lowering
         {
             if (bucketVals[i].getType().isa<IntegerType>())
             {
-                founds.push_back(builder.create<CmpIOp>(loc, builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],
-                                                         toStores[i]));
+                founds.push_back(
+                    builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i], toStores[i]));
             }
             else if (bucketVals[i].getType().isa<FloatType>())
             {
-                founds.push_back(builder.create<CmpFOp>(loc, builder.getI1Type(), CmpFPredicate::UNE, bucketVals[i],
-                                                         toStores[i]));
+                founds.push_back(
+                    builder.create<CmpFOp>(builder.getI1Type(), CmpFPredicate::UNE, bucketVals[i], toStores[i]));
             }
             else
             {
@@ -128,10 +127,10 @@ namespace voila::mlir::lowering
         Value allFound = founds[0];
         for (size_t i = 1; i < founds.size(); ++i)
         {
-            allFound = builder.create<AndIOp>(loc, allFound, founds[i]);
+            allFound = builder.create<AndIOp>(allFound, founds[i]);
         }
 
-        return builder.create<AndIOp>(loc, builder.getI1Type(), anyNotEmpty, allFound);
+        return builder.create<AndIOp>(builder.getI1Type(), anyNotEmpty, allFound);
     }
 
     // TODO: use atomic compare exchange
@@ -141,9 +140,9 @@ namespace voila::mlir::lowering
     {
         InsertOpAdaptor insertOpAdaptor(operands);
         auto loc = op->getLoc();
-
+        ImplicitLocOpBuilder builder(loc, rewriter);
         // allocate and prefill hashtable
-        auto tmp = allocHashTables(rewriter, insertOpAdaptor.values(), loc);
+        auto tmp = allocHashTables(builder, insertOpAdaptor.values());
         auto hts = tmp.first;
         auto htSize = tmp.second;
 
@@ -157,10 +156,9 @@ namespace voila::mlir::lowering
             if (elementType.isIntOrFloat())
             {
                 hashInvalidConsts.push_back(
-                    rewriter.create<BitcastOp>(loc,
-                                               rewriter.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(),
-                                                                              elementType.getIntOrFloatBitWidth()),
-                                               elementType));
+                    builder.create<BitcastOp>(builder.create<ConstantIntOp>(std::numeric_limits<uint64_t>::max(),
+                                                                            elementType.getIntOrFloatBitWidth()),
+                                              elementType));
             }
             else
             {
@@ -168,57 +166,56 @@ namespace voila::mlir::lowering
             }
         }
 
-        lb.push_back(rewriter.create<ConstantIndexOp>(loc, 0));
+        lb.push_back(builder.create<ConstantIndexOp>(0));
 
         for (size_t i = 0; i < hts.size(); ++i)
         {
-            rewriter.create<linalg::FillOp>(loc, hashInvalidConsts[i], hts[i]);
+            builder.create<linalg::FillOp>(hashInvalidConsts[i], hts[i]);
         }
 
         // hash values
-        auto modSize = rewriter.create<SubIOp>(loc, htSize, rewriter.create<ConstantIndexOp>(loc, 1));
+        auto modSize = builder.create<SubIOp>(htSize, builder.create<ConstantIndexOp>(1));
 
         // insert values in ht
         // we can not use affine loads here, as this would lead to comprehensive bufferize complain about RaW conflicts.
-        auto loopFunc =
-            [&modSize, &hts, &hashInvalidConsts, &insertOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
+        auto loopFunc = [&modSize, &hts, &hashInvalidConsts, &insertOpAdaptor](OpBuilder &nestedBuilder, Location loc,
+                                                                               ValueRange vals)
         {
+            ImplicitLocOpBuilder builder(loc, nestedBuilder);
             // load values
             auto hashIdx = builder.create<IndexCastOp>(
-                loc, builder.create<tensor::ExtractOp>(loc, insertOpAdaptor.hashValues(), vals),
-                builder.getIndexType());
-            Value correctedHashIdx = builder.create<AndIOp>(loc, hashIdx, modSize);
+                builder.create<tensor::ExtractOp>(insertOpAdaptor.hashValues(), vals), builder.getIndexType());
+            Value correctedHashIdx = builder.create<AndIOp>(hashIdx, modSize);
 
             SmallVector<Value> toStores;
             for (auto val : insertOpAdaptor.values())
             {
-                toStores.push_back(builder.create<tensor::ExtractOp>(loc, val, vals));
+                toStores.push_back(builder.create<tensor::ExtractOp>(val, vals));
             }
             SmallVector<Type, 1> resTypes;
             resTypes.push_back(hashIdx.getType());
             // probing
-            auto loop = builder.create<::mlir::scf::WhileOp>(loc, resTypes, llvm::makeArrayRef(correctedHashIdx));
+            auto loop = builder.create<::mlir::scf::WhileOp>(resTypes, llvm::makeArrayRef(correctedHashIdx));
 
             // condition block
             auto beforeBlock = builder.createBlock(&loop.getBefore());
             beforeBlock->addArgument(loop->getOperands().front().getType());
-            auto beforeBuilder = OpBuilder::atBlockEnd(beforeBlock);
+            ImplicitLocOpBuilder beforeBuilder(loc, OpBuilder::atBlockEnd(beforeBlock));
 
-            beforeBuilder.create<scf::ConditionOp>(loc,
-                                                   createKeyComparisons(beforeBuilder, loc, hts, hashInvalidConsts,
-                                                                        toStores, loop.getBefore().getArguments()),
-                                                   loop->getOperands());
+            beforeBuilder.create<scf::ConditionOp>(
+                createKeyComparisons(beforeBuilder, hts, hashInvalidConsts, toStores, loop.getBefore().getArguments()),
+                loop->getOperands());
             // body block
             auto afterBlock = builder.createBlock(&loop.getAfter());
             afterBlock->addArgument(loop->getOperands().front().getType());
-            auto afterBuilder = OpBuilder::atBlockEnd(afterBlock);
+            ImplicitLocOpBuilder afterBuilder(loc, OpBuilder::atBlockEnd(afterBlock));
 
-            auto nextIdx = afterBuilder.create<AddIOp>(loc, afterBlock->getArgument(0),
-                                                       afterBuilder.create<ConstantIndexOp>(loc, 1));
-            auto nextIndexWrapOver = afterBuilder.create<AndIOp>(loc, nextIdx, modSize);
+            auto nextIdx =
+                afterBuilder.create<AddIOp>(afterBlock->getArgument(0), afterBuilder.create<ConstantIndexOp>(loc, 1));
+            auto nextIndexWrapOver = afterBuilder.create<AndIOp>(nextIdx, modSize);
             SmallVector<Value, 1> res;
             res.push_back(nextIndexWrapOver);
-            afterBuilder.create<scf::YieldOp>(loc, res);
+            afterBuilder.create<scf::YieldOp>(res);
 
             // insert
             builder.setInsertionPointAfter(loop);
@@ -226,17 +223,17 @@ namespace voila::mlir::lowering
             {
                 Value toStore, ht;
                 std::tie(toStore, ht) = en.value();
-                builder.create<memref::StoreOp>(loc, toStore, ht, loop->getResults());
+                builder.create<memref::StoreOp>(toStore, ht, loop->getResults());
             }
         };
 
-        buildAffineLoopNest(rewriter, loc, lb, {rewriter.create<tensor::DimOp>(loc, insertOpAdaptor.hashValues(), 0)},
-                            {1}, loopFunc);
+        buildAffineLoopNest(builder, builder.getLoc(), lb, {builder.create<tensor::DimOp>(insertOpAdaptor.hashValues(), 0)}, {1},
+                            loopFunc);
 
         SmallVector<Value> ret;
         for (const auto &ht : hts)
         {
-            ret.push_back(rewriter.create<ToTensorOp>(loc, ht));
+            ret.push_back(builder.create<ToTensorOp>(ht));
         }
         rewriter.replaceOp(op, ret);
 
