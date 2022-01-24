@@ -341,8 +341,9 @@ TEST(AggregateTests, SumTest)
 {
     Config config;
 
-    config.debug = false;
+    config.debug = true;
     config.optimize = true;
+    config.parallelize = true;
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_sum.voila";
     constexpr size_t TENSOR_SIZE = 100;
@@ -366,7 +367,6 @@ TEST(AggregateTests, MinTest)
 
     config.debug = true;
     config.optimize = true;
-
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_min.voila";
     constexpr auto TENSOR_VALS = std::to_array<uint64_t>(
         {441, 965, 381, 125, 626, 162, 930, 213, 969, 866, 235, 571, 822, 469, 350, 73,  150, 494, 629, 236,

@@ -116,21 +116,68 @@ namespace voila
             registerLLVMDialectTranslation(*mlirModule->getContext());
 
             // An optimization pipeline to use within the execution engine.
+            auto tmBuilderOrError = llvm::orc::JITTargetMachineBuilder::detectHost();
+            if (!tmBuilderOrError)
+                throw std::runtime_error("Failed to create a JITTargetMachineBuilder for the host");
+
+            auto tmOrError = tmBuilderOrError->createTargetMachine();
+            if (!tmOrError)
+                throw std::runtime_error("Failed to create a TargetMachine for the host");
 
             auto optPipeline = makeOptimizingTransformer(
                 /*optLevel=*/config.optimize ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None,
                 /*sizeLevel=*/llvm::CodeModel::Small,
-                /*targetMachine=*/nullptr);
+                /*targetMachine=*/tmOrError->get());
+
+            SmallVector<StringRef, 4> executionEngineLibs;
+
+            using MlirRunnerInitFn = void (*)(llvm::StringMap<void *> &);
+            using MlirRunnerDestroyFn = void (*)();
+
+            llvm::StringMap<void *> exportSymbols;
+            SmallVector<MlirRunnerDestroyFn> destroyFns;
+
+            // Handle libraries that do support mlir-runner init/destroy callbacks.
+            for (auto &libPath : {MLIR_UTILS_LIB, MLIR_C_UTILS_LIB, MLIR_ASYNC_LIB})
+            {
+                auto lib = llvm::sys::DynamicLibrary::getPermanentLibrary(libPath);
+                void *initSym = lib.getAddressOfSymbol("__mlir_runner_init");
+                void *destroySim = lib.getAddressOfSymbol("__mlir_runner_destroy");
+
+                // Library does not support mlir runner, load it with ExecutionEngine.
+                if (!initSym || !destroySim)
+                {
+                    executionEngineLibs.push_back(libPath);
+                    continue;
+                }
+
+                auto initFn = reinterpret_cast<MlirRunnerInitFn>(initSym);
+                initFn(exportSymbols);
+
+                auto destroyFn = reinterpret_cast<MlirRunnerDestroyFn>(destroySim);
+                destroyFns.push_back(destroyFn);
+            }
+
+            // Build a runtime symbol map from the config and exported symbols.
+            auto runtimeSymbolMap = [&](llvm::orc::MangleAndInterner interner)
+            {
+                auto symbolMap = llvm::orc::SymbolMap();
+                for (auto &exportSymbol : exportSymbols)
+                    symbolMap[interner(exportSymbol.getKey())] =
+                        llvm::JITEvaluatedSymbol::fromPointer(exportSymbol.getValue());
+                return symbolMap;
+            };
 
             // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
             // the module.
             auto expectedEngine = ExecutionEngine::create(*mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline,
                                                           config.optimize ? llvm::CodeGenOpt::Level::Aggressive :
                                                                             llvm::CodeGenOpt::Level::None,
-                                                          {MLIR_UTILS_LIB}, true, config.debug, config.profile);
+                                                          executionEngineLibs, true, config.debug, config.profile);
             assert(expectedEngine && "failed to construct an execution engine");
 
             maybeEngine = std::move(*expectedEngine);
+            (*maybeEngine)->registerSymbols(runtimeSymbolMap);
         }
 
         return *maybeEngine;
@@ -301,7 +348,8 @@ namespace voila
         pm.addNestedPass<FuncOp>(createConvertLinalgToAffineLoopsPass());
         if (config.optimize && config.vectorize)
         {
-            std::unique_ptr<Pass> vectorizationPass = createSuperVectorizePass(llvm::makeArrayRef<int64_t>(config.vector_size));
+            std::unique_ptr<Pass> vectorizationPass =
+                createSuperVectorizePass(llvm::makeArrayRef<int64_t>(config.vector_size));
             if (config.vectorize_reductions)
             {
                 (void) vectorizationPass->initializeOptions("vectorize-reductions=true");
@@ -331,7 +379,7 @@ namespace voila
             pm.addNestedPass<FuncOp>(createConvertLinalgToParallelLoopsPass());
         }
 
-                pm.addNestedPass<FuncOp>(createConvertLinalgToLoopsPass());
+        pm.addNestedPass<FuncOp>(createConvertLinalgToLoopsPass());
 
         pm.addNestedPass<FuncOp>(createSimplifyAffineStructuresPass());
         pm.addNestedPass<FuncOp>(createAffineScalarReplacementPass());
@@ -363,9 +411,14 @@ namespace voila
         pm.addNestedPass<FuncOp>(createParallelLoopSpecializationPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());
         if (config.optimize && config.parallelize)
+        {
             pm.addPass(createAsyncParallelForPass(true, config.parallel_threads, 1));
+            pm.addPass(createAsyncToAsyncRuntimePass());
+            pm.addPass(createAsyncRuntimeRefCountingPass());
+            pm.addPass(createAsyncRuntimeRefCountingOptPass());
+        }
 
-        /*pm.addNestedPass<FuncOp>(createBufferLoopHoistingPass());
+        pm.addNestedPass<FuncOp>(createBufferLoopHoistingPass());
         pm.addNestedPass<FuncOp>(createPromoteBuffersToStackPass());
         if (config.optimize && config.fuse)
             pm.addNestedPass<FuncOp>(createLoopFusionPass());
@@ -404,7 +457,7 @@ namespace voila
             pm.addPass(createConvertAsyncToLLVMPass());
         pm.addPass(::mlir::createLowerToLLVMPass());
 
-        pm.addPass(createReconcileUnrealizedCastsPass());*/
+        pm.addPass(createReconcileUnrealizedCastsPass());
 
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));
@@ -698,7 +751,7 @@ namespace voila
             spdlog::error("failed to open {}", source_path);
         }
 
-        llvm::DebugFlag = config.debug;
+        // llvm::DebugFlag = config.debug;
     }
 
     Program::Program(Config config) : Program("", std::move(config)) {}

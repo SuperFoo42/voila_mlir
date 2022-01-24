@@ -10,3 +10,9 @@ build
 /build/
 /tests/test_defs.hpp.inc
 /benchmark/include/benchmark_defs.hpp.inc
+include/defs.hpp
+*.dot
+/benchmark/data
+/venv
+.vscode
+lexer.svg

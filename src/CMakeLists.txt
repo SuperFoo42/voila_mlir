@@ -68,6 +68,18 @@ target_link_libraries(voila_compiler
         spdlog
         range-v3
         MLIRExecutionEngine
+        MLIRIR
+        MLIRParser
+        MLIRStandard
+        MLIRLLVMToLLVMIRTranslation
+        MLIRTargetLLVMIRExport
+        MLIRStandardToLLVM
+        MLIRSupport
+        MLIRAnalysis
+        MLIRExecutionEngine
+        MLIRJitRunner
+        MLIRTransforms
+        MLIRTranslation
         ${LLVM_LINK_COMPONENTS}
         papi
         )

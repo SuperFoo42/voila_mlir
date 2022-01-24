@@ -1,2 +1,4 @@
 #pragma once
-#define MLIR_UTILS_LIB "${llvm_BINARY_DIR}/lib/libmlir_c_runner_utils.so"
+#define MLIR_C_UTILS_LIB "${llvm_BINARY_DIR}/lib/libmlir_c_runner_utils.so"
+#define MLIR_UTILS_LIB "${llvm_BINARY_DIR}/lib/libmlir_runner_utils.so"
+#define MLIR_ASYNC_LIB "${llvm_BINARY_DIR}/lib/libmlir_async_runtime.so"
