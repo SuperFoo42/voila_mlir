@@ -16,11 +16,11 @@ std::random_device rd;
 std::mt19937 gen(rd());
 
 // TODO: global vars and so on...
-auto lineitem = CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz"));
+auto lineitem = CompressedTable(std::string(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz"));
 auto customer_orders_lineitem =
-    CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/customer_orders_lineitem1g_compressed.bin.xz"));
+    CompressedTable(std::string(VOILA_BENCHMARK_DATA_PATH "/customer_orders_lineitem.bin.xz"));
 auto part_supplier_lineitem_partsupp_orders_nation =
-    CompressedTable::readTable(std::string(VOILA_BENCHMARK_DATA_PATH "/q9_wide_table.bin.xz"));
+    CompressedTable(std::string(VOILA_BENCHMARK_DATA_PATH "/q9_wide_table.bin.xz"));
 
 // substitution parameter generators
 static int32_t getQ1Date()
@@ -127,9 +127,7 @@ static void Q1(benchmark::State &state)
     auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
 
     Config config;
-    config.debug = false;
-    config.optimize = true;
-    config.tile = false;
+    config.debug(false).optimize().tile(false).parallelize(false);
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q1.voila";
     double queryTime = 0;
     Program prog(query, config);
@@ -235,7 +233,7 @@ static void Q1_Baseline(benchmark::State &state)
     }
 }
 
-static void Q3(benchmark::State &state)
+/*static void Q3(benchmark::State &state)
 {
     using namespace voila;
 
@@ -340,7 +338,7 @@ static void Q3_Baseline(benchmark::State &state)
             }
         }
     }
-}
+}*/
 
 static void Q6(benchmark::State &state)
 {
@@ -352,8 +350,10 @@ static void Q6(benchmark::State &state)
     auto l_discount = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(lineitem_cols::L_DISCOUNT);
     auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
     Config config;
-    config.debug = false;
-    config.optimize = true;
+    config.debug(false).optimize();
+    //this generates faster code:
+    //config.parallelize=false;
+    //config.tile=false;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
 
     double queryTime = 0;
@@ -414,7 +414,7 @@ static void Q6_Baseline(benchmark::State &state)
         }
     }
 }
-
+/*
 static void Q9(benchmark::State &state)
 {
     using namespace voila;
@@ -677,15 +677,15 @@ static void Q18_Baseline(benchmark::State &state)
             }
         }
     }
-}
+}*/
 
 BENCHMARK(Q1)->Unit(benchmark::kMillisecond);
-BENCHMARK(Q3)->Unit(benchmark::kMillisecond);
+//BENCHMARK(Q3)->Unit(benchmark::kMillisecond);
 BENCHMARK(Q6)->Unit(benchmark::kMillisecond);
-BENCHMARK(Q9)->Unit(benchmark::kMillisecond);
-BENCHMARK(Q18)->Unit(benchmark::kMillisecond);
+//BENCHMARK(Q9)->Unit(benchmark::kMillisecond);
+//BENCHMARK(Q18)->Unit(benchmark::kMillisecond);
 BENCHMARK(Q1_Baseline)->Unit(benchmark::kMillisecond);
-BENCHMARK(Q3_Baseline)->Unit(benchmark::kMillisecond);
+//BENCHMARK(Q3_Baseline)->Unit(benchmark::kMillisecond);
 BENCHMARK(Q6_Baseline)->Unit(benchmark::kMillisecond);
-BENCHMARK(Q9_Baseline)->Unit(benchmark::kMillisecond);
-BENCHMARK(Q18_Baseline)->Unit(benchmark::kMillisecond);
+//BENCHMARK(Q9_Baseline)->Unit(benchmark::kMillisecond);
+//BENCHMARK(Q18_Baseline)->Unit(benchmark::kMillisecond);

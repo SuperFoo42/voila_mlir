@@ -1,6 +1,7 @@
 #include "Config.hpp"
 #include "Program.hpp"
 #include "Tables.hpp"
+#include "Profiler.hpp"
 #include "benchmark_defs.hpp.inc"
 
 #include <algorithm>
@@ -49,16 +50,13 @@ static size_t hash(T1 val1, T2 val2, T3 val3)
 
 constexpr int32_t INVALID = static_cast<int32_t>(std::numeric_limits<uint64_t>::max());
 template<class T1, class T2>
-static size_t probeAndInsert(size_t key,
-                             const size_t size,
-                             const T1 val1,
-                             const T2 val2,
-                             std::vector<T1> &vals1,
-                             std::vector<T2> &vals2)
+static size_t probeAndInsert(size_t key, const T1 val1, const T2 val2, std::vector<T1> &vals1, std::vector<T2> &vals2)
 {
+    assert(vals1.size() == vals2.size());
+    const auto size = vals1.size();
     key %= size;
     // probing
-    while (vals1[key % size] != INVALID && !(vals1[key % size] == val1 && vals2[key % size] == val2))
+    while (vals1[key] != INVALID && !(vals1[key] == val1 && vals2[key] == val2))
     {
         key += 1;
         key %= size;
@@ -87,7 +85,6 @@ static size_t contains(size_t key, T val, std::vector<T> &vals)
 
 template<class T1, class T2, class T3>
 static size_t probeAndInsert(size_t key,
-                             const size_t size,
                              const T1 val1,
                              const T2 val2,
                              const T3 val3,
@@ -95,10 +92,11 @@ static size_t probeAndInsert(size_t key,
                              std::vector<T2> &vals2,
                              std::vector<T3> &vals3)
 {
+    assert(vals1.size() == vals2.size() && vals2.size() == vals3.size());
+    const auto size = vals1.size();
     key %= size;
     // probing
-    while (vals1[key % size] != INVALID &&
-           !(vals1[key % size] == val1 && vals2[key % size] == val2 && vals3[key % size] == val3))
+    while (vals1[key] != INVALID && !(vals1[key] == val1 && vals2[key] == val2 && vals3[key] == val3))
     {
         key += 1;
         key %= size;
@@ -138,7 +136,7 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     auto l_returnflag = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_RETURNFLAG>>(lineitem_cols::L_RETURNFLAG);
     auto l_linestatus = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_LINESTATUS>>(lineitem_cols::L_LINESTATUS);
     auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
-    const auto htSizes = std::bit_ceil(l_quantity.size());
+    const auto htSizes = 128; // std::bit_ceil(l_quantity.size());
 
     // tpc qualification date
     auto date = 19980901;
@@ -158,8 +156,8 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     {
         if (l_shipdate[i] <= date)
         {
-            const auto idx = probeAndInsert(hash(l_returnflag[i], l_linestatus[i]), htSizes, l_returnflag[i],
-                                            l_linestatus[i], ht_returnflag_ref, ht_linestatus_ref);
+            const auto idx = probeAndInsert(hash(l_returnflag[i], l_linestatus[i]), l_returnflag[i], l_linestatus[i],
+                                            ht_returnflag_ref, ht_linestatus_ref);
             sum_qty_ref[idx] += l_quantity[i];
             sum_base_price_ref[idx] += l_extendedprice[i];
             sum_disc_price_ref[idx] += l_extendedprice[i] * (1 - l_discount[i]);
@@ -176,22 +174,20 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
                                                                 [](auto elem) -> auto { return elem != INVALID; }));
 
     // results slightly differ from sample output, because of float precision errors
-    EXPECT_EQ(ref_idx, 503001);
-    EXPECT_EQ(ht_returnflag_ref[ref_idx], 0);
-    EXPECT_EQ(ht_linestatus_ref[ref_idx], 0);
-    EXPECT_EQ(sum_qty_ref[ref_idx], 37734107);
-    EXPECT_DOUBLE_EQ(sum_base_price_ref[ref_idx], 56586554400.729897);
-    EXPECT_DOUBLE_EQ(sum_disc_price_ref[ref_idx], 53758257134.865143);
-    EXPECT_DOUBLE_EQ(sum_charge_ref[ref_idx], 55909065222.825607);
-    EXPECT_DOUBLE_EQ(avg_qty_ref[ref_idx], 25.522005853257337);
-    EXPECT_DOUBLE_EQ(avg_price_ref[ref_idx], 38273.129734621602);
-    EXPECT_DOUBLE_EQ(avg_disc_ref[ref_idx], 0.04998529583825443);
-    EXPECT_EQ(count_order_ref[ref_idx], 1478493);
+    EXPECT_EQ(ref_idx, 46);
+    EXPECT_EQ(ht_returnflag_ref[ref_idx], 1);
+    EXPECT_EQ(ht_linestatus_ref[ref_idx], 1);
+    EXPECT_EQ(sum_qty_ref[ref_idx], 9.914170e+05);
+    EXPECT_DOUBLE_EQ(sum_base_price_ref[ref_idx], 1487504710.3799965);
+    EXPECT_DOUBLE_EQ(sum_disc_price_ref[ref_idx], 1413082168.0541041);
+    EXPECT_DOUBLE_EQ(sum_charge_ref[ref_idx], 1469649223.1943603);
+    EXPECT_DOUBLE_EQ(avg_qty_ref[ref_idx], 25.516471920522985);
+    EXPECT_DOUBLE_EQ(avg_price_ref[ref_idx], 38284.467760848216);
+    EXPECT_DOUBLE_EQ(avg_disc_ref[ref_idx], 0.050093426674193239);
+    EXPECT_EQ(count_order_ref[ref_idx], 3.885400e+04);
 
     Config config;
-    config.debug = true;
-    config.optimize = true;
-    config.tile = false;
+    config.debug().tile(false);
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q1.voila";
     Program prog(query, config);
 
@@ -244,8 +240,8 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
     auto l_discount = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(lineitem_cols::L_DISCOUNT);
     auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
     Config config;
-    config.debug = true;
-    config.optimize = true;
+    config.debug().tile(false);
+    // config.parallelize=false;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
     Program prog(query, config);
 
@@ -321,10 +317,7 @@ TEST(TPCBenchmarkTests, Q3_Qualification)
 
     // voila calculations
     Config config;
-    config.debug = true;
-    config.optimize = true;
-    config.tile = false;
-    config.parallelize = false;
+    config.debug().tile(false).parallelize(false);
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q3.voila";
     Program prog(query, config);
     prog << l_orderkey;
@@ -361,9 +354,9 @@ TEST(TPCBenchmarkTests, Q3_Qualification)
         if (c_mktsegment[i] == segment && c_custkey[i] == o_custkey[i] && l_orderkey[i] == o_orderkey[i] &&
             o_orderdate[i] < date && l_shipdate[i] > date)
         {
-            const auto idx = probeAndInsert(hash(l_orderkey[i], o_orderdate[i], o_shippriority[i]), htSizes,
-                                            l_orderkey[i], o_orderdate[i], o_shippriority[i], ht_l_orderkey_ref,
-                                            ht_o_orderdate_ref, ht_o_shippriority_ref);
+            const auto idx =
+                probeAndInsert(hash(l_orderkey[i], o_orderdate[i], o_shippriority[i]), l_orderkey[i], o_orderdate[i],
+                               o_shippriority[i], ht_l_orderkey_ref, ht_o_orderdate_ref, ht_o_shippriority_ref);
 
             sum_disc_price_ref[idx] += l_extendedprice[i] * (1 - l_discount[i]);
         }
@@ -467,8 +460,8 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
             ps_partkey[i] == l_partkey[i] && ps_suppkey[i] == l_suppkey[i] && s_suppkey[i] == l_suppkey[i] &&
             contains(hash(p_name[i]), p_name[i], ht_needle_ref))
         {
-            const auto idx = probeAndInsert(hash(n_name[i], o_orderdate[i] / 10000), htSizes, n_name[i],
-                                            o_orderdate[i] / 10000, ht_n_name_ref, ht_o_orderdate_ref);
+            const auto idx = probeAndInsert(hash(n_name[i], o_orderdate[i] / 10000), n_name[i], o_orderdate[i] / 10000,
+                                            ht_n_name_ref, ht_o_orderdate_ref);
             sum_disc_price_ref[idx] += l_extendedprice[i] * (1 - l_discount[i]) - ps_supplycost[i] * l_quantity[i];
         }
     }
@@ -477,9 +470,7 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
 
     // voila calculations
     Config config;
-    config.debug = true;
-    config.optimize = false;
-    config.tile=false;
+    config.debug().optimize(false).tile(false);
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q9.voila";
     Program prog(query, config);
     prog << n_name;
@@ -534,10 +525,7 @@ TEST(TPCBenchmarkTests, Q18_Qualification)
 
     // voila calculations
     Config config;
-    config.debug = true;
-    config.optimize = true;
-    config.parallelize = false;
-    config.tile = false;
+    config.debug().parallelize(false).tile(false);
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q18.voila";
     Program prog(query, config);
     prog << c_name;

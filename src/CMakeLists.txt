@@ -72,6 +72,7 @@ target_link_libraries(voila_compiler
         MLIRParser
         MLIRStandard
         MLIRLLVMToLLVMIRTranslation
+        MLIROpenMPToLLVMIRTranslation
         MLIRTargetLLVMIRExport
         MLIRStandardToLLVM
         MLIRSupport

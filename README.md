@@ -11,7 +11,8 @@ Out of tree MLIR dialect for adaptive reprogramming database queries.
 - python
 - make
 - liblzma
-
+- openmp (basically optional, but currently required)
+- 
 ### Optional
 - ccache
 - ninja

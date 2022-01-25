@@ -1,66 +1,40 @@
 #pragma once
-#include "ArgsOutOfRangeError.hpp"
-#include "Config.hpp"
-#include "DotVisualizer.hpp"
-#include "JITInvocationError.hpp"
-#include "LLVMGenerationError.hpp"
-#include "LLVMOptimizationError.hpp"
-#include "MLIRGenerationError.hpp"
-#include "MLIRGenerator.hpp"
-#include "MLIRLoweringError.hpp"
-#include "NotImplementedException.hpp"
-#include "ParsingError.hpp"
-#include "TypeInferencePass.hpp"
-#include "TypeInferer.hpp"
-#include "ast/Fun.hpp"
 
-#include <fstream>
-#include <llvm/IR/AssemblyAnnotationWriter.h>
 #include <memory>
-#include <spdlog/spdlog.h>
+#include <range/v3/all.hpp>
 #include <string>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
-#include <llvm/CodeGen/CommandFlags.h>
-#include <llvm/IR/Module.h>
-#include <llvm/Support/ErrorOr.h>
-#include <llvm/Support/Host.h>
-#include <llvm/Support/SourceMgr.h>
-#include <llvm/Support/TargetRegistry.h>
-#include <llvm/Support/TargetSelect.h>
-#include <llvm/Support/raw_ostream.h>
-#include <llvm/Target/TargetMachine.h>
-#include <mlir/ExecutionEngine/ExecutionEngine.h>
+#include "llvm/IR/LLVMContext.h"
 #include <mlir/ExecutionEngine/MemRefUtils.h>
-#include <mlir/ExecutionEngine/OptUtils.h>
-#include <mlir/IR/AsmState.h>
-#include <mlir/IR/BuiltinOps.h>
-#include <mlir/IR/Dialect.h>
 #include <mlir/IR/MLIRContext.h>
-#include <mlir/IR/VoilaDialect.h>
+#include <mlir/IR/OwningOpRef.h>
 #include <mlir/InitAllDialects.h>
-#include <mlir/InitAllPasses.h>
-#include <mlir/Pass/Pass.h>
-#include <mlir/Pass/PassManager.h>
-#include <mlir/Passes/VoilaToAffineLoweringPass.hpp>
-#include <mlir/Passes/VoilaToLLVMLoweringPass.hpp>
-#include <mlir/Passes/VoilaToLinalgLoweringPass.hpp>
-#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
-#include <mlir/Target/LLVMIR/Export.h>
-#include <mlir/Transforms/Passes.h>
-#include <mlir/lowering/LinalgTiledLoopsToAffineForPass.hpp>
+#include <mlir/IR/BuiltinOps.h>
 #pragma GCC diagnostic pop
-#include "Profiler.hpp"
 
-#include <memory>
-#include <range/v3/all.hpp>
-#include <unordered_map>
+#include "TypeInferer.hpp"
+#include "Types.hpp"
+#include "ast/Expression.hpp"
+#include "Config.hpp"
+
+namespace mlir
+{
+    class ExecutionEngine;
+}
 
 namespace voila
 {
+    namespace ast
+    {
+        class Expression;
+        class Fun;
+        class Statement;
+    } // namespace ast
     namespace lexer
     {
         class Lexer;
@@ -85,7 +59,8 @@ namespace voila
         {
             for (auto &ptr : toDealloc)
             {
-                std::free(ptr);
+                // TODO: somehow, this leads to segfaults
+                // std::free(ptr);
                 ptr = nullptr;
             }
             std::free(b);
@@ -140,13 +115,13 @@ namespace voila
         size_t nparam = 0;
         ::mlir::MLIRContext context;
         llvm::LLVMContext llvmContext;
-        ::mlir::OwningModuleRef mlirModule;
+        ::mlir::OwningOpRef<::mlir::ModuleOp> mlirModule;
         std::unique_ptr<llvm::Module> llvmModule;
         std::optional<std::unique_ptr<::mlir::ExecutionEngine>> maybeEngine;
         std::unordered_map<std::string, std::unique_ptr<ast::Fun>> functions;
         Config config;
         lexer::Lexer *lexer;
-        long_long timer = 0;
+        long long timer = 0;
         int64_t max_in_table_size;
 
       public:
@@ -159,7 +134,7 @@ namespace voila
 
         [[maybe_unused]] const ::mlir::MLIRContext &getMLIRContext() const;
 
-        [[maybe_unused]] const ::mlir::OwningModuleRef &getMLIRModule() const;
+        [[maybe_unused]] const ::mlir::OwningOpRef<::mlir::ModuleOp> &getMLIRModule() const;
 
         explicit Program(Config config = Config());
 
@@ -174,7 +149,7 @@ namespace voila
             return ranges::views::values(functions);
         }
 
-        ::mlir::OwningModuleRef &generateMLIR();
+        ::mlir::OwningOpRef<::mlir::ModuleOp> &generateMLIR();
 
         void lowerMLIR();
 

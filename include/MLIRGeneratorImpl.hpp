@@ -8,9 +8,11 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
 #include "VariableAlreadyDeclaredException.hpp"
-
-#include "llvm/Support/raw_ostream.h"
+#include <llvm/ADT/ScopedHashTable.h>
+#include <llvm/Support/raw_ostream.h>
+#include <mlir/IR/Builders.h>
 #pragma GCC diagnostic pop
+
 namespace voila::mlir
 {
     class MLIRGeneratorImpl : public ast::ASTVisitor

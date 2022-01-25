@@ -50,6 +50,11 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/bin)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/lib)
+
+find_package(OpenMP REQUIRED)
+# just hope, the first entry is the correct one...
+list(GET OpenMP_C_LIBRARIES 0 OpenMP_MLIR_LIB)
+
 configure_file(defs.hpp.in ${CMAKE_CURRENT_SOURCE_DIR}/include/defs.hpp)
 set(MLIR_BINARY_DIR ${CMAKE_BINARY_DIR})
 

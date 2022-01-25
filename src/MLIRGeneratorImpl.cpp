@@ -5,6 +5,7 @@
 #include "mlir/IR/VoilaOps.h"
 
 #include <mlir/IR/BuiltinTypes.h>
+#include <mlir/IR/TypeUtilities.h>
 
 namespace voila::mlir
 {

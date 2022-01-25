@@ -15,12 +15,14 @@
 
 int main(int argc, char **argv) {
     // setup mlir
+    //llvm::DebugFlag = true;
     mlir::registerAllPasses();
     mlir::DialectRegistry registry;
     registry.insert<mlir::voila::VoilaDialect>();
     registry.insert<mlir::StandardOpsDialect>();
     registry.insert<mlir::arith::ArithmeticDialect>();
     registry.insert<mlir::vector::VectorDialect>();
+    registry.insert<mlir::omp::OpenMPDialect>();
     ::mlir::registerAllDialects(registry);
     mlir::registerMLIRContextCLOptions();
     spdlog::set_level(spdlog::level::debug);

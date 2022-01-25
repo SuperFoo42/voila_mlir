@@ -1,11 +1,53 @@
 #include "Program.hpp"
 
+#include "ArgsOutOfRangeError.hpp"
 #include "Config.hpp"
+#include "DotVisualizer.hpp"
+#include "JITInvocationError.hpp"
+#include "LLVMGenerationError.hpp"
+#include "MLIRGenerationError.hpp"
+#include "MLIRLoweringError.hpp"
+#include "NotImplementedException.hpp"
+#include "ParsingError.hpp"
+#include "Profiler.hpp"
+#include "TypeInferencePass.hpp"
+#include "TypeInferer.hpp"
+#include "ast/Fun.hpp"
 #include "defs.hpp"
 #include "voila_lexer.hpp"
+#include "MLIRGenerator.hpp"
 
 #include <MlirModuleVerificationError.hpp>
+#include <fstream>
+#include <llvm/IR/AssemblyAnnotationWriter.h>
+#include <spdlog/spdlog.h>
 #include <utility>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
+#include <llvm/CodeGen/CommandFlags.h>
+#include <llvm/IR/Module.h>
+#include <llvm/Support/ErrorOr.h>
+#include <llvm/Support/Host.h>
+#include <llvm/Support/SourceMgr.h>
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/raw_ostream.h>
+#include <mlir/ExecutionEngine/ExecutionEngine.h>
+#include <mlir/ExecutionEngine/OptUtils.h>
+#include <mlir/IR/AsmState.h>
+#include <mlir/IR/VoilaDialect.h>
+#include <mlir/InitAllPasses.h>
+#include <mlir/Pass/Pass.h>
+#include <mlir/Pass/PassManager.h>
+#include <mlir/Passes/VoilaToAffineLoweringPass.hpp>
+#include <mlir/Passes/VoilaToLinalgLoweringPass.hpp>
+#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
+#include <mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h>
+#include <mlir/Target/LLVMIR/Export.h>
+#include <mlir/Transforms/Passes.h>
+#include <mlir/lowering/LinalgTiledLoopsToAffineForPass.hpp>
+#pragma GCC diagnostic pop
 
 namespace voila
 {
@@ -34,7 +76,7 @@ namespace voila
         return res;
     }
 
-    static std::string MLIRModuleToString(OwningModuleRef &module)
+    static std::string MLIRModuleToString(OwningOpRef<ModuleOp> &module)
     {
         std::string res;
         llvm::raw_string_ostream os(res);
@@ -94,7 +136,7 @@ namespace voila
         func_vars.emplace(expr.as_variable()->var, expr);
     }
 
-    const OwningModuleRef &Program::getMLIRModule() const
+    const ::mlir::OwningOpRef<ModuleOp> &Program::getMLIRModule() const
     {
         return mlirModule;
     }
@@ -125,7 +167,7 @@ namespace voila
                 throw std::runtime_error("Failed to create a TargetMachine for the host");
 
             auto optPipeline = makeOptimizingTransformer(
-                /*optLevel=*/config.optimize ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None,
+                /*optLevel=*/config._optimize ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None,
                 /*sizeLevel=*/llvm::CodeModel::Small,
                 /*targetMachine=*/tmOrError->get());
 
@@ -138,7 +180,8 @@ namespace voila
             SmallVector<MlirRunnerDestroyFn> destroyFns;
 
             // Handle libraries that do support mlir-runner init/destroy callbacks.
-            for (auto &libPath : {MLIR_UTILS_LIB, MLIR_C_UTILS_LIB, MLIR_ASYNC_LIB})
+            //TODO: only search libs required by config for faster compile-time
+            for (auto &libPath : {MLIR_UTILS_LIB, MLIR_C_UTILS_LIB, MLIR_ASYNC_LIB, MLIR_OPENMP_LIB})
             {
                 auto lib = llvm::sys::DynamicLibrary::getPermanentLibrary(libPath);
                 void *initSym = lib.getAddressOfSymbol("__mlir_runner_init");
@@ -171,9 +214,9 @@ namespace voila
             // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
             // the module.
             auto expectedEngine = ExecutionEngine::create(*mlirModule, /*llvmModuleBuilder=*/nullptr, optPipeline,
-                                                          config.optimize ? llvm::CodeGenOpt::Level::Aggressive :
-                                                                            llvm::CodeGenOpt::Level::None,
-                                                          executionEngineLibs, true, config.debug, config.profile);
+                                                          config._optimize ? llvm::CodeGenOpt::Level::Aggressive :
+                                                                             llvm::CodeGenOpt::Level::None,
+                                                          executionEngineLibs, true, config._debug, config._profile);
             assert(expectedEngine && "failed to construct an execution engine");
 
             maybeEngine = std::move(*expectedEngine);
@@ -208,11 +251,11 @@ namespace voila
         auto invocationResult = engine->invokePacked("main", params);
         prof.stop();
         //
-        if (config.debug)
+        if (config._debug)
         {
             std::cout << prof << std::endl;
         }
-        if (config.profile)
+        if (config._profile)
         {
             timer = prof.getTime();
             // TODO: store profiling results
@@ -222,13 +265,17 @@ namespace voila
         {
             throw JITInvocationError();
         }
-        if (config.debug && objPath)
+        if (config._debug && objPath)
             engine->dumpToObjectFile(*objPath);
     }
 
     void Program::convertToLLVM()
     {
         // lower to llvm
+        if (config._openmp_parallel)
+        {
+            registerOpenMPDialectTranslation(*mlirModule->getContext());
+        }
         registerLLVMDialectTranslation(*mlirModule->getContext());
 
         // Convert the module to LLVM IR in a new LLVM IR context.
@@ -245,7 +292,7 @@ namespace voila
 
         /// Optionally run an optimization pipeline over the llvm module.
         auto optPipeline = makeOptimizingTransformer(
-            /*optLevel=*/config.optimize ? 3 : 0, /*sizeLevel=*/0,
+            /*optLevel=*/config._optimize ? 3 : 0, /*sizeLevel=*/0,
             /*targetMachine=*/nullptr);
         if (auto err = optPipeline(llvmModule.get()))
         {
@@ -275,7 +322,7 @@ namespace voila
     void Program::lowerMLIR()
     {
         ::mlir::PassManager pm(&context);
-        if (config.debug)
+        if (config._debug)
         {
             pm.enableStatistics();
         }
@@ -300,7 +347,7 @@ namespace voila
         pm.addNestedPass<FuncOp>(createLinalgStrategyEnablePass());
         pm.addNestedPass<FuncOp>(createLinalgStrategyGeneralizePass());
         // optPM.addPass(createLinalgGeneralizationPass());
-        if (config.optimize && config.fuse)
+        if (config._optimize && config._fuse)
             pm.addNestedPass<FuncOp>(createLinalgElementwiseOpFusionPass());
         pm.addNestedPass<FuncOp>(createLinalgStrategyPromotePass());
 
@@ -315,10 +362,11 @@ namespace voila
         pm.addNestedPass<FuncOp>(createLinalgStrategyInterchangePass());
 
         // pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
-        if (config.optimize && config.tile)
+        if (config._optimize && config._tile)
         {
-            auto tile_size = {config.tile_size == -1 ? max_in_table_size / config.parallel_threads : config.tile_size};
-            if (config.peel)
+            auto tile_size = {config._tile_size == -1 ? max_in_table_size / config._parallel_threads :
+                                                        config._tile_size};
+            if (config._peel)
             {
                 pm.addNestedPass<FuncOp>(createLinalgTilingPass(
                     tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}, {0}));
@@ -346,11 +394,11 @@ namespace voila
         pm.addNestedPass<FuncOp>(createCSEPass());
 
         pm.addNestedPass<FuncOp>(createConvertLinalgToAffineLoopsPass());
-        if (config.optimize && config.vectorize)
+        if (config._optimize && config._vectorize)
         {
             std::unique_ptr<Pass> vectorizationPass =
-                createSuperVectorizePass(llvm::makeArrayRef<int64_t>(config.vector_size));
-            if (config.vectorize_reductions)
+                createSuperVectorizePass(llvm::makeArrayRef<int64_t>(config._vector_size));
+            if (config._vectorize_reductions)
             {
                 (void) vectorizationPass->initializeOptions("vectorize-reductions=true");
             }
@@ -374,7 +422,7 @@ namespace voila
         //  pm.addNestedPass<FuncOp>(createConvertLinalgToAffineLoopsPass());
 
         pm.addNestedPass<FuncOp>(createConvertLinalgTiledLoopsToSCFPass());
-        if (config.optimize && config.parallelize)
+        if (config._optimize && config._parallelize)
         {
             pm.addNestedPass<FuncOp>(createConvertLinalgToParallelLoopsPass());
         }
@@ -387,10 +435,10 @@ namespace voila
         pm.addNestedPass<FuncOp>(createAffineLoopNormalizePass());
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
-        if (config.optimize && config.parallelize)
+        if (config._optimize && config._parallelize)
         {
             std::unique_ptr<Pass> parallelizationPass = createAffineParallelizePass();
-            if (config.parallelize_reductions)
+            if (config._parallelize_reductions)
             {
                 (void) parallelizationPass->initializeOptions("parallel-reductions=true");
             }
@@ -402,7 +450,12 @@ namespace voila
         // pm.addNestedPass<FuncOp>(createLoopCoalescingPass());
         // pm.addNestedPass<FuncOp>(createForLoopPeelingPass());
         // pm.addNestedPass<FuncOp>(createLoopUnrollPass(8));
-        if (config.optimize && config.unroll)
+        if (config._optimize && config._gpu_parallel)
+        {
+            pm.addNestedPass<FuncOp>(createAffineForToGPUPass());
+            pm.addPass(createParallelLoopToGpuPass());
+        }
+        if (config._optimize && config._unroll)
             pm.addNestedPass<FuncOp>(createLoopUnrollAndJamPass(8));
         pm.addNestedPass<FuncOp>(createForLoopSpecializationPass());
         pm.addNestedPass<FuncOp>(createParallelLoopFusionPass());
@@ -410,17 +463,25 @@ namespace voila
         pm.addNestedPass<FuncOp>(createParallelLoopTilingPass());
         pm.addNestedPass<FuncOp>(createParallelLoopSpecializationPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());
-        if (config.optimize && config.parallelize)
+        if (config._optimize && config._async_parallel)
         {
-            pm.addPass(createAsyncParallelForPass(true, config.parallel_threads, 1));
+            pm.addPass(createAsyncParallelForPass(true, config._parallel_threads, 1));
             pm.addPass(createAsyncToAsyncRuntimePass());
             pm.addPass(createAsyncRuntimeRefCountingPass());
             pm.addPass(createAsyncRuntimeRefCountingOptPass());
         }
+        if (config._optimize && config._openmp_parallel)
+        {
+            pm.addPass(createConvertSCFToOpenMPPass());
+        }
+        if (config._optimize && config._gpu_parallel)
+        {
+            pm.addPass(createParallelLoopToGpuPass());
+        }
 
         pm.addNestedPass<FuncOp>(createBufferLoopHoistingPass());
         pm.addNestedPass<FuncOp>(createPromoteBuffersToStackPass());
-        if (config.optimize && config.fuse)
+        if (config._optimize && config._fuse)
             pm.addNestedPass<FuncOp>(createLoopFusionPass());
 
         pm.addNestedPass<FuncOp>(createSCCPPass());
@@ -428,7 +489,7 @@ namespace voila
         pm.addNestedPass<FuncOp>(createCSEPass());
         pm.addNestedPass<FuncOp>(::mlir::bufferization::createFinalizingBufferizePass());
 
-        if (config.optimize && config.vectorize)
+        if (config._optimize && config._vectorize)
         {
             pm.addNestedPass<FuncOp>(createLinalgStrategyLowerVectorsPass(
                 linalg::LinalgVectorLoweringOptions()
@@ -445,6 +506,7 @@ namespace voila
                                                          .enableReassociateFPReductions(true)
                                                          .enableX86Vector(true)));
         }
+
         pm.addPass(createMemRefToLLVMPass());
         pm.addNestedPass<FuncOp>(createLowerToCFGPass());
 
@@ -453,8 +515,15 @@ namespace voila
 
         pm.addNestedPass<FuncOp>(arith::createConvertArithmeticToLLVMPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());
-        if (config.optimize && config.parallelize)
+        if (config._optimize && config._async_parallel)
+        {
             pm.addPass(createConvertAsyncToLLVMPass());
+        }
+        if (config._optimize && config._openmp_parallel)
+        {
+            pm.addPass(createConvertOpenMPToLLVMPass());
+        }
+
         pm.addPass(::mlir::createLowerToLLVMPass());
 
         pm.addPass(createReconcileUnrealizedCastsPass());
@@ -467,12 +536,12 @@ namespace voila
         }
     }
 
-    ::mlir::OwningModuleRef &Program::generateMLIR()
+    OwningOpRef<ModuleOp> &Program::generateMLIR()
     {
         // Load our Dialect in this MLIR Context.
         context.getOrLoadDialect<::mlir::voila::VoilaDialect>();
         context.getOrLoadDialect<::mlir::vector::VectorDialect>();
-        if (config.debug)
+        if (config._debug)
         {
             // context.disableMultithreading(); //FIXME: with threading disabled, the program segfaults
         }
@@ -554,7 +623,7 @@ namespace voila
 
         if (!maybeEngine)
         {
-            if (config.plotAST)
+            if (config._plotAST)
             {
                 to_dot(config.ASTOutFile);
             }
@@ -568,7 +637,7 @@ namespace voila
             // generate mlir
             generateMLIR();
             spdlog::debug("Finished mlir generation");
-            if (config.printMLIR)
+            if (config._printMLIR)
             {
                 printMLIR(config.MLIROutFile);
             }
@@ -576,14 +645,14 @@ namespace voila
             // lower mlir
             lowerMLIR();
             spdlog::debug("Finished mlir lowering");
-            if (config.printLoweredMLIR)
+            if (config._printLoweredMLIR)
             {
                 printMLIR(config.MLIRLoweredOutFile);
             }
             spdlog::debug("Start mlir to llvm conversion");
             // lower to llvm
             convertToLLVM();
-            if (config.printLLVM)
+            if (config._printLLVM)
             {
                 printLLVM(config.LLVMOutFile);
             }

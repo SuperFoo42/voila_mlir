@@ -45,8 +45,8 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
     // The shape is required to match if both types are ranked.
     return !input.hasRank() || !output.hasRank() || input == output;
 }
-/*
 
+//FIXME: not safe in all cases
 LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, PatternRewriter &rewriter)
 {
     SmallVector<std::reference_wrapper<OpOperand>> uses;
@@ -112,4 +112,4 @@ LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, Patt
     rewriter.replaceOpWithNewOp<::mlir::SelectOp>(op, op.pred(), op.values(), falseSel);
 
     return success();
-}*/
+}

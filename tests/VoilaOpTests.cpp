@@ -14,8 +14,7 @@ TEST(AddTests, TensorTensorTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = false;
+    config.debug().optimize(false);
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_add.voila";
     constexpr size_t TENSOR_SIZE = 100;
@@ -80,8 +79,7 @@ TEST(SubTests, TensorTensorTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug().optimize();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_sub.voila";
     constexpr size_t TENSOR_SIZE = 100;
@@ -123,8 +121,8 @@ TEST(HashTableTests, ScalarHash)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = false;
+    config.debug().optimize(false);
+
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_hash.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr int64_t TENSOR_VALS = 123;
@@ -150,8 +148,7 @@ TEST(HashTableTests, VariadicHash)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug().optimize();
     constexpr auto file = VOILA_TEST_SOURCES_PATH "/complex_hash.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr uint64_t TENSOR_VALS1 = 123;
@@ -181,8 +178,7 @@ TEST(HashTableTests, ScalarInsert)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = false;
+    config.debug().optimize(false);
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_insert.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr size_t NEXTPOW = 128;
@@ -222,8 +218,7 @@ TEST(HashTableTests, ComplexInsert)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug().optimize();
     constexpr auto file = VOILA_TEST_SOURCES_PATH "/complex_insert.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr uint64_t TENSOR_VALS1 = 123;
@@ -283,8 +278,7 @@ TEST(HashTableTests, SimpleLookup)
 {
     Config config;
     //::llvm::DebugFlag = true;
-    config.debug = true;
-    config.optimize = false;
+    config.debug().optimize(false);
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_lookup.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr int64_t TENSOR_VALS = 123;
@@ -310,8 +304,7 @@ TEST(HashTableTests, ComplexLookup)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug().optimize();
     constexpr auto file = VOILA_TEST_SOURCES_PATH "/complex_lookup.voila";
     constexpr size_t TENSOR_SIZE = 100;
     constexpr uint64_t TENSOR_VALS1 = 123;
@@ -341,9 +334,7 @@ TEST(AggregateTests, SumTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
-    config.parallelize = true;
+    config.debug().async_parallel(false).openmp_parallel();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_sum.voila";
     constexpr size_t TENSOR_SIZE = 100;
@@ -365,8 +356,7 @@ TEST(AggregateTests, MinTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug();
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_min.voila";
     constexpr auto TENSOR_VALS = std::to_array<uint64_t>(
         {441, 965, 381, 125, 626, 162, 930, 213, 969, 866, 235, 571, 822, 469, 350, 73,  150, 494, 629, 236,
@@ -391,8 +381,7 @@ TEST(AggregateTests, MaxTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_max.voila";
     constexpr auto TENSOR_VALS = std::to_array<uint64_t>(
@@ -418,8 +407,7 @@ TEST(AggregateTests, AvgTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_avg.voila";
     constexpr size_t TENSOR_SIZE = 100;
@@ -441,8 +429,7 @@ TEST(AggregateTests, CountTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_count.voila";
     constexpr size_t TENSOR_SIZE = 100;
@@ -463,8 +450,7 @@ TEST(AggregateTests, GroupSumTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/grouped_sum.voila";
     constexpr size_t TENSOR_SIZE = 100;
@@ -500,8 +486,7 @@ TEST(AggregateTests, GroupMinTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/grouped_min.voila";
     constexpr auto TENSOR_VALS = std::to_array<uint64_t>(
@@ -551,8 +536,7 @@ TEST(AggregateTests, GroupMaxTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/grouped_max.voila";
     constexpr auto TENSOR_VALS = std::to_array<int64_t>(
@@ -602,8 +586,7 @@ TEST(AggregateTests, GroupAvgTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/grouped_avg.voila";
     constexpr size_t TENSOR_SIZE = 100;
@@ -640,8 +623,7 @@ TEST(AggregateTests, GroupCountTest)
 {
     Config config;
 
-    config.debug = true;
-    config.optimize = true;
+    config.debug();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/grouped_count.voila";
     constexpr size_t TENSOR_SIZE = 100;
