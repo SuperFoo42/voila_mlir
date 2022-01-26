@@ -240,7 +240,7 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
     auto l_discount = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(lineitem_cols::L_DISCOUNT);
     auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
     Config config;
-    config.debug().tile(false);
+    config.debug().tile(false).async_parallel(false).openmp_parallel();
     // config.parallelize=false;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
     Program prog(query, config);

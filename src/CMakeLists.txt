@@ -4,7 +4,7 @@ CPMAddPackage("gh:fmtlib/fmt#8.1.0")
 
 CPMAddPackage(
         NAME spdlog
-        TAG 1.9.2
+        GIT_TAG v1.9.2
         GITHUB_REPOSITORY gabime/spdlog
         OPTIONS "SPDLOG_FMT_EXTERNAL ON" #we already use our own fmt
 )

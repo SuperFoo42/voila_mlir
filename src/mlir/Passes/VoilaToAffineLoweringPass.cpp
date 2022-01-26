@@ -25,9 +25,9 @@ namespace voila::mlir
     using namespace ::mlir::voila;
     namespace lowering
     {
-        void VoilaToAffineLoweringPass::runOnFunction()
+        void VoilaToAffineLoweringPass::runOnOperation()
         {
-            auto function = getFunction();
+            auto function = getOperation();
 
             // We only lower the main function as we expect that all other functions have
             // been inlined.

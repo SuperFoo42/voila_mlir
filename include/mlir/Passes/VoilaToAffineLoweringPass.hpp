@@ -26,14 +26,14 @@ namespace voila::mlir
 {
     namespace lowering
     {
-        struct VoilaToAffineLoweringPass : public ::mlir::PassWrapper<VoilaToAffineLoweringPass, ::mlir::FunctionPass>
+        struct VoilaToAffineLoweringPass : public ::mlir::PassWrapper<VoilaToAffineLoweringPass, ::mlir::OperationPass<::mlir::FuncOp>>
         {
             void getDependentDialects(::mlir::DialectRegistry &registry) const override
             {
                 registry.insert<::mlir::AffineDialect, ::mlir::memref::MemRefDialect, ::mlir::StandardOpsDialect,
                                 ::mlir::linalg::LinalgDialect, ::mlir::scf::SCFDialect, ::mlir::bufferization::BufferizationDialect>();
             }
-            void runOnFunction() final;
+            void runOnOperation() final;
         };
     } // namespace lowering
 

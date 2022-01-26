@@ -16,16 +16,16 @@ namespace voila::mlir
     namespace lowering
     {
         class LinalgTiledLoopsToAffineForPass
-            : public ::mlir::PassWrapper<LinalgTiledLoopsToAffineForPass, ::mlir::FunctionPass>
+            : public ::mlir::PassWrapper<LinalgTiledLoopsToAffineForPass, ::mlir::OperationPass<::mlir::FuncOp>>
         {
           public:
             LinalgTiledLoopsToAffineForPass() = default;
             LinalgTiledLoopsToAffineForPass(const LinalgTiledLoopsToAffineForPass &pass) = default;
-            void getDependentDialects(::mlir::DialectRegistry &registry) const override;
+            void getDependentDialects(::mlir::DialectRegistry &registry) const final;
 
             [[nodiscard]] ::mlir::StringRef getDescription() const final;
 
-            void runOnFunction() override;
+            void runOnOperation() final;
         };
     }
 

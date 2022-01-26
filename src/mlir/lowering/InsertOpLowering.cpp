@@ -199,7 +199,7 @@ namespace voila::mlir::lowering
 
             // condition block
             auto beforeBlock = builder.createBlock(&loop.getBefore());
-            beforeBlock->addArgument(loop->getOperands().front().getType());
+            beforeBlock->addArgument(loop->getOperands().front().getType(), loc);
             ImplicitLocOpBuilder beforeBuilder(loc, OpBuilder::atBlockEnd(beforeBlock));
 
             beforeBuilder.create<scf::ConditionOp>(
@@ -207,7 +207,7 @@ namespace voila::mlir::lowering
                 loop->getOperands());
             // body block
             auto afterBlock = builder.createBlock(&loop.getAfter());
-            afterBlock->addArgument(loop->getOperands().front().getType());
+            afterBlock->addArgument(loop->getOperands().front().getType(), loc);
             ImplicitLocOpBuilder afterBuilder(loc, OpBuilder::atBlockEnd(afterBlock));
 
             auto nextIdx =

@@ -10,11 +10,11 @@ namespace voila::mlir
         {
             registry.insert<LinalgDialect>();
         }
-        void LinalgTiledLoopsToAffineForPass::runOnFunction()
+        void LinalgTiledLoopsToAffineForPass::runOnOperation()
         {
             RewritePatternSet patterns(&getContext());
             populateLinalgTiledLoopsToAffineForPatterns(patterns);
-            (void) applyPatternsAndFoldGreedily(getFunction(), std::move(patterns));
+            (void) applyPatternsAndFoldGreedily(getOperation(), std::move(patterns));
         }
 
         ::mlir::StringRef LinalgTiledLoopsToAffineForPass::getDescription() const

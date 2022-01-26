@@ -334,7 +334,7 @@ TEST(AggregateTests, SumTest)
 {
     Config config;
 
-    config.debug().async_parallel(false).openmp_parallel();
+    config.debug().async_parallel(false).gpu_parallel();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_sum.voila";
     constexpr size_t TENSOR_SIZE = 100;

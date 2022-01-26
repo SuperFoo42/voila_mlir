@@ -6,6 +6,7 @@
 #include "JITInvocationError.hpp"
 #include "LLVMGenerationError.hpp"
 #include "MLIRGenerationError.hpp"
+#include "MLIRGenerator.hpp"
 #include "MLIRLoweringError.hpp"
 #include "NotImplementedException.hpp"
 #include "ParsingError.hpp"
@@ -15,7 +16,6 @@
 #include "ast/Fun.hpp"
 #include "defs.hpp"
 #include "voila_lexer.hpp"
-#include "MLIRGenerator.hpp"
 
 #include <MlirModuleVerificationError.hpp>
 #include <fstream>
@@ -172,6 +172,11 @@ namespace voila
                 /*targetMachine=*/tmOrError->get());
 
             SmallVector<StringRef, 4> executionEngineLibs;
+            SmallVector<SmallString<255>, 4> libPaths({SmallString<255>(MLIR_UTILS_LIB), SmallString<255>(MLIR_C_UTILS_LIB)});
+            if (config._async_parallel)
+                libPaths.emplace_back(MLIR_ASYNC_LIB);
+            if (config._openmp_parallel)
+                libPaths.emplace_back(MLIR_OPENMP_LIB);
 
             using MlirRunnerInitFn = void (*)(llvm::StringMap<void *> &);
             using MlirRunnerDestroyFn = void (*)();
@@ -180,10 +185,10 @@ namespace voila
             SmallVector<MlirRunnerDestroyFn> destroyFns;
 
             // Handle libraries that do support mlir-runner init/destroy callbacks.
-            //TODO: only search libs required by config for faster compile-time
-            for (auto &libPath : {MLIR_UTILS_LIB, MLIR_C_UTILS_LIB, MLIR_ASYNC_LIB, MLIR_OPENMP_LIB})
+            // TODO: only search libs required by config for faster compile-time
+            for (auto &libPath : libPaths)
             {
-                auto lib = llvm::sys::DynamicLibrary::getPermanentLibrary(libPath);
+                auto lib = llvm::sys::DynamicLibrary::getPermanentLibrary(libPath.c_str());
                 void *initSym = lib.getAddressOfSymbol("__mlir_runner_init");
                 void *destroySim = lib.getAddressOfSymbol("__mlir_runner_destroy");
 
@@ -479,8 +484,8 @@ namespace voila
             pm.addPass(createParallelLoopToGpuPass());
         }
 
-        pm.addNestedPass<FuncOp>(createBufferLoopHoistingPass());
-        pm.addNestedPass<FuncOp>(createPromoteBuffersToStackPass());
+        pm.addNestedPass<FuncOp>(bufferization::createBufferLoopHoistingPass());
+        pm.addNestedPass<FuncOp>(bufferization::createPromoteBuffersToStackPass());
         if (config._optimize && config._fuse)
             pm.addNestedPass<FuncOp>(createLoopFusionPass());
 

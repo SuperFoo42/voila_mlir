@@ -51,7 +51,7 @@ namespace voila::mlir::lowering
             // condition
 
             auto beforeBlock = builder.createBlock(&loop.getBefore());
-            beforeBlock->addArgument(loop->getOperands().front().getType());
+            beforeBlock->addArgument(loop->getOperands().front().getType(),loc);
             auto condBuilder = OpBuilder::atBlockEnd(beforeBlock);
             Value probeIdx =
                 condBuilder.create<IndexCastOp>(loc, loop.getBefore().getArgument(0), builder.getIndexType());
@@ -99,7 +99,7 @@ namespace voila::mlir::lowering
                 loc, condBuilder.create<AndIOp>(loc, builder.getI1Type(), isEmpty, notFound), loop->getOperands());
             // body
             auto afterBlock = builder.createBlock(&loop.getAfter());
-            afterBlock->addArgument(loop->getOperands().front().getType());
+            afterBlock->addArgument(loop->getOperands().front().getType(), loc);
             auto bodyBuilder = OpBuilder::atBlockEnd(afterBlock);
             SmallVector<Value, 1> inc;
             inc.push_back(bodyBuilder.create<AndIOp>(

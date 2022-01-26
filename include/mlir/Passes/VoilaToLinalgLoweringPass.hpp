@@ -19,7 +19,7 @@ namespace voila::mlir
 {
     namespace lowering
     {
-        struct VoilaToLinalgLoweringPass : public ::mlir::PassWrapper<VoilaToLinalgLoweringPass, ::mlir::FunctionPass>
+        struct VoilaToLinalgLoweringPass : public ::mlir::PassWrapper<VoilaToLinalgLoweringPass, ::mlir::OperationPass<::mlir::FuncOp>>
         {
             void getDependentDialects(::mlir::DialectRegistry &registry) const override
             {
@@ -27,7 +27,7 @@ namespace voila::mlir
                     .insert<::mlir::StandardOpsDialect, ::mlir::linalg::LinalgDialect, ::mlir::tensor::TensorDialect>();
             }
 
-            void runOnFunction() final;
+            void runOnOperation() final;
         };
     } // namespace lowering
 

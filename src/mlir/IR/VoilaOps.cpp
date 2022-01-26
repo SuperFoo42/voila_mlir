@@ -12,7 +12,6 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
-#include "mlir/Transforms/LoopUtils.h"
 
 #define GET_OP_CLASSES
 #include "mlir/IR/VoilaOps.cpp.inc"
