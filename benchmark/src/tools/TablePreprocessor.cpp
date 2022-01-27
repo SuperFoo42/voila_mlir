@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 
         if (cmd.count("f") == 1)
         {
-            TableReader<CompressedTable> reader(cmd["f"].as<std::vector<std::string>>().front(),
+            CompressingTableReader reader(cmd["f"].as<std::vector<std::string>>().front(),
                                                 cmd["t"].as<std::vector<ColumnTypes>>(), cmd["d"].as<char>());
             auto compressedTable = reader.getTable();
             compressedTable.writeTable(cmd["o"].as<std::string>());
@@ -51,11 +51,11 @@ int main(int argc, char **argv)
             std::inclusive_scan(sizes.begin(), sizes.end(), std::back_inserter(bounds));
             bounds.push_back(std::accumulate(sizes.begin(), sizes.end(), 0));
             auto t = std::vector(tps.begin(), std::next(tps.begin(), bounds.front()));
-            Table wideTable = TableReader<Table>(files.at(0), t, delim).getTable();
+            Table wideTable = TableReader(files.at(0), t, delim).getTable();
             for (size_t i = 1; i < files.size(); ++i)
             {
                 t = std::vector(std::next(tps.begin(), bounds[i - 1]), std::next(tps.begin(), bounds[i]));
-                TableReader<Table> reader(files.at(i), t, delim);
+                TableReader reader(files.at(i), t, delim);
                 auto tmp = reader.getTable();
                 const auto jc1 = joinCols.back();
                 joinCols.pop_back();

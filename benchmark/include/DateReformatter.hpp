@@ -13,4 +13,5 @@ class DateReformatter
     explicit DateReformatter(std::vector<std::string> &&column);
 
     std::vector<int32_t> reformat();
+    static int32_t parseDate(const std::string &date);
 };

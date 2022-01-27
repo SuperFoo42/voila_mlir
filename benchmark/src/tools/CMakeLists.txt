@@ -3,9 +3,8 @@ add_library(benchmark_utils
         DictionaryCompressor.cpp
         Tables.cpp)
 
-
 target_link_libraries(benchmark_utils
-        rapidcsv
+        csv
         cereal
         cxxopts
         magic_enum
@@ -24,7 +23,7 @@ target_compile_options(benchmark_utils PUBLIC
         -Wno-suggest-override
         -Wno-c++98-compat-pedantic)
 
-
+target_include_directories(benchmark_utils PUBLIC ${csv-parser_SOURCE_DIR}/include)
 add_executable(preprocessor TablePreprocessor.cpp)
 
 target_link_libraries(preprocessor benchmark_utils)

@@ -4,14 +4,14 @@
 #include "DictionaryCompressor.hpp"
 
 #include <cereal/archives/portable_binary.hpp>
-#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/base_class.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/unordered_map.hpp>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
-
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -19,7 +19,6 @@ class Table
 {
   public:
     ColumnTypes getColType(size_t col);
-
 
     using column_type = std::variant<std::vector<std::string>, std::vector<double>, std::vector<int32_t>>;
     using row_type = std::variant<std::string, double, int32_t>;
@@ -45,6 +44,8 @@ class Table
 
     virtual ~Table() = default;
     Table() = default;
+    Table(std::vector<column_type> columns, std::vector<ColumnTypes> types) :
+        columns(std::move(columns)), types(std::move(types)){};
 
   protected:
     std::vector<column_type> columns;
@@ -58,6 +59,10 @@ class CompressedTable : public Table
   public:
     ~CompressedTable() override = default;
     CompressedTable() = default;
+    CompressedTable(std::vector<column_type> columns,
+                    std::vector<ColumnTypes> types,
+                    std::vector<std::unordered_map<std::string, int32_t>> dictionaries) :
+        Table(std::move(columns), std::move(types)), dictionaries(std::move(dictionaries)){};
 
     explicit CompressedTable(const std::string &path);
 

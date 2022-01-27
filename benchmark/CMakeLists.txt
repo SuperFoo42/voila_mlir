@@ -11,7 +11,7 @@ CPMAddPackage(
         OPTIONS "SKIP_PORTABILITY_TEST ON" "JUST_INSTALL_CEREAL ON"
 )
 
-CPMAddPackage("gh:d99kris/rapidcsv#v8.53")
+CPMAddPackage("gh:vincentlaucsb/csv-parser#2.1.3")
 
 CPMAddPackage("gh:Cyan4973/xxHash#v0.8.1")
 

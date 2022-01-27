@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <string>
 #include <vector>
-static int32_t parseDate(std::string &date)
+int32_t DateReformatter::parseDate(const std::string &date)
 {
     tm t = {};
     if (date == "NULL")

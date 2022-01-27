@@ -138,9 +138,8 @@ Table Table::join(Table &other, size_t joinCol1, size_t joinCol2)
                         return getColumn<std::string>(joinCol1).at(i) == other.getColumn<std::string>(joinCol1).at(j);
                     case ColumnTypes::DATE:
                         return getColumn<int32_t>(joinCol1).at(i) == other.getColumn<int32_t>(joinCol2).at(j);
-                    default:
-                        return false;
                 }
+                return false;
             };
             if (match())
             {
