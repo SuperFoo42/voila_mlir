@@ -14,6 +14,5 @@ target_sources(voila_lowering PRIVATE
         InsertOpLowering.cpp
         LookupOpLowering.cpp
         ScatterOpLowering.cpp
-        LinalgTiledLoopsToAffineForPass.cpp
         LinalgTiledLoopsToAffineForPattern.cpp
 )

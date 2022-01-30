@@ -46,7 +46,8 @@
 #include <mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
-#include <mlir/lowering/LinalgTiledLoopsToAffineForPass.hpp>
+#include <mlir/Passes/LinalgTiledLoopsToAffineForPass.hpp>
+#include <mlir/Passes/ParallelLoopToGpuMappingPass.hpp>
 #pragma GCC diagnostic pop
 
 namespace voila
@@ -54,6 +55,7 @@ namespace voila
     using namespace ast;
     using namespace ::mlir;
     using namespace ::voila::lexer;
+    using namespace ::voila::mlir;
 
     template<typename T>
     static auto &resolveAndFetchResult(Arity arity,
@@ -341,9 +343,9 @@ namespace voila
         pm.addNestedPass<FuncOp>(createCSEPass());
 
         // Partially lower voila to linalg
-        pm.addNestedPass<FuncOp>(::voila::mlir::createLowerToLinalgPass());
+        pm.addNestedPass<FuncOp>(createLowerToLinalgPass());
         // Partially lower voila to affine with a few cleanups
-        pm.addNestedPass<FuncOp>(::voila::mlir::createLowerToAffinePass());
+        pm.addNestedPass<FuncOp>(createLowerToAffinePass());
 
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
@@ -440,6 +442,7 @@ namespace voila
         pm.addNestedPass<FuncOp>(createAffineLoopNormalizePass());
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
+
         if (config._optimize && config._parallelize)
         {
             std::unique_ptr<Pass> parallelizationPass = createAffineParallelizePass();
@@ -455,11 +458,7 @@ namespace voila
         // pm.addNestedPass<FuncOp>(createLoopCoalescingPass());
         // pm.addNestedPass<FuncOp>(createForLoopPeelingPass());
         // pm.addNestedPass<FuncOp>(createLoopUnrollPass(8));
-        if (config._optimize && config._gpu_parallel)
-        {
-            pm.addNestedPass<FuncOp>(createAffineForToGPUPass());
-            pm.addPass(createParallelLoopToGpuPass());
-        }
+
         if (config._optimize && config._unroll)
             pm.addNestedPass<FuncOp>(createLoopUnrollAndJamPass(8));
         pm.addNestedPass<FuncOp>(createForLoopSpecializationPass());
@@ -479,9 +478,11 @@ namespace voila
         {
             pm.addPass(createConvertSCFToOpenMPPass());
         }
+
         if (config._optimize && config._gpu_parallel)
         {
-            pm.addPass(createParallelLoopToGpuPass());
+            pm.addNestedPass<FuncOp>(createParallelLoopToGPUMappingPass());
+            pm.addNestedPass<FuncOp>(createParallelLoopToGpuPass());
         }
 
         pm.addNestedPass<FuncOp>(bufferization::createBufferLoopHoistingPass());

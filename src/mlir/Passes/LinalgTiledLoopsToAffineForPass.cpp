@@ -1,4 +1,4 @@
-#include "mlir/lowering/LinalgTiledLoopsToAffineForPass.hpp"
+#include "mlir/Passes/LinalgTiledLoopsToAffineForPass.hpp"
 
 namespace voila::mlir
 {
