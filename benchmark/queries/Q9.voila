@@ -1,8 +1,9 @@
-main(n_name, o_orderdate, l_extendedprice, l_discount, ps_supplycost, l_quantity, s_suppkey, l_suppkey, ps_suppkey, ps_partkey, l_partkey, p_partkey, o_orderkey, l_orderkey, s_nationkey, n_nationkey, p_name,needle)
+#n_name, o_orderdate, l_extendedprice, l_discount, ps_supplycost, l_quantity, s_suppkey, l_suppkey, ps_suppkey, ps_partkey, l_partkey, p_partkey, o_orderkey, l_orderkey, s_nationkey, n_nationkey, p_name,
+main(needle)
 {
     #h_needle = hash(p_name);
-    ht_needle = insert(hash(needle), needle);
-    emit ht_needle;
+    ht_n = insert(hash(needle), needle);
+    emit ht_n;
     #to_select = eq(s_suppkey, l_suppkey);
     #to_select = and(eq(ps_suppkey,l_suppkey), to_select);
     #to_select = and(eq(ps_partkey,l_partkey), to_select);

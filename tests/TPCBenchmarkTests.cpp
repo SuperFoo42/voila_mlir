@@ -1,7 +1,7 @@
 #include "Config.hpp"
+#include "Profiler.hpp"
 #include "Program.hpp"
 #include "Tables.hpp"
-#include "Profiler.hpp"
 #include "benchmark_defs.hpp.inc"
 
 #include <algorithm>
@@ -136,7 +136,7 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
     auto l_returnflag = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_RETURNFLAG>>(lineitem_cols::L_RETURNFLAG);
     auto l_linestatus = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_LINESTATUS>>(lineitem_cols::L_LINESTATUS);
     auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
-    const auto htSizes = 128; // std::bit_ceil(l_quantity.size());
+    const auto htSizes = std::bit_ceil(l_quantity.size());
 
     // tpc qualification date
     auto date = 19980901;
@@ -434,7 +434,7 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
     }
 
     // reference impl
-    double ref = 0;
+    // double ref = 0;
     const auto htSizes = std::bit_ceil(l_orderkey.size());
     std::vector<int32_t> ht_n_name_ref(htSizes, static_cast<int32_t>(INVALID));
     std::vector<int32_t> ht_o_orderdate_ref(htSizes, static_cast<int32_t>(INVALID));
@@ -470,32 +470,44 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
 
     // voila calculations
     Config config;
-    config.debug().optimize(false).tile(false);
+    config.optimize(false).debug();
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q9.voila";
     Program prog(query, config);
-    prog << n_name;
-    prog << o_orderdate;
-    prog << l_extendedprice;
-    prog << l_discount;
-    prog << ps_supplycost;
-    prog << l_quantity;
-    prog << s_suppkey;
-    prog << l_suppkey;
-    prog << ps_suppkey;
-    prog << ps_partkey;
-    prog << l_partkey;
-    prog << p_partkey;
-    prog << o_orderkey;
-    prog << l_orderkey;
-    prog << s_nationkey;
-    prog << n_nationkey;
-    prog << p_name;
-    prog << needle;
+    /*    prog << n_name;
+        prog << o_orderdate;
+        prog << l_extendedprice;
+        prog << l_discount;
+        prog << ps_supplycost;
+        prog << l_quantity;
+        prog << s_suppkey;
+        prog << l_suppkey;
+        prog << ps_suppkey;
+        prog << ps_partkey;
+        prog << l_partkey;
+        prog << p_partkey;
+        prog << o_orderkey;
+        prog << l_orderkey;
+        prog << s_nationkey;
+        prog << n_nationkey;
+        prog << p_name;*/
 
+    prog << needle;
+    auto find = [](auto iter, auto val)
+    {
+        for (auto v : iter)
+            if (v == val)
+                return true;
+        return false;
+    };
     auto res = prog();
+    auto el = *std::get<strided_memref_ptr<uint32_t, 1>>(res[0]);
+    for (auto e : needle)
+    {
+        assert(find(el, (uint32_t) e));
+    }
 
     // TODO: comparisons
-    EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
+    // EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
 }
 
 TEST(TPCBenchmarkTests, Q18_Qualification)

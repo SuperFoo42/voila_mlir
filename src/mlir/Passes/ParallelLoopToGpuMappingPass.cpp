@@ -23,6 +23,6 @@ namespace voila::mlir
     } // namespace lowering
     std::unique_ptr<::mlir::Pass> createParallelLoopToGPUMappingPass()
     {
-        return std::unique_ptr<lowering::ParallelLoopToGPUMappingPass>();
+        return std::make_unique<lowering::ParallelLoopToGPUMappingPass>();
     }
 } // namespace voila::mlir

@@ -86,12 +86,11 @@ namespace voila::mlir::lowering
         {
             if (hashInvalidConsts[i].getType().isa<IntegerType>())
             {
-                empties.push_back(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],
-                                                         hashInvalidConsts[i]));
+                empties.push_back(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::eq, bucketVals[i],hashInvalidConsts[i]));
             }
             else if (hashInvalidConsts[i].getType().isa<FloatType>())
             {
-                empties.push_back(builder.create<CmpFOp>(builder.getI1Type(), CmpFPredicate::UNE, bucketVals[i],
+                empties.push_back(builder.create<CmpFOp>(builder.getI1Type(), CmpFPredicate::ONE, bucketVals[i],
                                                          hashInvalidConsts[i]));
             }
             else
@@ -111,13 +110,14 @@ namespace voila::mlir::lowering
         {
             if (bucketVals[i].getType().isa<IntegerType>())
             {
+                builder.create<AssertOp>(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, hashInvalidConsts[i], toStores[i]), "Trying ");
                 founds.push_back(
-                    builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i], toStores[i]));
+                    builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::eq, bucketVals[i], toStores[i]));
             }
             else if (bucketVals[i].getType().isa<FloatType>())
             {
                 founds.push_back(
-                    builder.create<CmpFOp>(builder.getI1Type(), CmpFPredicate::UNE, bucketVals[i], toStores[i]));
+                    builder.create<CmpFOp>(builder.getI1Type(), CmpFPredicate::ONE, bucketVals[i], toStores[i]));
             }
             else
             {
@@ -130,7 +130,7 @@ namespace voila::mlir::lowering
             allFound = builder.create<AndIOp>(allFound, founds[i]);
         }
 
-        return builder.create<AndIOp>(builder.getI1Type(), anyNotEmpty, allFound);
+        return builder.create<AndIOp>(allFound, anyNotEmpty);
     }
 
     // TODO: use atomic compare exchange

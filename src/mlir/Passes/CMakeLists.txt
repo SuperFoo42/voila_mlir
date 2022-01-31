@@ -3,4 +3,5 @@ target_sources(voila_lowering PRIVATE
         VoilaToAffineLoweringPass.cpp
         VoilaToLLVMLoweringPass.cpp
         LinalgTiledLoopsToAffineForPass.cpp
-        ParallelLoopToGpuMappingPass.cpp)
+        ParallelLoopToGpuMappingPass.cpp
+        MemOpsToAffineMemOpsConversionPass.cpp)

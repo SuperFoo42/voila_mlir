@@ -48,6 +48,7 @@
 #include <mlir/Transforms/Passes.h>
 #include <mlir/Passes/LinalgTiledLoopsToAffineForPass.hpp>
 #include <mlir/Passes/ParallelLoopToGpuMappingPass.hpp>
+#include "mlir/Passes/MemOpsToAffineMemOpsConversionPass.hpp"
 #pragma GCC diagnostic pop
 
 namespace voila
@@ -368,12 +369,12 @@ namespace voila
 
         pm.addNestedPass<FuncOp>(createLinalgStrategyInterchangePass());
 
-        // pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
+        //pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
         if (config._optimize && config._tile)
         {
             auto tile_size = {config._tile_size == -1 ? max_in_table_size / config._parallel_threads :
                                                         config._tile_size};
-            if (config._peel)
+/*            if (config._peel)
             {
                 pm.addNestedPass<FuncOp>(createLinalgTilingPass(
                     tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}, {0}));
@@ -382,8 +383,11 @@ namespace voila
             {
                 pm.addNestedPass<FuncOp>(createLinalgTilingPass(
                     tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}));
-            }
+            }*/
+            pm.addNestedPass<FuncOp>(createLinalgStrategyTileAndFusePass("", linalg::LinalgTilingAndFusionOptions{tile_size, {}}));
         }
+
+
         //  bufferization passes
 
         auto bufferize = createLinalgComprehensiveModuleBufferizePass();
@@ -418,8 +422,11 @@ namespace voila
         pm.addNestedPass<FuncOp>(createAffineScalarReplacementPass());
         pm.addNestedPass<FuncOp>(createAffineLoopInvariantCodeMotionPass());
         pm.addNestedPass<FuncOp>(createAffineLoopNormalizePass());
+        pm.addNestedPass<FuncOp>(createMemOpsToAffineMemOpsConversionPass());
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
+        pm.addNestedPass<FuncOp>(createLoopFusionPass(0,0,true));
+
 
         // pm.addNestedPass<FuncOp>(createConvertLinalgTiledLoopsToSCFPass());
         //
@@ -481,6 +488,7 @@ namespace voila
 
         if (config._optimize && config._gpu_parallel)
         {
+            pm.addNestedPass<FuncOp>(createConvertVectorToGPUPass());
             pm.addNestedPass<FuncOp>(createParallelLoopToGPUMappingPass());
             pm.addNestedPass<FuncOp>(createParallelLoopToGpuPass());
         }
@@ -490,7 +498,6 @@ namespace voila
         if (config._optimize && config._fuse)
             pm.addNestedPass<FuncOp>(createLoopFusionPass());
 
-        pm.addNestedPass<FuncOp>(createSCCPPass());
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
         pm.addNestedPass<FuncOp>(::mlir::bufferization::createFinalizingBufferizePass());

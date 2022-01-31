@@ -48,6 +48,7 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
 //FIXME: not safe in all cases
 LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, PatternRewriter &rewriter)
 {
+
     SmallVector<std::reference_wrapper<OpOperand>> uses;
     for (auto &use : op->getUses())
         uses.push_back(use);
@@ -62,9 +63,33 @@ LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, Patt
         {
             return failure();
         }
-        else if (isa<SumOp>(user) || isa<CountOp>(user) || isa<MinOp>(user) || isa<MaxOp>(user))
+        else if (isa<SumOp>(user))
         {
-            continue;
+            if (dyn_cast<SumOp>(user).indices() == Value())
+                continue;
+            else
+                return failure();
+        }
+        else if (isa<CountOp>(user))
+        {
+            if (dyn_cast<CountOp>(user).indices() == Value())
+                continue;
+            else
+                return failure();
+        }
+        else if (isa<MinOp>(user))
+        {
+            if (dyn_cast<MinOp>(user).indices() == Value())
+                continue;
+            else
+                return failure();
+        }
+        else if (isa<MaxOp>(user))
+        {
+            if (dyn_cast<MaxOp>(user).indices() == Value())
+                continue;
+            else
+                return failure();
         }
         for (auto &u : user->getUses())
             uses.push_back(u);
@@ -109,6 +134,7 @@ LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, Patt
     }
 
     rewriter.replaceOpWithNewOp<::mlir::SelectOp>(op, op.pred(), op.values(), falseSel);
+
 
     return success();
 }
