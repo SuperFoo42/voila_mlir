@@ -15,7 +15,7 @@ def Voila_Dialect : Dialect {
 }
 
 //base operation definition
-class Voila_Op<string mnemonic, list<OpTrait> traits = []> :
+class Voila_Op<string mnemonic, list<Trait> traits = []> :
     Op<Voila_Dialect, mnemonic, traits>;
 
 #endif // VOILA_DIALECT

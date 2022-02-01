@@ -1,7 +1,7 @@
 #include "mlir/Passes/VoilaToLinalgLoweringPass.hpp"
 
 #include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/Vector/VectorOps.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/VoilaDialect.h"
 #include "mlir/IR/VoilaOps.h"
 #include "mlir/lowering/ArithmeticOpLowering.hpp"

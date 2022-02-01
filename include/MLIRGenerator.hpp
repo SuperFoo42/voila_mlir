@@ -10,7 +10,6 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
-
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopedHashTable.h"
 #include "llvm/ADT/StringMap.h"
@@ -28,10 +27,10 @@ namespace voila
 
         explicit MLIRGenerator(::mlir::MLIRContext &ctx);
 
-        ::mlir::OwningModuleRef generate(const Program &program);
+        mlir::OwningOpRef<mlir::ModuleOp> generate(const Program &program);
 
       public:
-        static ::mlir::OwningModuleRef mlirGen(::mlir::MLIRContext &ctx, const Program &program);
+        static mlir::OwningOpRef<mlir::ModuleOp> mlirGen(::mlir::MLIRContext &ctx, const Program &program);
     };
 
 } // namespace voila

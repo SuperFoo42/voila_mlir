@@ -11,6 +11,7 @@ namespace voila::mlir
 {
     using namespace ast;
     using namespace ::mlir;
+    using namespace ::mlir::voila;
     using ::llvm::ScopedHashTableScope;
     using ::llvm::SmallVector;
     using ::llvm::StringRef;
@@ -38,7 +39,7 @@ namespace voila::mlir
                 throw MLIRGenerationException();
             }
             auto idxs = std::get<Value>(visitor_gen(*sum.groups));
-            result = builder.create<::mlir::voila::SumOp>(location, resType, expr, idxs);
+            result = builder.create<SumOp>(location, resType, expr, idxs);
         }
         else
         {
@@ -55,7 +56,7 @@ namespace voila::mlir
                 throw MLIRGenerationException();
             }
 
-            result = builder.create<::mlir::voila::SumOp>(location, resType, ::llvm::makeArrayRef(expr));
+            result = builder.create<SumOp>(location, resType, ::llvm::makeArrayRef(expr));
         }
     }
 
@@ -68,12 +69,12 @@ namespace voila::mlir
         if (cnt.groups)
         {
             auto idxs = std::get<Value>(visitor_gen(*cnt.groups));
-            result = builder.create<::mlir::voila::CountOp>(location, RankedTensorType::get(-1, builder.getI64Type()),
+            result = builder.create<CountOp>(location, RankedTensorType::get(-1, builder.getI64Type()),
                                                             expr, idxs);
         }
         else
         {
-            result = builder.create<::mlir::voila::CountOp>(location, builder.getI64Type(), ::llvm::makeArrayRef(expr));
+            result = builder.create<CountOp>(location, builder.getI64Type(), ::llvm::makeArrayRef(expr));
         }
     }
 
@@ -99,7 +100,7 @@ namespace voila::mlir
             }
             auto idxs = std::get<Value>(visitor_gen(*min.groups));
 
-            result = builder.create<::mlir::voila::MinOp>(location, resType, expr, idxs);
+            result = builder.create<MinOp>(location, resType, expr, idxs);
         }
         else
         {
@@ -116,7 +117,7 @@ namespace voila::mlir
                 throw MLIRGenerationException();
             }
 
-            result = builder.create<::mlir::voila::MinOp>(location, resType, ::llvm::makeArrayRef(expr));
+            result = builder.create<MinOp>(location, resType, ::llvm::makeArrayRef(expr));
         }
     }
 
@@ -142,7 +143,7 @@ namespace voila::mlir
             }
             auto idxs = std::get<Value>(visitor_gen(*max.groups));
 
-            result = builder.create<::mlir::voila::MaxOp>(location, resType, expr, idxs);
+            result = builder.create<MaxOp>(location, resType, expr, idxs);
         }
         else
         {
@@ -159,7 +160,7 @@ namespace voila::mlir
                 throw MLIRGenerationException();
             }
 
-            result = builder.create<::mlir::voila::MaxOp>(location, resType, ::llvm::makeArrayRef(expr));
+            result = builder.create<MaxOp>(location, resType, ::llvm::makeArrayRef(expr));
         }
     }
 
@@ -172,12 +173,12 @@ namespace voila::mlir
         if (avg.groups)
         {
             auto idxs = std::get<Value>(visitor_gen(*avg.groups));
-            result = builder.create<::mlir::voila::AvgOp>(location, RankedTensorType::get(-1, builder.getF64Type()),
+            result = builder.create<AvgOp>(location, RankedTensorType::get(-1, builder.getF64Type()),
                                                           expr, idxs);
         }
         else
         {
-            result = builder.create<::mlir::voila::AvgOp>(location, builder.getF64Type(), ::llvm::makeArrayRef(expr));
+            result = builder.create<AvgOp>(location, builder.getF64Type(), ::llvm::makeArrayRef(expr));
         }
     }
 
@@ -191,7 +192,7 @@ namespace voila::mlir
         auto location = loc(scatter.get_location());
         auto col = std::get<Value>(visitor_gen(scatter.src));
         auto idx = std::get<Value>(visitor_gen(scatter.idxs));
-        result = builder.create<::mlir::voila::ScatterOp>(location, col.getType(), idx, col);
+        result = builder.create<ScatterOp>(location, col.getType(), idx, col);
     }
 
     void MLIRGeneratorImpl::operator()(const FunctionCall &call)
@@ -204,7 +205,7 @@ namespace voila::mlir
             operands.push_back(std::get<Value>(arg));
         }
         // TODO: allow more than only a single return type
-        result = builder.create<::mlir::voila::GenericCallOp>(location, call.fun, operands,
+        result = builder.create<GenericCallOp>(location, call.fun, operands,
                                                               funcTable.lookup(call.fun).getType().getResult(0));
     }
 
@@ -238,7 +239,7 @@ namespace voila::mlir
         auto exprs = std::get<SmallVector<Value>>(visitor_gen(emit.exprs));
 
         // Otherwise, this return operation has zero operands.
-        builder.create<::mlir::voila::EmitOp>(location, exprs);
+        builder.create<EmitOp>(location, exprs);
         result = ::mlir::success();
     }
 
@@ -247,7 +248,7 @@ namespace voila::mlir
         auto location = loc(loop.get_location());
         mlir::Value cond = std::get<Value>(visitor_gen(loop.pred));
 
-        auto voilaLoop = builder.create<::mlir::voila::LoopOp>(location, builder.getI1Type(), cond);
+        auto voilaLoop = builder.create<LoopOp>(location, builder.getI1Type(), cond);
         auto &bodyRegion = voilaLoop.body();
         bodyRegion.push_back(new ::mlir::Block());
         ::mlir::Block &bodyBlock = bodyRegion.front();
@@ -274,7 +275,7 @@ namespace voila::mlir
         auto rhs = visitor_gen(add.rhs);
         auto resType = getTypes(add);
         assert(resType.size() == 1);
-        result = builder.create<::mlir::voila::AddOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
+        result = builder.create<AddOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs), Value());
     }
 
     void MLIRGeneratorImpl::operator()(const Sub &sub)
@@ -284,7 +285,7 @@ namespace voila::mlir
         auto rhs = visitor_gen(sub.rhs);
         auto resType = getTypes(sub);
         assert(resType.size() == 1);
-        result = builder.create<::mlir::voila::SubOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
+        result = builder.create<SubOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs), Value());
     }
 
     void MLIRGeneratorImpl::operator()(const Mul &mul)
@@ -294,7 +295,7 @@ namespace voila::mlir
         auto rhs = visitor_gen(mul.rhs);
         auto resType = getTypes(mul);
         assert(resType.size() == 1);
-        result = builder.create<::mlir::voila::MulOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
+        result = builder.create<MulOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs), Value());
     }
 
     void MLIRGeneratorImpl::operator()(const Div &div)
@@ -305,7 +306,7 @@ namespace voila::mlir
 
         auto resType = getTypes(div);
         assert(resType.size() == 1);
-        result = builder.create<::mlir::voila::DivOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
+        result = builder.create<DivOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs), Value());
     }
 
     void MLIRGeneratorImpl::operator()(const Mod &mod)
@@ -315,37 +316,37 @@ namespace voila::mlir
         auto rhs = visitor_gen(mod.rhs);
         auto resType = getTypes(mod);
         assert(resType.size() == 1);
-        result = builder.create<::mlir::voila::ModOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
+        result = builder.create<ModOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs), Value());
     }
 
     void MLIRGeneratorImpl::operator()(const Eq &eq)
     {
-        result = getCmpOp<::mlir::voila::EqOp>(eq);
+        result = getCmpOp<EqOp>(eq);
     }
 
     void MLIRGeneratorImpl::operator()(const Neq &neq)
     {
-        result = getCmpOp<::mlir::voila::NeqOp>(neq);
+        result = getCmpOp<NeqOp>(neq);
     }
 
     void MLIRGeneratorImpl::operator()(const Le &le)
     {
-        result = getCmpOp<::mlir::voila::LeOp>(le);
+        result = getCmpOp<LeOp>(le);
     }
 
     void MLIRGeneratorImpl::operator()(const Ge &ge)
     {
-        result = getCmpOp<::mlir::voila::GeOp>(ge);
+        result = getCmpOp<GeOp>(ge);
     }
 
     void MLIRGeneratorImpl::operator()(const Leq &leq)
     {
-        result = getCmpOp<::mlir::voila::LeqOp>(leq);
+        result = getCmpOp<LeqOp>(leq);
     }
 
     void MLIRGeneratorImpl::operator()(const Geq &geq)
     {
-        result = getCmpOp<::mlir::voila::GeqOp>(geq);
+        result = getCmpOp<GeqOp>(geq);
     }
 
     void MLIRGeneratorImpl::operator()(const And &anAnd)
@@ -358,11 +359,11 @@ namespace voila::mlir
             ::mlir::ArrayRef<int64_t> shape;
             shape = getShape(lhs, rhs);
 
-            result = builder.create<::mlir::voila::AndOp>(
-                location, ::mlir::RankedTensorType::get(shape, builder.getI1Type()), lhs, rhs);
+            result = builder.create<AndOp>(
+                location, ::mlir::RankedTensorType::get(shape, builder.getI1Type()), lhs, rhs, Value());
         }
         else
-            result = builder.create<::mlir::voila::AndOp>(location, builder.getI1Type(), lhs, rhs);
+            result = builder.create<AndOp>(location, builder.getI1Type(), lhs, rhs, Value());
     }
 
     void MLIRGeneratorImpl::operator()(const Or &anOr)
@@ -370,8 +371,8 @@ namespace voila::mlir
         auto location = loc(anOr.get_location());
         auto lhs = std::get<Value>(visitor_gen(anOr.lhs));
         auto rhs = std::get<Value>(visitor_gen(anOr.rhs));
-        result = builder.create<::mlir::voila::OrOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
-                                                     lhs, rhs);
+        result = builder.create<OrOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
+                                                     lhs, rhs, Value());
     }
 
     void MLIRGeneratorImpl::operator()(const Not &aNot)
@@ -379,7 +380,7 @@ namespace voila::mlir
         auto location = loc(aNot.get_location());
         auto param = visitor_gen(aNot.param);
 
-        result = builder.create<::mlir::voila::NotOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
+        result = builder.create<NotOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
                                                       std::get<Value>(param));
     }
 
@@ -389,24 +390,24 @@ namespace voila::mlir
         auto params = std::get<SmallVector<Value>>(visitor_gen(hash.items));
         auto retType = ::mlir::RankedTensorType::get(params.front().getType().dyn_cast<::mlir::TensorType>().getShape(),
                                                      builder.getI64Type());
-        result = builder.create<::mlir::voila::HashOp>(location, retType, params);
+        result = builder.create<HashOp>(location, retType, params);
     }
 
     void MLIRGeneratorImpl::operator()(const IntConst &intConst)
     {
-        result = builder.create<::mlir::voila::IntConstOp>(loc(intConst.get_location()), getScalarType(intConst),
+        result = builder.create<IntConstOp>(loc(intConst.get_location()), getScalarType(intConst),
                                                            intConst.val);
     }
 
     void MLIRGeneratorImpl::operator()(const BooleanConst &booleanConst)
     {
-        result = builder.create<::mlir::voila::BoolConstOp>(loc(booleanConst.get_location()), builder.getI1Type(),
+        result = builder.create<BoolConstOp>(loc(booleanConst.get_location()), builder.getI1Type(),
                                                             booleanConst.val);
     }
 
     void MLIRGeneratorImpl::operator()(const FltConst &fltConst)
     {
-        result = builder.create<::mlir::voila::FltConstOp>(loc(fltConst.get_location()),
+        result = builder.create<FltConstOp>(loc(fltConst.get_location()),
                                                            builder.getF64FloatAttr(fltConst.val));
     }
 
@@ -426,7 +427,7 @@ namespace voila::mlir
         auto col = std::get<Value>(visitor_gen(read.column));
         auto idx = std::get<Value>(visitor_gen(read.idx));
 
-        result = builder.create<::mlir::voila::ReadOp>(location, col.getType(), col, idx);
+        result = builder.create<ReadOp>(location, col.getType(), col, idx);
     }
 
     void MLIRGeneratorImpl::operator()(const Gather &gather)
@@ -434,7 +435,7 @@ namespace voila::mlir
         auto location = loc(gather.get_location());
         auto col = std::get<Value>(visitor_gen(gather.column));
         auto idx = std::get<Value>(visitor_gen(gather.idxs));
-        result = builder.create<::mlir::voila::GatherOp>(location, RankedTensorType::get(idx.getType().dyn_cast<TensorType>().getShape(), getElementTypeOrSelf(col)), col, idx);
+        result = builder.create<GatherOp>(location, RankedTensorType::get(idx.getType().dyn_cast<TensorType>().getShape(), getElementTypeOrSelf(col)), col, idx);
     }
 
     void MLIRGeneratorImpl::operator()(const Ref &param)
@@ -493,12 +494,12 @@ namespace voila::mlir
         // Emit the body of the function.
         mlirGenBody(fun.body);
 
-        ::mlir::voila::EmitOp emitOp;
+        EmitOp emitOp;
         if (!entryBlock.empty())
-            emitOp = dyn_cast<::mlir::voila::EmitOp>(entryBlock.back());
+            emitOp = dyn_cast<EmitOp>(entryBlock.back());
         if (!emitOp)
         {
-            builder.create<::mlir::voila::EmitOp>(loc(fun.get_location()));
+            builder.create<EmitOp>(loc(fun.get_location()));
         }
         else if (emitOp.hasOperand())
         {
@@ -536,7 +537,7 @@ namespace voila::mlir
         auto hashes = std::get<Value>(visitor_gen(lookup.hashes));
         auto values = std::get<SmallVector<Value>>(visitor_gen(lookup.values));
 
-        result = builder.create<::mlir::voila::LookupOp>(
+        result = builder.create<LookupOp>(
             location,
             ::mlir::RankedTensorType::get(hashes.getType().dyn_cast<::mlir::TensorType>().getShape(),
                                           builder.getIndexType()),
@@ -554,7 +555,7 @@ namespace voila::mlir
         {
             retTypes.push_back(::mlir::RankedTensorType::get({-1}, getElementTypeOrSelf(val)));
         }
-        auto insertOp = builder.create<::mlir::voila::InsertOp>(location, retTypes, table, data);
+        auto insertOp = builder.create<InsertOp>(location, retTypes, table, data);
         result = insertOp.hashtables();
     }
 

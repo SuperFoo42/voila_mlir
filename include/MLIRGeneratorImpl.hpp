@@ -73,10 +73,10 @@ namespace voila::mlir
                 shape = getShape(lhs, rhs);
 
                 return builder.create<Op>(location, ::mlir::RankedTensorType::get(shape, builder.getI1Type()), lhs,
-                                          rhs);
+                                          rhs, ::mlir::Value());
             }
             else
-                return builder.create<Op>(location, builder.getI1Type(), lhs, rhs);
+                return builder.create<Op>(location, builder.getI1Type(), lhs, rhs, ::mlir::Value());
         }
 
         ::mlir::Type getScalarType(const ast::ASTNode &node);

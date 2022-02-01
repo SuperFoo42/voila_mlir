@@ -9,7 +9,9 @@ namespace voila
 {
     using namespace ast;
     using mlir::MLIRGeneratorImpl;
-    ::mlir::OwningModuleRef MLIRGenerator::generate(const Program &program)
+    using ::mlir::OwningOpRef;
+    using ::mlir::ModuleOp;
+    OwningOpRef<ModuleOp> MLIRGenerator::generate(const Program &program)
     {
         // We create an empty MLIR module and codegen functions one at a time and
         // add them to the module.
@@ -38,7 +40,7 @@ namespace voila
         return module;
     }
 
-    ::mlir::OwningModuleRef MLIRGenerator::mlirGen(::mlir::MLIRContext &ctx, const Program &program)
+    OwningOpRef<ModuleOp> MLIRGenerator::mlirGen(::mlir::MLIRContext &ctx, const Program &program)
     {
         MLIRGenerator generator(ctx);
         return generator.generate(program);

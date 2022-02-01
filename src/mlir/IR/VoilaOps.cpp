@@ -2,12 +2,11 @@
 
 #include "mlir/Analysis/SliceAnalysis.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/Linalg/Transforms/Transforms.h"
 #include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/SCF/Utils.h"
+#include "mlir/Dialect/SCF/Utils/Utils.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
-#include "mlir/Dialect/Vector/VectorOps.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -20,14 +19,14 @@ using namespace ::mlir::arith;
 using namespace mlir::voila;
 /// Return the callee of the generic call operation, this is required by the
 /// call interface.
-[[maybe_unused]] mlir::CallInterfaceCallable mlir::voila::GenericCallOp::getCallableForCallee()
+[[maybe_unused]] CallInterfaceCallable GenericCallOp::getCallableForCallee()
 {
     return callee();
 }
 
 /// Get the argument operands to the called function, this is required by the
 /// call interface.
-[[maybe_unused]] mlir::Operation::operand_range mlir::voila::GenericCallOp::getArgOperands()
+[[maybe_unused]] Operation::operand_range GenericCallOp::getArgOperands()
 {
     return inputs();
 }
@@ -48,8 +47,8 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
 //FIXME: not safe in all cases
 LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, PatternRewriter &rewriter)
 {
-
     SmallVector<std::reference_wrapper<OpOperand>> uses;
+    SmallVector<Value> toPredicate;
     for (auto &use : op->getUses())
         uses.push_back(use);
     while (!uses.empty())

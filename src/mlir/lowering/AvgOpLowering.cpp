@@ -9,8 +9,7 @@ namespace voila::mlir::lowering
 {
     using namespace ::mlir;
     using namespace ::mlir::arith;
-    using ::mlir::voila::AvgOp;
-    using ::mlir::voila::AvgOpAdaptor;
+    using namespace ::mlir::voila;
 
     AvgOpLowering::AvgOpLowering(MLIRContext *ctx) : ConversionPattern(AvgOp::getOperationName(), 1, ctx) {}
 
@@ -59,12 +58,12 @@ namespace voila::mlir::lowering
         // this should work as long as ieee 754 is supported and division by 0 is inf
         if (adaptor.indices() && op->getResultTypes().front().isa<TensorType>())
         {
-            auto sum = builder.create<::mlir::voila::SumOp>(
+            auto sum = builder.create<SumOp>(
                 RankedTensorType::get(-1, getElementTypeOrSelf(adaptor.input()).isa<FloatType>() ?
                                               static_cast<Type>(builder.getF64Type()) :
                                               static_cast<Type>(builder.getI64Type())),
                 adaptor.input(), adaptor.indices());
-            auto count = builder.create<::mlir::voila::CountOp>(RankedTensorType::get(-1, builder.getI64Type()),
+            auto count = builder.create<CountOp>(RankedTensorType::get(-1, builder.getI64Type()),
                                                                  adaptor.input(), adaptor.indices());
 
             Value fltCnt, fltSum;
@@ -85,16 +84,16 @@ namespace voila::mlir::lowering
             {
                 fltSum = sum;
             }
-
-            rewriter.replaceOpWithNewOp<::mlir::voila::DivOp>(op, RankedTensorType::get(-1, builder.getF64Type()),
-                                                              fltSum, fltCnt);
+            //TODO: replace with predicates
+            rewriter.replaceOpWithNewOp<DivOp>(op, RankedTensorType::get(-1, builder.getF64Type()),
+                                                              fltSum, fltCnt, Value());
         }
         else
         {
-            auto sum = builder.create<::mlir::voila::SumOp>(getElementTypeOrSelf(adaptor.input()),
+            auto sum = builder.create<SumOp>(getElementTypeOrSelf(adaptor.input()),
                                                              adaptor.input(), adaptor.indices());
             auto count =
-                builder.create<::mlir::voila::CountOp>(builder.getI64Type(), adaptor.input(), adaptor.indices());
+                builder.create<CountOp>(builder.getI64Type(), adaptor.input(), adaptor.indices());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())
@@ -115,7 +114,8 @@ namespace voila::mlir::lowering
                 fltSum = sum;
             }
 
-            rewriter.replaceOpWithNewOp<::mlir::voila::DivOp>(op, rewriter.getF64Type(), fltSum, fltCnt);
+            //TODO: replace with predicates
+            rewriter.replaceOpWithNewOp<DivOp>(op, rewriter.getF64Type(), fltSum, fltCnt, Value());
         }
         return success();
     }

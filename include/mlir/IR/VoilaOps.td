@@ -107,7 +107,7 @@ def AddOp : Voila_Op<"add",[NoSideEffect, Commutative]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs, Optional<I1Tensor>:$pred);
 let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -121,7 +121,7 @@ def SubOp : Voila_Op<"sub",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs, Optional<I1Tensor>:$pred);
 let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$result);
 
   // Specify a parser and printer method.
@@ -129,14 +129,14 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$r
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def MulOp : Voila_Op<"mul",[NoSideEffect, Commutative, SameOperandsAndResultShape]> {
+def MulOp : Voila_Op<"mul",[NoSideEffect, Commutative, SameOperandsShape]> {
   let summary = "element-wise multiplication operation";
   let description = [{
     The "mul" operation performs element-wise multiplication between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
+  let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs, Optional<I1Tensor>:$pred);
   let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
 
   // Specify a parser and printer method.
@@ -144,14 +144,14 @@ def MulOp : Voila_Op<"mul",[NoSideEffect, Commutative, SameOperandsAndResultShap
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def DivOp : Voila_Op<"div",[NoSideEffect]> {
+def DivOp : Voila_Op<"div",[NoSideEffect,SameOperandsShape]> {
   let summary = "element-wise division operation";
   let description = [{
     The "div" operation performs element-wise division between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs, Optional<I1Tensor>:$pred);
 let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
 
   // Specify a parser and printer method.
@@ -159,14 +159,14 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def ModOp : Voila_Op<"mod",[NoSideEffect]> {
+def ModOp : Voila_Op<"mod",[NoSideEffect,SameOperandsShape]> {
   let summary = "element-wise modulo operation";
   let description = [{
     The "mod" operation performs element-wise modulo between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs, Optional<I1Tensor>:$pred);
 let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
 
   // Specify a parser and printer method.
@@ -174,14 +174,14 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def AndOp : Voila_Op<"and",[NoSideEffect,Commutative]> {
+def AndOp : Voila_Op<"and",[NoSideEffect,Commutative,SameOperandsShape]> {
   let summary = "element-wise and operation";
   let description = [{
     The "and" operation performs element-wise and between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$lhs, AnyTypeOf<[I1Tensor,I1]>:$rhs);
+  let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$lhs, AnyTypeOf<[I1Tensor,I1]>:$rhs, Optional<I1Tensor>:$pred);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -191,14 +191,14 @@ def AndOp : Voila_Op<"and",[NoSideEffect,Commutative]> {
   //TODO: verifyer checking same shape
 }
 
-def OrOp : Voila_Op<"or",[NoSideEffect,Commutative]> {
+def OrOp : Voila_Op<"or",[NoSideEffect,Commutative,SameOperandsShape]> {
   let summary = "element-wise or operation";
   let description = [{
     The "or" operation performs element-wise or between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$lhs, AnyTypeOf<[I1Tensor,I1]>:$rhs);
+  let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$lhs, AnyTypeOf<[I1Tensor,I1]>:$rhs, Optional<I1Tensor>:$pred);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -206,13 +206,13 @@ def OrOp : Voila_Op<"or",[NoSideEffect,Commutative]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def NotOp : Voila_Op<"not",[NoSideEffect]> {
+def NotOp : Voila_Op<"not",[NoSideEffect,SameOperandsShape]> {
 let summary = "element-wise not operation";
 let description = [{
 The "bot" operation performs element-wise not on a tensor.
 }];
 
-let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$value);
+let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$value, Optional<I1Tensor>:$pred);
 let results = (outs I1Tensor);
 
 // Specify a parser and printer method.
@@ -221,14 +221,14 @@ let results = (outs I1Tensor);
 }
 
 
-def EqOp : Voila_Op<"eq",[NoSideEffect,Commutative]> {
+def EqOp : Voila_Op<"eq",[NoSideEffect]> {
   let summary = "element-wise equality comparison operation";
   let description = [{
     The "eq" operation performs element-wise equality comparison between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs, Optional<I1Tensor>:$pred);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -236,14 +236,14 @@ def EqOp : Voila_Op<"eq",[NoSideEffect,Commutative]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def NeqOp : Voila_Op<"neq",[NoSideEffect,Commutative]> {
+def NeqOp : Voila_Op<"neq",[NoSideEffect]> {
   let summary = "element-wise inequality comparison operation";
   let description = [{
     The "neq" operation performs element-wise inequality comparison between two tensors.
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs, Optional<I1Tensor>:$pred);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -258,7 +258,7 @@ def LeOp : Voila_Op<"le",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs, Optional<I1Tensor>:$pred);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -273,7 +273,7 @@ def LeqOp : Voila_Op<"leq",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs, Optional<I1Tensor>:$pred);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -288,7 +288,7 @@ def GeOp : Voila_Op<"ge",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs, Optional<I1Tensor>:$pred);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.
@@ -303,7 +303,7 @@ def GeqOp : Voila_Op<"geq",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
+  let arguments = (ins AnyType:$lhs, AnyType:$rhs, Optional<I1Tensor>:$pred);
   let results = (outs I1Tensor);
 
   // Specify a parser and printer method.

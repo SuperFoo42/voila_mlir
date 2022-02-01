@@ -86,7 +86,7 @@ namespace voila::mlir::lowering
         {
             if (hashInvalidConsts[i].getType().isa<IntegerType>())
             {
-                empties.push_back(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::eq, bucketVals[i],hashInvalidConsts[i]));
+                empties.push_back(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],hashInvalidConsts[i]));
             }
             else if (hashInvalidConsts[i].getType().isa<FloatType>())
             {
@@ -102,7 +102,7 @@ namespace voila::mlir::lowering
         Value anyNotEmpty = empties[0];
         for (size_t i = 1; i < empties.size(); ++i)
         {
-            anyNotEmpty = builder.create<AndIOp>(anyNotEmpty, empties[i]);
+            anyNotEmpty = builder.create<OrIOp>(anyNotEmpty, empties[i]);
         }
 
         SmallVector<Value> founds;
@@ -112,7 +112,7 @@ namespace voila::mlir::lowering
             {
                 builder.create<AssertOp>(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, hashInvalidConsts[i], toStores[i]), "Trying ");
                 founds.push_back(
-                    builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::eq, bucketVals[i], toStores[i]));
+                    builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i], toStores[i]));
             }
             else if (bucketVals[i].getType().isa<FloatType>())
             {
@@ -127,7 +127,7 @@ namespace voila::mlir::lowering
         Value allFound = founds[0];
         for (size_t i = 1; i < founds.size(); ++i)
         {
-            allFound = builder.create<AndIOp>(allFound, founds[i]);
+            allFound = builder.create<OrIOp>(allFound, founds[i]);
         }
 
         return builder.create<AndIOp>(allFound, anyNotEmpty);

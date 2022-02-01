@@ -60,7 +60,7 @@ namespace voila::mlir::lowering
             auto lhsType = ::mlir::getElementTypeOrSelf(lhs);
             auto rhsType = ::mlir::getElementTypeOrSelf(rhs);
 
-            if (isFloat(lhsType) && isFloat(rhsType))
+            if (lhsType.isa<::mlir::FloatType>() && rhsType.isa<::mlir::FloatType>())
             {
                 return builder.create<::mlir::arith::CmpFOp>(loc, getFltCmpPred(), lhs, rhs);
             }

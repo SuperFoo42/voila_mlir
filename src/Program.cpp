@@ -395,7 +395,7 @@ namespace voila
         //(void) bufferize->initializeOptions("use-alloca=true");
         (void) bufferize->initializeOptions("allow-unknown-ops=true");
         pm.addPass(std::move(bufferize));
-        pm.addPass(createTensorConstantBufferizePass());
+        //pm.addPass(createTensorConstantBufferizePass());
 
         pm.addNestedPass<FuncOp>(createSimplifyAffineStructuresPass());
         pm.addNestedPass<FuncOp>(createAffineScalarReplacementPass());
@@ -524,7 +524,7 @@ namespace voila
         pm.addNestedPass<FuncOp>(createLowerToCFGPass());
 
         pm.addNestedPass<FuncOp>(arith::createArithmeticExpandOpsPass());
-        pm.addNestedPass<FuncOp>(createStdExpandOpsPass());
+        pm.addNestedPass<FuncOp>(memref::createExpandOpsPass());
 
         pm.addNestedPass<FuncOp>(arith::createConvertArithmeticToLLVMPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());
