@@ -4,21 +4,15 @@ include "mlir/IR/OpBase.td"
 
 def PredicationOpInterface : OpInterface<"PredicationOpInterface"> {
   let description = [{
-    Iterface for Voila Operations that can be predicated with selections
+    Interface for Voila Operations that can be predicated with selections
   }];
-
   let cppNamespace = "::mlir::voila";
 
   let methods = [
-    InterfaceMethod<
-      "TODO",
-      "void", "predicate", (ins "Value":$pred)
-    >,
-    InterfaceMethod<
-          "TODO",
-          "bool", "predicated"
-        >
+    InterfaceMethod<"TODO","void", "predicate", (ins "Value":$pred)>,
+    InterfaceMethod<"TODO","bool", "predicated">,
   ];
 }
+
 
 #endif // VOILA_PREDICATION_INTERFACE

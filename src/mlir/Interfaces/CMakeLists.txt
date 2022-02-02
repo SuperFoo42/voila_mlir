@@ -1,1 +1,0 @@
-target_sources(voila_compiler PRIVATE VoilaInlinerInterface.cpp)

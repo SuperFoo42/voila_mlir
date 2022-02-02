@@ -2,12 +2,14 @@ add_mlir_dialect_library(MLIRVoila
         VoilaDialect.cpp
         IR/VoilaOps.cpp
         Interfaces/VoilaInlinerInterface.cpp
+        Interfaces/PredicationOpInterface.cpp
 
         ADDITIONAL_HEADER_DIRS
         ${PROJECT_SOURCE_DIR}/include/mlir
 
         DEPENDS
         MLIRVoilaOpsIncGen
+        MLIRPredicationOpInterfaceIncGen
 
         LINK_LIBS PUBLIC
         MLIRIR
@@ -19,3 +21,4 @@ target_link_libraries(voila_lowering range-v3 MLIRVoila)
 
 add_subdirectory(lowering)
 add_subdirectory(Passes)
+add_subdirectory(Interfaces)

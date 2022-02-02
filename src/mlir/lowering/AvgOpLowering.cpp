@@ -62,9 +62,9 @@ namespace voila::mlir::lowering
                 RankedTensorType::get(-1, getElementTypeOrSelf(adaptor.input()).isa<FloatType>() ?
                                               static_cast<Type>(builder.getF64Type()) :
                                               static_cast<Type>(builder.getI64Type())),
-                adaptor.input(), adaptor.indices());
+                adaptor.input(), adaptor.indices(), adaptor.pred());
             auto count = builder.create<CountOp>(RankedTensorType::get(-1, builder.getI64Type()),
-                                                                 adaptor.input(), adaptor.indices());
+                                                                 adaptor.input(), adaptor.indices(), adaptor.pred());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())
@@ -91,9 +91,9 @@ namespace voila::mlir::lowering
         else
         {
             auto sum = builder.create<SumOp>(getElementTypeOrSelf(adaptor.input()),
-                                                             adaptor.input(), adaptor.indices());
+                                                             adaptor.input(), adaptor.indices(), adaptor.pred());
             auto count =
-                builder.create<CountOp>(builder.getI64Type(), adaptor.input(), adaptor.indices());
+                builder.create<CountOp>(builder.getI64Type(), adaptor.input(), adaptor.indices(), adaptor.pred());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())

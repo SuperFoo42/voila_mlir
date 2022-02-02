@@ -11,7 +11,6 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
-
 #define GET_OP_CLASSES
 #include "mlir/IR/VoilaOps.cpp.inc"
 using namespace ::mlir;
@@ -44,7 +43,6 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
     return !input.hasRank() || !output.hasRank() || input == output;
 }
 
-//FIXME: not safe in all cases
 LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, PatternRewriter &rewriter)
 {
     SmallVector<std::reference_wrapper<OpOperand>> uses;
@@ -136,4 +134,316 @@ LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, Patt
 
 
     return success();
+}
+
+void AddOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool AddOp::predicated()
+{
+    return pred() == Value();
+}
+
+void NeqOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool NeqOp::predicated()
+{
+    return pred() == Value();
+}
+
+void MulOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool MulOp::predicated()
+{
+    return pred() == Value();
+}
+
+void ModOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool ModOp::predicated()
+{
+    return pred() == Value();
+}
+
+void LeqOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool LeqOp::predicated()
+{
+    return pred() == Value();
+}
+
+void LeOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool LeOp::predicated()
+{
+    return pred() == Value();
+}
+
+void GeqOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool GeqOp::predicated()
+{
+    return pred() == Value();
+}
+
+void GeOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool GeOp::predicated()
+{
+    return pred() == Value();
+}
+
+void EqOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool EqOp::predicated()
+{
+    return pred() == Value();
+}
+
+void DivOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool DivOp::predicated()
+{
+    return pred() == Value();
+}
+
+void AndOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool AndOp::predicated()
+{
+    return pred() == Value();
+}
+
+void SubOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool SubOp::predicated()
+{
+    return pred() == Value();
+}
+
+void OrOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool OrOp::predicated()
+{
+    return pred() == Value();
+}
+
+void NotOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool NotOp::predicated()
+{
+    return pred() == Value();
+}
+
+void ScatterOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool ScatterOp::predicated()
+{
+    return pred() == Value();
+}
+
+void ReadOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool ReadOp::predicated()
+{
+    return pred() == Value();
+}
+
+void MinOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool MinOp::predicated()
+{
+    return pred() == Value();
+}
+
+void MaxOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool MaxOp::predicated()
+{
+    return pred() == Value();
+}
+
+void LookupOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool LookupOp::predicated()
+{
+    return pred() == Value();
+}
+
+void InsertOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool InsertOp::predicated()
+{
+    return pred() == Value();
+}
+
+void HashOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool HashOp::predicated()
+{
+    return pred() == Value();
+}
+
+void GatherOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool GatherOp::predicated()
+{
+    return pred() == Value();
+}
+
+void CountOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool CountOp::predicated()
+{
+    return pred() == Value();
+}
+
+void AvgOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool AvgOp::predicated()
+{
+    return pred() == Value();
+}
+
+void WriteOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool WriteOp::predicated()
+{
+    return pred() == Value();
+}
+
+void SumOp::predicate(Value pred)
+{
+    if (predicated())
+        throw; //TODO
+    predMutable().assign(pred);
+}
+
+bool SumOp::predicated()
+{
+    return pred() == Value();
 }

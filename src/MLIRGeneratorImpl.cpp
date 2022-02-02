@@ -39,7 +39,7 @@ namespace voila::mlir
                 throw MLIRGenerationException();
             }
             auto idxs = std::get<Value>(visitor_gen(*sum.groups));
-            result = builder.create<SumOp>(location, resType, expr, idxs);
+            result = builder.create<SumOp>(location, resType, expr, idxs, Value());
         }
         else
         {
@@ -70,7 +70,7 @@ namespace voila::mlir
         {
             auto idxs = std::get<Value>(visitor_gen(*cnt.groups));
             result = builder.create<CountOp>(location, RankedTensorType::get(-1, builder.getI64Type()),
-                                                            expr, idxs);
+                                                            expr, idxs, Value());
         }
         else
         {
@@ -100,7 +100,7 @@ namespace voila::mlir
             }
             auto idxs = std::get<Value>(visitor_gen(*min.groups));
 
-            result = builder.create<MinOp>(location, resType, expr, idxs);
+            result = builder.create<MinOp>(location, resType, expr, idxs, Value());
         }
         else
         {
@@ -143,7 +143,7 @@ namespace voila::mlir
             }
             auto idxs = std::get<Value>(visitor_gen(*max.groups));
 
-            result = builder.create<MaxOp>(location, resType, expr, idxs);
+            result = builder.create<MaxOp>(location, resType, expr, idxs, Value());
         }
         else
         {
@@ -174,7 +174,7 @@ namespace voila::mlir
         {
             auto idxs = std::get<Value>(visitor_gen(*avg.groups));
             result = builder.create<AvgOp>(location, RankedTensorType::get(-1, builder.getF64Type()),
-                                                          expr, idxs);
+                                                          expr, idxs, Value());
         }
         else
         {
@@ -192,7 +192,7 @@ namespace voila::mlir
         auto location = loc(scatter.get_location());
         auto col = std::get<Value>(visitor_gen(scatter.src));
         auto idx = std::get<Value>(visitor_gen(scatter.idxs));
-        result = builder.create<ScatterOp>(location, col.getType(), idx, col);
+        result = builder.create<ScatterOp>(location, col.getType(), idx, col, Value());
     }
 
     void MLIRGeneratorImpl::operator()(const FunctionCall &call)
@@ -427,7 +427,7 @@ namespace voila::mlir
         auto col = std::get<Value>(visitor_gen(read.column));
         auto idx = std::get<Value>(visitor_gen(read.idx));
 
-        result = builder.create<ReadOp>(location, col.getType(), col, idx);
+        result = builder.create<ReadOp>(location, col.getType(), col, idx, Value());
     }
 
     void MLIRGeneratorImpl::operator()(const Gather &gather)
@@ -435,7 +435,7 @@ namespace voila::mlir
         auto location = loc(gather.get_location());
         auto col = std::get<Value>(visitor_gen(gather.column));
         auto idx = std::get<Value>(visitor_gen(gather.idxs));
-        result = builder.create<GatherOp>(location, RankedTensorType::get(idx.getType().dyn_cast<TensorType>().getShape(), getElementTypeOrSelf(col)), col, idx);
+        result = builder.create<GatherOp>(location, RankedTensorType::get(idx.getType().dyn_cast<TensorType>().getShape(), getElementTypeOrSelf(col)), col, idx, Value());
     }
 
     void MLIRGeneratorImpl::operator()(const Ref &param)
@@ -541,7 +541,7 @@ namespace voila::mlir
             location,
             ::mlir::RankedTensorType::get(hashes.getType().dyn_cast<::mlir::TensorType>().getShape(),
                                           builder.getIndexType()),
-            values, tables, hashes);
+            values, tables, hashes, Value());
     }
 
     void MLIRGeneratorImpl::operator()(const Insert &insert)
@@ -555,7 +555,7 @@ namespace voila::mlir
         {
             retTypes.push_back(::mlir::RankedTensorType::get({-1}, getElementTypeOrSelf(val)));
         }
-        auto insertOp = builder.create<InsertOp>(location, retTypes, table, data);
+        auto insertOp = builder.create<InsertOp>(location, retTypes, table, data, Value());
         result = insertOp.hashtables();
     }
 
