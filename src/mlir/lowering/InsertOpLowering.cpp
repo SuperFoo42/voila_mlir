@@ -86,7 +86,8 @@ namespace voila::mlir::lowering
         {
             if (hashInvalidConsts[i].getType().isa<IntegerType>())
             {
-                empties.push_back(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],hashInvalidConsts[i]));
+                empties.push_back(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],
+                                                         hashInvalidConsts[i]));
             }
             else if (hashInvalidConsts[i].getType().isa<FloatType>())
             {
@@ -110,7 +111,9 @@ namespace voila::mlir::lowering
         {
             if (bucketVals[i].getType().isa<IntegerType>())
             {
-                builder.create<AssertOp>(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, hashInvalidConsts[i], toStores[i]), "Trying ");
+                builder.create<AssertOp>(
+                    builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, hashInvalidConsts[i], toStores[i]),
+                    "Trying to insert invalid const");
                 founds.push_back(
                     builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i], toStores[i]));
             }
@@ -124,13 +127,13 @@ namespace voila::mlir::lowering
                 throw NotImplementedException();
             }
         }
-        Value allFound = founds[0];
+        Value anyNotFound = founds[0];
         for (size_t i = 1; i < founds.size(); ++i)
         {
-            allFound = builder.create<OrIOp>(allFound, founds[i]);
+            anyNotFound = builder.create<OrIOp>(anyNotFound, founds[i]);
         }
 
-        return builder.create<AndIOp>(allFound, anyNotEmpty);
+        return builder.create<AndIOp>(anyNotEmpty, anyNotFound);
     }
 
     // TODO: use atomic compare exchange
@@ -138,7 +141,8 @@ namespace voila::mlir::lowering
                                                             ArrayRef<Value> operands,
                                                             ConversionPatternRewriter &rewriter) const
     {
-        InsertOpAdaptor insertOpAdaptor(operands);
+        auto iOp = dyn_cast<InsertOp>(op);
+        InsertOpAdaptor insertOpAdaptor(iOp);
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
         // allocate and prefill hashtable
@@ -202,9 +206,9 @@ namespace voila::mlir::lowering
             beforeBlock->addArgument(loop->getOperands().front().getType(), loc);
             ImplicitLocOpBuilder beforeBuilder(loc, OpBuilder::atBlockEnd(beforeBlock));
 
-            beforeBuilder.create<scf::ConditionOp>(
-                createKeyComparisons(beforeBuilder, hts, hashInvalidConsts, toStores, loop.getBefore().getArguments()),
-                loop->getOperands());
+            auto comparisons =
+                createKeyComparisons(beforeBuilder, hts, hashInvalidConsts, toStores, beforeBlock->getArgument(0));
+            beforeBuilder.create<scf::ConditionOp>(comparisons, beforeBlock->getArgument(0));
             // body block
             auto afterBlock = builder.createBlock(&loop.getAfter());
             afterBlock->addArgument(loop->getOperands().front().getType(), loc);
@@ -227,8 +231,8 @@ namespace voila::mlir::lowering
             }
         };
 
-        buildAffineLoopNest(builder, builder.getLoc(), lb, {builder.create<tensor::DimOp>(insertOpAdaptor.hashValues(), 0)}, {1},
-                            loopFunc);
+        buildAffineLoopNest(builder, builder.getLoc(), lb,
+                            {builder.create<tensor::DimOp>(insertOpAdaptor.hashValues(), 0)}, {1}, loopFunc);
 
         SmallVector<Value> ret;
         for (const auto &ht : hts)
