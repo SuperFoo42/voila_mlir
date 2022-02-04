@@ -1,30 +1,28 @@
-#n_name, o_orderdate, l_extendedprice, l_discount, ps_supplycost, l_quantity, s_suppkey, l_suppkey, ps_suppkey, ps_partkey, l_partkey, p_partkey, o_orderkey, l_orderkey, s_nationkey, n_nationkey, p_name,
-main(needle)
+main(n_name, o_orderdate, l_extendedprice, l_discount, ps_supplycost, l_quantity, s_suppkey, l_suppkey, ps_suppkey, ps_partkey, l_partkey, p_partkey, o_orderkey, l_orderkey, s_nationkey, n_nationkey, p_name,needle)
 {
-    #h_needle = hash(p_name);
-    ht_n = insert(hash(needle), needle);
-    emit ht_n;
-    #to_select = eq(s_suppkey, l_suppkey);
-    #to_select = and(eq(ps_suppkey,l_suppkey), to_select);
-    #to_select = and(eq(ps_partkey,l_partkey), to_select);
-    #to_select = and(eq(p_partkey,l_partkey), to_select);
-    #to_select = and(eq(o_orderkey,l_orderkey), to_select);
-    #to_select = and(eq(s_nationkey,n_nationkey), to_select);
-    #sel_h = hash(p_name);
-    #INVALID = 18446744073709551615;
-    #contains = neq(lookup(p_name,ht_needle, sel_h), INVALID);
-    #to_select = and(to_select, contains);
+    h_needle = hash(p_name);
+    ht_needle = insert(h_needle, needle);
+    to_select = eq(s_suppkey, l_suppkey);
+    to_select = and(eq(ps_suppkey,l_suppkey), to_select);
+    to_select = and(eq(ps_partkey,l_partkey), to_select);
+    to_select = and(eq(p_partkey,l_partkey), to_select);
+    to_select = and(eq(o_orderkey,l_orderkey), to_select);
+    to_select = and(eq(s_nationkey,n_nationkey), to_select);
+    sel_h = hash(p_name);
+    INVALID = 18446744073709551615;
+    contains = neq(lookup(p_name,ht_needle, sel_h), INVALID);
+    to_select = and(to_select, contains);
 
-    #o_year = div(select(o_orderdate,to_select), 10000);
-    #nation = select(n_name,to_select);
-    #sel_extendedprice = select(l_extendedprice,to_select);
-    #sel_discount = select(l_discount,to_select);
-    #sel_supplycost = select(ps_supplycost,to_select);
-    #sel_quantity = select(l_quantity,to_select);
+    o_year = div(select(o_orderdate,to_select), 10000);
+    nation = select(n_name,to_select);
+    sel_extendedprice = select(l_extendedprice,to_select);
+    sel_discount = select(l_discount,to_select);
+    sel_supplycost = select(ps_supplycost,to_select);
+    sel_quantity = select(l_quantity,to_select);
 
-    #h = hash(o_year,nation);
-    #ht_year, ht_nation = insert(h,o_year, nation);
-    #groups = lookup(o_year, nation, ht_year, ht_nation, h);
-    #amount = aggr(sum, mul(sub(mul(sel_extendedprice,sub(1.0,sel_discount)),sel_supplycost), sel_quantity) , groups);
-    #emit ht_nation,ht_year,amount;
+    h = hash(o_year,nation);
+    ht_year, ht_nation = insert(h,o_year, nation);
+    groups = lookup(o_year, nation, ht_year, ht_nation, h);
+    amount = aggr(sum, mul(sub(mul(sel_extendedprice,sub(1.0,sel_discount)),sel_supplycost), sel_quantity) , groups);
+    emit ht_nation,ht_year,amount;
 }
