@@ -368,7 +368,7 @@ TEST(TPCBenchmarkTests, Q3_Qualification)
     EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
 }
 
-TEST(TPCBenchmarkTests, Q3_Join)
+TEST(TPCBenchmarkTests, Q3_JoinCompressed)
 {
     // load data
     CompressedTable customer(VOILA_BENCHMARK_DATA_PATH "/customer.bin.xz");
@@ -404,17 +404,28 @@ TEST(TPCBenchmarkTests, Q3_Join)
         prof;
     prof.start();
 
-    for (size_t i = 0; i < l_orderkey.size(); ++i)
+    const auto jt = joins::NPO_st(
+        l_orderkey, [&l_shipdate, date](auto idx, auto) { return l_shipdate[idx] > date; }, o_orderkey,
+        [&o_orderdate, date](auto idx, auto) { return o_orderdate[idx] < date; });
+    decltype(o_custkey) m_custkey;
+    m_custkey.reserve(jt.size());
+    for (auto &el : jt)
     {
-        if (c_mktsegment[i] == segment && c_custkey[i] == o_custkey[i] && l_orderkey[i] == o_orderkey[i] &&
-            o_orderdate[i] < date && l_shipdate[i] > date)
-        {
-            const auto idx =
-                probeAndInsert(hash(l_orderkey[i], o_orderdate[i], o_shippriority[i]), l_orderkey[i], o_orderdate[i],
-                               o_shippriority[i], ht_l_orderkey_ref, ht_o_orderdate_ref, ht_o_shippriority_ref);
+        m_custkey.push_back(o_custkey[el.second]);
+    }
+    const auto jt2 = joins::NPO_st(
+        m_custkey, [](auto, auto) { return true; }, c_custkey,
+        [&c_mktsegment, segment](auto idx, auto) { return c_mktsegment[idx] == segment; });
 
-            sum_disc_price_ref[idx] += l_extendedprice[i] * (1 - l_discount[i]);
-        }
+    for (const auto &e : jt2)
+    {
+        const auto l_idx = jt[e.first].first;
+        const auto o_idx = jt[e.first].second;
+        const auto idx = probeAndInsert(hash(l_orderkey[l_idx], o_orderdate[o_idx], o_shippriority[o_idx]),
+                                        l_orderkey[l_idx], o_orderdate[o_idx], o_shippriority[o_idx], ht_l_orderkey_ref,
+                                        ht_o_orderdate_ref, ht_o_shippriority_ref);
+
+        sum_disc_price_ref[idx] += l_extendedprice[l_idx] * (1 - l_discount[l_idx]);
     }
     prof.stop();
     std::cout << prof << std::endl;
@@ -665,7 +676,7 @@ TEST(TPCBenchmarkTests, JoinWithPreds)
     std::vector<std::pair<size_t, size_t>> ref{std::make_pair(1, 0), std::make_pair(3, 1), std::make_pair(5, 2),
                                                std::make_pair(7, 3)};
     auto res = joins::NPO_st(
-        t1, [](auto v) { return v % 2 == 0; }, t2, [](auto v) { return v % 2 == 0; });
+        t1, [](auto, auto v) { return v % 2 == 0; }, t2, [](auto, auto v) { return v % 2 == 0; });
 
     ASSERT_EQ(res, ref);
 }

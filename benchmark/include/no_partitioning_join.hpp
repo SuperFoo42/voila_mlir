@@ -99,7 +99,7 @@ namespace voila::joins
         {
             for (const auto &elem : ranges::views::enumerate(rel))
             {
-                if (pred(std::get<1>(elem)))
+                if (pred(std::get<0>(elem),std::get<1>(elem)))
                 {
                     tuple_t *dest;
                     auto idx = HASH(std::get<1>(elem), hash_mask, skip_bits);
@@ -192,7 +192,7 @@ namespace voila::joins
 
             for (const auto &elem : ranges::views::enumerate(rel))
             {
-                if (pred(std::get<1>(elem)))
+                if (pred(std::get<0>(elem),std::get<1>(elem)))
                 {
                     auto idx = HASH(std::get<1>(elem), hash_mask, skip_bits);
                     bucket_t *b = &buckets[idx];
