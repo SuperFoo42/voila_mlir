@@ -31,9 +31,14 @@ namespace voila::joins
 {
     using result_t = std::vector<std::pair<size_t, size_t>>;
 
-    constexpr int32_t HASH(auto X, auto MASK, auto SKIP)
+    constexpr int32_t HASH(auto X, auto MASK, auto SKIP) requires std::is_scalar_v<decltype(X)>
     {
         return (XXH3_64bits(&X, sizeof(X)) & MASK) >> SKIP;
+    }
+
+    constexpr int32_t HASH(auto X, auto MASK, auto SKIP) requires std::is_same_v<decltype(X), std::string>
+    {
+        return (XXH3_64bits(X.data(), X.size()) & MASK) >> SKIP;
     }
 
     /** Type definition for a tuple, depending on KEY_8B a tuple can be 16B or 8B */
@@ -89,6 +94,48 @@ namespace voila::joins
                       0);
         }
 
+        template<class Predicate>
+        void build_hashtable_st(const std::vector<T> &rel, Predicate pred)
+        {
+            for (const auto &elem : ranges::views::enumerate(rel))
+            {
+                if (pred(std::get<1>(elem)))
+                {
+                    tuple_t *dest;
+                    auto idx = HASH(std::get<1>(elem), hash_mask, skip_bits);
+
+                    /* copy the tuple to appropriate hash bucket */
+                    /* if full, follow nxt pointer to find correct place */
+                    auto &curr = buckets[idx];
+                    auto *nxt = curr.next;
+
+                    if (curr.count == BUCKET_SIZE)
+                    {
+                        if (!nxt || nxt->count == BUCKET_SIZE)
+                        {
+                            bucket_t *b;
+                            b = new bucket_t;
+                            curr.next = b;
+                            b->next = nxt;
+                            b->count = 1;
+                            dest = b->tuples;
+                        }
+                        else
+                        {
+                            dest = nxt->tuples + nxt->count;
+                            nxt->count++;
+                        }
+                    }
+                    else
+                    {
+                        dest = curr.tuples + curr.count;
+                        curr.count++;
+                    }
+                    *dest = {std::get<0>(elem), std::get<1>(elem)};
+                }
+            }
+        }
+
         void build_hashtable_st(const std::vector<T> &rel)
         {
             for (const auto &elem : ranges::views::enumerate(rel))
@@ -137,6 +184,35 @@ namespace voila::joins
          *
          * @return number of matching tuples
          */
+        template<class Predicate>
+        result_t probe_hashtable(const std::vector<T> &rel, Predicate pred)
+        {
+            uint32_t j;
+            result_t results;
+
+            for (const auto &elem : ranges::views::enumerate(rel))
+            {
+                if (pred(std::get<1>(elem)))
+                {
+                    auto idx = HASH(std::get<1>(elem), hash_mask, skip_bits);
+                    bucket_t *b = &buckets[idx];
+
+                    do
+                    {
+                        for (j = 0; j < b->count; j++)
+                        {
+                            if (std::get<1>(elem) == b->tuples[j].payload)
+                                results.emplace_back(b->tuples[j].key, std::get<0>(elem));
+                        }
+
+                        b = b->next; /* follow overflow pointer */
+                    } while (b);
+                }
+            }
+
+            return results;
+        }
+
         result_t probe_hashtable(const std::vector<T> &rel)
         {
             uint32_t j;
@@ -164,6 +240,16 @@ namespace voila::joins
     };
 
     /** \copydoc NPO_st */
+    template<class T, class SelFuncL, class SelFuncR>
+    result_t NPO_st(std::vector<T> &relR, SelFuncL selL, std::vector<T> &relS, SelFuncR selR)
+    {
+        HashTable<T> ht(relR.size());
+
+        ht.build_hashtable_st(relR, selL);
+
+        return ht.probe_hashtable(relS, selR);
+    }
+
     template<class T>
     result_t NPO_st(std::vector<T> &relR, std::vector<T> &relS)
     {

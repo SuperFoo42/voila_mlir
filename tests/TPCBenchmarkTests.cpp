@@ -368,6 +368,60 @@ TEST(TPCBenchmarkTests, Q3_Qualification)
     EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
 }
 
+TEST(TPCBenchmarkTests, Q3_Join)
+{
+    // load data
+    CompressedTable customer(VOILA_BENCHMARK_DATA_PATH "/customer.bin.xz");
+    CompressedTable orders(VOILA_BENCHMARK_DATA_PATH "/orders.bin.xz");
+    CompressedTable lineitem(VOILA_BENCHMARK_DATA_PATH "/lineitem.bin.xz");
+    auto l_orderkey = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(lineitem_cols::L_ORDERKEY);
+    auto l_extendedprice =
+        lineitem.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(lineitem_cols::L_EXTENDEDPRICE);
+    auto l_discount = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(lineitem_cols::L_DISCOUNT);
+    auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
+    auto c_mktsegment = customer.getColumn<customer_types_t<customer_cols::C_MKTSEGMENT>>(customer_cols::C_MKTSEGMENT);
+    auto c_custkey = customer.getColumn<customer_types_t<customer_cols::C_CUSTKEY>>(customer_cols::C_CUSTKEY);
+    auto o_custkey = orders.getColumn<orders_types_t<orders_cols::O_CUSTKEY>>(orders_cols::O_CUSTKEY);
+    auto o_orderkey = orders.getColumn<orders_types_t<orders_cols::O_ORDERKEY>>(orders_cols::O_ORDERKEY);
+    auto o_orderdate = orders.getColumn<orders_types_t<orders_cols::O_ORDERDATE>>(orders_cols::O_ORDERDATE);
+    auto o_shippriority = orders.getColumn<orders_types_t<orders_cols::O_SHIPPRIORITY>>(orders_cols::O_SHIPPRIORITY);
+
+    // qualification data
+    int32_t segment = customer.getDictionary(customer_cols::C_MKTSEGMENT).at("BUILDING");
+    int32_t date = 19950315;
+
+    // reference impl
+    double ref = 0;
+    const auto htSizes = std::bit_ceil(l_orderkey.size());
+    std::vector<int32_t> ht_l_orderkey_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<int32_t> ht_o_orderdate_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<int32_t> ht_o_shippriority_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<double> sum_disc_price_ref(htSizes, 0);
+
+    Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
+             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
+             Events::INS_ISSUED, Events::PREFETCH_MISS>
+        prof;
+    prof.start();
+
+    for (size_t i = 0; i < l_orderkey.size(); ++i)
+    {
+        if (c_mktsegment[i] == segment && c_custkey[i] == o_custkey[i] && l_orderkey[i] == o_orderkey[i] &&
+            o_orderdate[i] < date && l_shipdate[i] > date)
+        {
+            const auto idx =
+                probeAndInsert(hash(l_orderkey[i], o_orderdate[i], o_shippriority[i]), l_orderkey[i], o_orderdate[i],
+                               o_shippriority[i], ht_l_orderkey_ref, ht_o_orderdate_ref, ht_o_shippriority_ref);
+
+            sum_disc_price_ref[idx] += l_extendedprice[i] * (1 - l_discount[i]);
+        }
+    }
+    prof.stop();
+    std::cout << prof << std::endl;
+    // TODO: comparisons
+    EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
+}
+
 TEST(TPCBenchmarkTests, Q9_Qualification)
 {
     // load data
@@ -598,8 +652,20 @@ TEST(TPCBenchmarkTests, SimpleJoin)
 {
     std::vector<int32_t> t1{1, 2, 3, 4, 5, 6, 7, 8, 9};
     std::vector<int32_t> t2{2, 4, 6, 8, 1, 1};
-    std::vector<std::pair<size_t, size_t>> ref{std::make_pair(1, 0), std::make_pair(3, 1), std::make_pair(5, 2), std::make_pair(7, 3),
-            std::make_pair(0, 4), std::make_pair(0, 5)};
+    std::vector<std::pair<size_t, size_t>> ref{std::make_pair(1, 0), std::make_pair(3, 1), std::make_pair(5, 2),
+                                               std::make_pair(7, 3), std::make_pair(0, 4), std::make_pair(0, 5)};
     auto res = joins::NPO_st(t1, t2);
+    ASSERT_EQ(res, ref);
+}
+
+TEST(TPCBenchmarkTests, JoinWithPreds)
+{
+    std::vector<int32_t> t1{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    std::vector<int32_t> t2{2, 4, 6, 8, 1, 1};
+    std::vector<std::pair<size_t, size_t>> ref{std::make_pair(1, 0), std::make_pair(3, 1), std::make_pair(5, 2),
+                                               std::make_pair(7, 3)};
+    auto res = joins::NPO_st(
+        t1, [](auto v) { return v % 2 == 0; }, t2, [](auto v) { return v % 2 == 0; });
+
     ASSERT_EQ(res, ref);
 }
