@@ -30,11 +30,10 @@ constexpr std::size_t hardware_destructive_interference_size = 64;
 namespace voila::joins
 {
     using result_t = std::vector<std::pair<size_t, size_t>>;
-    constexpr size_t BUCKET_SIZE = 2;
 
     constexpr int32_t HASH(auto X, auto MASK, auto SKIP)
     {
-        return (xxhash(&X, sizeof(X)) & MASK) >> SKIP;
+        return (XXH3_64bits(&X, sizeof(X)) & MASK) >> SKIP;
     }
 
     /** Type definition for a tuple, depending on KEY_8B a tuple can be 16B or 8B */
@@ -51,34 +50,40 @@ namespace voila::joins
      * if KEY_8B then key is 8B and sizeof(Bucket) = 48B
      * else key is 16B and sizeof(Bucket) = 32B
      */
-    template<class T>
+    template<class T, size_t BUCKET_SIZE>
     struct Bucket
     {
         volatile char latch = 0;
         /* 3B hole */
         uint32_t count = 0;
-        Tuple<T> tuples[BUCKET_SIZE] = {0, 0};
-        Bucket *next = nullptr;
+        Tuple<T> tuples[BUCKET_SIZE] = {{}, {}};
+        Bucket *next = nullptr; // TODO: memleak
     };
 
+    template<class T>
+    static auto deleter = [](T *ptr)
+    { ::operator delete[](ptr, std::align_val_t(hardware_destructive_interference_size)); };
+
     /** Hashtable structure for NPO. */
-    template<class T> requires std::is_trivial_v<T>
+    template<class T, size_t BUCKET_SIZE = 2>
+    requires std::is_trivial_v<T>
     class HashTable
     {
       public:
         uint32_t num_buckets; // std::hardware_destructive_interference_size,
         uint32_t hash_mask;
         uint32_t skip_bits;
-        using bucket_t = Bucket<T>;
+        using bucket_t = Bucket<T, BUCKET_SIZE>;
         using tuple_t = Tuple<T>;
-        std::unique_ptr<bucket_t> buckets;
+
+        std::unique_ptr<bucket_t[], decltype(deleter<bucket_t>)> buckets;
 
         explicit HashTable(uint32_t nbuckets) :
-            num_buckets(std::bit_ceil<uint32_t>(nbuckets)),
+            num_buckets(std::bit_ceil<uint32_t>(nbuckets / BUCKET_SIZE)),
             hash_mask(num_buckets - 1),
             skip_bits(0),
-            buckets(reinterpret_cast<bucket_t *>(
-                std::aligned_alloc(hardware_destructive_interference_size, sizeof(bucket_t) * num_buckets)))
+            buckets(new (std::align_val_t(hardware_destructive_interference_size)) bucket_t[num_buckets],
+                    deleter<bucket_t>)
         {
             std::fill(reinterpret_cast<char *>(buckets.get()), reinterpret_cast<char *>(buckets.get() + num_buckets),
                       0);
@@ -118,7 +123,7 @@ namespace voila::joins
                     dest = curr.tuples + curr.count;
                     curr.count++;
                 }
-                *dest = elem;
+                *dest = {std::get<0>(elem), std::get<1>(elem)};
             }
         }
 
@@ -134,20 +139,20 @@ namespace voila::joins
          */
         result_t probe_hashtable(const std::vector<T> &rel)
         {
-            uint32_t i, j;
+            uint32_t j;
             result_t results;
 
-            for (auto elem : rel)
+            for (const auto &elem : ranges::views::enumerate(rel))
             {
-                auto idx = HASH(elem, hash_mask, skip_bits);
-                bucket_t *b = buckets[idx];
+                auto idx = HASH(std::get<1>(elem), hash_mask, skip_bits);
+                bucket_t *b = &buckets[idx];
 
                 do
                 {
                     for (j = 0; j < b->count; j++)
                     {
-                        if (rel->tuples[i].payload == b->tuples[j].payload)
-                            results.push_back(b->tuples[j].key, rel->tuples[i].key);
+                        if (std::get<1>(elem) == b->tuples[j].payload)
+                            results.emplace_back(b->tuples[j].key, std::get<0>(elem));
                     }
 
                     b = b->next; /* follow overflow pointer */
@@ -162,11 +167,10 @@ namespace voila::joins
     template<class T>
     result_t NPO_st(std::vector<T> &relR, std::vector<T> &relS)
     {
-        uint32_t nbuckets = (relR.size() / BUCKET_SIZE);
-        HashTable<T> ht(nbuckets);
+        HashTable<T> ht(relR.size());
 
         ht.build_hashtable_st(relR);
 
-        return ht.probe_hashtable(ht, relS);
+        return ht.probe_hashtable(relS);
     }
 } // namespace voila::joins

@@ -3,6 +3,7 @@
 #include "Program.hpp"
 #include "Tables.hpp"
 #include "benchmark_defs.hpp.inc"
+#include "no_partitioning_join.hpp"
 
 #include <algorithm>
 #include <gtest/gtest.h>
@@ -473,25 +474,25 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
     config.optimize(false).debug();
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q9.voila";
     Program prog(query, config);
-    /*    prog << n_name;
-        prog << o_orderdate;
-        prog << l_extendedprice;
-        prog << l_discount;
-        prog << ps_supplycost;
-        prog << l_quantity;
-        prog << s_suppkey;
-        prog << l_suppkey;
-        prog << ps_suppkey;
-        prog << ps_partkey;
-        prog << l_partkey;
-        prog << p_partkey;
-        prog << o_orderkey;
-        prog << l_orderkey;
-        prog << s_nationkey;
-        prog << n_nationkey;
-        prog << p_name;*/
-
+    prog << n_name;
+    prog << o_orderdate;
+    prog << l_extendedprice;
+    prog << l_discount;
+    prog << ps_supplycost;
+    prog << l_quantity;
+    prog << s_suppkey;
+    prog << l_suppkey;
+    prog << ps_suppkey;
+    prog << ps_partkey;
+    prog << l_partkey;
+    prog << p_partkey;
+    prog << o_orderkey;
+    prog << l_orderkey;
+    prog << s_nationkey;
+    prog << n_nationkey;
+    prog << p_name;
     prog << needle;
+
     auto find = [](auto iter, auto val)
     {
         for (auto v : iter)
@@ -591,4 +592,14 @@ TEST(TPCBenchmarkTests, Q18_Qualification)
 
     // TODO: comparisons
     EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
+}
+
+TEST(TPCBenchmarkTests, SimpleJoin)
+{
+    std::vector<int32_t> t1{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    std::vector<int32_t> t2{2, 4, 6, 8, 1, 1};
+    std::vector<std::pair<size_t, size_t>> ref{std::make_pair(1, 0), std::make_pair(3, 1), std::make_pair(5, 2), std::make_pair(7, 3),
+            std::make_pair(0, 4), std::make_pair(0, 5)};
+    auto res = joins::NPO_st(t1, t2);
+    ASSERT_EQ(res, ref);
 }
