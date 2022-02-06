@@ -111,9 +111,6 @@ namespace voila::mlir::lowering
         {
             if (bucketVals[i].getType().isa<IntegerType>())
             {
-                builder.create<AssertOp>(
-                    builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, hashInvalidConsts[i], toStores[i]),
-                    "Trying to insert invalid const");
                 founds.push_back(
                     builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i], toStores[i]));
             }

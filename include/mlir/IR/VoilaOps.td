@@ -176,7 +176,7 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def AndOp : Voila_Op<"and",[NoSideEffect,Commutative,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def AndOp : Voila_Op<"and",[NoSideEffect,Commutative,SameOperandsAndResultShape,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
   let summary = "element-wise and operation";
   let description = [{
     The "and" operation performs element-wise and between two tensors.

@@ -1,11 +1,10 @@
 #pragma once
 #include "mlir/Pass/Pass.h"
-
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include <memory>
 
 namespace mlir {
     class AffineDialect;
-    class StandardOpsDialect;
     namespace memref {
         class MemRefDialect;
     }

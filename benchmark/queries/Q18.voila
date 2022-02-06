@@ -17,7 +17,7 @@ main(c_name,c_custkey,o_orderkey,o_orderdate, o_totalprice, l_quantity, l_orderk
 
     h = hash(sel_name,sel_custkey,sel_orderkey,sel_orderdate,sel_totalprice);
     ht_name, ht_custkey, ht_orderkey, ht_orderdate, ht_totalprice = insert(h,sel_name,sel_custkey,sel_orderkey,sel_orderdate,sel_totalprice);
-    ok_idx = lookup(ht_name, ht_custkey, ht_orderkey, ht_orderdate, ht_totalprice, sel_name,sel_custkey,sel_orderkey,sel_orderdate,sel_totalprice,h);
-    ht_sum = scatter(ok_idx, sums_per_row);
+    ok_idx = lookup(sel_name,sel_custkey,sel_orderkey,sel_orderdate,sel_totalprice,ht_name, ht_custkey, ht_orderkey, ht_orderdate, ht_totalprice, h);
+    ht_sum = aggr(sum, select(l_quantity, to_select), ok_idx);
     emit ht_name, ht_custkey, ht_orderkey, ht_orderdate, ht_totalprice, ht_sum;
 }

@@ -534,22 +534,8 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
     prog << p_name;
     prog << needle;
 
-    auto find = [](auto iter, auto val)
-    {
-        for (auto v : iter)
-            if (v == val)
-                return true;
-        return false;
-    };
     auto res = prog();
-    auto el = *std::get<strided_memref_ptr<uint32_t, 1>>(res[0]);
-    for (auto e : needle)
-    {
-        assert(find(el, (uint32_t) e));
-    }
 
-    // TODO: comparisons
-    // EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
 }
 
 TEST(TPCBenchmarkTests, Q18_Qualification)
@@ -572,7 +558,7 @@ TEST(TPCBenchmarkTests, Q18_Qualification)
 
     // voila calculations
     Config config;
-    config.debug().parallelize(false).tile(false);
+    config.debug().optimize(false);
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q18.voila";
     Program prog(query, config);
     prog << c_name;
@@ -586,7 +572,6 @@ TEST(TPCBenchmarkTests, Q18_Qualification)
     prog << &quantity;
 
     auto res = prog();
-
     // reference impl
     double ref = 0;
     const auto htSizes = std::bit_ceil(l_orderkey.size());
