@@ -1,6 +1,7 @@
 #include "Config.hpp"
 #include "Profiler.hpp"
 #include "Program.hpp"
+#include "TableReader.hpp"
 #include "Tables.hpp"
 #include "benchmark_defs.hpp.inc"
 #include "no_partitioning_join.hpp"
@@ -129,14 +130,13 @@ static size_t probeAndInsert(size_t key, const T1 val1, std::vector<T1> &vals1)
 TEST(TPCBenchmarkTests, Q1_Qualification)
 {
     CompressedTable lineitem(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz");
-    auto l_quantity = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(lineitem_cols::L_QUANTITY);
-    auto l_extendedprice =
-        lineitem.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(lineitem_cols::L_EXTENDEDPRICE);
-    auto l_discount = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(lineitem_cols::L_DISCOUNT);
-    auto l_tax = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_TAX>>(lineitem_cols::L_TAX);
-    auto l_returnflag = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_RETURNFLAG>>(lineitem_cols::L_RETURNFLAG);
-    auto l_linestatus = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_LINESTATUS>>(lineitem_cols::L_LINESTATUS);
-    auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
+    auto l_quantity = lineitem.getColumn<lineitem_types_t<L_QUANTITY>>(L_QUANTITY);
+    auto l_extendedprice = lineitem.getColumn<lineitem_types_t<L_EXTENDEDPRICE>>(L_EXTENDEDPRICE);
+    auto l_discount = lineitem.getColumn<lineitem_types_t<L_DISCOUNT>>(L_DISCOUNT);
+    auto l_tax = lineitem.getColumn<lineitem_types_t<L_TAX>>(L_TAX);
+    auto l_returnflag = lineitem.getColumn<lineitem_types_t<L_RETURNFLAG>>(L_RETURNFLAG);
+    auto l_linestatus = lineitem.getColumn<lineitem_types_t<L_LINESTATUS>>(L_LINESTATUS);
+    auto l_shipdate = lineitem.getColumn<lineitem_types_t<L_SHIPDATE>>(L_SHIPDATE);
     const auto htSizes = std::bit_ceil(l_quantity.size());
 
     // tpc qualification date
@@ -235,11 +235,10 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
 TEST(TPCBenchmarkTests, Q6_Qualification)
 {
     CompressedTable lineitem(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz");
-    auto l_quantity = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(lineitem_cols::L_QUANTITY);
-    auto l_extendedprice =
-        lineitem.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(lineitem_cols::L_EXTENDEDPRICE);
-    auto l_discount = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(lineitem_cols::L_DISCOUNT);
-    auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
+    auto l_quantity = lineitem.getColumn<lineitem_types_t<L_QUANTITY>>(L_QUANTITY);
+    auto l_extendedprice = lineitem.getColumn<lineitem_types_t<L_EXTENDEDPRICE>>(L_EXTENDEDPRICE);
+    auto l_discount = lineitem.getColumn<lineitem_types_t<L_DISCOUNT>>(L_DISCOUNT);
+    auto l_shipdate = lineitem.getColumn<lineitem_types_t<L_SHIPDATE>>(L_SHIPDATE);
     Config config;
     config.debug().tile(false).async_parallel(false).openmp_parallel();
     // config.parallelize=false;
@@ -291,29 +290,21 @@ TEST(TPCBenchmarkTests, Q3_Qualification)
     CompressedTable customer_orders_lineitem(VOILA_BENCHMARK_DATA_PATH "/customer_orders_lineitem.bin.xz");
     constexpr auto orders_offset = magic_enum::enum_count<customer_cols>();
     constexpr auto lineitem_offset = magic_enum::enum_count<customer_cols>() + magic_enum::enum_count<orders_cols>();
-    auto l_orderkey = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(
-        lineitem_offset + lineitem_cols::L_ORDERKEY);
-    auto l_extendedprice = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(
-        lineitem_offset + lineitem_cols::L_EXTENDEDPRICE);
-    auto l_discount = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(
-        lineitem_offset + lineitem_cols::L_DISCOUNT);
-    auto l_shipdate = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(
-        lineitem_offset + lineitem_cols::L_SHIPDATE);
-    auto c_mktsegment =
-        customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_MKTSEGMENT>>(customer_cols::C_MKTSEGMENT);
-    auto c_custkey =
-        customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_CUSTKEY>>(customer_cols::C_CUSTKEY);
-    auto o_custkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_CUSTKEY>>(orders_offset +
-                                                                                                orders_cols::O_CUSTKEY);
-    auto o_orderkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERKEY>>(
-        orders_offset + orders_cols::O_ORDERKEY);
-    auto o_orderdate = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERDATE>>(
-        orders_offset + orders_cols::O_ORDERDATE);
-    auto o_shippriority = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_SHIPPRIORITY>>(
-        orders_offset + orders_cols::O_SHIPPRIORITY);
+    auto l_orderkey = customer_orders_lineitem.getColumn<lineitem_types_t<L_ORDERKEY>>(lineitem_offset + L_ORDERKEY);
+    auto l_extendedprice =
+        customer_orders_lineitem.getColumn<lineitem_types_t<L_EXTENDEDPRICE>>(lineitem_offset + L_EXTENDEDPRICE);
+    auto l_discount = customer_orders_lineitem.getColumn<lineitem_types_t<L_DISCOUNT>>(lineitem_offset + L_DISCOUNT);
+    auto l_shipdate = customer_orders_lineitem.getColumn<lineitem_types_t<L_SHIPDATE>>(lineitem_offset + L_SHIPDATE);
+    auto c_mktsegment = customer_orders_lineitem.getColumn<customer_types_t<C_MKTSEGMENT>>(C_MKTSEGMENT);
+    auto c_custkey = customer_orders_lineitem.getColumn<customer_types_t<C_CUSTKEY>>(C_CUSTKEY);
+    auto o_custkey = customer_orders_lineitem.getColumn<orders_types_t<O_CUSTKEY>>(orders_offset + O_CUSTKEY);
+    auto o_orderkey = customer_orders_lineitem.getColumn<orders_types_t<O_ORDERKEY>>(orders_offset + O_ORDERKEY);
+    auto o_orderdate = customer_orders_lineitem.getColumn<orders_types_t<O_ORDERDATE>>(orders_offset + O_ORDERDATE);
+    auto o_shippriority =
+        customer_orders_lineitem.getColumn<orders_types_t<O_SHIPPRIORITY>>(orders_offset + O_SHIPPRIORITY);
 
     // qualification data
-    int32_t segment = customer_orders_lineitem.getDictionary(customer_cols::C_MKTSEGMENT).at("BUILDING");
+    int32_t segment = customer_orders_lineitem.getDictionary(C_MKTSEGMENT).at("BUILDING");
     int32_t date = 19950315;
 
     // voila calculations
@@ -374,17 +365,16 @@ TEST(TPCBenchmarkTests, Q3_JoinCompressed)
     CompressedTable customer(VOILA_BENCHMARK_DATA_PATH "/customer.bin.xz");
     CompressedTable orders(VOILA_BENCHMARK_DATA_PATH "/orders.bin.xz");
     CompressedTable lineitem(VOILA_BENCHMARK_DATA_PATH "/lineitem.bin.xz");
-    auto l_orderkey = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(lineitem_cols::L_ORDERKEY);
-    auto l_extendedprice =
-        lineitem.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(lineitem_cols::L_EXTENDEDPRICE);
-    auto l_discount = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(lineitem_cols::L_DISCOUNT);
-    auto l_shipdate = lineitem.getColumn<lineitem_types_t<lineitem_cols::L_SHIPDATE>>(lineitem_cols::L_SHIPDATE);
-    auto c_mktsegment = customer.getColumn<customer_types_t<customer_cols::C_MKTSEGMENT>>(customer_cols::C_MKTSEGMENT);
-    auto c_custkey = customer.getColumn<customer_types_t<customer_cols::C_CUSTKEY>>(customer_cols::C_CUSTKEY);
-    auto o_custkey = orders.getColumn<orders_types_t<orders_cols::O_CUSTKEY>>(orders_cols::O_CUSTKEY);
-    auto o_orderkey = orders.getColumn<orders_types_t<orders_cols::O_ORDERKEY>>(orders_cols::O_ORDERKEY);
-    auto o_orderdate = orders.getColumn<orders_types_t<orders_cols::O_ORDERDATE>>(orders_cols::O_ORDERDATE);
-    auto o_shippriority = orders.getColumn<orders_types_t<orders_cols::O_SHIPPRIORITY>>(orders_cols::O_SHIPPRIORITY);
+    auto l_orderkey = lineitem.getColumn<lineitem_types_t<L_ORDERKEY>>(L_ORDERKEY);
+    auto l_extendedprice = lineitem.getColumn<lineitem_types_t<L_EXTENDEDPRICE>>(L_EXTENDEDPRICE);
+    auto l_discount = lineitem.getColumn<lineitem_types_t<L_DISCOUNT>>(L_DISCOUNT);
+    auto l_shipdate = lineitem.getColumn<lineitem_types_t<L_SHIPDATE>>(L_SHIPDATE);
+    auto c_mktsegment = customer.getColumn<customer_types_t<C_MKTSEGMENT>>(C_MKTSEGMENT);
+    auto c_custkey = customer.getColumn<customer_types_t<C_CUSTKEY>>(C_CUSTKEY);
+    auto o_custkey = orders.getColumn<orders_types_t<O_CUSTKEY>>(O_CUSTKEY);
+    auto o_orderkey = orders.getColumn<orders_types_t<O_ORDERKEY>>(O_ORDERKEY);
+    auto o_orderdate = orders.getColumn<orders_types_t<O_ORDERDATE>>(O_ORDERDATE);
+    auto o_shippriority = orders.getColumn<orders_types_t<O_SHIPPRIORITY>>(O_SHIPPRIORITY);
 
     // qualification data
     int32_t segment = customer.getDictionary(customer_cols::C_MKTSEGMENT).at("BUILDING");
@@ -442,52 +432,38 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
     constexpr auto partsupp_offset = lineitem_offset + magic_enum::enum_count<lineitem_cols>();
     constexpr auto orders_offset = partsupp_offset + magic_enum::enum_count<partsupp_cols>();
     constexpr auto nations_offset = orders_offset + magic_enum::enum_count<orders_cols>();
-    auto n_name = part_supplier_lineitem_partsupp_orders_nation.getColumn<nation_types_t<nation_cols::N_NAME>>(
-        nations_offset + nation_cols::N_NAME);
-    auto o_orderdate =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<orders_types_t<orders_cols::O_ORDERDATE>>(
-            orders_offset + orders_cols::O_ORDERDATE);
-    auto l_extendedprice =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_EXTENDEDPRICE>>(
-            lineitem_offset + lineitem_cols::L_EXTENDEDPRICE);
-    auto l_discount =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_DISCOUNT>>(
-            lineitem_offset + lineitem_cols::L_DISCOUNT);
-    auto ps_supplycost =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<partsupp_cols::PS_SUPPLYCOST>>(
-            partsupp_offset + partsupp_cols::PS_SUPPLYCOST);
-    auto l_quantity =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(
-            lineitem_offset + lineitem_cols::L_QUANTITY);
-    auto s_suppkey =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<supplier_types_t<supplier_cols::S_SUPPKEY>>(
-            supplier_offset + supplier_cols::S_SUPPKEY);
-    auto l_suppkey =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_SUPPKEY>>(
-            lineitem_offset + lineitem_cols::L_SUPPKEY);
-    auto ps_suppkey =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<partsupp_cols::PS_SUPPKEY>>(
-            partsupp_offset + partsupp_cols::PS_SUPPKEY);
-    auto ps_partkey =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<partsupp_cols::PS_PARTKEY>>(
-            partsupp_offset + partsupp_cols::PS_PARTKEY);
-    auto l_partkey =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_PARTKEY>>(
-            lineitem_offset + lineitem_cols::L_PARTKEY);
-    auto p_partkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<part_types_t<part_cols::P_PARTKEY>>(
-        part_cols::P_PARTKEY);
-    auto o_orderkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<orders_types_t<orders_cols::O_ORDERKEY>>(
-        orders_offset + orders_cols::O_ORDERKEY);
-    auto l_orderkey =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(
-            lineitem_offset + lineitem_cols::L_ORDERKEY);
-    auto s_nationkey =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<supplier_types_t<supplier_cols::S_NATIONKEY>>(
-            supplier_offset + supplier_cols::S_NATIONKEY);
-    auto n_nationkey =
-        part_supplier_lineitem_partsupp_orders_nation.getColumn<nation_types_t<nation_cols::N_NATIONKEY>>(
-            nations_offset + nation_cols::N_NATIONKEY);
-    auto p_name = part_supplier_lineitem_partsupp_orders_nation.getColumn<int32_t>(part_cols::P_NAME);
+    auto n_name =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<nation_types_t<N_NAME>>(nations_offset + N_NAME);
+    auto o_orderdate = part_supplier_lineitem_partsupp_orders_nation.getColumn<orders_types_t<O_ORDERDATE>>(
+        orders_offset + O_ORDERDATE);
+    auto l_extendedprice = part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<L_EXTENDEDPRICE>>(
+        lineitem_offset + L_EXTENDEDPRICE);
+    auto l_discount = part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<L_DISCOUNT>>(
+        lineitem_offset + L_DISCOUNT);
+    auto ps_supplycost = part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<PS_SUPPLYCOST>>(
+        partsupp_offset + PS_SUPPLYCOST);
+    auto l_quantity = part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<L_QUANTITY>>(
+        lineitem_offset + L_QUANTITY);
+    auto s_suppkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<supplier_types_t<S_SUPPKEY>>(
+        supplier_offset + S_SUPPKEY);
+    auto l_suppkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<L_SUPPKEY>>(
+        lineitem_offset + L_SUPPKEY);
+    auto ps_suppkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<PS_SUPPKEY>>(
+        partsupp_offset + PS_SUPPKEY);
+    auto ps_partkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<partsupp_types_t<PS_PARTKEY>>(
+        partsupp_offset + PS_PARTKEY);
+    auto l_partkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<L_PARTKEY>>(
+        lineitem_offset + L_PARTKEY);
+    auto p_partkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<part_types_t<P_PARTKEY>>(P_PARTKEY);
+    auto o_orderkey =
+        part_supplier_lineitem_partsupp_orders_nation.getColumn<orders_types_t<O_ORDERKEY>>(orders_offset + O_ORDERKEY);
+    auto l_orderkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<lineitem_types_t<L_ORDERKEY>>(
+        lineitem_offset + L_ORDERKEY);
+    auto s_nationkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<supplier_types_t<S_NATIONKEY>>(
+        supplier_offset + S_NATIONKEY);
+    auto n_nationkey = part_supplier_lineitem_partsupp_orders_nation.getColumn<nation_types_t<N_NATIONKEY>>(
+        nations_offset + N_NATIONKEY);
+    auto p_name = part_supplier_lineitem_partsupp_orders_nation.getColumn<int32_t>(P_NAME);
 
     // qualification data
     std::vector<int32_t> needle;
@@ -582,21 +558,14 @@ TEST(TPCBenchmarkTests, Q18_Qualification)
     CompressedTable customer_orders_lineitem(VOILA_BENCHMARK_DATA_PATH "/customer_orders_lineitem.bin.xz");
     constexpr auto orders_offset = magic_enum::enum_count<customer_cols>();
     constexpr auto lineitem_offset = orders_offset + magic_enum::enum_count<orders_cols>();
-    auto l_orderkey = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_ORDERKEY>>(
-        lineitem_offset + lineitem_cols::L_ORDERKEY);
-    auto c_name = customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_NAME>>(customer_cols::C_NAME);
-    auto c_custkey =
-        customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_CUSTKEY>>(customer_cols::C_CUSTKEY);
-    auto o_custkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_CUSTKEY>>(orders_offset +
-                                                                                                orders_cols::O_CUSTKEY);
-    auto o_orderkey = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERKEY>>(
-        orders_offset + orders_cols::O_ORDERKEY);
-    auto o_orderdate = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_ORDERDATE>>(
-        orders_offset + orders_cols::O_ORDERDATE);
-    auto o_totalprice = customer_orders_lineitem.getColumn<orders_types_t<orders_cols::O_TOTALPRICE>>(
-        orders_offset + orders_cols::O_TOTALPRICE);
-    auto l_quantity = customer_orders_lineitem.getColumn<lineitem_types_t<lineitem_cols::L_QUANTITY>>(
-        lineitem_offset + lineitem_cols::L_QUANTITY);
+    auto l_orderkey = customer_orders_lineitem.getColumn<lineitem_types_t<L_ORDERKEY>>(lineitem_offset + L_ORDERKEY);
+    auto c_name = customer_orders_lineitem.getColumn<customer_types_t<C_NAME>>(C_NAME);
+    auto c_custkey = customer_orders_lineitem.getColumn<customer_types_t<customer_cols::C_CUSTKEY>>(C_CUSTKEY);
+    auto o_custkey = customer_orders_lineitem.getColumn<orders_types_t<O_CUSTKEY>>(orders_offset + O_CUSTKEY);
+    auto o_orderkey = customer_orders_lineitem.getColumn<orders_types_t<O_ORDERKEY>>(orders_offset + O_ORDERKEY);
+    auto o_orderdate = customer_orders_lineitem.getColumn<orders_types_t<O_ORDERDATE>>(orders_offset + O_ORDERDATE);
+    auto o_totalprice = customer_orders_lineitem.getColumn<orders_types_t<O_TOTALPRICE>>(orders_offset + O_TOTALPRICE);
+    auto l_quantity = customer_orders_lineitem.getColumn<lineitem_types_t<L_QUANTITY>>(lineitem_offset + L_QUANTITY);
 
     // qualification data
     int32_t quantity = 300;
@@ -679,4 +648,27 @@ TEST(TPCBenchmarkTests, JoinWithPreds)
         t1, [](auto, auto v) { return v % 2 == 0; }, t2, [](auto, auto v) { return v % 2 == 0; });
 
     ASSERT_EQ(res, ref);
+}
+
+TEST(TPCBenchmarkTests, StringJoin)
+{
+    std::vector<std::string> t1{std::string("1"), std::string("2"), std::string("3"),
+                                std::string("4"), std::string("5"), std::string("6"),
+                                std::string("7"), std::string("8"), std::string("9")};
+    std::vector<std::string> t2{std::string("2"), std::string("4"), std::string("6"),
+                                std::string("8"), std::string("1"), std::string("1")};
+    std::vector<std::pair<size_t, size_t>> ref{std::make_pair(1, 0), std::make_pair(3, 1), std::make_pair(5, 2),
+                                               std::make_pair(7, 3), std::make_pair(0, 4), std::make_pair(0, 5)};
+    auto res = joins::NPO_st(t1, t2);
+    ASSERT_EQ(res, ref);
+}
+
+TEST(TPCBenchmarkTests, LineitemOrdersJoin)
+{
+    CompressedTable lineitem(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz");
+    CompressedTable orders(VOILA_BENCHMARK_DATA_PATH "/orders1g_compressed.bin.xz");
+    auto l_orderkey = lineitem.getColumn<lineitem_types_t<L_ORDERKEY>>(L_ORDERKEY);
+    auto o_orderkey = orders.getColumn<orders_types_t<O_ORDERKEY>>(O_ORDERKEY);
+    auto res = joins::NPO_st(l_orderkey, o_orderkey);
+    ASSERT_FALSE(res.empty());
 }

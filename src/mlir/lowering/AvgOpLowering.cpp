@@ -53,15 +53,14 @@ namespace voila::mlir::lowering
         assert(!op->getResultTypes().empty() && op->getResultTypes().size() == 1);
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
-        AvgOpAdaptor adaptor(operands);
+        auto avgOp = llvm::dyn_cast<AvgOp>(op);
+        AvgOpAdaptor adaptor(avgOp);
 
         // this should work as long as ieee 754 is supported and division by 0 is inf
         if (adaptor.indices() && op->getResultTypes().front().isa<TensorType>())
         {
             auto sum = builder.create<SumOp>(
-                RankedTensorType::get(-1, getElementTypeOrSelf(adaptor.input()).isa<FloatType>() ?
-                                              static_cast<Type>(builder.getF64Type()) :
-                                              static_cast<Type>(builder.getI64Type())),
+                RankedTensorType::get(-1, builder.getF64Type()),
                 adaptor.input(), adaptor.indices(), adaptor.pred());
             auto count = builder.create<CountOp>(RankedTensorType::get(-1, builder.getI64Type()),
                                                                  adaptor.input(), adaptor.indices(), adaptor.pred());
@@ -86,7 +85,7 @@ namespace voila::mlir::lowering
             }
             //TODO: replace with predicates
             rewriter.replaceOpWithNewOp<DivOp>(op, RankedTensorType::get(-1, builder.getF64Type()),
-                                                              fltSum, fltCnt, Value());
+                                                              fltSum, fltCnt);
         }
         else
         {
@@ -115,7 +114,7 @@ namespace voila::mlir::lowering
             }
 
             //TODO: replace with predicates
-            rewriter.replaceOpWithNewOp<DivOp>(op, rewriter.getF64Type(), fltSum, fltCnt, Value());
+            rewriter.replaceOpWithNewOp<DivOp>(op, rewriter.getF64Type(), fltSum, fltCnt);
         }
         return success();
     }

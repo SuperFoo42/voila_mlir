@@ -55,23 +55,23 @@ namespace voila::joins
      * if KEY_8B then key is 8B and sizeof(Bucket) = 48B
      * else key is 16B and sizeof(Bucket) = 32B
      */
+
     template<class T, size_t BUCKET_SIZE>
-    struct Bucket
+    struct __attribute__((aligned(hardware_destructive_interference_size))) Bucket
     {
         volatile char latch = 0;
         /* 3B hole */
         uint32_t count = 0;
-        Tuple<T> tuples[BUCKET_SIZE] = {{}, {}};
+        Tuple<T> tuples[BUCKET_SIZE];
         Bucket *next = nullptr; // TODO: memleak
+
+        ~Bucket() = default;
     };
 
-    template<class T>
-    static auto deleter = [](T *ptr)
-    { ::operator delete[](ptr, std::align_val_t(hardware_destructive_interference_size)); };
 
     /** Hashtable structure for NPO. */
     template<class T, size_t BUCKET_SIZE = 2>
-    requires std::is_trivial_v<T>
+    requires std::is_default_constructible_v<T>
     class HashTable
     {
       public:
@@ -81,14 +81,13 @@ namespace voila::joins
         using bucket_t = Bucket<T, BUCKET_SIZE>;
         using tuple_t = Tuple<T>;
 
-        std::unique_ptr<bucket_t[], decltype(deleter<bucket_t>)> buckets;
+        std::unique_ptr<bucket_t[]> buckets;
 
         explicit HashTable(uint32_t nbuckets) :
             num_buckets(std::bit_ceil<uint32_t>(nbuckets / BUCKET_SIZE)),
             hash_mask(num_buckets - 1),
             skip_bits(0),
-            buckets(new (std::align_val_t(hardware_destructive_interference_size)) bucket_t[num_buckets],
-                    deleter<bucket_t>)
+            buckets(new  bucket_t[num_buckets])
         {
             std::fill(reinterpret_cast<char *>(buckets.get()), reinterpret_cast<char *>(buckets.get() + num_buckets),
                       0);
@@ -99,7 +98,7 @@ namespace voila::joins
         {
             for (const auto &elem : ranges::views::enumerate(rel))
             {
-                if (pred(std::get<0>(elem),std::get<1>(elem)))
+                if (pred(std::get<0>(elem), std::get<1>(elem)))
                 {
                     tuple_t *dest;
                     auto idx = HASH(std::get<1>(elem), hash_mask, skip_bits);
@@ -131,7 +130,7 @@ namespace voila::joins
                         dest = curr.tuples + curr.count;
                         curr.count++;
                     }
-                    *dest = {std::get<0>(elem), std::get<1>(elem)};
+                    *dest = tuple_t{std::get<0>(elem), std::get<1>(elem)};
                 }
             }
         }
@@ -170,7 +169,8 @@ namespace voila::joins
                     dest = curr.tuples + curr.count;
                     curr.count++;
                 }
-                *dest = {std::get<0>(elem), std::get<1>(elem)};
+                tuple_t nT = {std::get<0>(elem), std::get<1>(elem)};
+                *dest = nT;
             }
         }
 
@@ -192,7 +192,7 @@ namespace voila::joins
 
             for (const auto &elem : ranges::views::enumerate(rel))
             {
-                if (pred(std::get<0>(elem),std::get<1>(elem)))
+                if (pred(std::get<0>(elem), std::get<1>(elem)))
                 {
                     auto idx = HASH(std::get<1>(elem), hash_mask, skip_bits);
                     bucket_t *b = &buckets[idx];

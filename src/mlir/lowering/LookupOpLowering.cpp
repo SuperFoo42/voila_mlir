@@ -1,5 +1,6 @@
 #include "mlir/lowering/LookupOpLowering.hpp"
 
+#include "NotImplementedException.hpp"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/SCF/SCF.h"
@@ -13,16 +14,91 @@ namespace voila::mlir::lowering
     using ::mlir::voila::LookupOp;
     using ::mlir::voila::LookupOpAdaptor;
 
+    //TODO: extract insert + lookup common utils
     LookupOpLowering::LookupOpLowering(::mlir::MLIRContext *ctx) :
         ConversionPattern(LookupOp::getOperationName(), 1, ctx)
     {
+    }
+
+    static auto anyNotEmpty(ImplicitLocOpBuilder &builder, ValueRange hashInvalidConsts, ValueRange bucketVals)
+    {
+        llvm::SmallVector<Value> empties;
+        for (size_t i = 0; i < bucketVals.size(); ++i)
+        {
+            if (hashInvalidConsts[i].getType().isa<IntegerType>())
+            {
+                empties.push_back(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],
+                                                         hashInvalidConsts[i]));
+            }
+            else if (hashInvalidConsts[i].getType().isa<FloatType>())
+            {
+                empties.push_back(builder.create<CmpFOp>(builder.getI1Type(), CmpFPredicate::ONE, bucketVals[i],
+                                                         hashInvalidConsts[i]));
+            }
+            else
+            {
+                throw NotImplementedException();
+            }
+        }
+        Value anyNotEmpty = empties[0];
+        for (size_t i = 1; i < empties.size(); ++i)
+        {
+            anyNotEmpty = builder.create<OrIOp>(anyNotEmpty, empties[i]);
+        }
+
+        return anyNotEmpty;
+    }
+
+    static auto createKeyComparisons(ImplicitLocOpBuilder &builder,
+                                     ValueRange hts,
+                                     ValueRange hashInvalidConsts,
+                                     ValueRange toStores,
+                                     ValueRange idx)
+    {
+        SmallVector<Value> bucketVals;
+        for (auto ht : hts)
+        {
+            bucketVals.push_back(builder.create<tensor::ExtractOp>(ht, idx));
+        }
+
+        Value notEmpty = anyNotEmpty(builder, hashInvalidConsts, bucketVals);
+
+        SmallVector<Value> founds;
+        for (size_t i = 0; i < bucketVals.size(); ++i)
+        {
+            if (bucketVals[i].getType().isa<IntegerType>())
+            {
+                builder.create<AssertOp>(
+                    builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, hashInvalidConsts[i], toStores[i]),
+                    "Trying to lookup invalid const");
+                founds.push_back(
+                    builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i], toStores[i]));
+            }
+            else if (bucketVals[i].getType().isa<FloatType>())
+            {
+                founds.push_back(
+                    builder.create<CmpFOp>(builder.getI1Type(), CmpFPredicate::ONE, bucketVals[i], toStores[i]));
+            }
+            else
+            {
+                throw NotImplementedException();
+            }
+        }
+        Value anyNotFound = founds[0];
+        for (size_t i = 1; i < founds.size(); ++i)
+        {
+            anyNotFound = builder.create<OrIOp>(anyNotFound, founds[i]);
+        }
+
+        return builder.create<AndIOp>(notEmpty, anyNotFound);
     }
 
     ::mlir::LogicalResult LookupOpLowering::matchAndRewrite(::mlir::Operation *op,
                                                             llvm::ArrayRef<::mlir::Value> operands,
                                                             ConversionPatternRewriter &rewriter) const
     {
-        LookupOpAdaptor lookupOpAdaptor(operands);
+        auto lOop = llvm::dyn_cast<LookupOp>(op);
+        LookupOpAdaptor lookupOpAdaptor(lOop);
         auto loc = op->getLoc();
 
         Value outTensor = rewriter.create<linalg::InitTensorOp>(
@@ -34,107 +110,70 @@ namespace voila::mlir::lowering
 
         auto htSizes = rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashtables().front(), 0);
         auto modSize = rewriter.create<SubIOp>(loc, htSizes, rewriter.create<ConstantIndexOp>(loc, 1));
-        auto intMod = rewriter.create<IndexCastOp>(loc, modSize, rewriter.getI64Type());
 
-        auto lookupFunc = [&](OpBuilder &builder, Location loc, ValueRange vals)
+        SmallVector<Value> hashInvalidConsts;
+        for (auto val : lookupOpAdaptor.values())
+        { // we uce all ones value of data type size
+            const auto &elementType = getElementTypeOrSelf(val);
+            if (elementType.isIntOrFloat())
+            {
+                hashInvalidConsts.push_back(
+                    rewriter.create<BitcastOp>(loc,
+                                               rewriter.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(),
+                                                                              elementType.getIntOrFloatBitWidth()),
+                                               elementType));
+            }
+            else
+            {
+                throw NotImplementedException();
+            }
+        }
+        auto lookupFunc = [&](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
         {
+            ImplicitLocOpBuilder builder(loc, nestedBuilder);
             auto hashVal = vals.take_front();
             vals = vals.drop_front();
             vals = vals.drop_back();
             // probing
-            SmallVector<Type, 1> resType;
-            resType.push_back(builder.getI64Type());
-            Value idx = builder.create<AndIOp>(loc, hashVal.front(), intMod);
+            Value idx =
+                builder.create<AndIOp>(builder.create<IndexCastOp>(hashVal.front(), builder.getIndexType()), modSize);
             // probing with do while
             // Maybe we should keep track of the max probing count during generation and iterate only so many times
-            auto loop = builder.create<scf::WhileOp>(loc, resType, idx);
+            auto loop = builder.create<scf::WhileOp>(builder.getIndexType(), idx);
             // condition
 
             auto beforeBlock = builder.createBlock(&loop.getBefore());
-            beforeBlock->addArgument(loop->getOperands().front().getType(),loc);
-            auto condBuilder = OpBuilder::atBlockEnd(beforeBlock);
-            Value probeIdx =
-                condBuilder.create<IndexCastOp>(loc, loop.getBefore().getArgument(0), builder.getIndexType());
+            beforeBlock->addArgument(loop->getOperands().front().getType(), loc);
+            auto condBuilder = ImplicitLocOpBuilder(loc, OpBuilder::atBlockEnd(beforeBlock));
+            Value probeIdx = beforeBlock->getArgument(0);
 
             // lookup entries
-            SmallVector<Value> entries;
-            std::transform(lookupOpAdaptor.hashtables().begin(), lookupOpAdaptor.hashtables().end(),
-                           std::back_inserter(entries),
-                           [&builder, &loc, &probeIdx](auto elem) -> Value
-                           {
-                               auto res = builder.create<tensor::ExtractOp>(loc, elem, probeIdx);
-                               if (!elem.getType().template isa<IntegerType>())
-                                   return builder.create<arith::BitcastOp>(
-                                       loc, res, builder.getIntegerType(res.getType().getIntOrFloatBitWidth()));
-                               else
-                                   return res;
-                           });
+            auto comparison =
+                createKeyComparisons(condBuilder, lookupOpAdaptor.hashtables(), hashInvalidConsts, vals, probeIdx);
+            condBuilder.create<scf::ConditionOp>(comparison, probeIdx);
 
-            SmallVector<Value> vs;
-            std::transform(vals.begin(), vals.end(), std::back_inserter(vs),
-                           [&builder, &loc](auto elem) -> Value
-                           {
-                               if (!elem.getType().template isa<IntegerType>())
-                                   return builder.create<arith::BitcastOp>(
-                                       loc, elem, builder.getIntegerType(elem.getType().getIntOrFloatBitWidth()));
-                               else
-                                   return elem;
-                           });
-
-            Value isEmpty = builder.create<CmpIOp>(
-                loc, CmpIPredicate::ne, entries[0],
-                builder.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), entries[0].getType()));
-            Value notFound = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entries[0], vs[0]);
-            for (auto &en : llvm::enumerate(llvm::zip(entries, vs)))
-            {
-                Value entry, value;
-                std::tie(entry, value) = en.value();
-                auto tmp = builder.create<CmpIOp>(loc, CmpIPredicate::ne, entry,
-                                                  builder.create<ConstantIntOp>(loc, 0, entry.getType()));
-                isEmpty = builder.create<AndIOp>(loc, isEmpty, tmp);
-                auto tmp2 = condBuilder.create<CmpIOp>(loc, CmpIPredicate::ne, entry, value);
-                notFound = builder.create<OrIOp>(loc, isEmpty, tmp2);
-            }
-            condBuilder.create<scf::ConditionOp>(
-                loc, condBuilder.create<AndIOp>(loc, builder.getI1Type(), isEmpty, notFound), loop->getOperands());
             // body
             auto afterBlock = builder.createBlock(&loop.getAfter());
             afterBlock->addArgument(loop->getOperands().front().getType(), loc);
             auto bodyBuilder = OpBuilder::atBlockEnd(afterBlock);
-            SmallVector<Value, 1> inc;
-            inc.push_back(bodyBuilder.create<AndIOp>(
-                loc,
-                bodyBuilder.create<AddIOp>(loc, loop.getAfterArguments().front(),
-                                           builder.create<ConstantIntOp>(loc, 1, builder.getI64Type())),
-                intMod));
-            bodyBuilder.create<scf::YieldOp>(loc, inc);
+            Value inc = bodyBuilder.create<AndIOp>(loc,
+                                                   bodyBuilder.create<AddIOp>(loc, afterBlock->getArgument(0),
+                                                                              builder.create<ConstantIndexOp>(loc, 1)),
+                                                   modSize);
+            bodyBuilder.create<scf::YieldOp>(loc, llvm::makeArrayRef(inc));
             builder.setInsertionPointAfter(loop);
             // check index empty
 
-            entries.clear();
-            Value resIdx = builder.create<IndexCastOp>(loc, loop->getResults().front(), builder.getIndexType());
-            std::transform(lookupOpAdaptor.hashtables().begin(), lookupOpAdaptor.hashtables().end(),
-                           std::back_inserter(entries),
-                           [&builder, &loc, &resIdx](auto elem) -> Value
-                           {
-                               auto res = builder.create<tensor::ExtractOp>(loc, elem, resIdx);
-                               if (!elem.getType().template isa<IntegerType>())
-                                   return builder.create<arith::BitcastOp>(
-                                       loc, res, builder.getIntegerType(res.getType().getIntOrFloatBitWidth()));
-                               else
-                                   return res;
-                           });
-            Value empty = builder.create<CmpIOp>(
-                loc, CmpIPredicate::ne, entries[0],
-                builder.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(), entries[0].getType()));
-            for (auto &en : entries)
+            Value resIdx = loop->getResults().front();
+            SmallVector<Value> bucketVals;
+            for (auto ht : lookupOpAdaptor.hashtables())
             {
-                auto tmp = builder.create<CmpIOp>(loc, CmpIPredicate::ne, en,
-                                                  builder.create<ConstantIntOp>(loc, 0, en.getType()));
-                empty = builder.create<AndIOp>(loc, empty, tmp);
+                bucketVals.push_back(builder.create<tensor::ExtractOp>(ht, resIdx));
             }
-            Value res = builder.create<SelectOp>(
-                loc, empty, builder.create<ConstantIndexOp>(loc, std::numeric_limits<uint64_t>::max()), resIdx);
+            auto notEmpty = anyNotEmpty(builder, hashInvalidConsts, bucketVals);
+
+            Value res = builder.create<SelectOp>(loc, notEmpty, resIdx,
+                                                 builder.create<ConstantIndexOp>(std::numeric_limits<uint64_t>::max()));
             // store result
             builder.create<linalg::YieldOp>(loc, res);
         };

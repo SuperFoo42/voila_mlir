@@ -92,7 +92,8 @@ namespace voila::mlir::lowering
     CountOpLowering::matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const
     {
         auto loc = op->getLoc();
-        CountOpAdaptor cntOpAdaptor(operands);
+        auto cOp = llvm::dyn_cast<CountOp>(op);
+        CountOpAdaptor cntOpAdaptor(cOp);
         Value res;
         ImplicitLocOpBuilder builder(loc, rewriter);
 

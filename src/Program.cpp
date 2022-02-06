@@ -346,12 +346,13 @@ namespace voila
         // Partially lower voila to linalg
         pm.addNestedPass<FuncOp>(createLowerToLinalgPass());
         // Partially lower voila to affine with a few cleanups
-        pm.addNestedPass<FuncOp>(createLowerToAffinePass());
+                pm.addNestedPass<FuncOp>(createLowerToAffinePass());
 
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
 
-        pm.addNestedPass<FuncOp>(createConvertElementwiseToLinalgPass());
+
+                pm.addNestedPass<FuncOp>(createConvertElementwiseToLinalgPass());
         pm.addNestedPass<FuncOp>(createLinalgStrategyEnablePass());
         pm.addNestedPass<FuncOp>(createLinalgStrategyGeneralizePass());
         // optPM.addPass(createLinalgGeneralizationPass());
@@ -359,13 +360,8 @@ namespace voila
             pm.addNestedPass<FuncOp>(createLinalgElementwiseOpFusionPass());
         pm.addNestedPass<FuncOp>(createLinalgStrategyPromotePass());
 
-        /*        // pm.addNestedPass<FuncOp>(mlir::createLinalgTiledPeelingPass());
-                                        pm.addNestedPass<FuncOp>(
-                                    createLinalgStrategyTilePass("", linalg::LinalgTilingOptions()
-                                                                                       .setTileSizes({400080,8})
-                                         .setLoopType(linalg::LinalgTilingLoopType::TiledLoops)
-                                                                                       .setPeeledLoops({0})
-                                                                ));*/
+        // pm.addNestedPass<FuncOp>(mlir::createLinalgTiledPeelingPass());
+
 
         pm.addNestedPass<FuncOp>(createLinalgStrategyInterchangePass());
 
@@ -374,16 +370,7 @@ namespace voila
         {
             auto tile_size = {config._tile_size == -1 ? max_in_table_size / config._parallel_threads :
                                                         config._tile_size};
-/*            if (config._peel)
-            {
-                pm.addNestedPass<FuncOp>(createLinalgTilingPass(
-                    tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}, {0}));
-            }
-            else
-            {
-                pm.addNestedPass<FuncOp>(createLinalgTilingPass(
-                    tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}));
-            }*/
+
             pm.addNestedPass<FuncOp>(createLinalgStrategyTileAndFusePass("", linalg::LinalgTilingAndFusionOptions{tile_size, {}}));
         }
 
@@ -501,6 +488,7 @@ namespace voila
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
         pm.addNestedPass<FuncOp>(::mlir::bufferization::createFinalizingBufferizePass());
+
 
         if (config._optimize && config._vectorize)
         {
@@ -840,10 +828,10 @@ namespace voila
 
     Program::~Program()
     {
-        for (auto elem : toDealloc)
+        /*for (auto elem : toDealloc)
         {
             std::free(elem);
-        }
+        }*/
     }
 
     /**

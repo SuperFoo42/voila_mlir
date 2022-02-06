@@ -183,9 +183,10 @@ namespace voila::mlir::lowering
         assert(!op->getResultTypes().empty() && op->getResultTypes().size() == 1);
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
-        SumOpAdaptor sumOpAdaptor(operands);
+        auto sumOp = dyn_cast<SumOp>(op);
+        SumOpAdaptor sumOpAdaptor(sumOp);
         Value res;
-        if (sumOpAdaptor.indices() && op->getResultTypes().front().isa<TensorType>())
+        if (sumOp.indices() && op->getResultTypes().front().isa<TensorType>())
         {
             res = groupedSumLowering(op, sumOpAdaptor, builder); // grouped aggregation is a pipeline breaker
         }
