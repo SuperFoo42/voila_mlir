@@ -52,9 +52,10 @@ class TableReader
     virtual void readTable(std::vector<Table::column_type> &cols)
     {
         CSVReader doc(inFile, format);
-        for (const auto &row : doc)
+        for (auto &row : doc)
         {
-            for (size_t i = 0; i < row.size(); ++i)
+            assert(row.size() == cols.size());
+            for (size_t i = 0; i < colTypes.size(); ++i)
             {
                 switch (colTypes.at(i))
                 {
@@ -62,10 +63,10 @@ class TableReader
                         std::get<std::vector<int32_t>>(cols.at(i)).push_back(row[i].get<int32_t>());
                         break;
                     case ColumnTypes::STRING:
-                        std::get<std::vector<std::string>>(cols.at(i)).push_back(row[i].get());
+                        std::get<std::vector<std::string>>(cols.at(i)).push_back(row[i].get<>());
                         break;
                     case ColumnTypes::DATE:
-                        std::get<std::vector<std::string>>(cols.at(i)).push_back(row[i].get());
+                        std::get<std::vector<std::string>>(cols.at(i)).push_back(row[i].get<>());
                         break;
                     case ColumnTypes::DECIMAL:
                         std::get<std::vector<double>>(cols.at(i)).push_back(row[i].get<double>());
@@ -110,7 +111,7 @@ class CompressingTableReader : TableReader
                 {
                     if (colTypes.at(i) == ColumnTypes::STRING)
                     {
-                        colVals.at(i).emplace(row[i].get());
+                        colVals.at(i).emplace(row[i].get<>());
                     }
                 }
             }
