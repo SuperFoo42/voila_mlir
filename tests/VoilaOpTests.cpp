@@ -36,6 +36,32 @@ TEST(AddTests, TensorTensorTest)
         ASSERT_EQ(elem, TENSOR_SUM);
     }
 }
+
+TEST(PredicationTests, AddTest)
+{
+    Config config;
+
+    config.debug().optimize(false);
+
+    const auto file = VOILA_TEST_SOURCES_PATH "/predicated_add.voila";
+    constexpr size_t TENSOR_SIZE = 100;
+    std::vector<int32_t> vals(TENSOR_SIZE);
+    std::iota(vals.begin(), vals.end(),0);
+    Program prog(file, config);
+    // alloc dummy data to pass to program args
+    prog << ::voila::make_param(vals);
+    prog << ::voila::make_param(vals);
+
+    // run in jit
+    auto res = std::get<strided_memref_ptr<uint32_t, 1>>(prog()[0]);
+
+    ASSERT_EQ(res->sizes[0], TENSOR_SIZE/2);
+    for (auto elem : *res)
+    {
+        std::cout << elem << "\n";
+        //ASSERT_EQ(elem, );
+    }
+}
 /*
 TEST(AddTests, TensorScalarTest)
 {

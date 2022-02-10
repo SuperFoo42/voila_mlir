@@ -239,29 +239,20 @@ namespace voila
     void Program::runJIT([[maybe_unused]] const std::optional<std::string> &objPath)
     {
         auto &engine = getOrCreateExecutionEngine();
-        // FIXME: dtor of fn results in segfault
-        /*
-                auto fn = engine->lookup("main");
-                if (!fn)
-                {
-                    auto err = fn.takeError();
-                    throw JITInvocationError();
-                };
-        */
 
-        /*if (objPath.has_value())
-            engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));*/
+        if (objPath.has_value())
+            engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));
 
         // Invoke the JIT-compiled function.
-        /*Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, *//*Events::TLB_MISSES,*//*
-                 Events::NO_INST_COMPLETE, *//*Events::CY_STALLED,*//* Events::REF_CYCLES, Events::TOT_CYCLES,
+        Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
+                 Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
                  Events::INS_ISSUED, Events::PREFETCH_MISS>
-            prof;*/
-        //prof.start();
+            prof;
+        prof.start();
         auto invocationResult = engine->invokePacked("main", params);
-        //prof.stop();
+        prof.stop();
         //
-        /*if (config._debug)
+        if (config._debug)
         {
             std::cout << prof << std::endl;
         }
@@ -269,7 +260,7 @@ namespace voila
         {
             timer = prof.getTime();
             // TODO: store profiling results
-        }*/
+        }
 
         if (invocationResult)
         {
@@ -489,7 +480,6 @@ namespace voila
             pm.addNestedPass<FuncOp>(createParallelLoopToGPUMappingPass());
             pm.addNestedPass<FuncOp>(createParallelLoopToGpuPass());
         }
-
 
         if (config._optimize && config._fuse)
             pm.addNestedPass<FuncOp>(createLoopFusionPass());
@@ -818,7 +808,7 @@ namespace voila
 
         if (fst.is_open())
         {
-            lexer = new Lexer(fst);        // read file, decode UTF-8/16/32 format
+            lexer = std::make_unique<Lexer>(fst);        // read file, decode UTF-8/16/32 format
             lexer->filename = source_path; // the filename to display with error locations
 
             ::voila::parser::Parser parser(*lexer, *this);
@@ -835,13 +825,7 @@ namespace voila
 
     Program::Program(Config config) : Program("", std::move(config)) {}
 
-    Program::~Program()
-    {
-        /*for (auto elem : toDealloc)
-        {
-            std::free(elem);
-        }*/
-    }
+    Program::~Program() = default;
 
     /**
      * @param data pointer to data

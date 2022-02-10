@@ -119,7 +119,7 @@ namespace voila
         std::optional<std::unique_ptr<::mlir::ExecutionEngine>> maybeEngine;
         std::unordered_map<std::string, std::unique_ptr<ast::Fun>> functions;
         Config config;
-        lexer::Lexer *lexer;
+        std::unique_ptr<lexer::Lexer> lexer;
         long long timer = 0;
         int64_t max_in_table_size;
         void runJIT(const std::optional<std::string> &objPath = std::nullopt);
