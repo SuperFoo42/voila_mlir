@@ -3,6 +3,16 @@ cmake_minimum_required(VERSION 3.14)
 project(voila_mlir LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 
+#Enable sanitizers globally
+set(DEBUG_BUILD -O0 -g -fsanitize=undefined -fsanitize=address -Wno-ambiguous-reversed-operator)
+set(RELEASE_BUILD -O3 -g -march=native -Wno-ambiguous-reversed-operator)
+add_compile_options(
+        "$<$<CONFIG:Debug>:${DEBUG_BUILD}>"
+        "$<$<CONFIG:Release>:${RELEASE_BUILD}>")
+
+add_link_options(-fuse-ld=lld)
+add_link_options("$<$<CONFIG:DEBUG>:-fsanitize=address>")
+
 include(cmake/CPM.cmake)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 option(BUILD_DOC "Build documentation" ON)
@@ -19,6 +29,10 @@ include(CheckPIESupported)
 check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT LANGUAGES C CXX)
 set(CMAKE_POSITION_INDEPENDENT_CODE PIE_SUPPORT)
 
+include(CheckIPOSupported)
+check_ipo_supported(RESULT IPO_SUPPORT OUTPUT error)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+
 find_program(CCACHE_FOUND ccache)
 if (CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
@@ -31,9 +45,9 @@ CPMAddPackage(
         GIT_TAG main
         DOWNLOAD_ONLY
 )
-
+#-DLLVM_ENABLE_LTO="${CMAKE_INTERPROCEDURAL_OPTIMIZATION}"  -DLLVM_PARALLEL_LINK_JOBS=2
 execute_process(
-        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -G Ninja -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True -DLLVM_BUILD_TESTS=False -DLLVM_ENABLE_IDE=TRUE -DLLVM_OPTIMIZED_TABLEGEN=TRUE
+        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -G ${CMAKE_GENERATOR} -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True -DLLVM_BUILD_TESTS=False -DLLVM_ENABLE_IDE=TRUE -DLLVM_OPTIMIZED_TABLEGEN=TRUE -DLLVM_USE_SPLIT_DWARF=True
         WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
 )
 message(STATUS "build llvm")
@@ -84,21 +98,6 @@ if (BUILD_DOC)
             OPTIONAL_COMPONENTS mscgen dia)
 endif ()
 
-#Enable sanitizers globally
-#if ($<CONFIG:Release>)
-add_compile_options(#$<$<CONFIG:Release>:-O3>
-        -fsanitize=address
-        -fsanitize=undefined
-        -Wno-ambiguous-reversed-operator
-        )
-add_link_options(-fuse-ld=lld
-        -fsanitize=address
-        -fsanitize=undefined #need to use lld, for some reason ld complains about invalid symbols.
-        )
-#[[else()
-    add_compile_options(-fsanitize=address -fsanitize=undefined -Wno-ambiguous-reversed-operator)
-    add_link_options(-fuse-ld=lld -fsanitize=address -fsanitize=undefined) #need to use lld, for some reason ld complains about invalid symbols.
-endif()]]
 
 find_package(TBB)
 include_directories(${TBB_INCLUDE_DIRS})

@@ -8,21 +8,20 @@ Out of tree MLIR dialect for adaptive reprogramming database queries.
 - cmake >= 3.11
 - bison >= 3.2
 - gcc >= 9 / clang >= 8
-- python
+- python (llvm tests)
 - make
-- liblzma
+- liblzma (for benchmarks)
 - openmp (basically optional, but currently required)
-- 
+- lld (can be configured, but link times are really bad)
 ### Optional
 - ccache
 - ninja
 - Doxygen
-- lld
 
 ## Requirements
 
-In order to build the compiler, you have to at least fulfill the requirements to build llvm, which requires at least
-10GB of free disk space and 8GB of free RAM.
+In order to build the compiler, you have to at least fulfill the requirements to build llvm. Make sure to limit the number of parallel linker or compile jobs. 
+The default for linking is two jobs, which corresponds to roughly 32GB of free memory.
 
 ## Setup
 

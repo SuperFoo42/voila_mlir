@@ -5,8 +5,8 @@
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
-#include "mlir/IR/VoilaOps.h"
 #include "mlir/IR/ImplicitLocOpBuilder.h"
+#include "mlir/IR/VoilaOps.h"
 
 namespace voila::mlir::lowering
 {
@@ -46,7 +46,7 @@ namespace voila::mlir::lowering
             ImplicitLocOpBuilder builder(loc, nestedBuilder);
             Value idx = builder.create<tensor::ExtractOp>(scatterOpAdaptor.idxs(), vals);
             if (!idx.getType().isIndex())
-                idx = builder.create<IndexCastOp>(idx, builder.getIndexType());
+                idx = builder.create<IndexCastOp>(builder.getIndexType(), idx);
             auto res = builder.create<tensor::ExtractOp>(scatterOpAdaptor.src(), vals).result();
             builder.create<memref::StoreOp>(res, out, idx);
         };

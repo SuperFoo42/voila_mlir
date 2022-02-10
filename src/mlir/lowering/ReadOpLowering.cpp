@@ -51,7 +51,7 @@ namespace voila::mlir::lowering
 
         SmallVector<Value> sizes, offsets, strides;
         strides.push_back(rewriter.create<ConstantIndexOp>(loc, 1));
-        offsets.push_back(rewriter.create<IndexCastOp>(loc, readOpAdaptor.index(), rewriter.getIndexType()));
+        offsets.push_back(rewriter.create<IndexCastOp>(loc, rewriter.getIndexType(), readOpAdaptor.index()));
         sizes.push_back(rewriter.create<memref::DimOp>(loc, col, 0));
 
         rewriter.replaceOpWithNewOp<memref::SubViewOp>(op, col, offsets, sizes, strides);

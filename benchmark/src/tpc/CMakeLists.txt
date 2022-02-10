@@ -35,11 +35,11 @@ set(LIBS
 add_executable(tpc-benchmark
         TPCHBenchmark.cpp
         benchmark_main.cpp
+        BenchmarkState.cpp
         )
 
 target_link_libraries(tpc-benchmark PRIVATE ${LIBS})
 target_compile_options(tpc-benchmark PUBLIC
-        -O3
         -Wpedantic
         -Wall
         -Werror

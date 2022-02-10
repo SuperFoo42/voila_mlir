@@ -55,28 +55,28 @@ namespace voila::mlir::lowering
         }
 
         static inline ::mlir::Value
-        createTypedCmpOp(::mlir::OpBuilder &builder, ::mlir::Location loc, ::mlir::Value lhs, ::mlir::Value rhs)
+        createTypedCmpOp(::mlir::ImplicitLocOpBuilder &builder, ::mlir::Value lhs, ::mlir::Value rhs)
         {
             auto lhsType = ::mlir::getElementTypeOrSelf(lhs);
             auto rhsType = ::mlir::getElementTypeOrSelf(rhs);
 
             if (lhsType.isa<::mlir::FloatType>() && rhsType.isa<::mlir::FloatType>())
             {
-                return builder.create<::mlir::arith::CmpFOp>(loc, getFltCmpPred(), lhs, rhs);
+                return builder.create<::mlir::arith::CmpFOp>(getFltCmpPred(), lhs, rhs);
             }
             else if (lhsType.template isa<::mlir::FloatType>())
             {
-                auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(loc, rhs, lhs.getType());
-                return builder.create<::mlir::arith::CmpFOp>(loc, getFltCmpPred(), lhs, castedFlt);
+                auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(lhs.getType(), rhs);
+                return builder.create<::mlir::arith::CmpFOp>(getFltCmpPred(), lhs, castedFlt);
             }
             else if (rhsType.template isa<::mlir::FloatType>())
             {
-                auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(loc, lhs, rhs.getType());
-                return builder.create<::mlir::arith::CmpFOp>(loc, getFltCmpPred(), castedFlt, rhs);
+                auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(rhs.getType(), lhs);
+                return builder.create<::mlir::arith::CmpFOp>(getFltCmpPred(), castedFlt, rhs);
             }
             else
             {
-                return builder.create<::mlir::arith::CmpIOp>(loc, getIntCmpPred(), lhs, rhs);
+                return builder.create<::mlir::arith::CmpIOp>(getIntCmpPred(), lhs, rhs);
             }
         }
 
@@ -92,22 +92,22 @@ namespace voila::mlir::lowering
         {
             typename CmpOp::Adaptor opAdaptor(operands);
             auto loc = op->getLoc();
-
+            ::mlir::ImplicitLocOpBuilder builder(loc, rewriter);
             auto lhs = opAdaptor.lhs();
             auto rhs = opAdaptor.rhs();
 
             if (lhs.getType().template isa<::mlir::TensorType>() && !rhs.getType().template isa<::mlir::TensorType>())
             {
-                auto rhsTensor = rewriter.template create<::mlir::linalg::InitTensorOp>(
-                    loc, lhs.getType().template dyn_cast<::mlir::RankedTensorType>().getShape(), rhs.getType());
-                rhs = rewriter.template create<::mlir::linalg::FillOp>(loc, rhs, rhsTensor).result();
+                auto rhsTensor = builder.template create<::mlir::linalg::InitTensorOp>(
+                    lhs.getType().template dyn_cast<::mlir::RankedTensorType>().getShape(), rhs.getType());
+                rhs = builder.template create<::mlir::linalg::FillOp>(rhs, rhsTensor).result();
             }
             else if (!lhs.getType().template isa<::mlir::TensorType>() &&
                      rhs.getType().template isa<::mlir::TensorType>())
             {
-                auto lhsTensor = rewriter.template create<::mlir::linalg::InitTensorOp>(
-                    loc, rhs.getType().template dyn_cast<::mlir::RankedTensorType>().getShape(), lhs.getType());
-                lhs = rewriter.template create<::mlir::linalg::FillOp>(loc, lhs, lhsTensor).result();
+                auto lhsTensor = builder.template create<::mlir::linalg::InitTensorOp>(
+                    rhs.getType().template dyn_cast<::mlir::RankedTensorType>().getShape(), lhs.getType());
+                lhs = builder.template create<::mlir::linalg::FillOp>(lhs, lhsTensor).result();
             }
 
             if (::mlir::getElementTypeOrSelf(lhs).template isa<::mlir::IndexType>() xor
@@ -115,27 +115,27 @@ namespace voila::mlir::lowering
             {
                 if (::mlir::getElementTypeOrSelf(lhs).template isa<::mlir::IndexType>())
                 {
-                    rhs = rewriter.template create<::mlir::arith::IndexCastOp>(
-                        loc, rhs,
+                    rhs = builder.template create<::mlir::arith::IndexCastOp>(
                         rhs.getType().template isa<::mlir::TensorType>() ?
                             static_cast<::mlir::Type>(::mlir::RankedTensorType::get(
                                 rhs.getType().template dyn_cast<::mlir::TensorType>().getShape(),
-                                rewriter.getIndexType())) :
-                            static_cast<::mlir::Type>(rewriter.getIndexType()));
+                                builder.getIndexType())) :
+                            static_cast<::mlir::Type>(builder.getIndexType()),
+                        rhs);
                 }
                 else
                 {
-                    lhs = rewriter.template create<::mlir::arith::IndexCastOp>(
-                        loc, lhs,
+                    lhs = builder.template create<::mlir::arith::IndexCastOp>(
                         lhs.getType().template isa<::mlir::TensorType>() ?
                             static_cast<::mlir::Type>(::mlir::RankedTensorType::get(
                                 lhs.getType().template dyn_cast<::mlir::TensorType>().getShape(),
-                                rewriter.getIndexType())) :
-                            static_cast<::mlir::Type>(rewriter.getIndexType()));
+                                builder.getIndexType())) :
+                            static_cast<::mlir::Type>(builder.getIndexType()),
+                        lhs);
                 }
             }
 
-            auto res = createTypedCmpOp(rewriter, loc, lhs, rhs);
+            auto res = createTypedCmpOp(builder, lhs, rhs);
             rewriter.replaceOp(op, res);
             return ::mlir::success();
         }

@@ -25,6 +25,8 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
+#include "mlir/Passes/MemOpsToAffineMemOpsConversionPass.hpp"
+
 #include <llvm/CodeGen/CommandFlags.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Support/ErrorOr.h>
@@ -40,15 +42,14 @@
 #include <mlir/InitAllPasses.h>
 #include <mlir/Pass/Pass.h>
 #include <mlir/Pass/PassManager.h>
+#include <mlir/Passes/LinalgTiledLoopsToAffineForPass.hpp>
+#include <mlir/Passes/ParallelLoopToGpuMappingPass.hpp>
 #include <mlir/Passes/VoilaToAffineLoweringPass.hpp>
 #include <mlir/Passes/VoilaToLinalgLoweringPass.hpp>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
-#include <mlir/Passes/LinalgTiledLoopsToAffineForPass.hpp>
-#include <mlir/Passes/ParallelLoopToGpuMappingPass.hpp>
-#include "mlir/Passes/MemOpsToAffineMemOpsConversionPass.hpp"
 #pragma GCC diagnostic pop
 
 namespace voila
@@ -175,7 +176,8 @@ namespace voila
                 /*targetMachine=*/tmOrError->get());
 
             SmallVector<StringRef, 4> executionEngineLibs;
-            SmallVector<SmallString<255>, 4> libPaths({SmallString<255>(MLIR_UTILS_LIB), SmallString<255>(MLIR_C_UTILS_LIB)});
+            SmallVector<SmallString<255>, 4> libPaths(
+                {SmallString<255>(MLIR_UTILS_LIB), SmallString<255>(MLIR_C_UTILS_LIB)});
             if (config._async_parallel)
                 libPaths.emplace_back(MLIR_ASYNC_LIB);
             if (config._openmp_parallel)
@@ -251,15 +253,15 @@ namespace voila
             engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));*/
 
         // Invoke the JIT-compiled function.
-        Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
-                 Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
+        /*Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, *//*Events::TLB_MISSES,*//*
+                 Events::NO_INST_COMPLETE, *//*Events::CY_STALLED,*//* Events::REF_CYCLES, Events::TOT_CYCLES,
                  Events::INS_ISSUED, Events::PREFETCH_MISS>
-            prof;
-        prof.start();
+            prof;*/
+        //prof.start();
         auto invocationResult = engine->invokePacked("main", params);
-        prof.stop();
+        //prof.stop();
         //
-        if (config._debug)
+        /*if (config._debug)
         {
             std::cout << prof << std::endl;
         }
@@ -267,7 +269,7 @@ namespace voila
         {
             timer = prof.getTime();
             // TODO: store profiling results
-        }
+        }*/
 
         if (invocationResult)
         {
@@ -346,13 +348,12 @@ namespace voila
         // Partially lower voila to linalg
         pm.addNestedPass<FuncOp>(createLowerToLinalgPass());
         // Partially lower voila to affine with a few cleanups
-                pm.addNestedPass<FuncOp>(createLowerToAffinePass());
+        pm.addNestedPass<FuncOp>(createLowerToAffinePass());
 
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
 
-
-                pm.addNestedPass<FuncOp>(createConvertElementwiseToLinalgPass());
+        pm.addNestedPass<FuncOp>(createConvertElementwiseToLinalgPass());
         pm.addNestedPass<FuncOp>(createLinalgStrategyEnablePass());
         pm.addNestedPass<FuncOp>(createLinalgStrategyGeneralizePass());
         // optPM.addPass(createLinalgGeneralizationPass());
@@ -362,28 +363,38 @@ namespace voila
 
         // pm.addNestedPass<FuncOp>(mlir::createLinalgTiledPeelingPass());
 
-
         pm.addNestedPass<FuncOp>(createLinalgStrategyInterchangePass());
 
-        //pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
+        // pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
         if (config._optimize && config._tile)
         {
-            auto tile_size = {config._tile_size == -1 ? max_in_table_size / config._parallel_threads :
+            /*            auto tile_size = {config._tile_size == -1 ? max_in_table_size / config._parallel_threads :
                                                         config._tile_size};
-
-            pm.addNestedPass<FuncOp>(createLinalgStrategyTileAndFusePass("", linalg::LinalgTilingAndFusionOptions{tile_size, {}}));
+            if (config._peel)
+            {
+                pm.addNestedPass<FuncOp>(createLinalgTilingPass(
+                    tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}, {0}));
+            }
+            else
+            {
+                pm.addNestedPass<FuncOp>(createLinalgTilingPass(
+                    tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}));
+            }*/
+            pm.addNestedPass<FuncOp>(
+                createLinalgStrategyTileAndFusePass(""
+                                                    /*,linalg::LinalgTilingAndFusionOptions{tile_size, {}}*/));
         }
-
 
         //  bufferization passes
 
         auto bufferize = createLinalgComprehensiveModuleBufferizePass();
         (void) bufferize->initializeOptions("allow-return-memref=true");
-        //(void) bufferize->initializeOptions("use-alloca=true");
+        (void) bufferize->initializeOptions("create-deallocs=false");
         (void) bufferize->initializeOptions("allow-unknown-ops=true");
         pm.addPass(std::move(bufferize));
-        //pm.addPass(createTensorConstantBufferizePass());
-
+        pm.addNestedPass<FuncOp>(bufferization::createBufferHoistingPass());
+        pm.addNestedPass<FuncOp>(bufferization::createBufferLoopHoistingPass());
+        pm.addNestedPass<FuncOp>(bufferization::createPromoteBuffersToStackPass());
         pm.addNestedPass<FuncOp>(createSimplifyAffineStructuresPass());
         pm.addNestedPass<FuncOp>(createAffineScalarReplacementPass());
         pm.addNestedPass<FuncOp>(createAffineLoopInvariantCodeMotionPass());
@@ -412,8 +423,7 @@ namespace voila
         pm.addNestedPass<FuncOp>(createMemOpsToAffineMemOpsConversionPass());
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
-        pm.addNestedPass<FuncOp>(createLoopFusionPass(0,0,true));
-
+        pm.addNestedPass<FuncOp>(createLoopFusionPass(0, 0, true));
 
         // pm.addNestedPass<FuncOp>(createConvertLinalgTiledLoopsToSCFPass());
         //
@@ -453,8 +463,8 @@ namespace voila
         // pm.addNestedPass<FuncOp>(createForLoopPeelingPass());
         // pm.addNestedPass<FuncOp>(createLoopUnrollPass(8));
 
-        if (config._optimize && config._unroll)
-            pm.addNestedPass<FuncOp>(createLoopUnrollAndJamPass(8));
+        if (config._optimize && config._unroll_factor > 1)
+            pm.addNestedPass<FuncOp>(createLoopUnrollAndJamPass(config._unroll_factor));
         pm.addNestedPass<FuncOp>(createForLoopSpecializationPass());
         pm.addNestedPass<FuncOp>(createParallelLoopFusionPass());
         pm.addNestedPass<FuncOp>(createParallelLoopCollapsingPass());
@@ -480,15 +490,14 @@ namespace voila
             pm.addNestedPass<FuncOp>(createParallelLoopToGpuPass());
         }
 
-        pm.addNestedPass<FuncOp>(bufferization::createBufferLoopHoistingPass());
-        pm.addNestedPass<FuncOp>(bufferization::createPromoteBuffersToStackPass());
+
         if (config._optimize && config._fuse)
             pm.addNestedPass<FuncOp>(createLoopFusionPass());
 
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
+        pm.addNestedPass<FuncOp>(bufferization::createBufferDeallocationPass());
         pm.addNestedPass<FuncOp>(::mlir::bufferization::createFinalizingBufferizePass());
-
 
         if (config._optimize && config._vectorize)
         {
@@ -509,7 +518,7 @@ namespace voila
         }
 
         pm.addPass(createMemRefToLLVMPass());
-        pm.addNestedPass<FuncOp>(createLowerToCFGPass());
+        pm.addNestedPass<FuncOp>(createConvertSCFToCFPass());
 
         pm.addNestedPass<FuncOp>(arith::createArithmeticExpandOpsPass());
         pm.addNestedPass<FuncOp>(memref::createExpandOpsPass());

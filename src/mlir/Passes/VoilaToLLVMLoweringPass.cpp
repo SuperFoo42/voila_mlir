@@ -6,7 +6,7 @@
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/MemRefToLLVM//MemRefToLLVM.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
-#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
+#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
 //===----------------------------------------------------------------------===//
@@ -45,7 +45,7 @@ namespace voila::mlir
             RewritePatternSet patterns(&getContext());
             populateAffineToVectorConversionPatterns(patterns);
             populateAffineToStdConversionPatterns(patterns);
-            populateLoopToStdConversionPatterns(patterns);
+            populateSCFToControlFlowConversionPatterns(patterns);
             populateArithmeticToLLVMConversionPatterns(typeConverter, patterns);
             populateVectorToLLVMConversionPatterns(typeConverter, patterns, true);
             populateStdToLLVMConversionPatterns(typeConverter, patterns);

@@ -1,0 +1,8 @@
+main(x, y)
+{
+    pred = geq(x,50);
+    x_sel = select(x,pred);
+    y_sel = select(y,pred);
+    z = add(x_sel, y_sel);
+    emit z;
+}

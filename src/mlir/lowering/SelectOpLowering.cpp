@@ -209,6 +209,7 @@ namespace voila::mlir::lowering
                        });
         return success();
     }
+
     SelectOpLowering::SelectOpLowering(::mlir::MLIRContext *ctx) :
         ConversionPattern(::mlir::voila::SelectOp::getOperationName(), 1, ctx)
     {

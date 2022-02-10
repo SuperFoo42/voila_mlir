@@ -156,10 +156,9 @@ namespace voila::mlir::lowering
             const auto &elementType = getElementTypeOrSelf(val);
             if (elementType.isIntOrFloat())
             {
-                hashInvalidConsts.push_back(
-                    builder.create<BitcastOp>(builder.create<ConstantIntOp>(std::numeric_limits<uint64_t>::max(),
-                                                                            elementType.getIntOrFloatBitWidth()),
-                                              elementType));
+                hashInvalidConsts.push_back(builder.create<BitcastOp>(
+                    elementType, builder.create<ConstantIntOp>(std::numeric_limits<uint64_t>::max(),
+                                                               elementType.getIntOrFloatBitWidth())));
             }
             else
             {
@@ -184,8 +183,8 @@ namespace voila::mlir::lowering
         {
             ImplicitLocOpBuilder builder(loc, nestedBuilder);
             // load values
-            auto hashIdx = builder.create<IndexCastOp>(
-                builder.create<tensor::ExtractOp>(insertOpAdaptor.hashValues(), vals), builder.getIndexType());
+            auto hashIdx = builder.create<IndexCastOp>(builder.getIndexType(),
+                builder.create<tensor::ExtractOp>(insertOpAdaptor.hashValues(), vals));
             Value correctedHashIdx = builder.create<AndIOp>(hashIdx, modSize);
 
             SmallVector<Value> toStores;

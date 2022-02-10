@@ -35,12 +35,12 @@ namespace voila::mlir::lowering
             }
             else if (lhsType.isa<::mlir::FloatType>())
             {
-                auto castedFlt = builder.template create<::mlir::arith::FPToSIOp>(loc, rhs, lhsType);
+                auto castedFlt = builder.template create<::mlir::arith::FPToSIOp>(loc, lhsType, rhs);
                 return builder.template create<FloatOp>(loc, lhs, castedFlt);
             }
             else if (rhsType.isa<::mlir::FloatType>())
             {
-                auto castedFlt = builder.template create<::mlir::arith::FPToSIOp>(loc, lhs, rhsType);
+                auto castedFlt = builder.template create<::mlir::arith::FPToSIOp>(loc, rhsType, lhs);
                 return builder.template create<FloatOp>(loc, castedFlt, rhs);
             }
             else
@@ -68,8 +68,8 @@ namespace voila::mlir::lowering
                      llvm::makeArrayRef(::mlir::getReductionIteratorTypeName()),
                      [](::mlir::OpBuilder &nestedBuilder, ::mlir::Location loc, ::mlir::ValueRange vals)
                      {
-                         auto toAdd = nestedBuilder.create<::mlir::arith::IndexCastOp>(loc, vals[0],
-                                                                                       nestedBuilder.getIndexType());
+                         auto toAdd = nestedBuilder.create<::mlir::arith::IndexCastOp>(
+                             loc, nestedBuilder.getIndexType(), vals[0]);
                          nestedBuilder.create<::mlir::linalg::YieldOp>(
                              loc, llvm::makeArrayRef<::mlir::Value>(
                                       nestedBuilder.create<::mlir::arith::AddIOp>(loc, toAdd, vals[1])));
@@ -147,15 +147,16 @@ namespace voila::mlir::lowering
                      llvm::makeArrayRef(::mlir::getReductionIteratorTypeName()),
                      [](::mlir::OpBuilder &nestedBuilder, ::mlir::Location loc, ::mlir::ValueRange vals)
                      {
-                         auto toAdd = nestedBuilder.create<::mlir::arith::IndexCastOp>(loc, vals[0],
-                                                                                       nestedBuilder.getIndexType());
+                         auto toAdd = nestedBuilder.create<::mlir::arith::IndexCastOp>(
+                             loc, nestedBuilder.getIndexType(), vals[0]);
                          nestedBuilder.create<::mlir::linalg::YieldOp>(
                              loc, llvm::makeArrayRef<::mlir::Value>(
                                       nestedBuilder.create<::mlir::arith::AddIOp>(loc, toAdd, vals[1])));
                      })
                     .getResult(0);
 
-            ::mlir::Value resTensor = b.template create<::mlir::linalg::InitTensorOp>(selectionSize, getElementTypeOrSelf(lhs));
+            ::mlir::Value resTensor =
+                b.template create<::mlir::linalg::InitTensorOp>(selectionSize, getElementTypeOrSelf(lhs));
 
             ::mlir::SmallVector<::mlir::AffineMap, 5> m(4, b.getDimIdentityMap());
             m.push_back(maps.front());

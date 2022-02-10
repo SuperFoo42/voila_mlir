@@ -159,7 +159,7 @@ namespace voila::mlir::lowering
                 Value tmp = toSum;
                 if (toSum.getType() != builder.getI64Type())
                 {
-                    tmp = builder.create<ExtSIOp>(toSum, builder.getI64Type());
+                    tmp = builder.create<ExtSIOp>(builder.getI64Type(), toSum);
                 }
                 newVal = builder.create<AddIOp>(oldVal, tmp);
             }

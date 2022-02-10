@@ -135,10 +135,10 @@ class CompressingTableReader : TableReader
                         std::get<std::vector<int32_t>>(cols.at(i)).push_back(row[i].get<int32_t>());
                         break;
                     case ColumnTypes::STRING:
-                        std::get<std::vector<int32_t>>(cols.at(i)).push_back(dictionaries[i][row[i].get()]);
+                        std::get<std::vector<int32_t>>(cols.at(i)).push_back(dictionaries[i][row[i].get<std::string>()]);
                         break;
                     case ColumnTypes::DATE:
-                        std::get<std::vector<int32_t>>(cols.at(i)).push_back(DateReformatter::parseDate(row[i].get()));
+                        std::get<std::vector<int32_t>>(cols.at(i)).push_back(DateReformatter::parseDate(row[i].get<std::string>()));
                         break;
                     case ColumnTypes::DECIMAL:
                         std::get<std::vector<double>>(cols.at(i)).push_back(row[i].get<double>());
@@ -234,10 +234,10 @@ class CompressingTableReader : TableReader
                         std::get<std::vector<int32_t>>(cols.at(i)).push_back(row[i].get<int32_t>());
                         break;
                     case ColumnTypes::STRING:
-                        std::get<std::vector<int32_t>>(cols.at(i)).push_back(dictionaries[i][row[i].get()]);
+                        std::get<std::vector<int32_t>>(cols.at(i)).push_back(dictionaries[i][row[i].get<std::string>()]);
                         break;
                     case ColumnTypes::DATE:
-                        std::get<std::vector<int32_t>>(cols.at(i)).push_back(DateReformatter::parseDate(row[i].get()));
+                        std::get<std::vector<int32_t>>(cols.at(i)).push_back(DateReformatter::parseDate(row[i].get<std::string>()));
                         break;
                     case ColumnTypes::DECIMAL:
                         std::get<std::vector<double>>(cols.at(i)).push_back(row[i].get<double>());

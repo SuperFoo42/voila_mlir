@@ -17,7 +17,6 @@ namespace voila
                true,
                true,
                true,
-               true,
                false,
                false,
                true,
@@ -29,6 +28,7 @@ namespace voila
                -1,
                8,
                std::max<int32_t>(std::thread::hardware_concurrency(), 1),
+                   1,
                -1,
                opts["f"].as<std::string>(),
                opts["f"].as<std::string>(),
@@ -49,7 +49,6 @@ namespace voila
                    bool cpu_parallel,
                    bool gpu_parallel,
                    bool openmp_parallel,
-                   bool unroll,
                    bool profile,
                    bool plotAst,
                    bool printMlir,
@@ -58,6 +57,7 @@ namespace voila
                    int64_t tileSize,
                    int32_t vectorSize,
                    int32_t parallelThreads,
+                   int32_t unrollFactor,
                    int32_t htSizeFactor,
                    std::string astOutFile,
                    std::string mlirOutFile,
@@ -75,7 +75,6 @@ namespace voila
         _async_parallel(cpu_parallel),
         _gpu_parallel(gpu_parallel),
         _openmp_parallel(openmp_parallel),
-        _unroll(unroll),
         _profile(profile),
         _plotAST(plotAst),
         _printMLIR(printMlir),
@@ -84,6 +83,7 @@ namespace voila
         _tile_size(tileSize),
         _vector_size(vectorSize),
         _parallel_threads(parallelThreads),
+        _unroll_factor(unrollFactor),
         _ht_size_factor(htSizeFactor),
         ASTOutFile(std::move(astOutFile)),
         MLIROutFile(std::move(mlirOutFile)),
@@ -152,11 +152,7 @@ namespace voila
         _gpu_parallel = flag;
         return *this;
     }
-    Config &Config::unroll(bool flag)
-    {
-        Config::_unroll = flag;
-        return *this;
-    }
+
     Config &Config::profile(bool flag)
     {
         Config::_profile = flag;
@@ -195,6 +191,11 @@ namespace voila
     Config &Config::parallel_threads(int32_t parallelThreads)
     {
         _parallel_threads = parallelThreads;
+        return *this;
+    }
+    Config &Config::unroll_factor(int32_t unrollFactor)
+    {
+        _unroll_factor = unrollFactor;
         return *this;
     }
     Config &Config::ht_size_factor(int32_t htSizeFactor)

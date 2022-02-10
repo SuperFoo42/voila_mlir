@@ -14,7 +14,7 @@ namespace voila::mlir::lowering
     using ::mlir::voila::LookupOp;
     using ::mlir::voila::LookupOpAdaptor;
 
-    //TODO: extract insert + lookup common utils
+    // TODO: extract insert + lookup common utils
     LookupOpLowering::LookupOpLowering(::mlir::MLIRContext *ctx) :
         ConversionPattern(LookupOp::getOperationName(), 1, ctx)
     {
@@ -115,10 +115,9 @@ namespace voila::mlir::lowering
             if (elementType.isIntOrFloat())
             {
                 hashInvalidConsts.push_back(
-                    rewriter.create<BitcastOp>(loc,
+                    rewriter.create<BitcastOp>(loc, elementType,
                                                rewriter.create<ConstantIntOp>(loc, std::numeric_limits<uint64_t>::max(),
-                                                                              elementType.getIntOrFloatBitWidth()),
-                                               elementType));
+                                                                              elementType.getIntOrFloatBitWidth())));
             }
             else
             {
@@ -133,7 +132,7 @@ namespace voila::mlir::lowering
             vals = vals.drop_back();
             // probing
             Value idx =
-                builder.create<AndIOp>(builder.create<IndexCastOp>(hashVal.front(), builder.getIndexType()), modSize);
+                builder.create<AndIOp>(builder.create<IndexCastOp>(builder.getIndexType(), hashVal.front()), modSize);
             // probing with do while
             // Maybe we should keep track of the max probing count during generation and iterate only so many times
             auto loop = builder.create<scf::WhileOp>(builder.getIndexType(), idx);
@@ -153,10 +152,10 @@ namespace voila::mlir::lowering
             auto afterBlock = builder.createBlock(&loop.getAfter());
             afterBlock->addArgument(loop->getOperands().front().getType(), loc);
             auto bodyBuilder = OpBuilder::atBlockEnd(afterBlock);
-            Value inc = bodyBuilder.create<AndIOp>(loc,
-                                                   bodyBuilder.create<AddIOp>(loc, afterBlock->getArgument(0),
-                                                                              builder.create<ConstantIndexOp>(loc, 1)),
-                                                   modSize);
+            Value inc = bodyBuilder.create<AndIOp>(
+                loc,
+                bodyBuilder.create<AddIOp>(loc, afterBlock->getArgument(0), builder.create<ConstantIndexOp>(loc, 1)),
+                modSize);
             bodyBuilder.create<scf::YieldOp>(loc, llvm::makeArrayRef(inc));
             builder.setInsertionPointAfter(loop);
             // check index empty

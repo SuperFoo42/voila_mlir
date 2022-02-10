@@ -73,7 +73,7 @@ namespace voila::mlir::lowering
     {
         if (val.getType().getIntOrFloatBitWidth() < WIDTH)
         {
-            return builder.create<ExtSIOp>(val, builder.getIntegerType(WIDTH));
+            return builder.create<ExtSIOp>(builder.getIntegerType(WIDTH), val);
         }
         else if (val.getType().getIntOrFloatBitWidth() == WIDTH)
         {
@@ -89,12 +89,12 @@ namespace voila::mlir::lowering
     static auto split(ImplicitLocOpBuilder &builder, Value val)
     {
         if (val.getType().isa<FloatType>())
-            val = builder.create<arith::BitcastOp>(val, builder.getIntegerType(val.getType().getIntOrFloatBitWidth()));
+            val = builder.create<arith::BitcastOp>(builder.getIntegerType(val.getType().getIntOrFloatBitWidth()), val);
 
-        auto lower = builder.create<arith::TruncIOp>(val, builder.getI32Type());
+        auto lower = builder.create<arith::TruncIOp>(builder.getI32Type(), val);
         auto upper = builder.create<arith::TruncIOp>(
-            builder.create<ShRUIOp>(val, builder.create<ConstantIntOp>(32, builder.getI64Type())),
-            builder.getI32Type());
+            builder.getI32Type(),
+            builder.create<ShRUIOp>(val, builder.create<ConstantIntOp>(32, builder.getI64Type())));
         return std::make_pair(lower, upper);
     }
 
@@ -103,29 +103,29 @@ namespace voila::mlir::lowering
         if (val1.getType().isa<FloatType>())
         {
             val1 =
-                builder.create<arith::BitcastOp>(val1, builder.getIntegerType(val1.getType().getIntOrFloatBitWidth()));
+                builder.create<arith::BitcastOp>(builder.getIntegerType(val1.getType().getIntOrFloatBitWidth()), val1);
         }
         if (val2.getType().isa<FloatType>())
         {
             val2 =
-                builder.create<arith::BitcastOp>(val2, builder.getIntegerType(val2.getType().getIntOrFloatBitWidth()));
+                builder.create<arith::BitcastOp>(builder.getIntegerType(val2.getType().getIntOrFloatBitWidth()), val2);
         }
-        auto extended = builder.create<arith::ExtUIOp>(val1, builder.getI64Type());
+        auto extended = builder.create<arith::ExtUIOp>(builder.getI64Type(), val1);
         auto shifted = builder.create<arith::ShLIOp>(extended, builder.create<ConstantIntOp>(32, builder.getI64Type()));
-        auto extended2 = builder.create<arith::ExtUIOp>(val2, builder.getI64Type());
+        auto extended2 = builder.create<arith::ExtUIOp>(builder.getI64Type(), val2);
         auto combined = builder.create<arith::OrIOp>(shifted, extended2);
         return combined;
     }
 
     static Value XXH3_mul128_fold64(ImplicitLocOpBuilder &builder, Value lhs, Value rhs)
     {
-        auto lhs128 = builder.create<ExtSIOp>(lhs, builder.getIntegerType(128));
-        auto rhs128 = builder.create<ExtSIOp>(rhs, builder.getIntegerType(128));
+        auto lhs128 = builder.create<ExtSIOp>(builder.getIntegerType(128), lhs);
+        auto rhs128 = builder.create<ExtSIOp>(builder.getIntegerType(128), rhs);
         auto product = builder.create<MulIOp>(lhs128, rhs128);
-        auto product_low = builder.create<TruncIOp>(product, builder.getI64Type());
+        auto product_low = builder.create<TruncIOp>(builder.getI64Type(), product);
         auto product_high = builder.create<TruncIOp>(
-            builder.create<ShRUIOp>(product, builder.create<ConstantIntOp>(64, product.getType())),
-            builder.getI64Type());
+            builder.getI64Type(),
+            builder.create<ShRUIOp>(product, builder.create<ConstantIntOp>(64, product.getType())));
 
         return builder.create<XOrIOp>(product_low, product_high);
     }
@@ -204,28 +204,25 @@ namespace voila::mlir::lowering
          */
         {
             auto c1 = builder.create<TruncIOp>(
-                builder.create<ShRUIOp>(vals[0],
-                                        builder.create<ConstantIntOp>((len - 1) * CHAR_BIT, vals[0].getType())),
-                builder.getI8Type());
+                builder.getI8Type(), builder.create<ShRUIOp>(vals[0], builder.create<ConstantIntOp>(
+                                                                          (len - 1) * CHAR_BIT, vals[0].getType())));
             auto c2 = builder.create<TruncIOp>(
-
-                builder.create<ShRUIOp>(vals[0],
-                                        builder.create<ConstantIntOp>((len >> 1) * CHAR_BIT, vals[0].getType())),
-                builder.getI8Type());
-            auto c3 = builder.create<TruncIOp>(vals[0], builder.getI8Type());
+                builder.getI8Type(), builder.create<ShRUIOp>(vals[0], builder.create<ConstantIntOp>(
+                                                                          (len >> 1) * CHAR_BIT, vals[0].getType())));
+            auto c3 = builder.create<TruncIOp>(builder.getI8Type(), vals[0]);
             auto combined = builder.create<OrIOp>(
                 builder.create<OrIOp>(
                     builder.create<OrIOp>(
-                        builder.create<ShLIOp>(builder.create<ExtSIOp>(c1, builder.getI32Type()),
+                        builder.create<ShLIOp>(builder.create<ExtSIOp>(builder.getI32Type(), c1),
                                                builder.create<ConstantIntOp>(16, builder.getI32Type())),
-                        builder.create<ShLIOp>(builder.create<ExtSIOp>(c2, builder.getI32Type()),
+                        builder.create<ShLIOp>(builder.create<ExtSIOp>(builder.getI32Type(), c2),
                                                builder.create<ConstantIntOp>(24, builder.getI32Type()))),
-                    builder.create<ExtSIOp>(c3, builder.getI32Type())),
+                    builder.create<ExtSIOp>(builder.getI32Type(), c3)),
                 builder.create<ConstantIntOp>(len << 8, builder.getI32Type()));
             auto bitflip = builder.create<ConstantIntOp>(*reinterpret_cast<const uint32_t *>(XXH_SECRET.data()) ^
                                                              *reinterpret_cast<const uint32_t *>(XXH_SECRET.data() + 4),
                                                          builder.getI64Type());
-            auto keyed = builder.create<XOrIOp>(builder.create<ExtSIOp>(combined, builder.getI64Type()), bitflip);
+            auto keyed = builder.create<XOrIOp>(builder.create<ExtSIOp>(builder.getI64Type(), combined), bitflip);
             return XXH64_avalanche(builder, keyed);
         }
     }
@@ -239,10 +236,10 @@ namespace voila::mlir::lowering
         Value input1, input2;
         if (vals.size() == 1) // split single 8 byte value
         {
-            input1 = builder.create<TruncIOp>(vals[0], builder.getI32Type());
+            input1 = builder.create<TruncIOp>(builder.getI32Type(), vals[0]);
             input2 = builder.create<TruncIOp>(
-                builder.create<ShRUIOp>(vals[0], builder.create<ConstantIntOp>(32, vals[0].getType())),
-                builder.getI32Type());
+                builder.getI32Type(),
+                builder.create<ShRUIOp>(vals[0], builder.create<ConstantIntOp>(32, vals[0].getType())));
         }
         else
         {
@@ -257,8 +254,8 @@ namespace voila::mlir::lowering
                                           builder.getI64Type()));
 
         auto input64 =
-            builder.create<AddIOp>(builder.create<ExtSIOp>(input2, builder.getI64Type()),
-                                   builder.create<ShLIOp>(builder.create<ExtSIOp>(input1, builder.getI64Type()),
+            builder.create<AddIOp>(builder.create<ExtSIOp>(builder.getI64Type(), input2),
+                                   builder.create<ShLIOp>(builder.create<ExtSIOp>(builder.getI64Type(), input1),
                                                           builder.create<ConstantIntOp>(32, builder.getI64Type())));
         auto keyed = builder.create<XOrIOp>(input64, bitflip);
         return XXH3_rrmxmx(builder, keyed, len);
@@ -328,26 +325,26 @@ namespace voila::mlir::lowering
             }
             else if (iter + 1 == vals.end())
             {
-                v64.push_back(builder.create<ExtUIOp>(*iter, builder.getI64Type()));
+                v64.push_back(builder.create<ExtUIOp>(builder.getI64Type(), *iter));
                 ++iter;
             }
             else
             {
                 if ((*(iter + 1)).getType().getIntOrFloatBitWidth() == 32)
                 {
-                    auto upper = builder.create<ExtUIOp>(*iter++, builder.getI64Type());
+                    auto upper = builder.create<ExtUIOp>(builder.getI64Type(), *iter++);
                     v64.push_back(
                         builder.create<OrIOp>(builder.create<ShLIOp>(upper, builder.create<ConstantIntOp>(32, 64)),
-                                              builder.create<ExtUIOp>(*iter, builder.getI64Type())));
+                                              builder.create<ExtUIOp>(builder.getI64Type(), *iter)));
                     ++iter;
                 }
                 else
                 {
-                    auto upper = builder.create<ExtUIOp>(*iter++, builder.getI64Type());
+                    auto upper = builder.create<ExtUIOp>(builder.getI64Type(), *iter++);
                     auto sp = split(builder, *(iter));
                     v64.push_back(builder.create<OrIOp>(
                         builder.create<ShLIOp>(upper, builder.create<ConstantIntOp>(32, 64)), sp.first));
-                    *iter = sp.second; // TODO: this could be broken
+                    *iter = sp.second;
                 }
             }
         }
@@ -372,11 +369,11 @@ namespace voila::mlir::lowering
             const auto &type = val.getType();
             if (type.isIntOrFloat())
             {
-                intVals.push_back(builder.create<BitcastOp>(val, builder.getIntegerType(type.getIntOrFloatBitWidth())));
+                intVals.push_back(builder.create<BitcastOp>(builder.getIntegerType(type.getIntOrFloatBitWidth()), val));
             }
             else if (type.isIndex())
             {
-                intVals.push_back(builder.create<IndexCastOp>(val, builder.getI64Type()));
+                intVals.push_back(builder.create<IndexCastOp>(builder.getI64Type(), val));
             }
             else
             {
@@ -416,7 +413,8 @@ namespace voila::mlir::lowering
     LogicalResult
     HashOpLowering::matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const
     {
-        HashOpAdaptor hashOpAdaptor(operands);
+        auto hOp = dyn_cast<HashOp>(op);
+        HashOpAdaptor hashOpAdaptor(hOp);
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
 

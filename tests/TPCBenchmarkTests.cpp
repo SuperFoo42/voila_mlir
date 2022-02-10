@@ -50,6 +50,19 @@ static size_t hash(T1 val1, T2 val2, T3 val3)
     return XXH3_64bits(data.data(), data.size());
 }
 
+template<class T1, class T2, class T3, class T4, class T5>
+static size_t hash(T1 val1, T2 val2, T3 val3, T4 val4, T5 val5)
+{
+    std::array<char, sizeof(T1) + sizeof(T2) + sizeof(T3) + sizeof(T4) + sizeof(T5)> data{};
+    std::copy_n(reinterpret_cast<char *>(&val1), sizeof(T1), data.data());
+    std::copy_n(reinterpret_cast<char *>(&val2), sizeof(T2), data.data() + sizeof(T1));
+    std::copy_n(reinterpret_cast<char *>(&val3), sizeof(T3), data.data() + sizeof(T1) + sizeof(T2));
+    std::copy_n(reinterpret_cast<char *>(&val4), sizeof(T4), data.data() + sizeof(T1) + sizeof(T2) + sizeof(T3));
+    std::copy_n(reinterpret_cast<char *>(&val5), sizeof(T5),
+                data.data() + sizeof(T1) + sizeof(T2) + sizeof(T3) + sizeof(T4));
+    return XXH3_64bits(data.data(), data.size());
+}
+
 constexpr int32_t INVALID = static_cast<int32_t>(std::numeric_limits<uint64_t>::max());
 template<class T1, class T2>
 static size_t probeAndInsert(size_t key, const T1 val1, const T2 val2, std::vector<T1> &vals1, std::vector<T2> &vals2)
@@ -111,6 +124,40 @@ static size_t probeAndInsert(size_t key,
     return key;
 }
 
+template<class T1, class T2, class T3, class T4, class T5>
+static size_t probeAndInsert(size_t key,
+                             const T1 val1,
+                             const T2 val2,
+                             const T3 val3,
+                             const T4 val4,
+                             const T5 val5,
+                             std::vector<T1> &vals1,
+                             std::vector<T2> &vals2,
+                             std::vector<T3> &vals3,
+                             std::vector<T4> &vals4,
+                             std::vector<T5> &vals5)
+{
+    assert(vals1.size() == vals2.size() && vals2.size() == vals3.size() && vals3.size() == vals4.size() &&
+           vals4.size() == vals5.size());
+    const auto size = vals1.size();
+    key %= size;
+    // probing
+    while (vals1[key] != INVALID && !(vals1[key] == val1 && vals2[key] == val2 && vals3[key] == val3 &&
+                                      vals4[key] == val4 && vals5[key] == val5))
+    {
+        key += 1;
+        key %= size;
+    }
+
+    vals1[key] = val1;
+    vals2[key] = val2;
+    vals3[key] = val3;
+    vals4[key] = val4;
+    vals5[key] = val5;
+
+    return key;
+}
+
 template<class T1>
 static size_t probeAndInsert(size_t key, const T1 val1, std::vector<T1> &vals1)
 {
@@ -129,7 +176,7 @@ static size_t probeAndInsert(size_t key, const T1 val1, std::vector<T1> &vals1)
 
 TEST(TPCBenchmarkTests, Q1_Qualification)
 {
-    CompressedTable lineitem(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz");
+    CompressedTable lineitem(VOILA_BENCHMARK_DATA_PATH "/lineitem.bin.xz");
     auto l_quantity = lineitem.getColumn<lineitem_types_t<L_QUANTITY>>(L_QUANTITY);
     auto l_extendedprice = lineitem.getColumn<lineitem_types_t<L_EXTENDEDPRICE>>(L_EXTENDEDPRICE);
     auto l_discount = lineitem.getColumn<lineitem_types_t<L_DISCOUNT>>(L_DISCOUNT);
@@ -234,7 +281,7 @@ TEST(TPCBenchmarkTests, Q1_Qualification)
 
 TEST(TPCBenchmarkTests, Q6_Qualification)
 {
-    CompressedTable lineitem(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz");
+    CompressedTable lineitem(VOILA_BENCHMARK_DATA_PATH "/lineitem.bin.xz");
     auto l_quantity = lineitem.getColumn<lineitem_types_t<L_QUANTITY>>(L_QUANTITY);
     auto l_extendedprice = lineitem.getColumn<lineitem_types_t<L_EXTENDEDPRICE>>(L_EXTENDEDPRICE);
     auto l_discount = lineitem.getColumn<lineitem_types_t<L_DISCOUNT>>(L_DISCOUNT);
@@ -423,10 +470,78 @@ TEST(TPCBenchmarkTests, Q3_JoinCompressed)
     EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
 }
 
+TEST(TPCBenchmarkTests, Q3_JoinUncompressed)
+{
+    // load data
+    auto customer =
+        TableReader(VOILA_BENCHMARK_DATA_PATH "/customer.tbl", {ColumnTypes::INT, ColumnTypes::STRING}, '|').getTable();
+    auto orders =
+        TableReader(VOILA_BENCHMARK_DATA_PATH "/orders.tbl", {ColumnTypes::INT, ColumnTypes::STRING}, '|').getTable();
+    auto lineitem =
+        TableReader(VOILA_BENCHMARK_DATA_PATH "/lineitem.tbl", {ColumnTypes::INT, ColumnTypes::STRING}, '|').getTable();
+    auto l_orderkey = lineitem.getColumn<lineitem_types_t<L_ORDERKEY>>(L_ORDERKEY);
+    auto l_extendedprice = lineitem.getColumn<lineitem_types_t<L_EXTENDEDPRICE>>(L_EXTENDEDPRICE);
+    auto l_discount = lineitem.getColumn<lineitem_types_t<L_DISCOUNT>>(L_DISCOUNT);
+    auto l_shipdate = lineitem.getColumn<std::string>(L_SHIPDATE);
+    auto c_mktsegment = customer.getColumn<std::string>(C_MKTSEGMENT);
+    auto c_custkey = customer.getColumn<customer_types_t<C_CUSTKEY>>(C_CUSTKEY);
+    auto o_custkey = orders.getColumn<orders_types_t<O_CUSTKEY>>(O_CUSTKEY);
+    auto o_orderkey = orders.getColumn<orders_types_t<O_ORDERKEY>>(O_ORDERKEY);
+    auto o_orderdate = orders.getColumn<std::string>(O_ORDERDATE);
+    auto o_shippriority = orders.getColumn<orders_types_t<O_SHIPPRIORITY>>(O_SHIPPRIORITY);
+
+    // qualification data
+    const auto segment = "BUILDING";
+    const auto date = 19950315;
+
+    // reference impl
+    double ref = 0;
+    const auto htSizes = std::bit_ceil(l_orderkey.size());
+    std::vector<int32_t> ht_l_orderkey_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<std::string> ht_o_orderdate_ref(htSizes, "");
+    std::vector<int32_t> ht_o_shippriority_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<double> sum_disc_price_ref(htSizes, 0);
+
+    Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
+             Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
+             Events::INS_ISSUED, Events::PREFETCH_MISS>
+        prof;
+    prof.start();
+
+    const auto jt = joins::NPO_st(
+        l_orderkey, [&l_shipdate, date](auto idx, auto) { return DateReformatter::parseDate(l_shipdate[idx]) > date; },
+        o_orderkey,
+        [&o_orderdate, date](auto idx, auto) { return DateReformatter::parseDate(o_orderdate[idx]) < date; });
+    decltype(o_custkey) m_custkey;
+    m_custkey.reserve(jt.size());
+    for (auto &el : jt)
+    {
+        m_custkey.push_back(o_custkey[el.second]);
+    }
+    const auto jt2 = joins::NPO_st(
+        m_custkey, [](auto, auto) { return true; }, c_custkey,
+        [&c_mktsegment, segment](auto idx, auto) { return c_mktsegment[idx] == segment; });
+
+    for (const auto &e : jt2)
+    {
+        const auto l_idx = jt[e.first].first;
+        const auto o_idx = jt[e.first].second; // TODO: hash strings
+        const auto idx = probeAndInsert(hash(l_orderkey[l_idx], o_orderdate[o_idx], o_shippriority[o_idx]),
+                                        l_orderkey[l_idx], o_orderdate[o_idx], o_shippriority[o_idx], ht_l_orderkey_ref,
+                                        ht_o_orderdate_ref, ht_o_shippriority_ref);
+
+        sum_disc_price_ref[idx] += l_extendedprice[l_idx] * (1 - l_discount[l_idx]);
+    }
+    prof.stop();
+    std::cout << prof << std::endl;
+    // TODO: comparisons
+    EXPECT_DOUBLE_EQ(ref, 75293731.05440186); // result is 75293731.05440186, because of float precision errors
+}
+
 TEST(TPCBenchmarkTests, Q9_Qualification)
 {
     // load data
-    CompressedTable part_supplier_lineitem_partsupp_orders_nation(VOILA_BENCHMARK_DATA_PATH "/q9_wide_table.bin.xz");
+    CompressedTable part_supplier_lineitem_partsupp_orders_nation(VOILA_BENCHMARK_DATA_PATH "/part_supplier_lineitem_partsupp_orders_nation.bin.xz");
     constexpr auto supplier_offset = magic_enum::enum_count<part_cols>();
     constexpr auto lineitem_offset = supplier_offset + magic_enum::enum_count<supplier_cols>();
     constexpr auto partsupp_offset = lineitem_offset + magic_enum::enum_count<lineitem_cols>();
@@ -535,7 +650,6 @@ TEST(TPCBenchmarkTests, Q9_Qualification)
     prog << needle;
 
     auto res = prog();
-
 }
 
 TEST(TPCBenchmarkTests, Q18_Qualification)
@@ -576,17 +690,14 @@ TEST(TPCBenchmarkTests, Q18_Qualification)
     double ref = 0;
     const auto htSizes = std::bit_ceil(l_orderkey.size());
     std::vector<int32_t> ht_l_orderkey_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<int32_t> ht_c_name_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<int32_t> ht_c_custkey_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<int32_t> ht_o_orderkey_ref(htSizes, static_cast<int32_t>(INVALID));
     std::vector<int32_t> ht_o_orderdate_ref(htSizes, static_cast<int32_t>(INVALID));
-    std::vector<int32_t> ht_o_shippriority_ref(htSizes, static_cast<int32_t>(INVALID));
-    std::vector<double> sum_qty_ref(htSizes, 0);
-    std::vector<double> sum_base_price_ref(htSizes, 0);
-    std::vector<double> sum_disc_price_ref(htSizes, 0);
-    std::vector<double> sum_charge_ref(htSizes, 0);
-    std::vector<double> sum_discount_ref(htSizes, 0);
-    std::vector<double> avg_qty_ref(htSizes, 0);
-    std::vector<double> avg_price_ref(htSizes, 0);
-    std::vector<double> avg_disc_ref(htSizes, 0);
-    std::vector<double> count_order_ref(htSizes, 0);
+    std::vector<double> ht_o_totalprice_ref(htSizes, static_cast<int32_t>(INVALID));
+    std::vector<double> sum_l_quantity(htSizes, 0);
+    std::vector<double> sum_l_quantity2(htSizes, 0);
+    std::vector<size_t> orderkey_idxs(l_orderkey.size());
 
     Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
              Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
@@ -594,18 +705,25 @@ TEST(TPCBenchmarkTests, Q18_Qualification)
         prof;
     prof.start();
 
-    /*    for (size_t i = 0; i < l_orderkey.size(); ++i)
-        {
-            if (c_mktsegment[i] == segment && c_custkey[i] == o_custkey[i] && l_orderkey[i] == o_orderkey[i] &&
-                o_orderdate[i] < date && l_shipdate[i] > date)
-            {
-                const auto idx = probeAndInsert(hash(l_orderkey[i], o_orderdate[i], o_shippriority[i]), htSizes,
-                                                l_orderkey[i], o_orderdate[i], o_shippriority[i], ht_l_orderkey_ref,
-                                                ht_o_orderdate_ref, ht_o_shippriority_ref);
+    for (size_t i = 0; i < l_orderkey.size(); ++i)
+    {
+        const auto idx = probeAndInsert(hash(l_orderkey[i]), l_orderkey[i], ht_l_orderkey_ref);
+        sum_l_quantity[idx] += l_quantity[i];
+        orderkey_idxs[i] = idx;
+    }
 
-                sum_disc_price_ref[idx] += l_extendedprice[i] * (1 - l_discount[i]);
-            }
-        }*/
+    for (size_t i = 0; i < l_orderkey.size(); ++i)
+    {
+        if (sum_l_quantity[orderkey_idxs[i]] > quantity)
+        {
+            const auto idx =
+                probeAndInsert(hash(c_name[i], c_custkey[i], o_orderkey[i], o_orderdate[i], o_totalprice[i]), c_name[i],
+                               c_custkey[i], o_orderkey[i], o_orderdate[i], o_totalprice[i], ht_c_name_ref,
+                               ht_c_custkey_ref, ht_o_orderkey_ref, ht_o_orderdate_ref, ht_o_totalprice_ref);
+            sum_l_quantity2[idx] += l_quantity[i];
+        }
+    }
+
     prof.stop();
     std::cout << prof << std::endl;
 
@@ -650,8 +768,8 @@ TEST(TPCBenchmarkTests, StringJoin)
 
 TEST(TPCBenchmarkTests, LineitemOrdersJoin)
 {
-    CompressedTable lineitem(VOILA_BENCHMARK_DATA_PATH "/lineitem1g_compressed.bin.xz");
-    CompressedTable orders(VOILA_BENCHMARK_DATA_PATH "/orders1g_compressed.bin.xz");
+    CompressedTable lineitem(VOILA_BENCHMARK_DATA_PATH "/lineitem.bin.xz");
+    CompressedTable orders(VOILA_BENCHMARK_DATA_PATH "/orders.bin.xz");
     auto l_orderkey = lineitem.getColumn<lineitem_types_t<L_ORDERKEY>>(L_ORDERKEY);
     auto o_orderkey = orders.getColumn<orders_types_t<O_ORDERKEY>>(O_ORDERKEY);
     auto res = joins::NPO_st(l_orderkey, o_orderkey);

@@ -59,8 +59,7 @@ namespace voila
         {
             for (auto &ptr : toDealloc)
             {
-                // TODO: somehow, this leads to segfaults
-                // std::free(ptr);
+                std::free(ptr);
                 ptr = nullptr;
             }
             std::free(b);
@@ -123,6 +122,7 @@ namespace voila
         lexer::Lexer *lexer;
         long long timer = 0;
         int64_t max_in_table_size;
+        void runJIT(const std::optional<std::string> &objPath = std::nullopt);
 
       public:
         using result_t = std::variant<strided_memref_ptr<uint32_t, 1>,
@@ -161,7 +161,6 @@ namespace voila
          * @Deprecated use () instead
          * @param shapes
          */
-        void runJIT(const std::optional<std::string> &objPath = std::nullopt);
 
         void printMLIR(const std::string &filename);
 

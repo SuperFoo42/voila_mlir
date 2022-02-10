@@ -52,7 +52,7 @@ namespace voila::mlir::lowering
     static Value scalarCountLowering(CountOpAdaptor &countOpAdaptor, ImplicitLocOpBuilder &builder)
     {
         auto cnt = builder.create<DimOp>(countOpAdaptor.input(), 0);
-        return builder.create<IndexCastOp>(cnt, builder.getI64Type());
+        return builder.create<IndexCastOp>(builder.getI64Type(), cnt);
     }
 
     static Value groupedCountLowering(Operation *op, CountOpAdaptor &countOpAdaptor, ImplicitLocOpBuilder &rewriter)

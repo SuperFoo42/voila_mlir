@@ -34,16 +34,16 @@ namespace voila::mlir::lowering
         auto fn = [](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
         {
             ImplicitLocOpBuilder builder(loc, nestedBuilder);
-            Value fVal = builder.create<SIToFPOp>(vals[0], builder.getF64Type());
+            Value fVal = builder.create<SIToFPOp>(builder.getF64Type(), vals[0]);
             builder.create<linalg::YieldOp>(fVal);
         };
 
         SmallVector<AffineMap, 2> maps(2, builder.getDimIdentityMap());
 
         auto linalgOp = builder.create<linalg::GenericOp>(/*results*/ res_type,
-                                                           /*inputs*/ tensor, /*outputs*/ res,
-                                                           /*indexing maps*/ maps,
-                                                           /*iterator types*/ iter_type, fn);
+                                                          /*inputs*/ tensor, /*outputs*/ res,
+                                                          /*indexing maps*/ maps,
+                                                          /*iterator types*/ iter_type, fn);
         return linalgOp.getResult(0);
     }
 
@@ -59,11 +59,10 @@ namespace voila::mlir::lowering
         // this should work as long as ieee 754 is supported and division by 0 is inf
         if (adaptor.indices() && op->getResultTypes().front().isa<TensorType>())
         {
-            auto sum = builder.create<SumOp>(
-                RankedTensorType::get(-1, builder.getF64Type()),
-                adaptor.input(), adaptor.indices(), adaptor.pred());
-            auto count = builder.create<CountOp>(RankedTensorType::get(-1, builder.getI64Type()),
-                                                                 adaptor.input(), adaptor.indices(), adaptor.pred());
+            auto sum = builder.create<SumOp>(RankedTensorType::get(-1, builder.getF64Type()), adaptor.input(),
+                                             adaptor.indices(), adaptor.pred());
+            auto count = builder.create<CountOp>(RankedTensorType::get(-1, builder.getI64Type()), adaptor.input(),
+                                                 adaptor.indices(), adaptor.pred());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())
@@ -83,21 +82,20 @@ namespace voila::mlir::lowering
             {
                 fltSum = sum;
             }
-            //TODO: replace with predicates
-            rewriter.replaceOpWithNewOp<DivOp>(op, RankedTensorType::get(-1, builder.getF64Type()),
-                                                              fltSum, fltCnt);
+            // TODO: replace with predicates
+            rewriter.replaceOpWithNewOp<DivOp>(op, RankedTensorType::get(-1, builder.getF64Type()), fltSum, fltCnt);
         }
         else
         {
-            auto sum = builder.create<SumOp>(getElementTypeOrSelf(adaptor.input()),
-                                                             adaptor.input(), adaptor.indices(), adaptor.pred());
+            auto sum = builder.create<SumOp>(getElementTypeOrSelf(adaptor.input()), adaptor.input(), adaptor.indices(),
+                                             adaptor.pred());
             auto count =
                 builder.create<CountOp>(builder.getI64Type(), adaptor.input(), adaptor.indices(), adaptor.pred());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())
             {
-                fltCnt = builder.create<SIToFPOp>(count, builder.getF64Type());
+                fltCnt = builder.create<SIToFPOp>(builder.getF64Type(), count);
             }
             else
             {
@@ -106,14 +104,14 @@ namespace voila::mlir::lowering
 
             if (!getElementTypeOrSelf(sum).isa<FloatType>())
             {
-                fltSum = builder.create<SIToFPOp>(sum, builder.getF64Type());
+                fltSum = builder.create<SIToFPOp>(builder.getF64Type(), sum);
             }
             else
             {
                 fltSum = sum;
             }
 
-            //TODO: replace with predicates
+            // TODO: replace with predicates
             rewriter.replaceOpWithNewOp<DivOp>(op, rewriter.getF64Type(), fltSum, fltCnt);
         }
         return success();

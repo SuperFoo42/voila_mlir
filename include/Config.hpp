@@ -26,7 +26,6 @@ namespace voila
         bool _async_parallel : 1;
         bool _gpu_parallel : 1;
         bool _openmp_parallel : 1;
-        bool _unroll : 1;
         bool _profile : 1;
         bool _plotAST : 1;
         bool _printMLIR : 1;
@@ -35,6 +34,7 @@ namespace voila
         int64_t _tile_size;
         int32_t _vector_size;
         int32_t _parallel_threads;
+        int64_t _unroll_factor;
         int32_t _ht_size_factor;
 
         std::string ASTOutFile;
@@ -56,7 +56,6 @@ namespace voila
                         bool cpu_parallel = true,
                         bool gpu_parallel = false,
                         bool openmp_parallel = false,
-                        bool unroll = true,
                         bool profile = true,
                         bool plotAst = true,
                         bool printMlir = true,
@@ -65,6 +64,7 @@ namespace voila
                         int64_t tileSize = -1,
                         int32_t vectorSize = 8,
                         int32_t parallelThreads = std::max<int32_t>(std::thread::hardware_concurrency(), 1),
+                            int32_t unrollFactor = 1,
                         int32_t htSizeFactor = -1,
                         std::string astOutFile = "",
                         std::string mlirOutFile = "",
@@ -79,7 +79,6 @@ namespace voila
         Config &vectorize_reductions(bool flag = true);
         Config &parallelize(bool flag = true);
         Config &parallelize_reductions(bool flag = true);
-        Config &unroll(bool flag = true);
         Config &profile(bool flag = true);
         Config &plot_ast(bool flag = true);
         Config &print_mlir(bool flag = true);
@@ -88,6 +87,7 @@ namespace voila
         Config &tile_size(int64_t tileSize = -1);
         Config &vector_size(int32_t vectorSize = 8);
         Config &parallel_threads(int32_t parallelThreads = std::thread::hardware_concurrency());
+        Config &unroll_factor(int32_t unrollFactor = 1);
         Config &ht_size_factor(int32_t htSizeFactor = -1);
         Config &ast_out_file(const std::string &astOutFile);
         Config &mlir_out_file(std::string mlirOutFile);
