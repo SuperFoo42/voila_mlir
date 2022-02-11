@@ -36,6 +36,7 @@ add_executable(tpc-benchmark
         TPCHBenchmark.cpp
         benchmark_main.cpp
         BenchmarkState.cpp
+        QueryGenerator.cpp
         )
 
 target_link_libraries(tpc-benchmark PRIVATE ${LIBS})
