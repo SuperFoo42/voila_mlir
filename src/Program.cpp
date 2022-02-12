@@ -359,21 +359,21 @@ namespace voila
         // pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
         if (config._optimize && config._tile)
         {
-            /*            auto tile_size = {config._tile_size == -1 ? max_in_table_size / config._parallel_threads :
+                        auto tile_size = {config._tile_size == -1 ? max_in_table_size / config._parallel_threads :
                                                         config._tile_size};
-            if (config._peel)
-            {
+//            if (config._peel)
+//            {
                 pm.addNestedPass<FuncOp>(createLinalgTilingPass(
                     tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}, {0}));
-            }
-            else
-            {
-                pm.addNestedPass<FuncOp>(createLinalgTilingPass(
-                    tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}));
-            }*/
-            pm.addNestedPass<FuncOp>(
+//            }
+//            else
+//            {
+//                pm.addNestedPass<FuncOp>(createLinalgTilingPass(
+//                    tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}));
+//            }
+           /* pm.addNestedPass<FuncOp>(
                 createLinalgStrategyTileAndFusePass(""
-                                                    /*,linalg::LinalgTilingAndFusionOptions{tile_size, {}}*/));
+                                                    *//*,linalg::LinalgTilingAndFusionOptions{tile_size, {}}*//*));*/
         }
 
         //  bufferization passes
@@ -808,8 +808,8 @@ namespace voila
 
         if (fst.is_open())
         {
-            lexer = std::make_unique<Lexer>(fst);        // read file, decode UTF-8/16/32 format
-            lexer->filename = source_path; // the filename to display with error locations
+            lexer = std::make_unique<Lexer>(fst); // read file, decode UTF-8/16/32 format
+            lexer->filename = source_path;        // the filename to display with error locations
 
             ::voila::parser::Parser parser(*lexer, *this);
             if (parser() != 0)

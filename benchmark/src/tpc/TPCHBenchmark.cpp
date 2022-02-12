@@ -10,7 +10,7 @@
 #pragma GCC diagnostic ignored "-Wsuggest-override"
 
 #include <benchmark/benchmark.h>
-
+#include <range/v3/all.hpp>
 #pragma GCC diagnostic pop
 
 extern std::unique_ptr<BenchmarkState> benchmarkState;
@@ -184,14 +184,11 @@ static void Q3(benchmark::State &state)
         .parallel_threads(state.range(THREAD_COUNT));
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q3.voila";
     Program prog(query, config);
-    double queryTime = 0;
     for ([[maybe_unused]] auto _ : state)
     {
         // qualification data
-        state.PauseTiming();
         int32_t segment = queryGenerator->getQ3CompressedSegment(*benchmarkState);
         int32_t date = queryGenerator->getQ3Date();
-        state.ResumeTiming();
         // voila calculations
 
         prog << l_orderkey;
@@ -208,9 +205,8 @@ static void Q3(benchmark::State &state)
         prog << &date;
 
         auto res = prog();
-        queryTime += prog.getExecTime();
+        state.SetIterationTime(prog.getExecTime() / 1000);
     }
-    state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
 }
 
 static void Q3_Baseline(benchmark::State &state)
@@ -401,19 +397,15 @@ static void Q6(benchmark::State &state)
 
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
 
-    double queryTime = 0;
-
     Program prog(query, config);
     for ([[maybe_unused]] auto _ : state)
     {
-        state.PauseTiming();
         auto startDate = queryGenerator->getQ6Date();
         auto endDate = startDate + 10000;
         auto quantity = queryGenerator->getQ6Quantity();
         auto discount = queryGenerator->getQ6Discount();
         auto minDiscount = discount - 0.01;
         auto maxDiscount = discount + 0.01;
-        state.ResumeTiming();
         prog << l_quantity;
         prog << l_discount;
         prog << l_shipdate;
@@ -426,10 +418,8 @@ static void Q6(benchmark::State &state)
 
         // run in jit
         auto res = prog();
-
-        queryTime += prog.getExecTime();
+        state.SetIterationTime(prog.getExecTime() / 1000);
     }
-    state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
 }
 
 static void Q6_Baseline(benchmark::State &state)
@@ -534,14 +524,10 @@ static void Q9(benchmark::State &state)
 
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q9.voila";
 
-    double queryTime = 0;
-
     Program prog(query, config);
     for ([[maybe_unused]] auto _ : state)
     {
-        state.PauseTiming();
         auto needle = queryGenerator->getQ9CompressedColor(*benchmarkState);
-        state.ResumeTiming();
         prog << n_name;
         prog << o_orderdate;
         prog << l_extendedprice;
@@ -563,9 +549,8 @@ static void Q9(benchmark::State &state)
 
         auto res = prog();
 
-        queryTime += prog.getExecTime();
+        state.SetIterationTime(prog.getExecTime() / 1000);
     }
-    state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
 }
 
 static void Q9_Baseline(benchmark::State &state)
@@ -887,7 +872,8 @@ static void Q9_Uncompressed(benchmark::State &state)
             const auto nation_idx = i.second;
             const auto order_idx =
                 part_lineitem_orders_supplier
-                    [part_lineitem_orders_supplier_partsupp[part_lineitem_orders_supplier_partsupp[i.first].first].first]
+                    [part_lineitem_orders_supplier_partsupp[part_lineitem_orders_supplier_partsupp[i.first].first]
+                         .first]
                         .first;
             const auto lineitem_idx =
                 part_lineitem_orders
@@ -900,8 +886,9 @@ static void Q9_Uncompressed(benchmark::State &state)
             const auto idx =
                 probeAndInsert(hash(DateReformatter::parseDate(o_orderdate[order_idx]) / 10000, n_name[nation_idx]),
                                n_name[nation_idx], o_orderdate[order_idx].substr(4), ht_n_name_ref, ht_o_orderdate_ref);
-            benchmark::DoNotOptimize(sum_disc_price_ref[idx] += l_extendedprice[lineitem_idx] * (1 - l_discount[lineitem_idx]) -
-                                       ps_supplycost[partsupp_idx] * l_quantity[lineitem_idx]);
+            benchmark::DoNotOptimize(sum_disc_price_ref[idx] +=
+                                     l_extendedprice[lineitem_idx] * (1 - l_discount[lineitem_idx]) -
+                                     ps_supplycost[partsupp_idx] * l_quantity[lineitem_idx]);
         }
     }
 }
@@ -945,13 +932,9 @@ static void Q18(benchmark::State &state)
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q18.voila";
     Program prog(query, config);
 
-    double queryTime = 0;
-
     for ([[maybe_unused]] auto _ : state)
     {
-        state.PauseTiming();
         auto quantity = queryGenerator->getQ18Quantity();
-        state.ResumeTiming();
         prog << c_name;
         prog << c_custkey;
         prog << o_orderkey;
@@ -964,9 +947,10 @@ static void Q18(benchmark::State &state)
 
         auto res = prog();
 
-        queryTime += prog.getExecTime();
+        state.SetIterationTime(prog.getExecTime() / 1000);
     }
-    state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
+
+    // state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
 }
 
 static void Q18_Baseline(benchmark::State &state)
@@ -1124,7 +1108,6 @@ static void Q18_Uncompressed(benchmark::State &state)
         std::vector<double> sum_l_quantity(htSizes, 0);
         std::vector<double> sum_l_quantity2(htSizes, 0);
 
-
         for (size_t i = 0; i < l_orderkey.size(); ++i)
         {
             const auto idx = probeAndInsert(hash(l_orderkey[i]), l_orderkey[i], ht_l_orderkey_ref);
@@ -1153,10 +1136,11 @@ static void Q18_Uncompressed(benchmark::State &state)
         {
             const auto l_idx = jt[el.first].first;
             const auto o_idx = jt[el.first].second;
-            const auto idx = probeAndInsert(
-                hash(c_name[el.second], c_custkey[el.second], o_orderkey[o_idx], o_orderdate[o_idx], o_totalprice[o_idx]),
-                c_name[el.second], c_custkey[el.second], o_orderkey[o_idx], o_orderdate[o_idx], o_totalprice[o_idx],
-                ht_c_name_ref, ht_c_custkey_ref, ht_o_orderkey_ref, ht_o_orderdate_ref, ht_o_totalprice_ref);
+            const auto idx = probeAndInsert(hash(c_name[el.second], c_custkey[el.second], o_orderkey[o_idx],
+                                                 o_orderdate[o_idx], o_totalprice[o_idx]),
+                                            c_name[el.second], c_custkey[el.second], o_orderkey[o_idx],
+                                            o_orderdate[o_idx], o_totalprice[o_idx], ht_c_name_ref, ht_c_custkey_ref,
+                                            ht_o_orderkey_ref, ht_o_orderdate_ref, ht_o_totalprice_ref);
             sum_l_quantity2[idx] += l_quantity[l_idx];
         }
     }
@@ -1164,53 +1148,480 @@ static void Q18_Uncompressed(benchmark::State &state)
 
 BENCHMARK(Q1)
     ->Unit(benchmark::kMillisecond)
+    ->UseManualTime()
     ->Iterations(10)
     ->ArgsProduct({/*thread count*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
                    /*tiling*/ benchmark::CreateDenseRange(0, 2, 1),
                    /*vectorize*/ benchmark::CreateRange(1, 32, 2),
                    /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)});
+                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)})
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[(tmp.size() / 4) * 3];
+                        });
 BENCHMARK(Q3)
     ->Unit(benchmark::kMillisecond)
+    ->UseManualTime()
     ->Iterations(10)
     ->ArgsProduct({/*thread count*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
                    /*tiling*/ benchmark::CreateDenseRange(0, 2, 1),
                    /*vectorize*/ benchmark::CreateRange(1, 32, 2),
                    /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)});
+                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)})
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[(tmp.size() / 4) * 3];
+                        });
 BENCHMARK(Q6)
     ->Unit(benchmark::kMillisecond)
+    ->UseManualTime()
     ->Iterations(10)
     ->ArgsProduct({/*thread count*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
                    /*tiling*/ benchmark::CreateDenseRange(0, 2, 1),
                    /*vectorize*/ benchmark::CreateRange(1, 32, 2),
                    /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)});
+                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)})
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[(tmp.size() / 4) * 3];
+                        });
 BENCHMARK(Q9)
     ->Unit(benchmark::kMillisecond)
+    ->UseManualTime()
     ->Iterations(10)
     ->ArgsProduct({/*thread count*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
                    /*tiling*/ benchmark::CreateDenseRange(0, 2, 1),
                    /*vectorize*/ benchmark::CreateRange(1, 32, 2),
                    /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)});
+                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)})
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[(tmp.size() / 4) * 3];
+                        });
 BENCHMARK(Q18)
     ->Unit(benchmark::kMillisecond)
+    ->UseManualTime()
     ->Iterations(10)
     ->ArgsProduct({/*thread count*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
                    /*tiling*/ benchmark::CreateDenseRange(0, 2, 1),
                    /*vectorize*/ benchmark::CreateRange(1, 32, 2),
                    /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)});
+                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)})
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[(tmp.size() / 4) * 3];
+                        });
 
-BENCHMARK(Q1_Baseline)->Unit(benchmark::kMillisecond)->Iterations(10);
-BENCHMARK(Q3_Baseline)->Unit(benchmark::kMillisecond)->Iterations(10);
-BENCHMARK(Q3_JoinCompressed)->Unit(benchmark::kMillisecond)->Iterations(10);
-BENCHMARK(Q3_Uncompressed)->Unit(benchmark::kMillisecond)->Iterations(10);
-BENCHMARK(Q6_Baseline)->Unit(benchmark::kMillisecond)->Iterations(10);
-BENCHMARK(Q9_Baseline)->Unit(benchmark::kMillisecond)->Iterations(10);
-BENCHMARK(Q9_Joins)->Unit(benchmark::kMillisecond)->Iterations(10);
-BENCHMARK(Q9_Uncompressed)->Unit(benchmark::kMillisecond)->Iterations(10);
-BENCHMARK(Q18_Baseline)->Unit(benchmark::kMillisecond)->Iterations(10);
-BENCHMARK(Q18_Joins)->Unit(benchmark::kMillisecond)->Iterations(10);
-BENCHMARK(Q18_Uncompressed)->Unit(benchmark::kMillisecond)->Iterations(10);
+BENCHMARK(Q1_Baseline)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(10)
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[(tmp.size() / 4) * 3];
+                        });
+BENCHMARK(Q3_Baseline)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(10)
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[(tmp.size() / 4) * 3];
+                        });
+BENCHMARK(Q3_JoinCompressed)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(10)
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[tmp.size() / 4 * 3];
+                        });
+BENCHMARK(Q3_Uncompressed)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(10)
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[tmp.size() / 4 * 3];
+                        });
+BENCHMARK(Q6_Baseline)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(10)
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[tmp.size() / 4 * 3];
+                        });
+BENCHMARK(Q9_Baseline)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(10)
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[tmp.size() / 4 * 3];
+                        });
+BENCHMARK(Q9_Joins)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(10)
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[tmp.size() / 4 * 3];
+                        });
+BENCHMARK(Q9_Uncompressed)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(10)
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[tmp.size() / 4 * 3];
+                        });
+BENCHMARK(Q18_Baseline)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(10)
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[tmp.size() / 4 * 3];
+                        });
+BENCHMARK(Q18_Joins)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(10)
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[tmp.size() / 4 * 3];
+                        });
+BENCHMARK(Q18_Uncompressed)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(10)
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[tmp.size() / 4 * 3];
+                        });
