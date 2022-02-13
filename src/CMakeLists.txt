@@ -62,7 +62,6 @@ target_link_libraries(voila_compiler
         magic_enum
         reflex
         voila_ast
-        voila_lowering
         reflex
         cxxopts
         spdlog

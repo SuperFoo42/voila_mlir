@@ -2,10 +2,6 @@
 
 #include "mlir/Analysis/SliceAnalysis.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/SCF/Utils/Utils.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
-#include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Builders.h"
@@ -42,122 +38,6 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
         return false;
     // The shape is required to match if both types are ranked.
     return !input.hasRank() || !output.hasRank() || input == output;
-}
-
-LogicalResult mlir::voila::SelectOp::canonicalize(mlir::voila::SelectOp op, PatternRewriter &rewriter)
-{
-   /* SmallVector<OpOperand> uses;
-    SmallVector<Value> toPredicate;
-
-    auto loc = op->getLoc();
-
-    //TODO: transitive traverse uses and look if we want to materialize this selection or use select
-
-    //TODO: otherwise, predicate direct uses
-
-    //TODO: do we even need this, if fusion works correctly?
-
-    for (auto &use : op->getUses())
-        uses.push_back(use);
-    while (!uses.empty())
-    {
-        OpOperand use = uses.pop_back_val();
-        auto *user = use.getOwner();
-        // test if replacement with select operation would produce unsafe results
-        if (isa<InsertOp>(user) || isa<HashOp>(user) || isa<ReadOp>(user) || isa<WriteOp>(user) ||
-            isa<LookupOp>(user) || isa<EqOp>(user) || isa<GeOp>(user) || isa<GeOp>(user) || isa<GeqOp>(user) ||
-            isa<LeOp>(user) || isa<LeqOp>(user) || isa<NeqOp>(user))
-        {
-            llvm::dyn_cast<PredicationOpInterface>(user).predicate(op.pred());
-            user->replaceUsesOfWith(use.get(), op.values());
-             //use.drop();
-            continue;
-        }
-        else if (isa<AddOp>(user))
-        {
-            //llvm::dyn_cast<PredicationOpInterface>(user).predicate(op.pred());
-            auto operands = user->getOperands();
-            operands[use.getOperandNumber()] = op.values();
-            rewriter.replaceOpWithNewOp<AddIOp>(user, operands);
-        }
-        else if (isa<AvgOp>(user) || isa<EmitOp>(user))
-        {
-            return failure();
-        }
-        else if (isa<SumOp>(user))
-        {
-            if (!dyn_cast<SumOp>(user).indices())
-                continue;
-            else
-                return failure();
-        }
-        else if (isa<CountOp>(user))
-        {
-            if (!dyn_cast<CountOp>(user).indices())
-                continue;
-            else
-                return failure();
-        }
-        else if (isa<MinOp>(user))
-        {
-            if (!dyn_cast<MinOp>(user).indices())
-                continue;
-            else
-                return failure();
-        }
-        else if (isa<MaxOp>(user))
-        {
-            if (!dyn_cast<MaxOp>(user).indices())
-                continue;
-            else
-                return failure();
-        }
-        for (auto &u : user->getUses())
-            uses.push_back(u);
-    }
-
-    if (!op->getUses().empty())
-    {
-        Value falseSel;
-        Value tmp;
-        if (op.values().getType().dyn_cast<TensorType>().hasStaticShape())
-        {
-            tmp = rewriter.create<linalg::InitTensorOp>(loc, op.values().getType().dyn_cast<TensorType>().getShape(),
-                                                        getElementTypeOrSelf(op.values()));
-        }
-        else
-        {
-            auto dimShape = rewriter.create<tensor::DimOp>(loc, op.values(), 0).result();
-            tmp = rewriter.create<linalg::InitTensorOp>(loc, ::llvm::makeArrayRef(dimShape),
-                                                        getElementTypeOrSelf(op.values()));
-        };
-
-        if (getElementTypeOrSelf(op.values()).isa<IntegerType>())
-        {
-            falseSel = rewriter
-                           .create<linalg::FillOp>(loc,
-                                                   rewriter.create<ConstantIntOp>(loc, std::numeric_limits<int64_t>::max(),
-                                                                                  rewriter.getI64Type()),
-                                                   tmp)
-                           .result();
-        }
-        else if (getElementTypeOrSelf(op.values()).isa<FloatType>())
-        {
-            falseSel = rewriter
-                           .create<linalg::FillOp>(loc,
-                                                   rewriter.create<ConstantFloatOp>(
-                                                       loc, rewriter.getF64FloatAttr(0).getValue(), rewriter.getF64Type()),
-                                                   tmp)
-                           .result();
-        }
-        else
-        {
-            throw std::logic_error("Invalid type"); // TODO
-        }
-        rewriter.replaceOpWithNewOp<::mlir::SelectOp>(op, op.pred(), op.values(), falseSel);
-    }*/
-
-    return failure();
 }
 
 void AddOp::predicate(Value pred)

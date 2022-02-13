@@ -44,6 +44,7 @@
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Passes/LinalgTiledLoopsToAffineForPass.hpp>
 #include <mlir/Passes/ParallelLoopToGpuMappingPass.hpp>
+#include <mlir/Passes/PredicationForwardingPass.hpp>
 #include <mlir/Passes/VoilaToAffineLoweringPass.hpp>
 #include <mlir/Passes/VoilaToLinalgLoweringPass.hpp>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
@@ -335,6 +336,7 @@ namespace voila
         // the operations.
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
+        pm.addNestedPass<FuncOp>(createPredicationForwardingPass());
 
         // Partially lower voila to linalg
         pm.addNestedPass<FuncOp>(createLowerToLinalgPass());
@@ -359,21 +361,23 @@ namespace voila
         // pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
         if (config._optimize && config._tile)
         {
-                        auto tile_size = {config._tile_size == -1 ? max_in_table_size / config._parallel_threads :
+            auto tile_size = {config._tile_size == -1 ? max_in_table_size / config._parallel_threads :
                                                         config._tile_size};
-//            if (config._peel)
-//            {
-                pm.addNestedPass<FuncOp>(createLinalgTilingPass(
-                    tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}, {0}));
-//            }
-//            else
-//            {
-//                pm.addNestedPass<FuncOp>(createLinalgTilingPass(
-//                    tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {"CyclicNumProcsEqNumIters"}));
-//            }
-           /* pm.addNestedPass<FuncOp>(
-                createLinalgStrategyTileAndFusePass(""
-                                                    *//*,linalg::LinalgTilingAndFusionOptions{tile_size, {}}*//*));*/
+            //            if (config._peel)
+            //            {
+            pm.addNestedPass<FuncOp>(
+                createLinalgTilingPass(tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops, {}, {0}));
+            //            }
+            //            else
+            //            {
+            //                pm.addNestedPass<FuncOp>(createLinalgTilingPass(
+            //                    tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops,
+            //                    {"CyclicNumProcsEqNumIters"}));
+            //            }
+            /*            pm.addNestedPass<FuncOp>(
+                            createLinalgStrategyTileAndFusePass(""
+                                                                ,linalg::LinalgTilingAndFusionOptions{tile_size,
+               {}}));*/
         }
 
         //  bufferization passes
