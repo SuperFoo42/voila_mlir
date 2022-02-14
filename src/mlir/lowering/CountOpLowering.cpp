@@ -2,7 +2,9 @@
 
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/ImplicitLocOpBuilder.h"
@@ -51,11 +53,35 @@ namespace voila::mlir::lowering
 
     static Value scalarCountLowering(CountOpAdaptor &countOpAdaptor, ImplicitLocOpBuilder &builder)
     {
-        auto cnt = builder.create<DimOp>(countOpAdaptor.input(), 0);
-        return builder.create<IndexCastOp>(builder.getI64Type(), cnt);
+        if (countOpAdaptor.pred())
+        {
+            Value start = builder.create<arith::ConstantOp>(DenseIntElementsAttr::get(
+                RankedTensorType::get({}, builder.getIndexType()), builder.getIndexAttr(0).getValue()));
+            SmallVector<AffineMap, 3> maps(1, builder.getDimIdentityMap());
+            SmallVector<AffineExpr, 1> srcExprs;
+            srcExprs.push_back(getAffineDimExpr(0, builder.getContext()));
+            SmallVector<AffineExpr, 1> dstExprs;
+            auto inferred = AffineMap::inferFromExprList({srcExprs, dstExprs});
+            return builder
+                .create<linalg::GenericOp>(start.getType(), countOpAdaptor.pred(), start, llvm::makeArrayRef(inferred),
+                                           getReductionIteratorTypeName(),
+                                           [](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
+                                           {
+                                               auto indexPred = nestedBuilder.create<arith::IndexCastOp>(
+                                                   loc, nestedBuilder.getIndexType(), vals.front());
+                                               Value res = nestedBuilder.create<AddIOp>(loc, indexPred, vals.back());
+                                               nestedBuilder.create<linalg::YieldOp>(loc, res);
+                                           })
+                ->getResult(0);
+        }
+        else
+        {
+            auto cnt = builder.create<DimOp>(countOpAdaptor.input(), 0);
+            return cnt;
+        }
     }
 
-    static Value groupedCountLowering(Operation *op, CountOpAdaptor &countOpAdaptor, ImplicitLocOpBuilder &rewriter)
+    static Value groupedCountLowering(CountOpAdaptor &countOpAdaptor, ImplicitLocOpBuilder &rewriter)
     {
         Value res;
         auto allocSize =
@@ -74,11 +100,30 @@ namespace voila::mlir::lowering
         {
             ImplicitLocOpBuilder builder(loc, nestedBuilder);
             auto idx = vals.front();
-            Value groupIdx = builder.create<tensor::ExtractOp>(countOpAdaptor.indices(), idx);
-            auto oldVal = builder.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
-            Value newVal = builder.create<AddIOp>(oldVal, builder.create<ConstantIntOp>(1, builder.getI64Type()));
+            if (countOpAdaptor.pred())
+            {
+                auto pred = builder.create<tensor::ExtractOp>(countOpAdaptor.pred(), idx);
+                builder.create<scf::IfOp>(
+                    pred,
+                    [&](OpBuilder &b, Location loc)
+                    {
+                        ImplicitLocOpBuilder nb(loc, b);
+                        Value groupIdx = builder.create<tensor::ExtractOp>(countOpAdaptor.indices(), idx);
+                        auto oldVal = builder.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+                        Value newVal =
+                            builder.create<AddIOp>(oldVal, builder.create<ConstantIntOp>(1, builder.getI64Type()));
 
-            builder.create<memref::StoreOp>(newVal, res, groupIdx);
+                        builder.create<memref::StoreOp>(newVal, res, groupIdx);
+                    });
+            }
+            else
+            {
+                Value groupIdx = builder.create<tensor::ExtractOp>(countOpAdaptor.indices(), idx);
+                auto oldVal = builder.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+                Value newVal = builder.create<AddIOp>(oldVal, builder.create<ConstantIntOp>(1, builder.getI64Type()));
+
+                builder.create<memref::StoreOp>(newVal, res, groupIdx);
+            }
         };
 
         buildAffineLoopNest(rewriter, rewriter.getLoc(),
@@ -99,7 +144,7 @@ namespace voila::mlir::lowering
 
         if (cntOpAdaptor.indices() && op->getResultTypes().front().isa<TensorType>())
         {
-            res = groupedCountLowering(op, cntOpAdaptor, builder);
+            res = groupedCountLowering(cntOpAdaptor, builder);
         }
         else
         {
