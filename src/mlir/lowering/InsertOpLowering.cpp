@@ -178,13 +178,13 @@ namespace voila::mlir::lowering
 
         // insert values in ht
         // we can not use affine loads here, as this would lead to comprehensive bufferize complain about RaW conflicts.
-        auto loopFunc = [&modSize, &hts, &hashInvalidConsts, &insertOpAdaptor](OpBuilder &nestedBuilder, Location loc,
-                                                                               ValueRange vals)
+        auto loopFunc =
+            [&modSize, &hts, &hashInvalidConsts, &insertOpAdaptor](ImplicitLocOpBuilder &builder, ValueRange vals)
         {
-            ImplicitLocOpBuilder builder(loc, nestedBuilder);
+            const auto loc = builder.getLoc();
             // load values
-            auto hashIdx = builder.create<IndexCastOp>(builder.getIndexType(),
-                builder.create<tensor::ExtractOp>(insertOpAdaptor.hashValues(), vals));
+            auto hashIdx = builder.create<IndexCastOp>(
+                builder.getIndexType(), builder.create<tensor::ExtractOp>(insertOpAdaptor.hashValues(), vals));
             Value correctedHashIdx = builder.create<AndIOp>(hashIdx, modSize);
 
             SmallVector<Value> toStores;
@@ -228,7 +228,25 @@ namespace voila::mlir::lowering
         };
 
         buildAffineLoopNest(builder, builder.getLoc(), lb,
-                            {builder.create<tensor::DimOp>(insertOpAdaptor.hashValues(), 0)}, {1}, loopFunc);
+                            {builder.create<tensor::DimOp>(insertOpAdaptor.hashValues(), 0)}, {1},
+                            [&](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
+                            {
+                                ImplicitLocOpBuilder builder(loc, nestedBuilder);
+                                if (insertOpAdaptor.pred())
+                                {
+                                    auto pred = builder.create<tensor::ExtractOp>(insertOpAdaptor.pred(), vals);
+                                    builder.create<scf::IfOp>(pred,
+                                                              [&](OpBuilder &b, Location loc)
+                                                              {
+                                                                  ImplicitLocOpBuilder nb(loc, b);
+                                                                  loopFunc(nb, vals);
+                                                              });
+                                }
+                                else
+                                {
+                                    loopFunc(builder, vals);
+                                }
+                            });
 
         SmallVector<Value> ret;
         for (const auto &ht : hts)
