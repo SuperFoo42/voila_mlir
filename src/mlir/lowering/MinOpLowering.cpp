@@ -3,6 +3,7 @@
 #include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/VoilaOps.h"
 
@@ -78,11 +79,27 @@ namespace voila::mlir::lowering
 
         auto fn = [](OpBuilder &builder, Location loc, ValueRange vals)
         {
+            Value input;
+            Value output = vals.back();
+            if (vals.size() == 3) // predication
+            {
+                if (input.getType().isa<FloatType>())
+                    input = builder.create<ConstantFloatOp>(
+                        loc, builder.getF64FloatAttr(std::numeric_limits<double>::max()).getValue(),
+                        builder.getF64Type());
+                else if (input.getType().isa<IntegerType>())
+                    input =
+                        builder.create<ConstantIntOp>(loc, std::numeric_limits<int64_t>::max(), builder.getI64Type());
+                else
+                    std::logic_error("Type not supported");
+            }
+            else
+                input = vals.front();
             ::mlir::Value minVal;
             if (vals.front().getType().isa<IntegerType>())
-                minVal = builder.create<MinSIOp>(loc, vals[0], vals[1]);
+                minVal = builder.create<MinSIOp>(loc, input, output);
             else
-                minVal = builder.create<MinFOp>(loc, vals[0], vals[1]);
+                minVal = builder.create<MinFOp>(loc, input, output);
 
             builder.create<linalg::YieldOp>(loc, minVal);
         };
@@ -145,17 +162,40 @@ namespace voila::mlir::lowering
         {
             ImplicitLocOpBuilder b(loc, builder);
             auto idx = vals.front();
-            auto toCmp = b.create<tensor::ExtractOp>(minOpAdaptor.input(), idx);
-            Value groupIdx = b.create<tensor::ExtractOp>(minOpAdaptor.indices(), idx);
-            auto oldVal = b.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+            if (minOpAdaptor.pred())
+            {
+                auto pred = b.create<tensor::ExtractOp>(minOpAdaptor.pred(), idx);
+                b.create<scf::IfOp>(pred,
+                                    [&](OpBuilder &b, Location loc)
+                                    {
+                                        ImplicitLocOpBuilder nb(loc, b);
+                                        auto toCmp = nb.create<tensor::ExtractOp>(minOpAdaptor.input(), idx);
+                                        Value groupIdx = nb.create<tensor::ExtractOp>(minOpAdaptor.indices(), idx);
+                                        auto oldVal = nb.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
 
-            ::mlir::Value minVal;
-            if (toCmp.getType().isa<IntegerType>())
-                minVal = b.create<MinSIOp>(toCmp, oldVal);
+                                        ::mlir::Value minVal;
+                                        if (toCmp.getType().isa<IntegerType>())
+                                            minVal = nb.create<MinSIOp>(toCmp, oldVal);
+                                        else
+                                            minVal = nb.create<MinFOp>(toCmp, oldVal);
+
+                                        nb.create<memref::StoreOp>(minVal, res, groupIdx);
+                                    });
+            }
             else
-                minVal = b.create<MinFOp>(toCmp, oldVal);
+            {
+                auto toCmp = b.create<tensor::ExtractOp>(minOpAdaptor.input(), idx);
+                Value groupIdx = b.create<tensor::ExtractOp>(minOpAdaptor.indices(), idx);
+                auto oldVal = b.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
 
-            b.create<memref::StoreOp>(minVal, res, groupIdx);
+                ::mlir::Value minVal;
+                if (toCmp.getType().isa<IntegerType>())
+                    minVal = b.create<MinSIOp>(toCmp, oldVal);
+                else
+                    minVal = b.create<MinFOp>(toCmp, oldVal);
+
+                b.create<memref::StoreOp>(minVal, res, groupIdx);
+            }
         };
 
         buildAffineLoopNest(builder, builder.getLoc(), ::llvm::makeArrayRef<Value>(builder.create<ConstantIndexOp>(0)),

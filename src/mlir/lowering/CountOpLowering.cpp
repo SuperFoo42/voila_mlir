@@ -5,7 +5,6 @@
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/VoilaOps.h"
@@ -108,12 +107,12 @@ namespace voila::mlir::lowering
                     [&](OpBuilder &b, Location loc)
                     {
                         ImplicitLocOpBuilder nb(loc, b);
-                        Value groupIdx = builder.create<tensor::ExtractOp>(countOpAdaptor.indices(), idx);
-                        auto oldVal = builder.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+                        Value groupIdx = nb.create<tensor::ExtractOp>(countOpAdaptor.indices(), idx);
+                        auto oldVal = nb.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
                         Value newVal =
-                            builder.create<AddIOp>(oldVal, builder.create<ConstantIntOp>(1, builder.getI64Type()));
+                            nb.create<AddIOp>(oldVal, nb.create<ConstantIntOp>(1, builder.getI64Type()));
 
-                        builder.create<memref::StoreOp>(newVal, res, groupIdx);
+                        nb.create<memref::StoreOp>(newVal, res, groupIdx);
                     });
             }
             else

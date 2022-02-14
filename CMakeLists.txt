@@ -4,14 +4,14 @@ project(voila_mlir LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 
 #Enable sanitizers globally
-set(DEBUG_BUILD -O0 -g -fsanitize=undefined -fsanitize=address -Wno-ambiguous-reversed-operator)
+set(DEBUG_BUILD -O0 -g #[[-fsanitize=undefined -fsanitize=address]] -Wno-ambiguous-reversed-operator)
 set(RELEASE_BUILD -O3 -g -march=native -Wno-ambiguous-reversed-operator)
 add_compile_options(
         "$<$<CONFIG:Debug>:${DEBUG_BUILD}>"
         "$<$<CONFIG:Release>:${RELEASE_BUILD}>")
 
 add_link_options(-fuse-ld=lld)
-add_link_options("$<$<CONFIG:DEBUG>:-fsanitize=address>")
+#add_link_options("$<$<CONFIG:DEBUG>:-fsanitize=address>")
 
 include(cmake/CPM.cmake)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
