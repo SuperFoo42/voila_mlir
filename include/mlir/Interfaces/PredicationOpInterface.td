@@ -10,7 +10,7 @@ def PredicationOpInterface : OpInterface<"PredicationOpInterface"> {
 
   let methods = [
     InterfaceMethod<"TODO","void", "predicate", (ins "Value":$pred)>,
-    InterfaceMethod<"TODO","bool", "predicated">,
+    InterfaceMethod<"TODO","::mlir::Value", "predicated">,
   ];
 }
 

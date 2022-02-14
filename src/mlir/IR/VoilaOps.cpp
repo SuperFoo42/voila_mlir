@@ -42,291 +42,243 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
 
 void AddOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool AddOp::predicated()
+Value AddOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void NeqOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool NeqOp::predicated()
+Value NeqOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void MulOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool MulOp::predicated()
+Value MulOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void ModOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool ModOp::predicated()
+Value ModOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void LeqOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool LeqOp::predicated()
+Value LeqOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void LeOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool LeOp::predicated()
+Value LeOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void GeqOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool GeqOp::predicated()
+Value GeqOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void GeOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool GeOp::predicated()
+Value GeOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void EqOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool EqOp::predicated()
+Value EqOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 
 void AndOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool AndOp::predicated()
+Value AndOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void SubOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool SubOp::predicated()
+Value SubOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void OrOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool OrOp::predicated()
+Value OrOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void NotOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool NotOp::predicated()
+Value NotOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void ScatterOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool ScatterOp::predicated()
+Value ScatterOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void ReadOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool ReadOp::predicated()
+Value ReadOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void MinOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool MinOp::predicated()
+Value MinOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void MaxOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool MaxOp::predicated()
+Value MaxOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void LookupOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool LookupOp::predicated()
+Value LookupOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void InsertOp::predicate(Value pred)
 {
-    if (predicated() && this->pred() != pred)
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool InsertOp::predicated()
+Value InsertOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void GatherOp::predicate(Value pred)
 {
-    if (predicated())
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool GatherOp::predicated()
+Value GatherOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void CountOp::predicate(Value pred)
 {
-    if (predicated())
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool CountOp::predicated()
+Value CountOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void AvgOp::predicate(Value pred)
 {
-    if (predicated())
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool AvgOp::predicated()
+Value AvgOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void WriteOp::predicate(Value pred)
 {
-    if (predicated())
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool WriteOp::predicated()
+Value WriteOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void SumOp::predicate(Value pred)
 {
-    if (predicated())
-        throw ::voila::NotImplementedException(); // TODO
     predMutable().assign(pred);
 }
 
-bool SumOp::predicated()
+Value SumOp::predicated()
 {
-    return pred() != Value();
+    return pred();
 }
 
 void SumOp::build(::mlir::OpBuilder &odsBuilder,

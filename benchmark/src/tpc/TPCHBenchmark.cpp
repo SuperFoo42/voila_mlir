@@ -38,7 +38,7 @@ static void Q1(benchmark::State &state)
     auto l_shipdate = benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_SHIPDATE>>(L_SHIPDATE);
 
     Config config;
-    config.optimize()
+/*    config.optimize()
         .debug(false)
         .tile(state.range(TILING) > 0)
         .peel(state.range(TILING) > 1)
@@ -48,15 +48,13 @@ static void Q1(benchmark::State &state)
         .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
         .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
         .unroll_factor(state.range(UNROLL_FACTOR))
-        .parallel_threads(state.range(THREAD_COUNT));
+        .parallel_threads(state.range(THREAD_COUNT));*/
+    config.debug(false).optimize().tile().async_parallel(false).openmp_parallel();
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q1.voila";
-    double queryTime = 0;
     Program prog(query, config);
     for ([[maybe_unused]] auto _ : state)
     {
-        state.PauseTiming();
         auto date = queryGenerator->getQ1Date();
-        state.ResumeTiming();
         prog << l_returnflag;
         prog << l_linestatus;
         prog << l_quantity;
@@ -68,32 +66,9 @@ static void Q1(benchmark::State &state)
 
         // run in jit
         auto res = prog();
-        // cleanup
-        state.PauseTiming();
-        /* for (auto &el : res)
-         {
-             switch (el.index())
-             {
-                 case 0 */
-        /*strided_memref_ptr<uint32_t, 1>*/ /*:
-    std::free(std::get<strided_memref_ptr<uint32_t, 1>>(el).get()->basePtr);
-    break;
-case 1 */
-        /*strided_memref_ptr<uint64_t, 1>*/ /*:
-    std::free(std::get<strided_memref_ptr<uint64_t, 1>>(el).get()->basePtr);
-    break;
-case 2 */
-        /*strided_memref_ptr<double, 1>*/   /*:
-      std::free(std::get<strided_memref_ptr<double, 1>>(el).get()->basePtr);
-      break;
-  default:
-      continue;
-}
-}*/
-        state.ResumeTiming();
-        queryTime += prog.getExecTime();
+
+        state.SetIterationTime(prog.getExecTime() / 1000);
     }
-    state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
 }
 
 static void Q1_Baseline(benchmark::State &state)
@@ -383,17 +358,18 @@ static void Q6(benchmark::State &state)
     auto l_discount = benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_DISCOUNT>>(L_DISCOUNT);
     auto l_shipdate = benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_SHIPDATE>>(L_SHIPDATE);
     Config config;
-    config.optimize()
+/*    config.optimize()
         .debug(false)
-        .tile(state.range(TILING) > 0)
-        .peel(state.range(TILING) > 1)
+        .tile()
+        .peel()
         .vectorize(state.range(VECTOR_SIZE) > 1)
         .vector_size(state.range(VECTOR_SIZE))
         .parallelize(state.range(THREAD_COUNT) > 1)
-        .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
-        .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
+        .async_parallel(state.range(THREAD_COUNT) > 1 && state.range(PARALLELIZE_TYPE) == 1)
+        .openmp_parallel(state.range(THREAD_COUNT) > 1 && state.range(PARALLELIZE_TYPE) == 2)
         .unroll_factor(state.range(UNROLL_FACTOR))
-        .parallel_threads(state.range(THREAD_COUNT));
+        .parallel_threads(state.range(THREAD_COUNT));*/
+    config.debug(false).optimize().tile().async_parallel(false).openmp_parallel();
 
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
 

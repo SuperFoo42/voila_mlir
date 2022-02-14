@@ -2,6 +2,7 @@
 
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/VoilaOps.h"
@@ -86,22 +87,42 @@ namespace voila::mlir::lowering
         auto fn = [](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
         {
             ImplicitLocOpBuilder builder(loc, nestedBuilder);
-            ::mlir::Value res;
-            if (vals.front().getType().isa<IntegerType>())
-                res = builder.create<AddIOp>(vals);
+            auto input = vals.front();
+            auto output = vals.back();
+            Value neutralElem;
+            if (input.getType().isa<FloatType>())
+                neutralElem =
+                    builder.create<ConstantFloatOp>(builder.getF64FloatAttr(0).getValue(), builder.getF64Type());
+            else if (input.getType().isa<IntegerType>())
+                neutralElem = builder.create<ConstantIntOp>(0, input.getType());
             else
-                res = builder.create<AddFOp>(vals);
+                throw std::logic_error("Not usable with type");
+            if (vals.size() == 3) // predicated
+            {
+                input = builder.create<arith::SelectOp>(vals[1], input, neutralElem);
+            }
+            ::mlir::Value res;
+            if (input.getType().isa<IntegerType>())
+                res = builder.create<AddIOp>(input, output);
+            else
+                res = builder.create<AddFOp>(input, output);
 
             builder.create<linalg::YieldOp>(res);
         };
 
-        SmallVector<AffineExpr, 2> srcExprs;
+        SmallVector<AffineMap, 3> maps(1, builder.getDimIdentityMap());
+        SmallVector<AffineExpr, 1> srcExprs;
         srcExprs.push_back(getAffineDimExpr(0, builder.getContext()));
-        SmallVector<AffineExpr, 2> dstExprs;
-        auto maps = AffineMap::inferFromExprList({srcExprs, dstExprs});
+        SmallVector<AffineExpr, 1> dstExprs;
+        auto inferred = AffineMap::inferFromExprList({srcExprs, dstExprs});
+        maps.insert(maps.end(), inferred.begin(), inferred.end());
+        SmallVector<Value, 2> inputs;
+        inputs.push_back(sumOpAdaptor.input());
+        if (sumOpAdaptor.pred())
+            inputs.push_back(sumOpAdaptor.pred());
 
         auto linalgOp = builder.create<linalg::GenericOp>(builder.getLoc(), /*results*/ res_type,
-                                                          /*inputs*/ sumOpAdaptor.input(), /*outputs*/ res,
+                                                          /*inputs*/ inputs, /*outputs*/ res,
                                                           /*indexing maps*/ maps,
                                                           /*iterator types*/ iter_type, fn);
 
@@ -149,26 +170,60 @@ namespace voila::mlir::lowering
         {
             ImplicitLocOpBuilder builder(loc, nestedBuilder);
             auto idx = vals.front();
-            auto toSum = builder.create<tensor::ExtractOp>(sumOpAdaptor.input(), idx);
-            Value groupIdx = builder.create<tensor::ExtractOp>(sumOpAdaptor.indices(), idx);
-            auto oldVal = builder.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
-            Value newVal;
-
-            if (toSum.getType().isa<IntegerType>())
+            if (sumOpAdaptor.pred())
             {
-                Value tmp = toSum;
-                if (toSum.getType() != builder.getI64Type())
-                {
-                    tmp = builder.create<ExtSIOp>(builder.getI64Type(), toSum);
-                }
-                newVal = builder.create<AddIOp>(oldVal, tmp);
+                auto pred = builder.create<tensor::ExtractOp>(sumOpAdaptor.pred(), idx);
+                builder.create<scf::IfOp>(pred,
+                                          [&](OpBuilder &b, Location loc)
+                                          {
+                                              ImplicitLocOpBuilder nb(loc, b);
+                                              auto toSum = nb.create<tensor::ExtractOp>(sumOpAdaptor.input(), idx);
+                                              Value groupIdx =
+                                                  nb.create<tensor::ExtractOp>(sumOpAdaptor.indices(), idx);
+                                              auto oldVal =
+                                                  nb.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+                                              Value newVal;
+
+                                              if (toSum.getType().isa<IntegerType>())
+                                              {
+                                                  Value tmp = toSum;
+                                                  if (toSum.getType() != nb.getI64Type())
+                                                  {
+                                                      tmp = nb.create<ExtSIOp>(nb.getI64Type(), toSum);
+                                                  }
+                                                  newVal = nb.create<AddIOp>(oldVal, tmp);
+                                              }
+                                              else
+                                              {
+                                                  newVal = nb.create<AddFOp>(oldVal, toSum);
+                                              }
+
+                                              nb.create<memref::StoreOp>(newVal, res, groupIdx);
+                                          });
             }
             else
             {
-                newVal = builder.create<AddFOp>(oldVal, toSum);
-            }
+                auto toSum = builder.create<tensor::ExtractOp>(sumOpAdaptor.input(), idx);
+                Value groupIdx = builder.create<tensor::ExtractOp>(sumOpAdaptor.indices(), idx);
+                auto oldVal = builder.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+                Value newVal;
 
-            builder.create<memref::StoreOp>(newVal, res, groupIdx);
+                if (toSum.getType().isa<IntegerType>())
+                {
+                    Value tmp = toSum;
+                    if (toSum.getType() != builder.getI64Type())
+                    {
+                        tmp = builder.create<ExtSIOp>(builder.getI64Type(), toSum);
+                    }
+                    newVal = builder.create<AddIOp>(oldVal, tmp);
+                }
+                else
+                {
+                    newVal = builder.create<AddFOp>(oldVal, toSum);
+                }
+
+                builder.create<memref::StoreOp>(newVal, res, groupIdx);
+            }
         };
 
         buildAffineLoopNest(builder, builder.getLoc(), ::llvm::makeArrayRef<Value>(builder.create<ConstantIndexOp>(0)),

@@ -336,7 +336,9 @@ namespace voila
         // the operations.
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
-        pm.addNestedPass<FuncOp>(createPredicationForwardingPass());
+        if (config._optimize)
+            pm.addNestedPass<FuncOp>(createPredicationForwardingPass());
+
 
         // Partially lower voila to linalg
         pm.addNestedPass<FuncOp>(createLowerToLinalgPass());
@@ -374,10 +376,12 @@ namespace voila
             //                    tile_size, ::mlir::linalg::LinalgTilingLoopType::TiledLoops,
             //                    {"CyclicNumProcsEqNumIters"}));
             //            }
-            /*            pm.addNestedPass<FuncOp>(
+
+/*            pm.addNestedPass<FuncOp>(
                             createLinalgStrategyTileAndFusePass(""
                                                                 ,linalg::LinalgTilingAndFusionOptions{tile_size,
                {}}));*/
+
         }
 
         //  bufferization passes
@@ -531,6 +535,7 @@ namespace voila
         pm.addPass(::mlir::createLowerToLLVMPass());
 
         pm.addPass(createReconcileUnrealizedCastsPass());
+
 
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));

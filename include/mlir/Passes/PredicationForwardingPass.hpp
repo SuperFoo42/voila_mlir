@@ -10,11 +10,16 @@ namespace voila::mlir
         class PredicationForwardingPass
             : public ::mlir::PassWrapper<PredicationForwardingPass, ::mlir::OperationPass<::mlir::FuncOp>>
         {
+            bool predicateBlockersOnly;
+
+          public:
+            explicit PredicationForwardingPass(bool blockersOnly) : predicateBlockersOnly(blockersOnly) {}
             [[nodiscard]] ::mlir::StringRef getArgument() const final;
             [[nodiscard]] ::mlir::StringRef getDescription() const final;
+
             void runOnOperation() override;
         };
     } // namespace lowering
 
-    std::unique_ptr<::mlir::Pass> createPredicationForwardingPass();
+    std::unique_ptr<::mlir::Pass> createPredicationForwardingPass(bool  predicateBlockersOnly= true);
 } // namespace voila::mlir
