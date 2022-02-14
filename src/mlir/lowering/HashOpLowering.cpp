@@ -2,6 +2,7 @@
 
 #include "NotImplementedException.hpp"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/IR/VoilaOps.h"
 
@@ -359,9 +360,8 @@ namespace voila::mlir::lowering
         return XXH3_avalanche(builder, acc);
     }
 
-    static auto hashFunc(OpBuilder &nestedBuilder, Location loc, ValueRange vals)
+    static auto hashFunc(ImplicitLocOpBuilder &builder, ValueRange vals)
     {
-        ImplicitLocOpBuilder builder(loc, nestedBuilder);
         SmallVector<Value> intVals;
         unsigned int size = 0;
         for (const auto &val : vals.drop_back())
@@ -407,7 +407,7 @@ namespace voila::mlir::lowering
             throw NotImplementedException("Hash func not implemented for size larger than 32 byte");
         }
 
-        builder.create<linalg::YieldOp>(res);
+        return res;
     };
 
     LogicalResult
@@ -445,12 +445,49 @@ namespace voila::mlir::lowering
 
         SmallVector<Type, 1> ret_type;
         ret_type.push_back(outTensor.getType());
-        SmallVector<AffineMap> indexing_maps(hashOpAdaptor.input().size() + 1, builder.getDimIdentityMap());
+        SmallVector<AffineMap> indexing_maps(hashOpAdaptor.input().size() + 1 + bool(hashOpAdaptor.pred()),
+                                             builder.getDimIdentityMap());
 
-        auto linalgOp = builder.create<linalg::GenericOp>(/*results*/ ret_type,
-                                                          /*inputs*/ hashOpAdaptor.input(), /*outputs*/ res,
-                                                          /*indexing maps*/ indexing_maps,
-                                                          /*iterator types*/ iter_type, hashFunc);
+        SmallVector<Value> inputs;
+        if (hashOpAdaptor.pred())
+            inputs.push_back(hashOpAdaptor.pred());
+        inputs.insert(inputs.end(), hashOpAdaptor.input().begin(), hashOpAdaptor.input().end());
+
+        auto linalgOp = builder.create<linalg::GenericOp>(
+            /*results*/ ret_type,
+            /*inputs*/ inputs, /*outputs*/ res,
+            /*indexing maps*/ indexing_maps,
+            /*iterator types*/ iter_type,
+            [&hashOpAdaptor](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
+            {
+                ImplicitLocOpBuilder builder(loc, nestedBuilder);
+
+                if (hashOpAdaptor.pred())
+                {
+                    auto pred = vals.take_front()[0];
+                    vals = vals.drop_front();
+                    auto res =
+                        builder
+                            .create<scf::IfOp>(
+                                builder.getI64Type(), pred,
+                                [&](OpBuilder &b, Location loc)
+                                {
+                                    ImplicitLocOpBuilder nb(loc, b);
+                                    auto res = hashFunc(nb, vals);
+                                    b.create<scf::YieldOp>(loc, res);
+                                },
+                                [&](OpBuilder &b, Location loc) {
+                                    b.create<scf::YieldOp>(loc, llvm::makeArrayRef<Value>(
+                                                                    b.create<ConstantIntOp>(loc, 0, b.getI64Type())));
+                                })
+                            ->getResults();
+                    builder.create<linalg::YieldOp>(res);
+                }
+                else
+                {
+                    builder.create<linalg::YieldOp>(hashFunc(builder, vals));
+                }
+            });
 
         rewriter.replaceOp(op, linalgOp->getResults());
         return success();

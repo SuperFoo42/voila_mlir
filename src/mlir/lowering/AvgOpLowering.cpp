@@ -82,7 +82,7 @@ namespace voila::mlir::lowering
             {
                 fltSum = sum;
             }
-            // TODO: replace with predicates
+
             rewriter.replaceOpWithNewOp<DivOp>(op, RankedTensorType::get(-1, builder.getF64Type()), fltSum, fltCnt);
         }
         else
@@ -111,7 +111,6 @@ namespace voila::mlir::lowering
                 fltSum = sum;
             }
 
-            // TODO: replace with predicates
             rewriter.replaceOpWithNewOp<DivOp>(op, rewriter.getF64Type(), fltSum, fltCnt);
         }
         return success();

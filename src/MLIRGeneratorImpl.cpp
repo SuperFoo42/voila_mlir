@@ -275,7 +275,7 @@ namespace voila::mlir
         auto rhs = visitor_gen(add.rhs);
         auto resType = getTypes(add);
         assert(resType.size() == 1);
-        result = builder.create<AddOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs), Value());
+        result = builder.create<AddOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Sub &sub)
@@ -285,7 +285,7 @@ namespace voila::mlir
         auto rhs = visitor_gen(sub.rhs);
         auto resType = getTypes(sub);
         assert(resType.size() == 1);
-        result = builder.create<SubOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs), Value());
+        result = builder.create<SubOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Mul &mul)
@@ -295,7 +295,7 @@ namespace voila::mlir
         auto rhs = visitor_gen(mul.rhs);
         auto resType = getTypes(mul);
         assert(resType.size() == 1);
-        result = builder.create<MulOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs), Value());
+        result = builder.create<MulOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Div &div)
@@ -316,7 +316,7 @@ namespace voila::mlir
         auto rhs = visitor_gen(mod.rhs);
         auto resType = getTypes(mod);
         assert(resType.size() == 1);
-        result = builder.create<ModOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs), Value());
+        result = builder.create<ModOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
     void MLIRGeneratorImpl::operator()(const Eq &eq)
@@ -360,10 +360,10 @@ namespace voila::mlir
             shape = getShape(lhs, rhs);
 
             result = builder.create<AndOp>(location, ::mlir::RankedTensorType::get(shape, builder.getI1Type()), lhs,
-                                           rhs, Value());
+                                           rhs);
         }
         else
-            result = builder.create<AndOp>(location, builder.getI1Type(), lhs, rhs, Value());
+            result = builder.create<AndOp>(location, builder.getI1Type(), lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Or &anOr)
@@ -372,7 +372,7 @@ namespace voila::mlir
         auto lhs = std::get<Value>(visitor_gen(anOr.lhs));
         auto rhs = std::get<Value>(visitor_gen(anOr.rhs));
         result =
-            builder.create<OrOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()), lhs, rhs, Value());
+            builder.create<OrOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()), lhs, rhs);
     }
 
     void MLIRGeneratorImpl::operator()(const Not &aNot)
@@ -388,9 +388,7 @@ namespace voila::mlir
     {
         auto location = loc(hash.get_location());
         auto params = std::get<SmallVector<Value>>(visitor_gen(hash.items));
-        auto retType = ::mlir::RankedTensorType::get(params.front().getType().dyn_cast<ShapedType>().getShape(),
-                                                     builder.getI64Type());
-        result = builder.create<HashOp>(location, retType, params);
+        result = builder.create<HashOp>(location, params);
     }
 
     void MLIRGeneratorImpl::operator()(const IntConst &intConst)

@@ -1,5 +1,6 @@
 #include "mlir/IR/VoilaOps.h"
 
+#include "NotImplementedException.hpp"
 #include "mlir/Analysis/SliceAnalysis.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
@@ -7,7 +8,6 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
-#include "NotImplementedException.hpp"
 #define GET_OP_CLASSES
 #include "mlir/IR/VoilaOps.cpp.inc"
 using namespace ::mlir;
@@ -40,133 +40,12 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
     return !input.hasRank() || !output.hasRank() || input == output;
 }
 
-void AddOp::predicate(Value pred)
+void HashOp::predicate(Value pred)
 {
     predMutable().assign(pred);
 }
 
-Value AddOp::predicated()
-{
-    return pred();
-}
-
-void NeqOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value NeqOp::predicated()
-{
-    return pred();
-}
-
-void MulOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value MulOp::predicated()
-{
-    return pred();
-}
-
-void ModOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value ModOp::predicated()
-{
-    return pred();
-}
-
-void LeqOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value LeqOp::predicated()
-{
-    return pred();
-}
-
-void LeOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value LeOp::predicated()
-{
-    return pred();
-}
-
-void GeqOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value GeqOp::predicated()
-{
-    return pred();
-}
-
-void GeOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value GeOp::predicated()
-{
-    return pred();
-}
-
-void EqOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value EqOp::predicated()
-{
-    return pred();
-}
-
-
-void AndOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value AndOp::predicated()
-{
-    return pred();
-}
-
-void SubOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value SubOp::predicated()
-{
-    return pred();
-}
-
-void OrOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value OrOp::predicated()
-{
-    return pred();
-}
-
-void NotOp::predicate(Value pred)
-{
-    predMutable().assign(pred);
-}
-
-Value NotOp::predicated()
+Value HashOp::predicated()
 {
     return pred();
 }
@@ -482,16 +361,57 @@ void MaxOp::build(::mlir::OpBuilder &odsBuilder,
 }
 
 void CountOp::build(::mlir::OpBuilder &odsBuilder,
-                  ::mlir::OperationState &odsState,
-                  Value input,
-                  Value indices,
-                  Value pred)
+                    ::mlir::OperationState &odsState,
+                    Value input,
+                    Value indices,
+                    Value pred)
 {
     // TODO: correct return type (tensor if indices)
     CountOp::build(odsBuilder, odsState, odsBuilder.getF64Type(), input, indices, pred);
 }
 
 void CountOp::build(::mlir::OpBuilder &odsBuilder,
+                    ::mlir::OperationState &odsState,
+                    Type resType,
+                    Value input,
+                    Value indices,
+                    Value pred)
+{
+    llvm::SmallVector<int32_t, 3> sizes(1, 1);
+    odsState.addOperands(input);
+    if (indices)
+    {
+        odsState.addOperands(indices);
+        sizes.push_back(1);
+    }
+    else
+    {
+        sizes.push_back(0);
+    }
+    if (pred)
+    {
+        odsState.addOperands(pred);
+        sizes.push_back(1);
+    }
+    else
+    {
+        sizes.push_back(0);
+    }
+    odsState.addTypes(resType);
+    odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
+}
+
+void AvgOp::build(::mlir::OpBuilder &odsBuilder,
+                  ::mlir::OperationState &odsState,
+                  Value input,
+                  Value indices,
+                  Value pred)
+{
+    // TODO: correct return type (tensor if indices)
+    AvgOp::build(odsBuilder, odsState, odsBuilder.getF64Type(), input, indices, pred);
+}
+
+void AvgOp::build(::mlir::OpBuilder &odsBuilder,
                   ::mlir::OperationState &odsState,
                   Type resType,
                   Value input,
@@ -521,36 +441,11 @@ void CountOp::build(::mlir::OpBuilder &odsBuilder,
     odsState.addTypes(resType);
     odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
 }
-
-
-void AvgOp::build(::mlir::OpBuilder &odsBuilder,
-                    ::mlir::OperationState &odsState,
-                    Value input,
-                    Value indices,
-                    Value pred)
+void HashOp::build(::mlir::OpBuilder &odsBuilder, ::mlir::OperationState &odsState, ValueRange inputs, Value pred)
 {
-    // TODO: correct return type (tensor if indices)
-    AvgOp::build(odsBuilder, odsState, odsBuilder.getF64Type(), input, indices, pred);
-}
+    llvm::SmallVector<int32_t, 2> sizes(1, inputs.size());
+    odsState.addOperands(inputs);
 
-void AvgOp::build(::mlir::OpBuilder &odsBuilder,
-                    ::mlir::OperationState &odsState,
-                    Type resType,
-                    Value input,
-                    Value indices,
-                    Value pred)
-{
-    llvm::SmallVector<int32_t, 3> sizes(1, 1);
-    odsState.addOperands(input);
-    if (indices)
-    {
-        odsState.addOperands(indices);
-        sizes.push_back(1);
-    }
-    else
-    {
-        sizes.push_back(0);
-    }
     if (pred)
     {
         odsState.addOperands(pred);
@@ -560,6 +455,6 @@ void AvgOp::build(::mlir::OpBuilder &odsBuilder,
     {
         sizes.push_back(0);
     }
-    odsState.addTypes(resType);
+    odsState.addTypes(odsBuilder.getI64Type());
     odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
 }

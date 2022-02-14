@@ -33,8 +33,13 @@ namespace voila::mlir
                     {
                         return failure();
                     }
+                    else if (isa<InsertOp>(user) || isa<HashOp>(user))
+                    {
+                        toPredicate.push_back(user);
+                    }
                     else if (isa<AvgOp>(user) || isa<SumOp>(user) || isa<CountOp>(user) || isa<MinOp>(user) ||
-                             isa<MaxOp>(user) || isa<InsertOp>(user) || isa<HashOp>(user) || isa<LookupOp>(user))
+                             isa<MaxOp>(user) || isa<LookupOp>(user) ||
+                             isa<GatherOp>(user) || isa<ScatterOp>(user))
                     {
                         toPredicate.push_back(user);
                         continue;
@@ -70,7 +75,7 @@ namespace voila::mlir
             }
         };
 
-        //Do we want a second version? And what should it do?
+        // Do we want a second version? And what should it do?
         class PredicationForwardingPattern : public OpRewritePattern<::mlir::voila::SelectOp>
         {
             using OpRewritePattern<::mlir::voila::SelectOp>::OpRewritePattern;
