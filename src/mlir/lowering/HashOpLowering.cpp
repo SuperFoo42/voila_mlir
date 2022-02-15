@@ -426,9 +426,10 @@ namespace voila::mlir::lowering
         }
 
         ::mlir::Value outTensor;
-        if (hashOpAdaptor.input().getType().front().dyn_cast<TensorType>().hasStaticShape())
+        if (hOp.getResult().getType().dyn_cast<ShapedType>().hasStaticShape())
         {
-            outTensor = builder.create<linalg::InitTensorOp>(shape, builder.getI64Type());
+            outTensor = builder.create<linalg::InitTensorOp>(
+                hOp.getResult().getType().dyn_cast<ShapedType>().getShape(), builder.getI64Type());
         }
         else
         {

@@ -33,13 +33,9 @@ namespace voila::mlir
                     {
                         return failure();
                     }
-                    else if (isa<InsertOp>(user) || isa<HashOp>(user))
-                    {
-                        toPredicate.push_back(user);
-                    }
                     else if (isa<AvgOp>(user) || isa<SumOp>(user) || isa<CountOp>(user) || isa<MinOp>(user) ||
-                             isa<MaxOp>(user) || isa<LookupOp>(user) ||
-                             isa<GatherOp>(user) || isa<ScatterOp>(user))
+                             isa<MaxOp>(user) || isa<LookupOp>(user) ||isa<InsertOp>(user) || isa<HashOp>(user)) // TODO: gather and scatter, but the semantic of
+                                                                      // predication seems unclear at this point
                     {
                         toPredicate.push_back(user);
                         continue;

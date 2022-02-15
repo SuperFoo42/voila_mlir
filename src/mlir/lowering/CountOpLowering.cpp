@@ -113,6 +113,7 @@ namespace voila::mlir::lowering
                             nb.create<AddIOp>(oldVal, nb.create<ConstantIntOp>(1, builder.getI64Type()));
 
                         nb.create<memref::StoreOp>(newVal, res, groupIdx);
+                        nb.create<scf::YieldOp>();
                     });
             }
             else

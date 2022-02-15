@@ -198,6 +198,7 @@ namespace voila::mlir::lowering
                                               }
 
                                               nb.create<memref::StoreOp>(newVal, res, groupIdx);
+                                              nb.create<scf::YieldOp>();
                                           });
             }
             else

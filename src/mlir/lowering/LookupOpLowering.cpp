@@ -98,13 +98,6 @@ namespace voila::mlir::lowering
         LookupOpAdaptor lookupOpAdaptor(lOop);
         auto loc = op->getLoc();
 
-        Value outTensor = rewriter.create<linalg::InitTensorOp>(
-            loc,
-            lookupOpAdaptor.hashes().getType().dyn_cast<TensorType>().hasStaticShape() ?
-                ValueRange() :
-                llvm::makeArrayRef<Value>(rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashes(), 0)),
-            lookupOpAdaptor.hashes().getType().dyn_cast<TensorType>().getShape(), rewriter.getIndexType());
-
         auto htSizes = rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashtables().front(), 0);
         auto modSize = rewriter.create<SubIOp>(loc, htSizes, rewriter.create<ConstantIndexOp>(loc, 1));
 
@@ -174,18 +167,105 @@ namespace voila::mlir::lowering
             builder.create<linalg::YieldOp>(loc, res);
         };
 
-        llvm::SmallVector<AffineMap> indexing_maps(/*hashes+outTensor*/ 2 + lookupOpAdaptor.values().size(),
-                                                   rewriter.getDimIdentityMap());
         llvm::SmallVector<Value> inputs(1, lookupOpAdaptor.hashes());
         inputs.append(lookupOpAdaptor.values().begin(), lookupOpAdaptor.values().end());
-        auto linalgOp = rewriter.create<linalg::GenericOp>(
-            loc, /*results*/ llvm::makeArrayRef(outTensor.getType()),
-            /*inputs*/ inputs,
-            /*outputs*/ llvm::makeArrayRef(outTensor),
-            /*indexing maps*/ indexing_maps,
-            /*iterator types*/ llvm::makeArrayRef(getParallelIteratorTypeName()), lookupFunc);
+        if (lookupOpAdaptor.pred())
+        {
+            Value outMemref = rewriter.create<memref::AllocOp>(
+                loc,
+                MemRefType::get(lookupOpAdaptor.hashes().getType().dyn_cast<TensorType>().getShape(),
+                                rewriter.getIndexType()),
+                lookupOpAdaptor.hashes().getType().dyn_cast<TensorType>().hasStaticShape() ?
+                    ValueRange() :
+                    llvm::makeArrayRef<Value>(rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashes(), 0)));
+            buildAffineLoopNest(
+                rewriter, loc, llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),
+                rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashes(), 0).result(),
+                llvm::makeArrayRef<int64_t>(1),
+                [&](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
+                {
+                    ImplicitLocOpBuilder builder(loc, nestedBuilder);
+                    auto pred = builder.create<tensor::ExtractOp>(lookupOpAdaptor.pred(), vals);
+                    builder.create<scf::IfOp>(
+                        pred,
+                        [&](OpBuilder &b, Location loc)
+                        {
+                            ImplicitLocOpBuilder nb(loc, b);
+                            auto hashVal = nb.create<tensor::ExtractOp>(lookupOpAdaptor.hashes(), vals);
+                            SmallVector<Value, 6> values;
+                            for (auto v : lookupOpAdaptor.values())
+                            {
+                                values.push_back(nb.create<tensor::ExtractOp>(v, vals));
+                            }
+                            // probing
+                            Value idx = nb.create<AndIOp>(nb.create<IndexCastOp>(nb.getIndexType(), hashVal), modSize);
+                            // probing with do while
+                            // Maybe we should keep track of the max probing count during generation and iterate only so
+                            // many times
+                            auto loop = nb.create<scf::WhileOp>(nb.getIndexType(), idx);
+                            // condition
 
-        rewriter.replaceOp(op, linalgOp->getResults());
+                            auto beforeBlock = nb.createBlock(&loop.getBefore());
+                            beforeBlock->addArgument(loop->getOperands().front().getType(), loc);
+                            auto condBuilder = ImplicitLocOpBuilder(loc, OpBuilder::atBlockEnd(beforeBlock));
+                            Value probeIdx = beforeBlock->getArgument(0);
+
+                            // lookup entries
+                            auto comparison = createKeyComparisons(condBuilder, lookupOpAdaptor.hashtables(),
+                                                                   hashInvalidConsts, values, probeIdx);
+                            condBuilder.create<scf::ConditionOp>(comparison, probeIdx);
+
+                            // body
+                            auto afterBlock = nb.createBlock(&loop.getAfter());
+                            afterBlock->addArgument(loop->getOperands().front().getType(), loc);
+                            auto bodyBuilder = OpBuilder::atBlockEnd(afterBlock);
+                            Value inc = bodyBuilder.create<AndIOp>(
+                                loc,
+                                bodyBuilder.create<AddIOp>(loc, afterBlock->getArgument(0),
+                                                           nb.create<ConstantIndexOp>(loc, 1)),
+                                modSize);
+                            bodyBuilder.create<scf::YieldOp>(loc, llvm::makeArrayRef(inc));
+                            nb.setInsertionPointAfter(loop);
+                            // check index empty
+
+                            Value resIdx = loop->getResults().front();
+                            SmallVector<Value> bucketVals;
+                            for (auto ht : lookupOpAdaptor.hashtables())
+                            {
+                                bucketVals.push_back(nb.create<tensor::ExtractOp>(ht, resIdx));
+                            }
+                            auto notEmpty = anyNotEmpty(nb, hashInvalidConsts, bucketVals);
+
+                            Value res =
+                                nb.create<SelectOp>(loc, notEmpty, resIdx,
+                                                    nb.create<ConstantIndexOp>(std::numeric_limits<uint64_t>::max()));
+                            // store result
+                            nb.create<AffineStoreOp>(loc, res, outMemref, vals);
+                            nb.create<scf::YieldOp>();
+                        });
+                });
+            rewriter.replaceOpWithNewOp<ToTensorOp>(op, outMemref);
+        }
+        else
+        {
+            Value outTensor = rewriter.create<linalg::InitTensorOp>(
+                loc,
+                lookupOpAdaptor.hashes().getType().dyn_cast<TensorType>().hasStaticShape() ?
+                    ValueRange() :
+                    llvm::makeArrayRef<Value>(rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashes(), 0)),
+                lookupOpAdaptor.hashes().getType().dyn_cast<TensorType>().getShape(), rewriter.getIndexType());
+
+            llvm::SmallVector<AffineMap> indexing_maps(/*hashes+outTensor*/ 2 + lookupOpAdaptor.values().size(),
+                                                       rewriter.getDimIdentityMap());
+            auto linalgOp = rewriter.create<linalg::GenericOp>(
+                loc, /*results*/ llvm::makeArrayRef(outTensor.getType()),
+                /*inputs*/ inputs,
+                /*outputs*/ llvm::makeArrayRef(outTensor),
+                /*indexing maps*/ indexing_maps,
+                /*iterator types*/ llvm::makeArrayRef(getParallelIteratorTypeName()), lookupFunc);
+            rewriter.replaceOp(op, linalgOp->getResults());
+        }
+
         return success();
     }
 

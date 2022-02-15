@@ -177,6 +177,7 @@ namespace voila::mlir::lowering
                                             maxVal = nb.create<MaxFOp>(toCmp, oldVal);
 
                                         nb.create<memref::StoreOp>(maxVal, res, groupIdx);
+                                        nb.create<scf::YieldOp>();
                                     });
             }
             else

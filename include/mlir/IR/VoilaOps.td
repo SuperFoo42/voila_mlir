@@ -588,7 +588,8 @@ let results = (outs I64Tensor:$output);
 
 let skipDefaultBuilders = 1;
  let builders = [
-    OpBuilder<(ins "ValueRange":$hashValues,
+    OpBuilder<(ins "Type":$retType,
+            "ValueRange":$hashValues,
       CArg<"Value", "{}">:$pred)>
   ];
 }

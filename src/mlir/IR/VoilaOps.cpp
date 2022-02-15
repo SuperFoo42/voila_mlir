@@ -441,7 +441,7 @@ void AvgOp::build(::mlir::OpBuilder &odsBuilder,
     odsState.addTypes(resType);
     odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
 }
-void HashOp::build(::mlir::OpBuilder &odsBuilder, ::mlir::OperationState &odsState, ValueRange inputs, Value pred)
+void HashOp::build(::mlir::OpBuilder &odsBuilder, ::mlir::OperationState &odsState, Type retType, ValueRange inputs, Value pred)
 {
     llvm::SmallVector<int32_t, 2> sizes(1, inputs.size());
     odsState.addOperands(inputs);
@@ -455,6 +455,6 @@ void HashOp::build(::mlir::OpBuilder &odsBuilder, ::mlir::OperationState &odsSta
     {
         sizes.push_back(0);
     }
-    odsState.addTypes(odsBuilder.getI64Type());
+    odsState.addTypes(retType);
     odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
 }

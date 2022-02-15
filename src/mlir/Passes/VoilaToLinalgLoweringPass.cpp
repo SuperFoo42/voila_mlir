@@ -1,5 +1,6 @@
 #include "mlir/Passes/VoilaToLinalgLoweringPass.hpp"
 
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/VoilaDialect.h"
@@ -7,12 +8,11 @@
 #include "mlir/lowering/ArithmeticOpLowering.hpp"
 #include "mlir/lowering/ComparisonOpLowering.hpp"
 #include "mlir/lowering/ConstOpLowering.hpp"
+#include "mlir/lowering/GatherOpLowering.hpp"
 #include "mlir/lowering/HashOpLowering.hpp"
 #include "mlir/lowering/LogicalOpLowering.hpp"
 #include "mlir/lowering/LookupOpLowering.hpp"
 #include "mlir/lowering/NotOpLowering.hpp"
-#include "mlir/lowering/GatherOpLowering.hpp"
-
 namespace voila::mlir
 {
     using namespace ::mlir;
@@ -36,7 +36,7 @@ namespace voila::mlir
             // this lowering.
             target.addLegalDialect<BuiltinDialect, AffineDialect, memref::MemRefDialect, StandardOpsDialect,
                                    linalg::LinalgDialect, tensor::TensorDialect, scf::SCFDialect, vector::VectorDialect,
-                                   arith::ArithmeticDialect>();
+                                   arith::ArithmeticDialect, bufferization::BufferizationDialect>();
 
             // We also define the dialect as Illegal so that the conversion will fail
             // if any of these operations are *not* converted. Given that we actually want
@@ -51,7 +51,7 @@ namespace voila::mlir
             patterns.add<AndOpLowering, OrOpLowering, NotOpLowering, AddOpLowering, SubOpLowering, MulOpLowering,
                          DivOpLowering, ModOpLowering, EqOpLowering, NeqOpLowering, LeOpLowering, LeqOpLowering,
                          GeOpLowering, GeqOpLowering, HashOpLowering, LookupOpLowering, BoolConstOpLowering,
-                         IntConstOpLowering, FltConstOpLowering,GatherOpLowering>(&getContext());
+                         IntConstOpLowering, FltConstOpLowering, GatherOpLowering>(&getContext());
 
             // With the target and rewrite patterns defined, we can now attempt the
             // conversion. The conversion will signal failure if any of our `illegal`

@@ -388,7 +388,9 @@ namespace voila::mlir
     {
         auto location = loc(hash.get_location());
         auto params = std::get<SmallVector<Value>>(visitor_gen(hash.items));
-        result = builder.create<HashOp>(location, params);
+        auto retType = ::mlir::RankedTensorType::get(params.front().getType().dyn_cast<ShapedType>().getShape(),
+                                                     builder.getI64Type());
+        result = builder.create<HashOp>(location, retType, params);
     }
 
     void MLIRGeneratorImpl::operator()(const IntConst &intConst)

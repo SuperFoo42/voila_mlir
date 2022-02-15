@@ -228,7 +228,7 @@ namespace voila::mlir::lowering
         };
 
         buildAffineLoopNest(builder, builder.getLoc(), lb,
-                            {builder.create<tensor::DimOp>(insertOpAdaptor.hashValues(), 0)}, {1},
+                            builder.create<tensor::DimOp>(insertOpAdaptor.hashValues(), 0).result(), {1},
                             [&](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
                             {
                                 ImplicitLocOpBuilder builder(loc, nestedBuilder);
@@ -240,6 +240,7 @@ namespace voila::mlir::lowering
                                                               {
                                                                   ImplicitLocOpBuilder nb(loc, b);
                                                                   loopFunc(nb, vals);
+                                                                  nb.create<scf::YieldOp>();
                                                               });
                                 }
                                 else

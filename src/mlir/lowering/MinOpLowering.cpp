@@ -180,6 +180,7 @@ namespace voila::mlir::lowering
                                             minVal = nb.create<MinFOp>(toCmp, oldVal);
 
                                         nb.create<memref::StoreOp>(minVal, res, groupIdx);
+                                        nb.create<scf::YieldOp>();
                                     });
             }
             else
