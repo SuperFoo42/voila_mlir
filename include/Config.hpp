@@ -18,7 +18,7 @@ namespace voila
         bool _optimize : 1;
         bool _fuse : 1;
         bool _tile : 1;
-        bool _peel : 1;
+        bool _optimize_selections : 1;
         bool _vectorize : 1;
         bool _vectorize_reductions : 1;
         bool _parallelize : 1;
@@ -48,7 +48,7 @@ namespace voila
                         bool optimize = true,
                         bool fuse = true,
                         bool tile = true,
-                        bool peel = true,
+                        bool optimize_selections = true,
                         bool vectorize = true,
                         bool vectorizeReductions = true,
                         bool parallelize = true,
@@ -74,7 +74,7 @@ namespace voila
         Config &optimize(bool flag = true);
         Config &fuse(bool flag = true);
         Config &tile(bool flag = true);
-        Config &peel(bool flag = true);
+        Config &optimize_selections(bool flag = true);
         Config &vectorize(bool flag = true);
         Config &vectorize_reductions(bool flag = true);
         Config &parallelize(bool flag = true);

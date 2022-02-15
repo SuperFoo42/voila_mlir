@@ -18,11 +18,11 @@ extern std::unique_ptr<QueryGenerator> queryGenerator;
 extern int iterations;
 enum ArgumentTypes
 {
-    THREAD_COUNT,
     TILING,
     VECTOR_SIZE,
     UNROLL_FACTOR,
-    PARALLELIZE_TYPE
+    PARALLELIZE_TYPE,
+    OPTIMIZE_SELECTIONS
 };
 static void Q1(benchmark::State &state)
 {
@@ -38,18 +38,16 @@ static void Q1(benchmark::State &state)
     auto l_shipdate = benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_SHIPDATE>>(L_SHIPDATE);
 
     Config config;
-/*    config.optimize()
+    config.optimize()
         .debug(false)
         .tile(state.range(TILING) > 0)
-        .peel(state.range(TILING) > 1)
+        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 1)
         .vectorize(state.range(VECTOR_SIZE) > 1)
         .vector_size(state.range(VECTOR_SIZE))
-        .parallelize(state.range(THREAD_COUNT) > 1)
+        .parallelize(state.range(PARALLELIZE_TYPE) == 0)
         .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
         .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
-        .unroll_factor(state.range(UNROLL_FACTOR))
-        .parallel_threads(state.range(THREAD_COUNT));*/
-    config.debug(false).optimize().tile().async_parallel(false).openmp_parallel();
+        .unroll_factor(state.range(UNROLL_FACTOR));
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q1.voila";
     Program prog(query, config);
     for ([[maybe_unused]] auto _ : state)
@@ -149,14 +147,13 @@ static void Q3(benchmark::State &state)
     config.optimize()
         .debug(false)
         .tile(state.range(TILING) > 0)
-        .peel(state.range(TILING) > 1)
+        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 1)
         .vectorize(state.range(VECTOR_SIZE) > 1)
         .vector_size(state.range(VECTOR_SIZE))
-        .parallelize(state.range(THREAD_COUNT) > 1)
+        .parallelize(state.range(PARALLELIZE_TYPE) == 0)
         .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
         .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
-        .unroll_factor(state.range(UNROLL_FACTOR))
-        .parallel_threads(state.range(THREAD_COUNT));
+        .unroll_factor(state.range(UNROLL_FACTOR));
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q3.voila";
     Program prog(query, config);
     for ([[maybe_unused]] auto _ : state)
@@ -358,17 +355,16 @@ static void Q6(benchmark::State &state)
     auto l_discount = benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_DISCOUNT>>(L_DISCOUNT);
     auto l_shipdate = benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_SHIPDATE>>(L_SHIPDATE);
     Config config;
-/*    config.optimize()
+    config.optimize()
         .debug(false)
-        .tile()
-        .peel()
+        .tile(state.range(TILING) > 0)
+        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 1)
         .vectorize(state.range(VECTOR_SIZE) > 1)
         .vector_size(state.range(VECTOR_SIZE))
-        .parallelize(state.range(THREAD_COUNT) > 1)
-        .async_parallel(state.range(THREAD_COUNT) > 1 && state.range(PARALLELIZE_TYPE) == 1)
-        .openmp_parallel(state.range(THREAD_COUNT) > 1 && state.range(PARALLELIZE_TYPE) == 2)
-        .unroll_factor(state.range(UNROLL_FACTOR))
-        .parallel_threads(state.range(THREAD_COUNT));*/
+        .parallelize(state.range(PARALLELIZE_TYPE) == 0)
+        .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
+        .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
+        .unroll_factor(state.range(UNROLL_FACTOR));
     config.debug(false).optimize().tile().async_parallel(false).openmp_parallel();
 
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
@@ -489,14 +485,13 @@ static void Q9(benchmark::State &state)
     config.optimize()
         .debug(false)
         .tile(state.range(TILING) > 0)
-        .peel(state.range(TILING) > 1)
+        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 1)
         .vectorize(state.range(VECTOR_SIZE) > 1)
         .vector_size(state.range(VECTOR_SIZE))
-        .parallelize(state.range(THREAD_COUNT) > 1)
+        .parallelize(state.range(PARALLELIZE_TYPE) == 0)
         .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
         .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
-        .unroll_factor(state.range(UNROLL_FACTOR))
-        .parallel_threads(state.range(THREAD_COUNT));
+        .unroll_factor(state.range(UNROLL_FACTOR));
 
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q9.voila";
 
@@ -897,14 +892,13 @@ static void Q18(benchmark::State &state)
     config.optimize()
         .debug(false)
         .tile(state.range(TILING) > 0)
-        .peel(state.range(TILING) > 1)
+        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 1)
         .vectorize(state.range(VECTOR_SIZE) > 1)
         .vector_size(state.range(VECTOR_SIZE))
-        .parallelize(state.range(THREAD_COUNT) > 1)
+        .parallelize(state.range(PARALLELIZE_TYPE) == 0)
         .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
         .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
-        .unroll_factor(state.range(UNROLL_FACTOR))
-        .parallel_threads(state.range(THREAD_COUNT));
+        .unroll_factor(state.range(UNROLL_FACTOR));
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q18.voila";
     Program prog(query, config);
 
@@ -1126,11 +1120,11 @@ BENCHMARK(Q1)
     ->Unit(benchmark::kMillisecond)
     ->UseManualTime()
     ->Iterations(10)
-    ->ArgsProduct({/*thread count*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*tiling*/ benchmark::CreateDenseRange(0, 2, 1),
-                   /*vectorize*/ benchmark::CreateRange(1, 32, 2),
-                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)})
+    ->ArgsProduct({/*tiling*/ benchmark::CreateDenseRange(0, 1, 1),
+                   /*vectorize*/ benchmark::CreateRange(1, 16, 2),
+                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency(), 2),
+                   /*async/openmp*/ benchmark::CreateDenseRange(0, 2, 1),
+                   /*async/openmp*/ benchmark::CreateDenseRange(0, 1, 1)})
     ->ComputeStatistics("max",
                         [](const std::vector<double> &v) -> double
                         { return *(std::max_element(std::begin(v), std::end(v))); })
@@ -1160,11 +1154,11 @@ BENCHMARK(Q3)
     ->Unit(benchmark::kMillisecond)
     ->UseManualTime()
     ->Iterations(10)
-    ->ArgsProduct({/*thread count*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*tiling*/ benchmark::CreateDenseRange(0, 2, 1),
-                   /*vectorize*/ benchmark::CreateRange(1, 32, 2),
-                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)})
+    ->ArgsProduct({/*tiling*/ benchmark::CreateDenseRange(0, 1, 1),
+                   /*vectorize*/ benchmark::CreateRange(1, 16, 2),
+                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency(), 2),
+                   /*async/openmp*/ benchmark::CreateDenseRange(0, 2, 1),
+                   /*async/openmp*/ benchmark::CreateDenseRange(0, 1, 1)})
     ->ComputeStatistics("max",
                         [](const std::vector<double> &v) -> double
                         { return *(std::max_element(std::begin(v), std::end(v))); })
@@ -1194,11 +1188,11 @@ BENCHMARK(Q6)
     ->Unit(benchmark::kMillisecond)
     ->UseManualTime()
     ->Iterations(10)
-    ->ArgsProduct({/*thread count*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*tiling*/ benchmark::CreateDenseRange(0, 2, 1),
-                   /*vectorize*/ benchmark::CreateRange(1, 32, 2),
-                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)})
+    ->ArgsProduct({/*tiling*/ benchmark::CreateDenseRange(0, 1, 1),
+                   /*vectorize*/ benchmark::CreateRange(1, 16, 2),
+                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency(), 2),
+                   /*async/openmp*/ benchmark::CreateDenseRange(0, 2, 1),
+                   /*async/openmp*/ benchmark::CreateDenseRange(0, 1, 1)})
     ->ComputeStatistics("max",
                         [](const std::vector<double> &v) -> double
                         { return *(std::max_element(std::begin(v), std::end(v))); })
@@ -1228,11 +1222,11 @@ BENCHMARK(Q9)
     ->Unit(benchmark::kMillisecond)
     ->UseManualTime()
     ->Iterations(10)
-    ->ArgsProduct({/*thread count*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*tiling*/ benchmark::CreateDenseRange(0, 2, 1),
-                   /*vectorize*/ benchmark::CreateRange(1, 32, 2),
-                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)})
+    ->ArgsProduct({/*tiling*/ benchmark::CreateDenseRange(0, 1, 1),
+                   /*vectorize*/ benchmark::CreateRange(1, 16, 2),
+                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency(), 2),
+                   /*async/openmp*/ benchmark::CreateDenseRange(0, 2, 1),
+                   /*async/openmp*/ benchmark::CreateDenseRange(0, 1, 1)})
     ->ComputeStatistics("max",
                         [](const std::vector<double> &v) -> double
                         { return *(std::max_element(std::begin(v), std::end(v))); })
@@ -1262,11 +1256,11 @@ BENCHMARK(Q18)
     ->Unit(benchmark::kMillisecond)
     ->UseManualTime()
     ->Iterations(10)
-    ->ArgsProduct({/*thread count*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*tiling*/ benchmark::CreateDenseRange(0, 2, 1),
-                   /*vectorize*/ benchmark::CreateRange(1, 32, 2),
-                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency() * 2, 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(1, 2, 1)})
+    ->ArgsProduct({/*tiling*/ benchmark::CreateDenseRange(0, 1, 1),
+                   /*vectorize*/ benchmark::CreateRange(1, 16, 2),
+                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency(), 2),
+                   /*async/openmp*/ benchmark::CreateDenseRange(0, 2, 1),
+                   /*async/openmp*/ benchmark::CreateDenseRange(0, 1, 1)})
     ->ComputeStatistics("max",
                         [](const std::vector<double> &v) -> double
                         { return *(std::max_element(std::begin(v), std::end(v))); })

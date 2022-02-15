@@ -109,7 +109,9 @@ namespace voila::mlir::lowering
             builder.create<linalg::YieldOp>(res);
         };
 
-        SmallVector<AffineMap, 3> maps(1, builder.getDimIdentityMap());
+        SmallVector<AffineMap, 3> maps;
+        if (sumOpAdaptor.pred())
+                maps.push_back(builder.getDimIdentityMap());
         SmallVector<AffineExpr, 1> srcExprs;
         srcExprs.push_back(getAffineDimExpr(0, builder.getContext()));
         SmallVector<AffineExpr, 1> dstExprs;

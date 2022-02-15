@@ -41,7 +41,7 @@ namespace voila
                    bool optimize,
                    bool fuse,
                    bool tile,
-                   bool peel,
+                   bool optimize_selections,
                    bool vectorize,
                    bool vectorizeReductions,
                    bool parallelize,
@@ -67,7 +67,7 @@ namespace voila
         _optimize(optimize),
         _fuse(fuse),
         _tile(tile),
-        _peel(peel),
+        _optimize_selections(optimize_selections),
         _vectorize(vectorize),
         _vectorize_reductions(vectorizeReductions),
         _parallelize(parallelize),
@@ -112,9 +112,9 @@ namespace voila
         Config::_tile = flag;
         return *this;
     }
-    Config &Config::peel(bool flag)
+    Config &Config::optimize_selections(bool flag)
     {
-        Config::_peel = flag;
+        Config::_optimize_selections = flag;
         return *this;
     }
     Config &Config::vectorize(bool flag)

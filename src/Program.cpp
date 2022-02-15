@@ -336,7 +336,7 @@ namespace voila
         // the operations.
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
-        if (config._optimize)
+        if (config._optimize && config._optimize_selections)
             pm.addNestedPass<FuncOp>(createPredicationForwardingPass());
 
 
