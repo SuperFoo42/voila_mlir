@@ -17,7 +17,7 @@ add_mlir_dialect_library(MLIRVoila
 
 add_library(voila_lowering)
 
-target_link_libraries(voila_lowering range-v3 MLIRVoila)
+target_link_libraries(voila_lowering range-v3 MLIRVoila fmt)
 
 add_subdirectory(lowering)
 add_subdirectory(Passes)

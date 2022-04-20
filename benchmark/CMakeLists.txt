@@ -2,7 +2,7 @@ CPMAddPackage(
         NAME benchmark
         GITHUB_REPOSITORY google/benchmark
         VERSION 1.6.0
-        OPTIONS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}" "BENCHMARK_ENABLE_TESTING Off"
+        OPTIONS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}" "BENCHMARK_ENABLE_TESTING Off" "BENCHMARK_ENABLE_LTO True"
 )
 if (benchmark_ADDED)
     # enable c++11 to avoid compilation errors

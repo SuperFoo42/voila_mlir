@@ -11,7 +11,7 @@ std::pair<std::vector<int32_t>, std::unordered_map<std::string, int32_t>> Dictio
         std::set<std::string> colValues(column.begin(), column.end());
 
         for (auto &elem : colValues)
-            dictionary.emplace(elem, static_cast<int64_t>(dictionary.size()));
+            dictionary.emplace(elem, static_cast<int64_t>(dictionary.size())); //TODO: sth. is wrong with this
     }
     std::vector<int32_t> compressedCol;
     compressedCol.reserve(column.size());

@@ -13,6 +13,7 @@ namespace voila
     class Program;
     class Config
     {
+        friend std::ostream &operator<<(std::ostream &o, const Config &c);
         friend class Program;
         bool _debug : 1;
         bool _optimize : 1;
@@ -64,7 +65,7 @@ namespace voila
                         int64_t tileSize = -1,
                         int32_t vectorSize = 8,
                         int32_t parallelThreads = std::max<int32_t>(std::thread::hardware_concurrency(), 1),
-                            int32_t unrollFactor = 1,
+                        int32_t unrollFactor = 1,
                         int32_t htSizeFactor = -1,
                         std::string astOutFile = "",
                         std::string mlirOutFile = "",
@@ -96,5 +97,9 @@ namespace voila
         Config &gpu_parallel(bool flag = true);
         Config &async_parallel(bool flag = true);
         Config &openmp_parallel(bool flag = true);
+
     };
+
+    std::ostream &operator<<(std::ostream &o, const Config &c);
+
 } // namespace voila

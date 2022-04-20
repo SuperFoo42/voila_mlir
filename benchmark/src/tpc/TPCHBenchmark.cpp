@@ -24,7 +24,7 @@ enum ArgumentTypes
     PARALLELIZE_TYPE,
     OPTIMIZE_SELECTIONS
 };
-static void Q1(benchmark::State &state)
+[[maybe_unused]] static void Q1(benchmark::State &state)
 {
     using namespace voila;
 
@@ -41,15 +41,16 @@ static void Q1(benchmark::State &state)
     config.optimize()
         .debug(false)
         .tile(state.range(TILING) > 0)
-        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 1)
+        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 0)
         .vectorize(state.range(VECTOR_SIZE) > 1)
         .vector_size(state.range(VECTOR_SIZE))
-        .parallelize(state.range(PARALLELIZE_TYPE) == 0)
+        .parallelize(state.range(PARALLELIZE_TYPE) != 0)
         .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
         .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
         .unroll_factor(state.range(UNROLL_FACTOR));
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q1.voila";
     Program prog(query, config);
+    double time = 0;
     for ([[maybe_unused]] auto _ : state)
     {
         auto date = queryGenerator->getQ1Date();
@@ -63,13 +64,15 @@ static void Q1(benchmark::State &state)
         prog << &date;
 
         // run in jit
+        const auto start = std::chrono::high_resolution_clock::now();
         auto res = prog();
-
-        state.SetIterationTime(prog.getExecTime() / 1000);
+        const auto end = std::chrono::high_resolution_clock::now();
+        time += std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() - prog.getExecTime();
     }
+    state.counters["compilation_time"] =  benchmark::Counter(time, benchmark::Counter::kAvgIterations);
 }
 
-static void Q1_Baseline(benchmark::State &state)
+[[maybe_unused]]  static void Q1_Baseline(benchmark::State &state)
 {
     using namespace voila;
 
@@ -117,7 +120,7 @@ static void Q1_Baseline(benchmark::State &state)
     }
 }
 
-static void Q3(benchmark::State &state)
+[[maybe_unused]] static void Q3(benchmark::State &state)
 {
     using namespace voila;
 
@@ -147,15 +150,16 @@ static void Q3(benchmark::State &state)
     config.optimize()
         .debug(false)
         .tile(state.range(TILING) > 0)
-        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 1)
+        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 0)
         .vectorize(state.range(VECTOR_SIZE) > 1)
         .vector_size(state.range(VECTOR_SIZE))
-        .parallelize(state.range(PARALLELIZE_TYPE) == 0)
+        .parallelize(state.range(PARALLELIZE_TYPE) != 0)
         .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
         .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
         .unroll_factor(state.range(UNROLL_FACTOR));
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q3.voila";
     Program prog(query, config);
+    double time = 0;
     for ([[maybe_unused]] auto _ : state)
     {
         // qualification data
@@ -176,12 +180,15 @@ static void Q3(benchmark::State &state)
         prog << &segment;
         prog << &date;
 
+        const auto start = std::chrono::high_resolution_clock::now();
         auto res = prog();
-        state.SetIterationTime(prog.getExecTime() / 1000);
+        const auto end = std::chrono::high_resolution_clock::now();
+        time += std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() - prog.getExecTime();
     }
+    state.counters["compilation_time"] =  benchmark::Counter(time, benchmark::Counter::kAvgIterations);
 }
 
-static void Q3_Baseline(benchmark::State &state)
+[[maybe_unused]] static void Q3_Baseline(benchmark::State &state)
 {
     using namespace voila;
     constexpr auto orders_offset = magic_enum::enum_count<customer_cols>();
@@ -230,29 +237,21 @@ static void Q3_Baseline(benchmark::State &state)
     }
 }
 
-static void Q3_JoinCompressed(benchmark::State &state)
+[[maybe_unused]] static void Q3_JoinCompressed(benchmark::State &state)
 {
     using namespace voila;
-    constexpr auto orders_offset = magic_enum::enum_count<customer_cols>();
-    constexpr auto lineitem_offset = magic_enum::enum_count<customer_cols>() + magic_enum::enum_count<orders_cols>();
-    auto l_orderkey =
-        benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_ORDERKEY>>(lineitem_offset + L_ORDERKEY);
-    auto l_extendedprice = benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_EXTENDEDPRICE>>(
-        lineitem_offset + L_EXTENDEDPRICE);
-    auto l_discount =
-        benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_DISCOUNT>>(lineitem_offset + L_DISCOUNT);
-    auto l_shipdate =
-        benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_SHIPDATE>>(lineitem_offset + L_SHIPDATE);
+    auto l_orderkey = benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_ORDERKEY>>(L_ORDERKEY);
+    auto l_extendedprice =
+        benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_EXTENDEDPRICE>>(L_EXTENDEDPRICE);
+    auto l_discount = benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_DISCOUNT>>(L_DISCOUNT);
+    auto l_shipdate = benchmarkState->getLineitemCompressed().getColumn<lineitem_types_t<L_SHIPDATE>>(L_SHIPDATE);
     auto c_mktsegment = benchmarkState->getCustomerCompressed().getColumn<customer_types_t<C_MKTSEGMENT>>(C_MKTSEGMENT);
     auto c_custkey = benchmarkState->getCustomerCompressed().getColumn<customer_types_t<C_CUSTKEY>>(C_CUSTKEY);
-    auto o_custkey =
-        benchmarkState->getOrdersCompressed().getColumn<orders_types_t<O_CUSTKEY>>(orders_offset + O_CUSTKEY);
-    auto o_orderkey =
-        benchmarkState->getOrdersCompressed().getColumn<orders_types_t<O_ORDERKEY>>(orders_offset + O_ORDERKEY);
-    auto o_orderdate =
-        benchmarkState->getOrdersCompressed().getColumn<orders_types_t<O_ORDERDATE>>(orders_offset + O_ORDERDATE);
+    auto o_custkey = benchmarkState->getOrdersCompressed().getColumn<orders_types_t<O_CUSTKEY>>(O_CUSTKEY);
+    auto o_orderkey = benchmarkState->getOrdersCompressed().getColumn<orders_types_t<O_ORDERKEY>>(O_ORDERKEY);
+    auto o_orderdate = benchmarkState->getOrdersCompressed().getColumn<orders_types_t<O_ORDERDATE>>(O_ORDERDATE);
     auto o_shippriority =
-        benchmarkState->getOrdersCompressed().getColumn<orders_types_t<O_SHIPPRIORITY>>(orders_offset + O_SHIPPRIORITY);
+        benchmarkState->getOrdersCompressed().getColumn<orders_types_t<O_SHIPPRIORITY>>(O_SHIPPRIORITY);
 
     for ([[maybe_unused]] auto _ : state)
     {
@@ -289,7 +288,7 @@ static void Q3_JoinCompressed(benchmark::State &state)
     }
 }
 
-static void Q3_Uncompressed(benchmark::State &state)
+[[maybe_unused]] static void Q3_Uncompressed(benchmark::State &state)
 {
     using namespace voila;
     auto l_orderkey = benchmarkState->getLineitem().getColumn<lineitem_types_t<L_ORDERKEY>>(L_ORDERKEY);
@@ -345,7 +344,7 @@ static void Q3_Uncompressed(benchmark::State &state)
     }
 }
 
-static void Q6(benchmark::State &state)
+[[maybe_unused]]  static void Q6(benchmark::State &state)
 {
     using namespace voila;
 
@@ -358,17 +357,16 @@ static void Q6(benchmark::State &state)
     config.optimize()
         .debug(false)
         .tile(state.range(TILING) > 0)
-        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 1)
+        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 0)
         .vectorize(state.range(VECTOR_SIZE) > 1)
         .vector_size(state.range(VECTOR_SIZE))
-        .parallelize(state.range(PARALLELIZE_TYPE) == 0)
+        .parallelize(state.range(PARALLELIZE_TYPE) != 0)
         .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
         .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
         .unroll_factor(state.range(UNROLL_FACTOR));
-    config.debug(false).optimize().tile().async_parallel(false).openmp_parallel();
-
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
-
+    double time = 0;
+    double time2 = 0;
     Program prog(query, config);
     for ([[maybe_unused]] auto _ : state)
     {
@@ -389,12 +387,17 @@ static void Q6(benchmark::State &state)
         prog << &maxDiscount;
 
         // run in jit
+        const auto start = std::chrono::high_resolution_clock::now();
         auto res = prog();
-        state.SetIterationTime(prog.getExecTime() / 1000);
+        const auto end = std::chrono::high_resolution_clock::now();
+        time += std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() - prog.getExecTime();
+        time2 += prog.getExecTime();
     }
+    state.counters["compilation_time"] =  benchmark::Counter(time, benchmark::Counter::kAvgIterations);
+    state.counters["execution"] =  benchmark::Counter(time2, benchmark::Counter::kAvgIterations);
 }
 
-static void Q6_Baseline(benchmark::State &state)
+[[maybe_unused]] static void Q6_Baseline(benchmark::State &state)
 {
     using namespace voila;
 
@@ -424,7 +427,7 @@ static void Q6_Baseline(benchmark::State &state)
     }
 }
 
-static void Q9(benchmark::State &state)
+[[maybe_unused]]  static void Q9(benchmark::State &state)
 {
     using namespace voila;
 
@@ -488,13 +491,13 @@ static void Q9(benchmark::State &state)
         .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 1)
         .vectorize(state.range(VECTOR_SIZE) > 1)
         .vector_size(state.range(VECTOR_SIZE))
-        .parallelize(state.range(PARALLELIZE_TYPE) == 0)
+        .parallelize(state.range(PARALLELIZE_TYPE) != 0)
         .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
         .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
         .unroll_factor(state.range(UNROLL_FACTOR));
 
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q9.voila";
-
+double time = 0;
     Program prog(query, config);
     for ([[maybe_unused]] auto _ : state)
     {
@@ -518,13 +521,15 @@ static void Q9(benchmark::State &state)
         prog << p_name;
         prog << needle;
 
+        const auto start = std::chrono::high_resolution_clock::now();
         auto res = prog();
-
-        state.SetIterationTime(prog.getExecTime() / 1000);
+        const auto end = std::chrono::high_resolution_clock::now();
+        time += std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() - prog.getExecTime();
     }
+    state.counters["compilation_time"] =  benchmark::Counter(time, benchmark::Counter::kAvgIterations);
 }
 
-static void Q9_Baseline(benchmark::State &state)
+[[maybe_unused]] static void Q9_Baseline(benchmark::State &state)
 {
     using namespace voila;
 
@@ -616,7 +621,7 @@ static void Q9_Baseline(benchmark::State &state)
     }
 }
 
-static void Q9_Joins(benchmark::State &state)
+[[maybe_unused]] static void Q9_Joins(benchmark::State &state)
 {
     using namespace voila;
     auto part = benchmarkState->getPartCompressed();
@@ -745,7 +750,7 @@ static void Q9_Joins(benchmark::State &state)
     }
 }
 
-static void Q9_Uncompressed(benchmark::State &state)
+[[maybe_unused]] static void Q9_Uncompressed(benchmark::State &state)
 {
     using namespace voila;
     auto part = benchmarkState->getPart();
@@ -864,7 +869,7 @@ static void Q9_Uncompressed(benchmark::State &state)
     }
 }
 
-static void Q18(benchmark::State &state)
+[[maybe_unused]]  static void Q18(benchmark::State &state)
 {
     using namespace voila;
     constexpr auto orders_offset = magic_enum::enum_count<customer_cols>();
@@ -892,16 +897,16 @@ static void Q18(benchmark::State &state)
     config.optimize()
         .debug(false)
         .tile(state.range(TILING) > 0)
-        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 1)
+        .optimize_selections(state.range(OPTIMIZE_SELECTIONS) > 0)
         .vectorize(state.range(VECTOR_SIZE) > 1)
         .vector_size(state.range(VECTOR_SIZE))
-        .parallelize(state.range(PARALLELIZE_TYPE) == 0)
+        .parallelize(state.range(PARALLELIZE_TYPE) != 0)
         .async_parallel(state.range(PARALLELIZE_TYPE) == 1)
         .openmp_parallel(state.range(PARALLELIZE_TYPE) == 2)
         .unroll_factor(state.range(UNROLL_FACTOR));
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q18.voila";
     Program prog(query, config);
-
+double time = 0;
     for ([[maybe_unused]] auto _ : state)
     {
         auto quantity = queryGenerator->getQ18Quantity();
@@ -915,15 +920,16 @@ static void Q18(benchmark::State &state)
         prog << o_custkey;
         prog << &quantity;
 
+        const auto start = std::chrono::high_resolution_clock::now();
         auto res = prog();
-
-        state.SetIterationTime(prog.getExecTime() / 1000);
+        const auto end = std::chrono::high_resolution_clock::now();
+        time += std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count() - prog.getExecTime();
     }
 
-    // state.counters["Query Runtime"] = benchmark::Counter(queryTime, benchmark::Counter::kAvgIterations);
+    state.counters["compilation_time"] =  benchmark::Counter(time, benchmark::Counter::kAvgIterations);
 }
 
-static void Q18_Baseline(benchmark::State &state)
+[[maybe_unused]] static void Q18_Baseline(benchmark::State &state)
 {
     using namespace voila;
     constexpr auto orders_offset = magic_enum::enum_count<customer_cols>();
@@ -980,7 +986,7 @@ static void Q18_Baseline(benchmark::State &state)
     }
 }
 
-static void Q18_Joins(benchmark::State &state)
+[[maybe_unused]] static void Q18_Joins(benchmark::State &state)
 {
     using namespace voila;
     auto customer = benchmarkState->getCustomerCompressed();
@@ -1048,7 +1054,7 @@ static void Q18_Joins(benchmark::State &state)
     }
 }
 
-static void Q18_Uncompressed(benchmark::State &state)
+[[maybe_unused]] static void Q18_Uncompressed(benchmark::State &state)
 {
     using namespace voila;
     auto customer = benchmarkState->getCustomer();
@@ -1115,16 +1121,15 @@ static void Q18_Uncompressed(benchmark::State &state)
         }
     }
 }
-
+/*
 BENCHMARK(Q1)
     ->Unit(benchmark::kMillisecond)
-    ->UseManualTime()
-    ->Iterations(10)
-    ->ArgsProduct({/*tiling*/ benchmark::CreateDenseRange(0, 1, 1),
-                   /*vectorize*/ benchmark::CreateRange(1, 16, 2),
-                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency(), 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(0, 2, 1),
-                   /*async/openmp*/ benchmark::CreateDenseRange(0, 1, 1)})
+    ->Iterations(1)
+    ->ArgsProduct({*//*tiling*//* benchmark::CreateDenseRange(0, 1, 1),
+                   *//*vectorize*//* benchmark::CreateRange(1, 16, 2),
+                   *//*unroll*//* benchmark::CreateRange(0, 16, 16),
+                   *//*async/openmp*//* benchmark::CreateDenseRange(0, 2, 1),
+                   *//*selection forwarding*//* benchmark::CreateDenseRange(0, 1, 1)})
     ->ComputeStatistics("max",
                         [](const std::vector<double> &v) -> double
                         { return *(std::max_element(std::begin(v), std::end(v))); })
@@ -1152,13 +1157,12 @@ BENCHMARK(Q1)
                         });
 BENCHMARK(Q3)
     ->Unit(benchmark::kMillisecond)
-    ->UseManualTime()
-    ->Iterations(10)
-    ->ArgsProduct({/*tiling*/ benchmark::CreateDenseRange(0, 1, 1),
-                   /*vectorize*/ benchmark::CreateRange(1, 16, 2),
-                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency(), 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(0, 2, 1),
-                   /*async/openmp*/ benchmark::CreateDenseRange(0, 1, 1)})
+    ->Iterations(1)
+    ->ArgsProduct({*//*tiling*//* benchmark::CreateDenseRange(0, 1, 1),
+                   *//*vectorize*//* benchmark::CreateRange(1, 16, 2),
+                   *//*unroll*//* benchmark::CreateRange(0, 16, 16),
+                   *//*async/openmp*//* benchmark::CreateDenseRange(0, 2, 1),
+                   *//*selection forwarding*//* benchmark::CreateDenseRange(0, 1, 1)})
     ->ComputeStatistics("max",
                         [](const std::vector<double> &v) -> double
                         { return *(std::max_element(std::begin(v), std::end(v))); })
@@ -1183,16 +1187,15 @@ BENCHMARK(Q3)
                             auto tmp = v;
                             ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
                             return tmp[(tmp.size() / 4) * 3];
-                        });
+                        });*/
 BENCHMARK(Q6)
     ->Unit(benchmark::kMillisecond)
-    ->UseManualTime()
-    ->Iterations(10)
+    ->Iterations(1)
     ->ArgsProduct({/*tiling*/ benchmark::CreateDenseRange(0, 1, 1),
-                   /*vectorize*/ benchmark::CreateRange(1, 16, 2),
-                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency(), 2),
+                   /*vectorize*/ benchmark::CreateRange(1024, 4096, 2),
+                   /*unroll*/ benchmark::CreateRange(0, 16, 16),
                    /*async/openmp*/ benchmark::CreateDenseRange(0, 2, 1),
-                   /*async/openmp*/ benchmark::CreateDenseRange(0, 1, 1)})
+                   /*selection forwarding*/ benchmark::CreateDenseRange(1, 1, 1)})
     ->ComputeStatistics("max",
                         [](const std::vector<double> &v) -> double
                         { return *(std::max_element(std::begin(v), std::end(v))); })
@@ -1220,47 +1223,12 @@ BENCHMARK(Q6)
                         });
 BENCHMARK(Q9)
     ->Unit(benchmark::kMillisecond)
-    ->UseManualTime()
-    ->Iterations(10)
+    ->Iterations(1)
     ->ArgsProduct({/*tiling*/ benchmark::CreateDenseRange(0, 1, 1),
-                   /*vectorize*/ benchmark::CreateRange(1, 16, 2),
-                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency(), 2),
+                   /*vectorize*/ benchmark::CreateRange(1024, 4096, 2),
+                   /*unroll*/ benchmark::CreateRange(0, 16, 16),
                    /*async/openmp*/ benchmark::CreateDenseRange(0, 2, 1),
-                   /*async/openmp*/ benchmark::CreateDenseRange(0, 1, 1)})
-    ->ComputeStatistics("max",
-                        [](const std::vector<double> &v) -> double
-                        { return *(std::max_element(std::begin(v), std::end(v))); })
-    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
-    ->ComputeStatistics("median",
-                        [](const std::vector<double> &v) -> double
-                        {
-                            auto tmp = v;
-                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
-                            return tmp[tmp.size() / 2];
-                        })
-    ->ComputeStatistics("lower",
-                        [](const std::vector<double> &v) -> double
-                        {
-                            auto tmp = v;
-                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
-                            return tmp[tmp.size() / 4];
-                        })
-    ->ComputeStatistics("upper",
-                        [](const std::vector<double> &v) -> double
-                        {
-                            auto tmp = v;
-                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
-                            return tmp[(tmp.size() / 4) * 3];
-                        });
-BENCHMARK(Q18)
-    ->Unit(benchmark::kMillisecond)
-    ->UseManualTime()
-    ->Iterations(10)
-    ->ArgsProduct({/*tiling*/ benchmark::CreateDenseRange(0, 1, 1),
-                   /*vectorize*/ benchmark::CreateRange(1, 16, 2),
-                   /*unroll*/ benchmark::CreateRange(1, std::thread::hardware_concurrency(), 2),
-                   /*async/openmp*/ benchmark::CreateDenseRange(0, 2, 1),
-                   /*async/openmp*/ benchmark::CreateDenseRange(0, 1, 1)})
+                   /*selection forwarding*/ benchmark::CreateDenseRange(1, 1, 1)})
     ->ComputeStatistics("max",
                         [](const std::vector<double> &v) -> double
                         { return *(std::max_element(std::begin(v), std::end(v))); })
@@ -1287,6 +1255,40 @@ BENCHMARK(Q18)
                             return tmp[(tmp.size() / 4) * 3];
                         });
 
+BENCHMARK(Q18)
+    ->Unit(benchmark::kMillisecond)
+    ->Iterations(1)
+    ->ArgsProduct({/*tiling*/ benchmark::CreateDenseRange(0, 1, 1),
+                   /*vectorize*/ benchmark::CreateRange(1, 16, 2),
+                   /*unroll*/ benchmark::CreateRange(0, 16, 16),
+                   /*async/openmp*/ benchmark::CreateDenseRange(0, 2, 1),
+                   /*selection forwarding*/ benchmark::CreateDenseRange(0, 1, 1)})
+    ->ComputeStatistics("max",
+                        [](const std::vector<double> &v) -> double
+                        { return *(std::max_element(std::begin(v), std::end(v))); })
+    ->ComputeStatistics("min", [](const std::vector<double> &v) -> double { return *ranges::min_element(v); })
+    ->ComputeStatistics("median",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 2);
+                            return tmp[tmp.size() / 2];
+                        })
+    ->ComputeStatistics("lower",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4);
+                            return tmp[tmp.size() / 4];
+                        })
+    ->ComputeStatistics("upper",
+                        [](const std::vector<double> &v) -> double
+                        {
+                            auto tmp = v;
+                            ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
+                            return tmp[(tmp.size() / 4) * 3];
+                        });
+/*
 BENCHMARK(Q1_Baseline)
     ->Unit(benchmark::kMillisecond)
     ->Iterations(10)
@@ -1594,4 +1596,4 @@ BENCHMARK(Q18_Uncompressed)
                             auto tmp = v;
                             ranges::nth_element(tmp, tmp.begin() + tmp.size() / 4 * 3);
                             return tmp[tmp.size() / 4 * 3];
-                        });
+                        });*/

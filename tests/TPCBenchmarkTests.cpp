@@ -124,8 +124,8 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
     auto l_discount = lineitem.getColumn<lineitem_types_t<L_DISCOUNT>>(L_DISCOUNT);
     auto l_shipdate = lineitem.getColumn<lineitem_types_t<L_SHIPDATE>>(L_SHIPDATE);
     Config config;
-    config.debug(true).optimize().tile(false).async_parallel(false).openmp_parallel().optimize_selections(false);
-
+    config.debug(true).optimize().tile(true).optimize_selections().parallelize().vectorize(true).vector_size(4).async_parallel();
+    std::cout << config << std::endl;
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q6.voila";
     Program prog(query, config);
 
@@ -145,8 +145,12 @@ TEST(TPCBenchmarkTests, Q6_Qualification)
     prog << &quantity;
     prog << &minDiscount;
     prog << &maxDiscount;
-    auto res = std::get<double>(prog()[0]);
 
+    const auto start = std::chrono::high_resolution_clock::now();
+    auto res = std::get<double>(prog()[0]);
+    const auto end = std::chrono::high_resolution_clock::now();
+std::cout << "Time: "<< prog.getExecTime() << std::endl;
+std::cout << "Time2: "<< std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
     double ref = 0;
     Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
              Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
@@ -805,7 +809,7 @@ TEST(TPCBenchmarkTests, Q18_Qualification)
 
     // voila calculations
     Config config;
-    config.debug().optimize(false);
+    config.debug(false).optimize(true);
     constexpr auto query = VOILA_BENCHMARK_SOURCES_PATH "/Q18.voila";
     Program prog(query, config);
     prog << c_name;

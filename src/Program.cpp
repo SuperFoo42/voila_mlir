@@ -496,7 +496,7 @@ namespace voila
         pm.addNestedPass<FuncOp>(createCSEPass());
         pm.addNestedPass<FuncOp>(bufferization::createBufferDeallocationPass());
         pm.addNestedPass<FuncOp>(::mlir::bufferization::createFinalizingBufferizePass());
-
+/*
         if (config._optimize && config._vectorize)
         {
             pm.addNestedPass<FuncOp>(createLinalgStrategyLowerVectorsPass(
@@ -534,8 +534,7 @@ namespace voila
 
         pm.addPass(::mlir::createLowerToLLVMPass());
 
-        pm.addPass(createReconcileUnrealizedCastsPass());
-
+        pm.addPass(createReconcileUnrealizedCastsPass());*/
 
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));

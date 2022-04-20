@@ -223,4 +223,30 @@ namespace voila
         LLVMOutFile = std::move(llvmOutFile);
         return *this;
     }
+
+    std::ostream &operator<<(std::ostream &o, const Config &c)
+    {
+        o << std::boolalpha;
+        o << "debug: " << c._debug << "\n";
+        o << "optimize: " << c._optimize << "\n";
+        o << "fuse: " << c._fuse << "\n";
+        o << "tile: " << c._tile << "\n";
+        o << "optimize_selections: " << c._optimize_selections << "\n";
+        o << "vectorize: " << c._vectorize << "\n";
+        o << "vectorize_reductions: " << c._vectorize_reductions << "\n";
+        o << "parallelize: " << c._parallelize << "\n";
+        o << "parallelize_reductions: " << c._parallelize_reductions << "\n";
+        o << "async_parallel: " << c._async_parallel << "\n";
+        o << "openmp_parallel: " << c._openmp_parallel << "\n";
+        o << "profile: " << c._profile << "\n";
+        o << "plot_ast: " << c._plotAST << "\n";
+        o << "print_mlir: " << c._printMLIR << "\n";
+        o << "print_lowered_mlir: " << c._printLoweredMLIR << "\n";
+        o << "print_llvm: " << c._printLLVM << "\n";
+        o << "tile_size: " << c._tile_size << "\n";
+        o << "vector_size: " << c._vector_size << "\n";
+        o << "parallel_threads: " << c._parallel_threads << "\n";
+        o << "unroll_factor: " << c._unroll_factor << "\n";
+        return o;
+    }
 } // namespace voila
