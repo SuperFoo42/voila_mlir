@@ -389,7 +389,7 @@ let results = (outs AnyTensor);
 //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def EmitOp : Voila_Op<"emit", [NoSideEffect,HasParent<"FuncOp">,
+def EmitOp : Voila_Op<"emit", [NoSideEffect,HasParent<"::mlir::func::FuncOp">,
                                  Terminator]> {
   let summary = "emit operation";
   let description = [{

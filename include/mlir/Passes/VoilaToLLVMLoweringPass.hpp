@@ -1,4 +1,5 @@
 #pragma once
+
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
@@ -6,24 +7,24 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "llvm/ADT/Sequence.h"
 
-namespace voila::mlir
-{
-    namespace lowering
-    {
+namespace mlir::func {
+    class FuncOp;
+}
+
+namespace voila::mlir {
+    namespace lowering {
         struct VoilaToLLVMLoweringPass
-            : public ::mlir::PassWrapper<VoilaToLLVMLoweringPass, ::mlir::OperationPass<::mlir::FuncOp>>
-        {
-            void getDependentDialects(::mlir::DialectRegistry &registry) const override
-            {
+                : public ::mlir::PassWrapper<VoilaToLLVMLoweringPass, ::mlir::OperationPass<::mlir::func::FuncOp>> {
+            void getDependentDialects(::mlir::DialectRegistry &registry) const override {
                 registry.insert<::mlir::LLVM::LLVMDialect, ::mlir::scf::SCFDialect, ::mlir::async::AsyncDialect,
-                                ::mlir::vector::VectorDialect, ::mlir::arith::ArithmeticDialect>();
+                        ::mlir::vector::VectorDialect, ::mlir::arith::ArithmeticDialect>();
             }
+
             void runOnOperation() final;
         };
     } // namespace lowering

@@ -3,14 +3,15 @@
 #include "NotImplementedException.hpp"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/VoilaOps.h"
 
 #include <fmt/format.h>
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
-    using namespace ::mlir::arith;
+    using namespace arith;
     using ::mlir::voila::HashOp;
     using ::mlir::voila::HashOpAdaptor;
 

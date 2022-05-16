@@ -11,7 +11,13 @@
 #include <llvm/ADT/ScopedHashTable.h>
 #include <llvm/Support/raw_ostream.h>
 #include <mlir/IR/Builders.h>
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #pragma GCC diagnostic pop
+
+namespace mlir::func
+{
+    class FuncOp;
+}
 
 namespace voila::mlir
 {
@@ -20,7 +26,7 @@ namespace voila::mlir
         ::mlir::OpBuilder &builder;
         ::mlir::ModuleOp &module;
         llvm::ScopedHashTable<llvm::StringRef, ::mlir::Value> &symbolTable;
-        llvm::StringMap<::mlir::FuncOp> &funcTable;
+        llvm::StringMap<::mlir::func::FuncOp> &funcTable;
         const TypeInferer &inferer;
         using result_variant =
             std::variant<std::monostate,
@@ -30,7 +36,7 @@ namespace voila::mlir
                                                              // extend lifetime of underlying object
                          ::mlir::Type,
                          ::mlir::LogicalResult,
-                         ::mlir::FuncOp>;
+                         ::mlir::func::FuncOp>;
         result_variant result;
 
         // helper functions to map ast types to mlir
@@ -87,7 +93,7 @@ namespace voila::mlir
         MLIRGeneratorImpl(::mlir::OpBuilder &builder,
                           ::mlir::ModuleOp &module,
                           ::llvm::ScopedHashTable<llvm::StringRef, ::mlir::Value> &symbolTable,
-                          llvm::StringMap<::mlir::FuncOp> &funcTable,
+                          llvm::StringMap<::mlir::func::FuncOp> &funcTable,
                           const TypeInferer &inferer);
 
         result_variant getValue()

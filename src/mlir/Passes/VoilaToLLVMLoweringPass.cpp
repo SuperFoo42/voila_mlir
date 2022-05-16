@@ -1,13 +1,14 @@
 #include "mlir/Passes/VoilaToLLVMLoweringPass.hpp"
 
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/ArithmeticToLLVM/ArithmeticToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/MemRefToLLVM//MemRefToLLVM.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
-#include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
 //===----------------------------------------------------------------------===//
 // VoilaToLLVMLoweringPass
@@ -17,6 +18,7 @@ namespace voila::mlir
 {
     using namespace ::mlir;
     using namespace ::mlir::arith;
+    using namespace ::mlir::func;
     namespace lowering
     {
         void VoilaToLLVMLoweringPass::runOnOperation()
@@ -48,8 +50,7 @@ namespace voila::mlir
             populateSCFToControlFlowConversionPatterns(patterns);
             populateArithmeticToLLVMConversionPatterns(typeConverter, patterns);
             populateVectorToLLVMConversionPatterns(typeConverter, patterns, true);
-            populateStdToLLVMConversionPatterns(typeConverter, patterns);
-            populateStdToLLVMFuncOpConversionPattern(typeConverter, patterns);
+            populateFuncToLLVMFuncOpConversionPattern(typeConverter, patterns);
             populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
             populateReconcileUnrealizedCastsPatterns(patterns);
             // We want to completely lower to LLVM, so we use a `FullConversion`. This

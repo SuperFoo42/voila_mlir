@@ -4,8 +4,8 @@ project(voila_mlir LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 
 #Enable sanitizers globally
-set(DEBUG_BUILD -O0 -g -Wno-ambiguous-reversed-operator)
-set(RELEASE_BUILD -O3 -g -march=native -mavx2 -Wno-ambiguous-reversed-operator -Wno-unused-function)
+set(DEBUG_BUILD -O0 -g -Wno-ambiguous-reversed-operator -Wno-covered-switch-default)
+set(RELEASE_BUILD -O3 -g -march=native -mavx2 -Wno-ambiguous-reversed-operator -Wno-unused-function -Wno-covered-switch-default)
 add_compile_options(
         "$<$<CONFIG:Debug>:${DEBUG_BUILD}>"
         "$<$<CONFIG:Release>:${RELEASE_BUILD}>")
@@ -47,7 +47,7 @@ CPMAddPackage(
 )
 #-DLLVM_ENABLE_LTO="${CMAKE_INTERPROCEDURAL_OPTIMIZATION}"  -DLLVM_PARALLEL_LINK_JOBS=2
 execute_process(
-        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -G ${CMAKE_GENERATOR} -DLLVM_ENABLE_LTO="${CMAKE_INTERPROCEDURAL_OPTIMIZATION}"  -DLLVM_PARALLEL_LINK_JOBS=4 -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True -DLLVM_BUILD_TESTS=False -DLLVM_ENABLE_IDE=TRUE -DLLVM_OPTIMIZED_TABLEGEN=TRUE -DLLVM_USE_SPLIT_DWARF=True
+        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -G ${CMAKE_GENERATOR} -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True -DLLVM_BUILD_TESTS=False -DLLVM_ENABLE_IDE=TRUE -DLLVM_OPTIMIZED_TABLEGEN=TRUE -DLLVM_USE_SPLIT_DWARF=True
         WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
 )
 message(STATUS "build llvm")
@@ -94,7 +94,6 @@ set(LLVM_ENABLE_LTO "On")
 
 if (BUILD_DOC)
     find_package(Doxygen
-            REQUIRED dot
             OPTIONAL_COMPONENTS mscgen dia)
 endif ()
 
@@ -110,7 +109,12 @@ find_package(Threads REQUIRED)
 
 find_package(BISON REQUIRED)
 
-#TODO: add reflex call to generate lexer for grammar
+add_custom_command(
+        OUTPUT ${CMAKE_BINARY_DIR}/src/voila_parser.cpp
+        COMMAND ${BISON_EXECUTABLE} -t ${CMAKE_SOURCE_DIR}/voila.y --header=${CMAKE_BINARY_DIR}/include/voila_parser.hpp --output=${CMAKE_BINARY_DIR}/src/voila_parser.cpp -Dapi.location.file='"${CMAKE_BINARY_DIR}/include/location.hpp"'
+        COMMENT "Generating Voila parser"
+)
+
 CPMAddPackage(
         NAME reflex
         GITHUB_REPOSITORY Genivia/RE-flex
@@ -126,9 +130,18 @@ if (reflex_ADDED)
             )
     add_library(reflex INTERFACE IMPORTED include/mlir/lowering/LogicalOpLowering.hpp include/ast/Hash.cpp include/ast/Hash.hpp)
     target_include_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/include")
+    include_directories(${reflex_SOURCE_DIR}/include)
     cmake_policy(SET CMP0004 OLD) # workaround for underscore in reflex lib path
     target_link_libraries(reflex INTERFACE "${reflex_SOURCE_DIR}/lib/libreflex.a")
 endif ()
+
+add_custom_command(
+        OUTPUT ${CMAKE_BINARY_DIR}/src/voila_lexer.cpp
+        COMMAND ./reflex -d --fast --bison-complete --bison-locations --namespace=voila::lexer --lexer=Lexer --header-file=${CMAKE_BINARY_DIR}/include/voila_lexer.hpp −−graphs-file=${CMAKE_BINARY_DIR}/lexer.gv -o ${CMAKE_BINARY_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/voila.lex
+        WORKING_DIRECTORY ${reflex_SOURCE_DIR}/bin
+        DEPENDS ${CMAKE_BINARY_DIR}/src/voila_parser.cpp
+        COMMENT "Generating Voila lexer"
+)
 
 CPMAddPackage("bb:icl/papi#papi-6-0-0-1-t")
 if (papi_ADDED)
@@ -149,10 +162,30 @@ if (papi_ADDED)
 endif ()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_BINARY_DIR}/include)
+
+add_custom_target(voila_parser_and_lexer ALL
+        DEPENDS ${CMAKE_BINARY_DIR}/src/voila_lexer.cpp ${CMAKE_BINARY_DIR}/src/voila_parser.cpp
+        SOURCES ${CMAKE_BINARY_DIR}/src/voila_lexer.cpp ${CMAKE_BINARY_DIR}/src/voila_parser.cpp
+        )
+
+# add targets
+add_library(voila_compiler)
+add_library(voila_ast)
+
+add_dependencies(voila_compiler voila_parser_and_lexer)
+add_dependencies(voila_ast voila_parser_and_lexer)
 
 add_subdirectory(src)
 add_subdirectory(include)
 if (BUILD_TEST)
+    CPMAddPackage(
+            NAME googletest
+            GITHUB_REPOSITORY google/googletest
+            GIT_TAG release-1.11.0
+            VERSION 1.11.0
+            OPTIONS "INSTALL_GTEST OFF" "gtest_force_shared_crt"
+    )
     add_subdirectory(tests)
 endif ()
 if (BUILD_BENCH)

@@ -4,6 +4,7 @@
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"

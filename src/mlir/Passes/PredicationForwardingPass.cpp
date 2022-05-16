@@ -165,8 +165,8 @@ namespace voila::mlir
                                        .create<linalg::FillOp>(
                                            loc,
                                            rewriter.create<arith::ConstantIntOp>(
-                                               loc, std::numeric_limits<int64_t>::max(), rewriter.getI64Type()),
-                                           tmp)
+                                               loc, std::numeric_limits<int64_t>::max(), rewriter.getI64Type()).getResult(),
+                                           ValueRange(tmp))
                                        .result();
                     }
                     else if (getElementTypeOrSelf(op.values()).isa<FloatType>())
@@ -174,9 +174,9 @@ namespace voila::mlir
                         falseSel = rewriter
                                        .create<linalg::FillOp>(
                                            loc,
-                                           rewriter.create<arith::ConstantFloatOp>(
-                                               loc, rewriter.getF64FloatAttr(0).getValue(), rewriter.getF64Type()),
-                                           tmp)
+                                           ValueRange(rewriter.create<arith::ConstantFloatOp>(
+                                               loc, rewriter.getF64FloatAttr(0).getValue(), rewriter.getF64Type()).getResult()),
+                                           ValueRange(tmp))
                                        .result();
                     }
                     else

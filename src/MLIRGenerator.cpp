@@ -25,8 +25,8 @@ namespace voila
             // TODO: error handling
             if (std::holds_alternative<std::monostate>(genRes))
                 throw MLIRGenerationException();
-            assert(std::holds_alternative<::mlir::FuncOp>(genRes));
-            module.push_back(std::get<::mlir::FuncOp>(genRes));
+            assert(std::holds_alternative<::mlir::func::FuncOp>(genRes));
+            module.push_back(std::get<::mlir::func::FuncOp>(genRes));
         }
 
         // Verify the module after we have finished constructing it, this will check

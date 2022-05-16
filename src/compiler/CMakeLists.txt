@@ -37,7 +37,6 @@ target_compile_options(voila PUBLIC
         -Wpedantic
         -Wall
         -Wextra
-        -Werror
         -Wno-c++98-compat
         -Wno-c++98-c++11-c++14-compat
         -Wno-c++98-compat-pedantic

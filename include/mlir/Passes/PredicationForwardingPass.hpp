@@ -3,12 +3,16 @@
 
 #include <memory>
 
+namespace mlir::func {
+    class FuncOp;
+}
+
 namespace voila::mlir
 {
     namespace lowering
     {
         class PredicationForwardingPass
-            : public ::mlir::PassWrapper<PredicationForwardingPass, ::mlir::OperationPass<::mlir::FuncOp>>
+    : public ::mlir::PassWrapper<PredicationForwardingPass, ::mlir::OperationPass<::mlir::func::FuncOp>>
         {
             bool predicateBlockersOnly;
 

@@ -25,22 +25,9 @@ add_subdirectory(ast)
 add_subdirectory(mlir)
 add_subdirectory(compiler)
 
-#FIXME
-#add_custom_command(
-#        DEPENDS ${CMAKE_SOURCE_DIR}/voila.y
-#        COMMAND ${BISON_EXECUTABLE} -d -t ${CMAKE_SOURCE_DIR}/voila.y
-#        OUTPUT ${CMAKE_SOURCE_DIR}/src/voila_parser.cpp ${CMAKE_SOURCE_DIR}/include/voila_parser.hpp ${CMAKE_SOURCE_DIR}/include/location.hpp
-#        )
-
-#add_custom_command(
-#        DEPENDS ${CMAKE_SOURCE_DIR}/voila.lex
-#        COMMAND ${reflex_SOURCE_DIR}/bin/reflex -d --fast --bison-complete --bison-locations --namespace=voila::lexer --lexer=Lexer --header-file=${CMAKE_SOURCE_DIR}/include/voila_lexer.hpp −−graphs-file=lexer.gv -o ${CMAKE_SOURCE_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/voila.lex
-#        OUTPUT ${CMAKE_SOURCE_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/include/voila_lexer.hpp
-#)
-
-add_library(voila_compiler
-        voila_parser.cpp
-        voila_lexer.cpp
+target_sources(voila_compiler PRIVATE
+        ${CMAKE_BINARY_DIR}/src/voila_parser.cpp
+        ${CMAKE_BINARY_DIR}/src/voila_lexer.cpp
         TypeInferer.cpp
         DotVisualizer.cpp
         MLIRGenerator.cpp
@@ -49,7 +36,6 @@ add_library(voila_compiler
         Program.cpp
         Config.cpp
         Types.cpp)
-
 
 set(LLVM_LINK_COMPONENTS
         LLVMCore
@@ -69,17 +55,14 @@ target_link_libraries(voila_compiler
         MLIRExecutionEngine
         MLIRIR
         MLIRParser
-        MLIRStandard
         MLIRLLVMToLLVMIRTranslation
         MLIROpenMPToLLVMIRTranslation
         MLIRTargetLLVMIRExport
-        MLIRStandardToLLVM
         MLIRSupport
         MLIRAnalysis
         MLIRExecutionEngine
         MLIRJitRunner
         MLIRTransforms
-        MLIRTranslation
         ${LLVM_LINK_COMPONENTS}
         papi
         )
@@ -89,8 +72,8 @@ target_compile_options(voila_compiler PUBLIC
         -Wpedantic
         -Wall
         -Wextra
-        -Werror
         -Wno-c++98-compat
         -Wno-c++98-c++11-c++14-compat
         -Wno-c++98-compat-pedantic)
 
+llvm_update_compile_flags(voila_compiler)

@@ -1,9 +1,10 @@
 #include "mlir/Passes/LinalgTiledLoopsToAffineForPass.hpp"
-
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 namespace voila::mlir
 {
     using namespace ::mlir;
-    using namespace ::mlir::linalg;
+    using namespace linalg;
+    using namespace func;
     namespace lowering
     {
         void LinalgTiledLoopsToAffineForPass::getDependentDialects(DialectRegistry &registry) const
@@ -13,7 +14,7 @@ namespace voila::mlir
         void LinalgTiledLoopsToAffineForPass::runOnOperation()
         {
             RewritePatternSet patterns(&getContext());
-            populateLinalgTiledLoopsToAffineForPatterns(patterns);
+            //populateLinalgTiledLoopsToAffineForPatterns(patterns);
             (void) applyPatternsAndFoldGreedily(getOperation(), std::move(patterns));
         }
 

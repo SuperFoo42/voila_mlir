@@ -15,10 +15,7 @@
 
 %debug
 %defines
-%output "src/voila_parser.cpp"
-%defines "include/voila_parser.hpp"
 %locations
-%define api.location.file "../include/location.hpp"
 
 %code requires {
 	namespace voila::lexer {
@@ -34,7 +31,12 @@
 	#include <string>
 	#include <cinttypes>
 	#include <vector>
+	#pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wsuggest-override"
+    #pragma GCC diagnostic ignored "-Wnon-virtual-dtor"
 	#include "voila_lexer.hpp"
+	#pragma GCC diagnostic pop
+
 	#undef yylex
 	#define yylex lexer.lex // Within bison's parse() we should invoke lexer.yylex(), not the global yylex()
 }

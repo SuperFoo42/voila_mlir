@@ -4,14 +4,15 @@
 #include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/VoilaOps.h"
 
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
-    using namespace ::mlir::arith;
-    using namespace ::mlir::bufferization;
+    using namespace arith;
+    using namespace bufferization;
     using ::mlir::voila::LoopOp;
     using ::mlir::voila::LoopOpAdaptor;
 

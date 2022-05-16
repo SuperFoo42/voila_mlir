@@ -43,18 +43,18 @@ add_llvm_executable(voila_tests
         TPCBenchmarkTests.cpp
         )
 
+target_compile_features(voila_tests PUBLIC cxx_std_20)
+
 target_compile_options(voila_tests PUBLIC
         -Wpedantic
         -Wall
         -Wextra
-        -Werror
         -Wno-c++98-compat
         -Wno-c++98-c++11-c++14-compat
         -Wno-c++98-compat-pedantic
-        -Wno-suggest-override)
+        -Wno-suggest-override
+        -Wno-covered-switch-default)
 
-target_compile_features(voila_tests PUBLIC cxx_std_20)
-llvm_update_compile_flags(voila_tests)
 target_link_libraries(voila_tests PRIVATE ${LIBS})
 
 mlir_check_all_link_libraries(voila_tests)

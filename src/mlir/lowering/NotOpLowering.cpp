@@ -1,6 +1,7 @@
 #include "mlir/lowering/NotOpLowering.hpp"
 
 #include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
@@ -8,8 +9,8 @@
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
-    using namespace ::mlir::arith;
-    using namespace ::mlir::bufferization;
+    using namespace arith;
+    using namespace bufferization;
     using ::mlir::voila::NotOp;
     using ::mlir::voila::NotOpAdaptor;
 

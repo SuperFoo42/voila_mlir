@@ -1,15 +1,17 @@
 #pragma once
 #include "mlir/Pass/Pass.h"
+
+namespace mlir::func {
+    class FuncOp;
+}
 namespace voila::mlir
 {
     namespace lowering
     {
         // for now more or less a copy of TestGpuGreedyParallelLoopMappingPass
         class ParallelLoopToGPUMappingPass
-            : public ::mlir::PassWrapper<ParallelLoopToGPUMappingPass, ::mlir::OperationPass<::mlir::FuncOp>>
+    : public ::mlir::PassWrapper<ParallelLoopToGPUMappingPass, ::mlir::OperationPass<::mlir::func::FuncOp>>
         {
-            [[nodiscard]] ::mlir::StringRef getArgument() const final;
-            [[nodiscard]] ::mlir::StringRef getDescription() const final;
             void runOnOperation() override;
         };
 

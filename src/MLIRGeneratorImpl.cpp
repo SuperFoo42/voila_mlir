@@ -206,7 +206,7 @@ namespace voila::mlir
         }
         // TODO: allow more than only a single return type
         result = builder.create<GenericCallOp>(location, call.fun, operands,
-                                               funcTable.lookup(call.fun).getType().getResult(0));
+                                               funcTable.lookup(call.fun).getFunctionType().getResult(0));
     }
 
     void MLIRGeneratorImpl::operator()(const Assign &assign)
@@ -478,7 +478,7 @@ namespace voila::mlir
         }
 
         auto func_type = builder.getFunctionType(arg_types, llvm::None);
-        auto function = ::mlir::FuncOp::create(location, fun.name, func_type);
+        auto function = ::mlir::func::FuncOp::create(location, fun.name, func_type);
         funcTable.insert(std::make_pair(fun.name, function));
         assert(function);
 
@@ -509,7 +509,7 @@ namespace voila::mlir
             // the function.
             // TODO: get emit type
             function.setType(
-                builder.getFunctionType(function.getType().getInputs(), getTypes(*(*fun.result).as_stmt())));
+                builder.getFunctionType(function.getFunctionType().getInputs(), getTypes(*(*fun.result).as_stmt())));
         }
 
         result = function;
@@ -757,7 +757,7 @@ namespace voila::mlir
     MLIRGeneratorImpl::MLIRGeneratorImpl(OpBuilder &builder,
                                          ModuleOp &module,
                                          llvm::ScopedHashTable<llvm::StringRef, ::mlir::Value> &symbolTable,
-                                         llvm::StringMap<::mlir::FuncOp> &funcTable,
+                                         llvm::StringMap<::mlir::func::FuncOp> &funcTable,
                                          const TypeInferer &inferer) :
         builder{builder}, module{module}, symbolTable{symbolTable}, funcTable{funcTable}, inferer{inferer}, result{}
     {

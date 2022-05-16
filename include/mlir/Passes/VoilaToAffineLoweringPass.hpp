@@ -1,37 +1,25 @@
 #pragma once
+
 #include "mlir/Pass/Pass.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
+#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include <memory>
 
-namespace mlir {
-    class AffineDialect;
-    namespace memref {
-        class MemRefDialect;
-    }
-    namespace bufferization{
-        class BufferizationDialect;
-    }
-    namespace scf
-    {
-        class SCFDialect;
-    }
-    namespace linalg
-    {
-        class LinalgDialect;
-    }
-}
-
-namespace voila::mlir
-{
-    namespace lowering
-    {
-        struct VoilaToAffineLoweringPass : public ::mlir::PassWrapper<VoilaToAffineLoweringPass, ::mlir::OperationPass<::mlir::FuncOp>>
-        {
-            void getDependentDialects(::mlir::DialectRegistry &registry) const override
-            {
-                registry.insert<::mlir::AffineDialect, ::mlir::memref::MemRefDialect, ::mlir::StandardOpsDialect,
-                                ::mlir::linalg::LinalgDialect, ::mlir::scf::SCFDialect, ::mlir::bufferization::BufferizationDialect>();
+namespace voila::mlir {
+    namespace lowering {
+        struct VoilaToAffineLoweringPass
+                : public ::mlir::PassWrapper<VoilaToAffineLoweringPass, ::mlir::OperationPass<::mlir::func::FuncOp>> {
+            void getDependentDialects(::mlir::DialectRegistry &registry) const override {
+                registry.insert<::mlir::AffineDialect, ::mlir::memref::MemRefDialect, ::mlir::func::FuncDialect,
+                        ::mlir::linalg::LinalgDialect, ::mlir::scf::SCFDialect, ::mlir::bufferization::BufferizationDialect>();
             }
+
             void runOnOperation() final;
         };
     } // namespace lowering

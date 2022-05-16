@@ -2,9 +2,15 @@
 
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Vector/IR/VectorOps.h"
 #include "mlir/IR/VoilaDialect.h"
 #include "mlir/IR/VoilaOps.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/lowering/ArithmeticOpLowering.hpp"
 #include "mlir/lowering/ComparisonOpLowering.hpp"
 #include "mlir/lowering/ConstOpLowering.hpp"
@@ -34,7 +40,7 @@ namespace voila::mlir
 
             // We define the specific operations, or dialects, that are legal targets for
             // this lowering.
-            target.addLegalDialect<BuiltinDialect, AffineDialect, memref::MemRefDialect, StandardOpsDialect,
+            target.addLegalDialect<BuiltinDialect, AffineDialect, memref::MemRefDialect, func::FuncDialect,
                                    linalg::LinalgDialect, tensor::TensorDialect, scf::SCFDialect, vector::VectorDialect,
                                    arith::ArithmeticDialect, bufferization::BufferizationDialect>();
 

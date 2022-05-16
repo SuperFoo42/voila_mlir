@@ -1,14 +1,15 @@
 #include "mlir/lowering/AvgOpLowering.hpp"
 
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/IR/TypeUtilities.h"
+#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/VoilaOps.h"
 
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
-    using namespace ::mlir::arith;
+    using namespace arith;
     using namespace ::mlir::voila;
 
     AvgOpLowering::AvgOpLowering(MLIRContext *ctx) : ConversionPattern(AvgOp::getOperationName(), 1, ctx) {}

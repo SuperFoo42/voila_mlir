@@ -4,14 +4,16 @@
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/VoilaOps.h"
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
 
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
-    using namespace ::mlir::arith;
-    using namespace ::mlir::bufferization;
+    using namespace arith;
+    using namespace bufferization;
     using ::mlir::voila::MinOp;
     using ::mlir::voila::MinOpAdaptor;
 

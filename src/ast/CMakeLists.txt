@@ -1,4 +1,5 @@
-add_library(voila_ast
+target_sources(voila_ast PRIVATE
+        ${CMAKE_BINARY_DIR}/src/voila_parser.cpp
         Add.cpp
         AggrAvg.cpp
         AggrCnt.cpp
@@ -59,7 +60,6 @@ target_compile_options(voila_ast PUBLIC
         -Wpedantic
         -Wall
         -Wextra
-        -Werror
         -Wno-c++98-compat
         -Wno-c++98-c++11-c++14-compat
         -Wno-c++98-compat-pedantic)

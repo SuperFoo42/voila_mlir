@@ -4,7 +4,6 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
 
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/InitAllDialects.h>
 #include <mlir/InitAllPasses.h>
@@ -19,7 +18,7 @@ int main(int argc, char **argv) {
     mlir::registerAllPasses();
     mlir::DialectRegistry registry;
     registry.insert<mlir::voila::VoilaDialect>();
-    registry.insert<mlir::StandardOpsDialect>();
+    registry.insert<mlir::func::FuncDialect>();
     registry.insert<mlir::arith::ArithmeticDialect>();
     registry.insert<mlir::vector::VectorDialect>();
     registry.insert<mlir::omp::OpenMPDialect>();

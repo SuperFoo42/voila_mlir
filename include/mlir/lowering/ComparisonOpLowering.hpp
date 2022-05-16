@@ -100,14 +100,14 @@ namespace voila::mlir::lowering
             {
                 auto rhsTensor = builder.template create<::mlir::linalg::InitTensorOp>(
                     lhs.getType().template dyn_cast<::mlir::RankedTensorType>().getShape(), rhs.getType());
-                rhs = builder.template create<::mlir::linalg::FillOp>(rhs, rhsTensor).result();
+                rhs = builder.template create<::mlir::linalg::FillOp>(rhs, rhsTensor.result()).result();
             }
             else if (!lhs.getType().template isa<::mlir::TensorType>() &&
                      rhs.getType().template isa<::mlir::TensorType>())
             {
                 auto lhsTensor = builder.template create<::mlir::linalg::InitTensorOp>(
                     rhs.getType().template dyn_cast<::mlir::RankedTensorType>().getShape(), lhs.getType());
-                lhs = builder.template create<::mlir::linalg::FillOp>(lhs, lhsTensor).result();
+                lhs = builder.template create<::mlir::linalg::FillOp>(lhs, lhsTensor.result()).result();
             }
 
             if (::mlir::getElementTypeOrSelf(lhs).template isa<::mlir::IndexType>() xor

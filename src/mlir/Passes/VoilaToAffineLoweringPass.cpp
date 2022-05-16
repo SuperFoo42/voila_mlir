@@ -1,5 +1,6 @@
 #include "mlir/Passes/VoilaToAffineLoweringPass.hpp"
 
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/IR/VoilaDialect.h"
@@ -18,6 +19,7 @@
 #include "mlir/lowering/SelectOpLowering.hpp"
 #include "mlir/lowering/SumOpLowering.hpp"
 #include "mlir/lowering/ScatterOpLowering.hpp"
+
 
 namespace voila::mlir
 {
@@ -40,7 +42,7 @@ namespace voila::mlir
 
             // We define the specific operations, or dialects, that are legal targets for
             // this lowering.
-            target.addLegalDialect<BuiltinDialect, AffineDialect, memref::MemRefDialect, StandardOpsDialect,
+            target.addLegalDialect<BuiltinDialect, AffineDialect, memref::MemRefDialect,func::FuncDialect,
                                    linalg::LinalgDialect, scf::SCFDialect, arith::ArithmeticDialect,
                                    bufferization::BufferizationDialect, tensor::TensorDialect>();
 
@@ -72,8 +74,8 @@ namespace voila::mlir
             // match function return type after emit lowering
             // FIXME: this is only a workaround, there must be a more clean way to achieve bufferization for function
             // return
-            auto newType = FunctionType::get(&getContext(), function.getType().getInputs(),
-                                             function.body().back().back().getOperandTypes());
+            auto newType = FunctionType::get(&getContext(), function.getFunctionType().getInputs(),
+                                             function.getBody().back().back().getOperandTypes());
             function.setType(newType);
         }
     } // namespace lowering
