@@ -47,11 +47,14 @@
 #include <mlir/Passes/PredicationForwardingPass.hpp>
 #include <mlir/Passes/VoilaToAffineLoweringPass.hpp>
 #include <mlir/Passes/VoilaToLinalgLoweringPass.hpp>
+#include <mlir/Passes/VoilaToLLVMLoweringPass.hpp>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
 #include <mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h>
+#include "mlir/Passes/VoilaBufferizePass.hpp"
+
 #pragma GCC diagnostic pop
 
 namespace voila {
@@ -225,13 +228,13 @@ namespace voila {
             engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));
 
         // Invoke the JIT-compiled function.
-        Profiler<Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, /*Events::TLB_MISSES,*/
-                Events::NO_INST_COMPLETE, /*Events::CY_STALLED,*/ Events::REF_CYCLES, Events::TOT_CYCLES,
+/*        Profiler<*//*Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, Events::TLB_MISSES,
+                Events::NO_INST_COMPLETE, Events::CY_STALLED, Events::REF_CYCLES, *//*Events::TOT_CYCLES,
                 Events::INS_ISSUED, Events::PREFETCH_MISS>
                 prof;
-        prof.start();
+        prof.start();*/
         auto invocationResult = engine->invokePacked("main", params);
-        prof.stop();
+/*        prof.stop();
         //
         if (config._debug) {
             std::cout << prof << std::endl;
@@ -239,7 +242,7 @@ namespace voila {
         if (config._profile) {
             timer = prof.getTime();
             // TODO: store profiling results
-        }
+        }*/
 
         if (invocationResult) {
             throw JITInvocationError();
@@ -354,17 +357,13 @@ namespace voila {
         }*/
 
         //  bufferization passes
+        pm.addPass(createVoilaBufferizePass());
+        pm.addNestedPass<FuncOp>(createLinalgBufferizePass());
+        pm.addPass(createFuncBufferizePass());
 
-        bufferization::OneShotBufferizationOptions bufferizationOps;
-        bufferizationOps.allowReturnAllocs = true;
-        bufferizationOps.allowUnknownOps=true;
-        bufferizationOps.bufferAlignment=128; //TODO: buffer alignment option
-        bufferizationOps.createDeallocs=true;
-        pm.addPass(bufferization::createOneShotBufferizePass(bufferizationOps));
-        //pm.addPass(createLinalgComprehensiveModuleBufferizePass(bufferizationOps));
         pm.addNestedPass<FuncOp>(bufferization::createBufferHoistingPass());
         pm.addNestedPass<FuncOp>(bufferization::createBufferLoopHoistingPass());
-        pm.addNestedPass<FuncOp>(bufferization::createPromoteBuffersToStackPass());
+        //pm.addNestedPass<FuncOp>(bufferization::createPromoteBuffersToStackPass()); //potential double free if result res small enough to fit into stack
         pm.addNestedPass<FuncOp>(createSimplifyAffineStructuresPass());
         pm.addNestedPass<FuncOp>(createAffineScalarReplacementPass());
         pm.addNestedPass<FuncOp>(createAffineLoopInvariantCodeMotionPass());
@@ -457,53 +456,48 @@ namespace voila {
 
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
+        pm.addPass(arith::createConstantBufferizePass());
         pm.addNestedPass<FuncOp>(bufferization::createBufferDeallocationPass());
         pm.addNestedPass<FuncOp>(::mlir::bufferization::createFinalizingBufferizePass());
 
-        if (config._optimize && config._vectorize)
-        {
+        if (config._optimize && config._vectorize) {
             pm.addNestedPass<FuncOp>(createLinalgStrategyLowerVectorsPass(
-                linalg::LinalgVectorLoweringOptions()
-                    .enableContractionLowering()
-                    .enableMultiReductionLowering()
-                    .enableTransferLowering()
-                    .enableTransferToSCFConversion()
-                    .enableTransferPartialRewrite()
-                    .setVectorTransferToSCFOptions(VectorTransferToSCFOptions().enableFullUnroll())
-                    .setVectorTransformsOptions(vector::VectorTransformsOptions().setVectorMultiReductionLowering(
-                        vector::VectorMultiReductionLowering::InnerReduction))));
+                    linalg::LinalgVectorLoweringOptions()
+                            .enableContractionLowering()
+                            .enableMultiReductionLowering()
+                            .enableTransferLowering()
+                            .enableTransferToSCFConversion()
+                            .enableTransferPartialRewrite()
+                            .setVectorTransferToSCFOptions(VectorTransferToSCFOptions().enableFullUnroll())
+                            .setVectorTransformsOptions(
+                                    vector::VectorTransformsOptions().setVectorMultiReductionLowering(
+                                            vector::VectorMultiReductionLowering::InnerReduction))));
             pm.addPass(createConvertVectorToLLVMPass(LowerVectorToLLVMOptions()
-                                                         .enableIndexOptimizations(true)
-                                                         .enableReassociateFPReductions(true)
-                                                         .enableX86Vector(true)));
+                                                             .enableIndexOptimizations(true)
+                                                             .enableReassociateFPReductions(true)
+                                                             .enableX86Vector(true)));
         }
 
 
         pm.addNestedPass<FuncOp>(arith::createArithmeticExpandOpsPass());
         pm.addNestedPass<FuncOp>(memref::createExpandOpsPass());
-
-        pm.addNestedPass<FuncOp>(arith::createConvertArithmeticToLLVMPass());
-
-        pm.addPass(createLowerHostCodeToLLVMPass());
+        //pm.addPass(createLowerHostCodeToLLVMPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());
-        if (config._optimize && config._async_parallel)
-        {
+
+
+
+        if (config._optimize && config._async_parallel) {
             pm.addPass(createConvertAsyncToLLVMPass());
         }
-        if (config._optimize && config._openmp_parallel)
-        {
+        if (config._optimize && config._openmp_parallel) {
             pm.addPass(createConvertOpenMPToLLVMPass());
         }
 
-        pm.addNestedPass<FuncOp>(arith::createConvertArithmeticToLLVMPass());
-        pm.addNestedPass<FuncOp>(createConvertSCFToCFPass());
-        pm.addPass(createMemRefToLLVMPass());
-        pm.addPass(cf::createConvertControlFlowToLLVMPass());
-        pm.addPass(createConvertFuncToLLVMPass());
+        pm.addPass(createLowerVoilaToLLVMPass());
         pm.addPass(createCanonicalizerPass());
         pm.addPass(createCSEPass());
-        pm.addPass(createReconcileUnrealizedCastsPass());
         pm.addPass(LLVM::createLegalizeForExportPass());
+
         auto state = pm.run(*mlirModule);
         spdlog::debug(MLIRModuleToString(mlirModule));
         if (failed(state)) {
