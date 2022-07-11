@@ -159,7 +159,7 @@ namespace voila {
 
             auto optPipeline = makeOptimizingTransformer(
                     /*optLevel=*/config._optimize ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None,
-                    /*sizeLevel=*/llvm::CodeModel::Small,
+                    /*sizeLevel=*/llvm::CodeModel::Tiny,
                     /*targetMachine=*/tmOrError->get());
 
             SmallVector<StringRef, 4> executionEngineLibs;
@@ -207,15 +207,20 @@ namespace voila {
 
             // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
             // the module.
-            //TODO: , /*llvmModuleBuilder=*/nullptr, optPipeline,
-            //                                                          config._optimize ? llvm::CodeGenOpt::Level::Aggressive :
-            //                                                                             llvm::CodeGenOpt::Level::None,
-            //                                                          executionEngineLibs, true, config._debug, config._profile
-            auto expectedEngine = ExecutionEngine::create(*mlirModule);
+            ExecutionEngineOptions opts;
+            opts.transformer = optPipeline;
+            //opts.enableObjectCache = true;
+            opts.jitCodeGenOptLevel = llvm::CodeGenOpt::Level::Aggressive;
+            opts.enableObjectCache = true;
+            SmallVector<StringRef> pathRefs;
+            for (auto &path : libPaths)
+                pathRefs.push_back(path);
+            opts.sharedLibPaths = pathRefs;
+            auto expectedEngine = ExecutionEngine::create(*mlirModule, opts);
             assert(expectedEngine && "failed to construct an execution engine");
 
             maybeEngine = std::move(*expectedEngine);
-            (*maybeEngine)->registerSymbols(runtimeSymbolMap);
+            //(*maybeEngine)->registerSymbols(runtimeSymbolMap);
         }
 
         return *maybeEngine;
@@ -223,9 +228,6 @@ namespace voila {
 
     void Program::runJIT([[maybe_unused]] const std::optional<std::string> &objPath) {
         auto &engine = getOrCreateExecutionEngine();
-
-        if (objPath.has_value())
-            engine->dumpToObjectFile(objPath.value() + std::string(".main.o"));
 
         // Invoke the JIT-compiled function.
 /*        Profiler<*//*Events::L3_CACHE_MISSES, Events::L2_CACHE_MISSES, Events::BRANCH_MISSES, Events::TLB_MISSES,
@@ -247,7 +249,7 @@ namespace voila {
         if (invocationResult) {
             throw JITInvocationError();
         }
-        if (config._debug && objPath)
+        if (objPath)
             engine->dumpToObjectFile(*objPath);
     }
 
@@ -268,11 +270,19 @@ namespace voila {
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
         ExecutionEngine::setupTargetTriple(llvmModule.get());
+        // An optimization pipeline to use within the execution engine.
+        auto tmBuilderOrError = llvm::orc::JITTargetMachineBuilder::detectHost();
+        if (!tmBuilderOrError)
+            throw std::runtime_error("Failed to create a JITTargetMachineBuilder for the host");
 
-        /// Optionally run an optimization pipeline over the llvm module.
+        auto tmOrError = tmBuilderOrError->createTargetMachine();
+        if (!tmOrError)
+            throw std::runtime_error("Failed to create a TargetMachine for the host");
+
         auto optPipeline = makeOptimizingTransformer(
-                /*optLevel=*/config._optimize ? 3 : 0, /*sizeLevel=*/0,
-                /*targetMachine=*/nullptr);
+                /*optLevel=*/config._optimize ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None,
+                /*sizeLevel=*/llvm::CodeModel::Tiny,
+                /*targetMachine=*/tmOrError->get());
         if (auto err = optPipeline(llvmModule.get())) {
             throw err; // TODO: rethrow with other exception
         }
@@ -332,7 +342,6 @@ namespace voila {
 
         pm.addNestedPass<FuncOp>(createLinalgStrategyInterchangePass());
 
-        // pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
         /*if (config._optimize && config._tile)
         {
             auto tile_size = {config._tile_size == -1 ? max_in_table_size / config._parallel_threads :
@@ -355,6 +364,11 @@ namespace voila {
                {}}));*//*
 
         }*/
+        //pm.addNestedPass<FuncOp>(createLinalgTilingPass(10, linalg::LinalgTilingLoopType::AffineLoops));
+        auto o = linalg::LinalgTilingAndFusionOptions();
+        o.setTileSizes({10});
+        pm.addNestedPass<FuncOp>(createLinalgStrategyTileAndFusePass(llvm::StringRef(""),o));
+        //pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
 
         //  bufferization passes
         pm.addPass(createVoilaBufferizePass());
@@ -394,7 +408,7 @@ namespace voila {
 
         // pm.addNestedPass<FuncOp>(createConvertLinalgTiledLoopsToSCFPass());
         //
-        // pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
+        //pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
         //         pm.addNestedPass<FuncOp>(createConvertLinalgToAffineLoopsPass());
         //  pm.addNestedPass<FuncOp>(createConvertLinalgToLoopsPass());
         //  pm.addNestedPass<FuncOp>(createConvertLinalgToAffineLoopsPass());
@@ -679,10 +693,10 @@ namespace voila {
 
             ::llvm::DataLayout layout(llvmModule.get());
             auto resStruct = llvm::StructType::create(llvmContext, resTypes);
-            auto resLayout = layout.getStructLayout(resStruct);
+            const auto resLayout = layout.getStructLayout(resStruct);
             params.push_back(std::malloc(resLayout->getSizeInBytes()));
             spdlog::debug("Running JIT Program");
-            runJIT();
+            runJIT(config.ObjectFile.empty() ? std::nullopt : std::optional(config.ObjectFile));
             spdlog::debug("Finished Running JIT Program");
             std::shared_ptr<void> basePtr(params.pop_back_val(), ProgramResultDeleter());
 

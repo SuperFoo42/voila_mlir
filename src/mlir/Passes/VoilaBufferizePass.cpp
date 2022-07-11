@@ -4,7 +4,7 @@
 #include "mlir/Dialect/Bufferization/Transforms/OneShotModuleBufferize.h"
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
 
-#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
@@ -57,7 +57,8 @@ namespace voila::mlir {
         bufferizationOps.bufferizeFunctionBoundaries = true;
         //bufferizationOps.bufferAlignment = 128; TODO: buffer alignment option?
         bufferizationOps.createDeallocs = false; //not yet possible, as return values are also deallocated
-        bufferizationOps.allowDialectInFilter<tensor::TensorDialect, linalg::LinalgDialect, arith::ArithmeticDialect>();
+        //bufferizationOps.
+        //bufferizationOps.allowDialectInFilter<tensor::TensorDialect, linalg::LinalgDialect, arith::ArithmeticDialect>();
         return std::make_unique<lowering::VoilaBufferizePass>(std::move(bufferizationOps));
     }
 } // voila

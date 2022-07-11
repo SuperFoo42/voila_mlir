@@ -62,7 +62,8 @@ namespace voila
                    std::string astOutFile,
                    std::string mlirOutFile,
                    std::string mlirLoweredOutFile,
-                   std::string llvmOutFile) :
+                   std::string llvmOutFile,
+                   std::string objectOutFile) :
         _debug(debug),
         _optimize(optimize),
         _fuse(fuse),
@@ -88,7 +89,8 @@ namespace voila
         ASTOutFile(std::move(astOutFile)),
         MLIROutFile(std::move(mlirOutFile)),
         MLIRLoweredOutFile(std::move(mlirLoweredOutFile)),
-        LLVMOutFile(std::move(llvmOutFile))
+        LLVMOutFile(std::move(llvmOutFile)),
+        ObjectFile(std::move(objectOutFile))
     {
         // TODO: check conflicting options
     }
@@ -248,5 +250,10 @@ namespace voila
         o << "parallel_threads: " << c._parallel_threads << "\n";
         o << "unroll_factor: " << c._unroll_factor << "\n";
         return o;
+    }
+
+    Config &Config::object_out_file(std::string objectOutFile) {
+        ObjectFile = std::move(objectOutFile);
+        return *this;
     }
 } // namespace voila

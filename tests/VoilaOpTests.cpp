@@ -14,7 +14,7 @@ TEST(AddTests, TensorTensorTest)
 {
     Config config;
 
-    config.debug().optimize(false);
+    config.debug().optimize().vectorize(true).vector_size(5).object_out_file("main.o");
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_add.voila";
     constexpr size_t TENSOR_SIZE = 100;
@@ -105,7 +105,7 @@ TEST(SubTests, TensorTensorTest)
 {
     Config config;
 
-    config.debug().optimize();
+    config.optimize();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_sub.voila";
     constexpr size_t TENSOR_SIZE = 100;
@@ -113,41 +113,27 @@ TEST(SubTests, TensorTensorTest)
     constexpr uint64_t TENSOR_SUB = TENSOR_VALS - TENSOR_VALS;
     Program prog(file, config);
     // alloc dummy data to pass to program args
-    auto arg = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
-    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
-    auto arg2 = std::unique_ptr<uint64_t[]>(new uint64_t[TENSOR_SIZE]);
-    std::fill_n(arg2.get(), TENSOR_SIZE, TENSOR_VALS);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
-    prog << ::voila::make_param(arg2.get(), TENSOR_SIZE);
+    std::vector<int32_t> arg(TENSOR_SIZE);
+    std::vector<int32_t> arg2(TENSOR_SIZE);
+
+    std::ranges::fill(arg,TENSOR_VALS);
+    std::ranges::fill(arg2,TENSOR_VALS);
+    prog << arg;
+    prog << arg2;
 
     // run in jit
-    auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);
+    auto res = std::get<strided_memref_ptr<uint32_t, 1>>(prog()[0]);
 
     ASSERT_EQ(res->sizes[0], TENSOR_SIZE);
     for (auto elem : *res)
         ASSERT_EQ(elem, TENSOR_SUB);
 }
-/*
-TEST(SubTests, TensorScalarTest)
-{
-    FAIL();
-}
-
-TEST(SubTests, ScalarTensorTest)
-{
-    FAIL();
-}
-
-TEST(SubTests, ScalarScalarTest)
-{
-    FAIL();
-}*/
 
 TEST(HashTableTests, ScalarHash)
 {
     Config config;
 
-    config.debug().optimize(false);
+    config.debug().optimize();
 
     const auto file = VOILA_TEST_SOURCES_PATH "/simple_hash.voila";
     constexpr size_t TENSOR_SIZE = 100;
@@ -155,9 +141,9 @@ TEST(HashTableTests, ScalarHash)
     constexpr uint64_t HASH = 7668608003591710536;
     Program prog(file, config);
     // alloc dummy data to pass to program args
-    auto arg = std::unique_ptr<int64_t[]>(new int64_t[TENSOR_SIZE]);
-    std::fill_n(arg.get(), TENSOR_SIZE, TENSOR_VALS);
-    prog << ::voila::make_param(arg.get(), TENSOR_SIZE);
+    std::vector<int64_t> arg(TENSOR_SIZE);
+    std::ranges::fill(arg, TENSOR_VALS);
+    prog << arg;
 
     // run in jit
     auto res = std::get<strided_memref_ptr<uint64_t, 1>>(prog()[0]);

@@ -42,6 +42,7 @@ namespace voila
         std::string MLIROutFile;
         std::string MLIRLoweredOutFile;
         std::string LLVMOutFile;
+        std::string ObjectFile;
 
       public:
         explicit Config(cxxopts::ParseResult &opts);
@@ -70,7 +71,8 @@ namespace voila
                         std::string astOutFile = "",
                         std::string mlirOutFile = "",
                         std::string mlirLoweredOutFile = "",
-                        std::string llvmOutFile = "");
+                        std::string llvmOutFile = "",
+                        std::string ObjectFile = "");
         Config &debug(bool flag = true);
         Config &optimize(bool flag = true);
         Config &fuse(bool flag = true);
@@ -94,10 +96,10 @@ namespace voila
         Config &mlir_out_file(std::string mlirOutFile);
         Config &mlir_lowered_out_file(std::string mlirLoweredOutFile);
         Config &llvm_out_file(std::string llvmOutFile);
+        Config &object_out_file(std::string objectOutFile);
         Config &gpu_parallel(bool flag = true);
         Config &async_parallel(bool flag = true);
         Config &openmp_parallel(bool flag = true);
-
     };
 
     std::ostream &operator<<(std::ostream &o, const Config &c);

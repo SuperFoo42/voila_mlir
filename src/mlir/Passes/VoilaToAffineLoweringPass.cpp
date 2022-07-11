@@ -2,7 +2,7 @@
 
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
-#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/VoilaDialect.h"
 #include "mlir/lowering/ArithmeticOpLowering.hpp"
 #include "mlir/lowering/AvgOpLowering.hpp"
