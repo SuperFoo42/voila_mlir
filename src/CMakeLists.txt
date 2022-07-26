@@ -44,7 +44,8 @@ set(LLVM_LINK_COMPONENTS
         )
 
 target_link_libraries(voila_compiler
-        voila_lowering
+        MLIRVoila
+        MLIRVoilaToInternal
         magic_enum
         reflex
         voila_ast

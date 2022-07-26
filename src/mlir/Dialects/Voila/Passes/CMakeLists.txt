@@ -1,0 +1,10 @@
+set(VoilaPasses
+        ${CMAKE_CURRENT_LIST_DIR}/VoilaToLinalgLoweringPass.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/VoilaToAffineLoweringPass.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/VoilaToLLVMLoweringPass.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/LinalgTiledLoopsToAffineForPass.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/ParallelLoopToGpuMappingPass.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/PredicationForwardingPass.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/MemOpsToAffineMemOpsConversionPass.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/VoilaBufferizePass.cpp
+        PARENT_SCOPE)

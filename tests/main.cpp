@@ -7,7 +7,7 @@
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/InitAllDialects.h>
 #include <mlir/InitAllPasses.h>
-#include "mlir/IR/VoilaDialect.h"
+#include "mlir/Dialects/Voila/IR/VoilaDialect.h"
 #include <spdlog/spdlog.h>
 
 #pragma GCC diagnostic pop

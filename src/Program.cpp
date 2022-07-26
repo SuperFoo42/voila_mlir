@@ -27,7 +27,7 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
 
-#include "mlir/Passes/MemOpsToAffineMemOpsConversionPass.hpp"
+#include "mlir/Dialects/Voila/Passes/MemOpsToAffineMemOpsConversionPass.hpp"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include <llvm/CodeGen/CommandFlags.h>
 #include <llvm/IR/Module.h>
@@ -39,21 +39,21 @@
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/IR/AsmState.h>
-#include <mlir/IR/VoilaDialect.h>
+#include <mlir/Dialects/Voila/IR/VoilaDialect.h>
 #include <mlir/InitAllPasses.h>
 #include <mlir/Pass/Pass.h>
 #include <mlir/Pass/PassManager.h>
-#include <mlir/Passes/ParallelLoopToGpuMappingPass.hpp>
-#include <mlir/Passes/PredicationForwardingPass.hpp>
-#include <mlir/Passes/VoilaToAffineLoweringPass.hpp>
-#include <mlir/Passes/VoilaToLinalgLoweringPass.hpp>
-#include <mlir/Passes/VoilaToLLVMLoweringPass.hpp>
+#include <mlir/Dialects/Voila/Passes/ParallelLoopToGpuMappingPass.hpp>
+#include <mlir/Dialects/Voila/Passes/PredicationForwardingPass.hpp>
+#include <mlir/Dialects/Voila/Passes/VoilaToAffineLoweringPass.hpp>
+#include <mlir/Dialects/Voila/Passes/VoilaToLinalgLoweringPass.hpp>
+#include <mlir/Dialects/Voila/Passes/VoilaToLLVMLoweringPass.hpp>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
 #include <mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h>
-#include "mlir/Passes/VoilaBufferizePass.hpp"
+#include "mlir/Dialects/Voila/Passes/VoilaBufferizePass.hpp"
 
 #pragma GCC diagnostic pop
 
@@ -336,7 +336,7 @@ namespace voila {
         // optPM.addPass(createLinalgGeneralizationPass());
         if (config._optimize && config._fuse)
             pm.addNestedPass<FuncOp>(createLinalgElementwiseOpFusionPass());
-        pm.addNestedPass<FuncOp>(createLinalgStrategyPromotePass());
+        //pm.addNestedPass<FuncOp>(createLinalgStrategyPromotePass());
 
         // pm.addNestedPass<FuncOp>(mlir::createLinalgTiledPeelingPass());
 
@@ -367,11 +367,12 @@ namespace voila {
         //pm.addNestedPass<FuncOp>(createLinalgTilingPass(10, linalg::LinalgTilingLoopType::AffineLoops));
         auto o = linalg::LinalgTilingAndFusionOptions();
         o.setTileSizes({10});
-        pm.addNestedPass<FuncOp>(createLinalgStrategyTileAndFusePass(llvm::StringRef(""),o));
+        //pm.addNestedPass<FuncOp>(createLinalgStrategyTileAndFusePass(llvm::StringRef(""),o));
         //pm.addNestedPass<FuncOp>(createLinalgStrategyVectorizePass());
 
         //  bufferization passes
         pm.addPass(createVoilaBufferizePass());
+        pm.addNestedPass<FuncOp>(createTensorBufferizePass());
         pm.addNestedPass<FuncOp>(createLinalgBufferizePass());
         pm.addPass(createFuncBufferizePass());
 

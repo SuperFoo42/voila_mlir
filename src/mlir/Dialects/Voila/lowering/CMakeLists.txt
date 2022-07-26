@@ -1,0 +1,18 @@
+set(VoilaLowerings
+        ${CMAKE_CURRENT_LIST_DIR}/SelectOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/AvgOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/MaxOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/MinOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/SumOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/CountOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/EmitOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/NotOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/ReadOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/GatherOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/LoopOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/HashOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/InsertOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/LookupOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/ScatterOpLowering.cpp
+        PARENT_SCOPE
+)

@@ -2,7 +2,7 @@
 
 #include "MlirGenerationException.hpp"
 #include "NotImplementedException.hpp"
-#include "mlir/IR/VoilaOps.h"
+#include "mlir/Dialects/Voila/IR/VoilaOps.h"
 
 #include <mlir/IR/BuiltinTypes.h>
 #include <mlir/IR/TypeUtilities.h>
