@@ -83,6 +83,7 @@ using namespace voila::ast;
 [[:alpha:]_][[:alnum:]_]* return voila::parser::Parser::make_ID(str(), location());
 [\"]([^\\\"]|\\.)*?[\"]             return voila::parser::Parser::make_STR(str(), location());
 #.*                 /* Comment */
+"//".*              /* Comment */
 \s+               /* no action: ignore all white space */
 
 .                               throw voila::parser::Parser::syntax_error(location(), "Unknown token.");
