@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <variant>
 #include <vector>
+#include <filesystem>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
@@ -138,7 +139,7 @@ namespace voila
 
         explicit Program(Config config = Config());
 
-        explicit Program(std::string_view source_path, Config config = Config());
+        explicit Program(const std::string &source_path  = "-", Config config = Config());
 
         ~Program();
 

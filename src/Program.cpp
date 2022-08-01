@@ -36,6 +36,7 @@
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
+#include "llvm/Support/raw_os_ostream.h"
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/IR/AsmState.h>
@@ -75,7 +76,8 @@ namespace voila {
         } else {
             res.emplace_back(strided_memref_ptr<T, 1>(basePtr, reinterpret_cast<StridedMemRefType<T, 1> *>(elemPtr)));
             std::get_deleter<ProgramResultDeleter>(basePtr)->toDealloc.push_back(
-                    std::get<strided_memref_ptr<T, 1>>(res.back())->basePtr);
+                    std::get<strided_memref_ptr < T, 1>>
+            (res.back())->basePtr);
         }
 
         return res;
@@ -110,11 +112,13 @@ namespace voila {
         node.visit(inferer);
     }
 
-    void Program::to_dot(const std::string &fname) {
+    void Program::to_dot(const std::string &fname = "-") {
         for (auto &func: get_funcs()) {
             DotVisualizer vis(*func, std::optional<std::reference_wrapper<TypeInferer>>(inferer));
-            std::ofstream out(fname + "." + func->name + ".dot", std::ios::out);
-            out << vis;
+
+            auto out = std::unique_ptr<std::ostream>(fname.empty() || fname == "-" ? &std::cout : new std::ofstream(func->name + fname, std::ios::out));
+
+            *out << vis;
         }
     }
 
@@ -213,7 +217,7 @@ namespace voila {
             opts.jitCodeGenOptLevel = llvm::CodeGenOpt::Level::Aggressive;
             opts.enableObjectCache = true;
             SmallVector<StringRef> pathRefs;
-            for (auto &path : libPaths)
+            for (auto &path: libPaths)
                 pathRefs.push_back(path);
             opts.sharedLibPaths = pathRefs;
             auto expectedEngine = ExecutionEngine::create(*mlirModule, opts);
@@ -298,11 +302,15 @@ namespace voila {
         os.flush();
     }
 
-    void Program::printMLIR(const std::string &filename) {
+    void Program::printMLIR(const std::string &filename = "-") {
         std::error_code ec;
-        llvm::raw_fd_ostream os(filename + ".mlir", ec, llvm::sys::fs::OF_None);
-        mlirModule->print(os);
-        os.flush();
+        auto os = std::unique_ptr<llvm::raw_ostream>(
+                (filename.empty() || filename == "-") ? static_cast<llvm::raw_ostream *>(new llvm::raw_os_ostream(
+                        std::cout)) : static_cast<llvm::raw_ostream *>(new llvm::raw_fd_ostream(
+                        filename + ".mlir", ec, llvm::sys::fs::OF_None)));
+
+        mlirModule->print(*os);
+        os->flush();
     }
 
     void Program::lowerMLIR() {
@@ -498,7 +506,6 @@ namespace voila {
         pm.addNestedPass<FuncOp>(memref::createExpandOpsPass());
         //pm.addPass(createLowerHostCodeToLLVMPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());
-
 
 
         if (config._optimize && config._async_parallel) {
@@ -747,7 +754,7 @@ namespace voila {
         typeInference.inferTypes(*this);
     }
 
-    Program::Program(std::string_view source_path, Config config) :
+    Program::Program(const std::string &source_path, Config config) :
             func_vars(),
             context(),
             llvmContext(),
@@ -758,20 +765,22 @@ namespace voila {
             config{std::move(config)},
             max_in_table_size(0),
             inferer() {
-        if (source_path == "")
+
+        if (source_path.empty())
             return;
 
-        std::ifstream fst(source_path.data(), std::ios::in);
+        auto fst = std::unique_ptr<std::istream>(
+                source_path == "-" ? &std::cin : new std::ifstream(source_path, std::ios::in));
 
-        if (fst.is_open()) {
-            lexer = std::make_unique<Lexer>(fst); // read file, decode UTF-8/16/32 format
+        if (fst->good()) {
+            lexer = std::make_unique<Lexer>(*fst); // read file, decode UTF-8/16/32 format
             lexer->filename = source_path;        // the filename to display with error locations
 
             ::voila::parser::Parser parser(*lexer, *this);
             if (parser() != 0)
                 throw ::voila::ParsingError();
         } else {
-            spdlog::error("failed to open {}", source_path);
+            spdlog::error("failed to read from input", source_path);
         }
 
         // llvm::DebugFlag = config.debug;

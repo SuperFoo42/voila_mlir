@@ -1,5 +1,4 @@
 CPMAddPackage("gh:Neargye/magic_enum@0.7.3")
-CPMAddPackage("gh:jarro2783/cxxopts@3.0.0")
 CPMAddPackage("gh:fmtlib/fmt#8.1.0")
 
 CPMAddPackage(
@@ -50,7 +49,6 @@ target_link_libraries(voila_compiler
         reflex
         voila_ast
         reflex
-        cxxopts
         spdlog
         range-v3
         MLIRExecutionEngine

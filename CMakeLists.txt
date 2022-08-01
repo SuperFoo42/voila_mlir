@@ -67,8 +67,8 @@ find_package(MLIR REQUIRED CONFIG)
 message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
-set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/bin)
-set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/lib)
+set(LLVM_RUNTIME_OUTPUT_INTDIR ${llvm_BINARY_DIR}/bin)
+set(LLVM_LIBRARY_OUTPUT_INTDIR ${llvm_BINARY_DIR}/lib)
 
 find_package(OpenMP REQUIRED)
 # just hope, the first entry is the correct one...
@@ -83,6 +83,11 @@ include(TableGen)
 include(AddLLVM)
 include(AddMLIR)
 include(HandleLLVMOptions)
+
+if(MLIR_ENABLE_BINDINGS_PYTHON)
+    include(MLIRDetectPythonEnv)
+    mlir_configure_python_dev_packages()
+endif()
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
@@ -182,6 +187,12 @@ add_dependencies(voila_compiler voila_parser_and_lexer)
 add_dependencies(voila_ast voila_parser_and_lexer)
 
 add_subdirectory(src)
+
+if(MLIR_ENABLE_BINDINGS_PYTHON)
+    message(STATUS "Enabling Python API")
+    add_subdirectory(python)
+endif()
+
 add_subdirectory(include)
 if (BUILD_TEST)
     CPMAddPackage(

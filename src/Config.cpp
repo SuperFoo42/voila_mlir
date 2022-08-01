@@ -1,42 +1,12 @@
 #include "Config.hpp"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-override"
-#include <cxxopts.hpp>
+
 #include <utility>
 #pragma GCC diagnostic pop
 
 namespace voila
 {
-    Config::Config(cxxopts::ParseResult &opts) :
-        Config(opts.count("v"),
-               opts.count("O"),
-               true,
-               true,
-               true,
-               true,
-               true,
-               true,
-               true,
-               false,
-               false,
-               true,
-               true,
-               opts.count("a"),
-               opts.count("d"),
-               opts.count("l"),
-               opts.count("O"),
-               -1,
-               8,
-               std::max<int32_t>(std::thread::hardware_concurrency(), 1),
-                   1,
-               -1,
-               opts["f"].as<std::string>(),
-               opts["f"].as<std::string>(),
-               opts["f"].as<std::string>(),
-               opts["f"].as<std::string>())
-    {
-    }
-
     Config::Config(bool debug,
                    bool optimize,
                    bool fuse,

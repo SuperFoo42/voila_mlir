@@ -45,7 +45,6 @@ namespace voila
         std::string ObjectFile;
 
       public:
-        explicit Config(cxxopts::ParseResult &opts);
         explicit Config(bool debug = false,
                         bool optimize = true,
                         bool fuse = true,

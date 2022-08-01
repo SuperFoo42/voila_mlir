@@ -1,7 +1,0 @@
-main(x,y)
-{
-    h = hash(x,y);
-    a,b = insert(h,x,y);
-    z = lookup(x, y, a, b, h);
-    emit z;
-}
