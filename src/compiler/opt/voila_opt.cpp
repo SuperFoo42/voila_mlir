@@ -9,11 +9,16 @@
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/InitAllDialects.h>
 #include <mlir/InitAllPasses.h>
-#include <mlir/VoilaDialect.h>
+#include <mlir/Dialects/Voila/IR/VoilaDialect.h>
+#include <mlir/Tools/mlir-opt/MlirOptMain.h>
+#include <llvm/Support/CommandLine.h>
+#include <mlir/Support/FileUtilities.h>
+#include <llvm/Support/InitLLVM.h>
+#include <llvm/Support/SourceMgr.h>
+#include <llvm/Support/ToolOutputFile.h>
 #pragma GCC diagnostic pop
 
 #include <cstdlib>
-#include <cxxopts.hpp>
 #include <filesystem>
 #include <fstream>
 #include <spdlog/spdlog.h>
@@ -24,10 +29,12 @@ int main(int argc, char *argv[])
     mlir::registerAllPasses();
     mlir::DialectRegistry registry;
     registry.insert<mlir::voila::VoilaDialect>();
-    registry.insert<mlir::StandardOpsDialect>();
     registerAllDialects(registry);
     mlir::registerMLIRContextCLOptions();
 
+    return mlir::asMainReturnCode(
+            mlir::MlirOptMain(argc, argv, "Standalone optimizer driver\n", registry));
+/*
     cxxopts::Options options("VOILA compiler", "");
     // TODO: different output files
     options.add_options()("h, help", "Show help")(
@@ -122,8 +129,8 @@ int main(int argc, char *argv[])
 
         // run in jit
         auto res = prog();
-/*        for (auto elem : *(*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res)))
-            std::cout << elem << std::endl;*/
+*//*        for (auto elem : *(*std::get<std::unique_ptr<StridedMemRefType<uint64_t, 1> *>>(res)))
+            std::cout << elem << std::endl;*//*
     }
     catch (const cxxopts::OptionException &e)
     {
@@ -132,5 +139,5 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    return EXIT_SUCCESS;
+    return EXIT_SUCCESS;*/
 }
