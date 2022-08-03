@@ -125,7 +125,7 @@
 %nterm <ast::Expression> pred_expr;
 %nterm <ast::Expression> var;
 %nterm <std::vector<ast::Expression>> var_list;
-
+%nterm <std::vector<ast::Expression>> params;
 %nterm <ast::Statement> effect;
 %nterm <ast::Expression> arithmetic;
 %nterm <ast::Expression> comparison;
@@ -138,12 +138,19 @@
 %%
 program: 
 	%empty { }
-	| program func { out.add_func($2); }
-	| program main { out.add_func($2); } //TODO: main function is singleton
+	| func program { out.add_func($1); }
+	| main prog_no_main { out.add_func($1); }
 
-func: FUNCTION ID LPAREN var_list RPAREN LBRACE stmts RBRACE { $$ = new ast::Fun(@0+@6,$2, $4, $7); }
+prog_no_main:
+    %empty { }
+    | func prog_no_main { out.add_func($1); }
 
-main: MAIN LPAREN var_list RPAREN LBRACE stmts RBRACE { $$ = new ast::Main(@0+@5,$3, $6); }
+func: FUNCTION ID params LBRACE stmts RBRACE { $$ = new ast::Fun(@0+@5,$2, $3, $5); }
+
+main: MAIN params LBRACE stmts RBRACE { $$ = new ast::Main(@0+@4,$2, $4); }
+
+params: LPAREN var_list RPAREN { $$ = $2; }
+        | LPAREN RPAREN { $$ = std::vector<ast::Expression>(); }
 
 stmts:
 	%empty { }
