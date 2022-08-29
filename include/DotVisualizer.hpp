@@ -24,18 +24,18 @@ namespace voila::ast
             *os << fmt::format("n{} [label=<<b>{} <br/>", nodeID, node.type2string());
             if (infer_type && inferer.has_value())
             {
-                const auto &type = inferer->get().get_type(node);
+                const auto type = inferer->get().get_type(node);
                 // FIXME: overload does not work, need dynamic cast
-                const auto res = dynamic_cast<const FunctionType *>(&type);
+                const auto res = std::dynamic_pointer_cast<FunctionType>(type);
                 if (!res)
                 {
-                    if (dynamic_cast<const ScalarType *>(&type))
+                    if (std::dynamic_pointer_cast<const ScalarType>(type))
                     {
-                        *os << dynamic_cast<const ScalarType &>(type);
+                        *os << *std::dynamic_pointer_cast<const ScalarType>(type);
                     }
                     else
                     {
-                        *os << dynamic_cast<const FunctionType &>(type);
+                        *os << *std::dynamic_pointer_cast<FunctionType>(type);
                     }
                 }
                 else

@@ -634,15 +634,15 @@ namespace voila {
         // run jit
         std::vector<result_t> res;
         if (main->result.has_value()) {
-            auto &type = inferer.get_type(main->result.value());
+            auto type = inferer.get_type(main->result.value());
             // test scalar
 
             SmallVector<::llvm::Type *> resTypes;
 
-            auto types = type.getTypes();
-            const std::vector<Arity> &arities = const_cast<const Type &>(type).getArities();
+            const auto types = type->getTypes();
+            const auto arities = type->getArities();
             for (size_t i = 0; i < types.size(); ++i) {
-                if (!arities[i].is_undef() && arities[i].get_size() <= 1) {
+                if (!arities[i].get().is_undef() && arities[i].get().get_size() <= 1) {
                     switch (types[i]) {
                         case DataType::INT32:
                             resTypes.push_back(::llvm::Type::getInt32Ty(llvmContext));

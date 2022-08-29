@@ -57,11 +57,11 @@ namespace voila
         void operator()(const ast::StatementWrapper &wrapper) final;
         void operator()(const ast::Hash &hash) final;
 
-        Type &get_type(const ast::ASTNode &node) const;
+        std::shared_ptr<Type> get_type(const ast::ASTNode &node) const;
 
-        Type &get_type(const ast::Expression &node) const;
+        std::shared_ptr<Type> get_type(const ast::Expression &node) const;
 
-        Type &get_type(const ast::Statement &node) const;
+        std::shared_ptr<Type> get_type(const ast::Statement &node) const;
 
         void set_arity(const ast::ASTNode *node, size_t ar);
         void set_type(const ast::ASTNode *node, DataType type);
@@ -70,7 +70,7 @@ namespace voila
         void operator()(const ast::Lookup &lookup) override;
         void operator()(const ast::Insert &insert) override;
 
-        std::vector<std::unique_ptr<Type>> types;
+        std::vector<std::shared_ptr<Type>> types;
 
       private:
         void unify(ast::ASTNode &t1, ast::ASTNode &t2);

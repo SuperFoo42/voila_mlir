@@ -87,6 +87,7 @@ namespace voila::mlir
 
         ::mlir::Type getScalarType(const ast::ASTNode &node);
 
+        ::mlir::Type scalarConvert(const std::shared_ptr<::voila::Type> &t);
         ::mlir::Type scalarConvert(const ::voila::Type &t);
 
       public:

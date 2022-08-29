@@ -571,15 +571,15 @@ namespace voila::mlir
 
     std::vector<::mlir::Type> MLIRGeneratorImpl::getTypes(const ASTNode &node)
     {
-        const auto &astType = inferer.get_type(node);
+        auto astType = inferer.get_type(node);
         std::vector<::mlir::Type> types;
-        if (dynamic_cast<const ScalarType *>(&astType))
+        if (std::dynamic_pointer_cast<ScalarType>(astType))
         {
-            types.push_back(convert(astType));
+            types.push_back(convert(*astType));
         }
         else
         {
-            for (auto tid : dynamic_cast<const FunctionType *>(&astType)->returnTypeIDs)
+            for (auto tid : std::dynamic_pointer_cast<FunctionType>(astType)->returnTypeIDs)
             {
                 types.push_back(convert(*inferer.types.at(tid)));
             }
@@ -653,8 +653,13 @@ namespace voila::mlir
 
     ::mlir::Type MLIRGeneratorImpl::getScalarType(const ASTNode &node)
     {
-        const auto &astType = inferer.get_type(node);
+        const auto astType = inferer.get_type(node);
         return scalarConvert(astType);
+    }
+
+    ::mlir::Type MLIRGeneratorImpl::scalarConvert(const std::shared_ptr<::voila::Type> &t)
+    {
+        return scalarConvert(*t);
     }
 
     ::mlir::Type MLIRGeneratorImpl::scalarConvert(const ::voila::Type &t)

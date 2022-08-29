@@ -4,6 +4,8 @@
 #include <ostream>
 #include <utility>
 #include <vector>
+#include <memory>
+
 namespace voila
 {
     class TypeInferer;
@@ -68,6 +70,11 @@ namespace voila
             return convertible(other) || other.convertible(*this);
         }
 
+        [[nodiscard]] bool compatible(const std::shared_ptr<Type>& other) const
+        {
+            return convertible(*other) || other->convertible(*this);
+        }
+
         [[nodiscard]] virtual bool compatible(const DataType &other) const = 0;
 
         [[nodiscard]] virtual std::string stringify() const = 0;
@@ -114,7 +121,7 @@ namespace voila
         [[nodiscard]] std::vector<std::reference_wrapper<Arity>> getArities() override;
         [[nodiscard]] std::vector<Arity> getArities() const override;
 
-        std::string stringify() const override;
+        [[nodiscard]] std::string stringify() const override;
 
         std::vector<type_id_t> paramTypeIds;
         std::vector<Type *> paramType;
