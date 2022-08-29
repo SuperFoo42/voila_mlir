@@ -22,7 +22,6 @@
 
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
 #include <spdlog/spdlog.h>
 #include <charconv>
 
@@ -65,7 +64,7 @@ namespace llvm::cl {
                 return true;
             }
 
-            if (n != std::string::npos) {
+            if (n != llvm::StringRef::npos) {
                 auto as = ArgValue.substr(n + 1);
                 size_t result{};
 
@@ -80,7 +79,8 @@ namespace llvm::cl {
                     O.error("This number is larger than an size_t.");
                     return true;
                 }
-
+            } else {
+                Val.ar = voila::Arity(0);
             }
 
             return false;

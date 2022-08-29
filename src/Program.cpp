@@ -201,13 +201,13 @@ namespace voila {
             }
 
             // Build a runtime symbol map from the config and exported symbols.
-            auto runtimeSymbolMap = [&](llvm::orc::MangleAndInterner interner) {
+/*            auto runtimeSymbolMap = [&](llvm::orc::MangleAndInterner interner) {
                 auto symbolMap = llvm::orc::SymbolMap();
                 for (auto &exportSymbol: exportSymbols)
                     symbolMap[interner(exportSymbol.getKey())] =
                             llvm::JITEvaluatedSymbol::fromPointer(exportSymbol.getValue());
                 return symbolMap;
-            };
+            };*/
 
             // Create an MLIR execution engine. The execution engine eagerly JIT-compiles
             // the module.
@@ -340,7 +340,6 @@ namespace voila {
 
         pm.addNestedPass<FuncOp>(createConvertElementwiseToLinalgPass());
         pm.addNestedPass<FuncOp>(createLinalgStrategyEnablePass());
-        pm.addNestedPass<FuncOp>(createLinalgStrategyGeneralizePass());
         // optPM.addPass(createLinalgGeneralizationPass());
         if (config._optimize && config._fuse)
             pm.addNestedPass<FuncOp>(createLinalgElementwiseOpFusionPass());
@@ -348,7 +347,6 @@ namespace voila {
 
         // pm.addNestedPass<FuncOp>(mlir::createLinalgTiledPeelingPass());
 
-        pm.addNestedPass<FuncOp>(createLinalgStrategyInterchangePass());
 
         /*if (config._optimize && config._tile)
         {

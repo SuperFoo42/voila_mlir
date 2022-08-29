@@ -1,6 +1,0 @@
-// RUN: voila-mlir-translate -emit=mlir %s | FileCheck %s
-
-// CHECK-LABEL: func @main
-main()
-{
-}

@@ -4,90 +4,92 @@
 #include "TypeInferer.hpp"
 
 #include <vector>
-namespace voila
-{
-    std::ostream &operator<<(std::ostream &os, const Arity &ar)
-    {
-        if (ar.undef)
-            os << "undef";
-        else
-            os << std::to_string(ar.arity);
+
+namespace voila {
+    using std::to_string;
+
+    std::ostream &operator<<(std::ostream &os, const Arity &ar) {
+        os << to_string(ar);
 
         return os;
     }
-    bool Arity::operator==(const Arity &rhs) const
-    {
+
+    std::string to_string(const Arity &ar) {
+        if (ar.undef)
+            return "undef";
+
+        return std::to_string(ar.arity);
+    }
+
+    bool Arity::operator==(const Arity &rhs) const {
         return arity == rhs.arity || undef == rhs.undef;
     }
-    bool Arity::operator!=(const Arity &rhs) const
-    {
+
+    bool Arity::operator!=(const Arity &rhs) const {
         return !(rhs == *this);
     }
-    bool Arity::is_undef() const
-    {
+
+    bool Arity::is_undef() const {
         return undef;
     }
-    size_t Arity::get_size() const
-    {
+
+    size_t Arity::get_size() const {
         return arity;
     }
-    Arity::Arity() : arity{std::numeric_limits<decltype(arity)>::max()}, undef{true} {}
-    std::ostream &operator<<(std::ostream &os, const ScalarType &type)
-    {
-        os << fmt::format("T{}:{}[", type.typeID, std::string(magic_enum::enum_name(type.t)));
+
+    std::ostream &operator<<(std::ostream &os, const ScalarType &type) {
+        os << fmt::format("T{}:{}[", type.typeID, to_string(type.t));
         os << type.ar << "]";
         return os;
     }
-    ScalarType::ScalarType(type_id_t tID, TypeInferer &inferer, DataType t, Arity ar) : Type(tID, inferer), t(t), ar{ar}
-    {
+
+    ScalarType::ScalarType(type_id_t tID, TypeInferer &inferer, DataType t, Arity ar) : Type(tID, inferer), t(t),
+                                                                                        ar{ar} {
     }
 
-    bool ScalarType::convertible(const Type &other) const
-    {
-        if (dynamic_cast<const ScalarType *>(&other))
-        {
+    bool ScalarType::convertible(const Type &other) const {
+        if (dynamic_cast<const ScalarType *>(&other)) {
             auto scalarType = dynamic_cast<const ScalarType &>(other);
             return convertibleDataTypes(this->t, scalarType.t);
-        }
-        else
-        {
+        } else {
             auto functionType = dynamic_cast<const FunctionType &>(other);
             if (functionType.returnTypeIDs.size() != 1)
                 return false;
-            else
-            {
+            else {
                 return convertibleDataTypes(this->t,
                                             inferer.types.at(functionType.returnTypeIDs.front())->getTypes().front());
             }
         }
     }
-    bool ScalarType::convertible(const DataType &type) const
-    {
+
+    bool ScalarType::convertible(const DataType &type) const {
         return convertibleDataTypes(t, type);
     }
-    bool ScalarType::compatible(const DataType &other) const
-    {
+
+    bool ScalarType::compatible(const DataType &other) const {
         return convertible(other) || convertibleDataTypes(other, t);
     }
-    std::vector<DataType> ScalarType::getTypes() const
-    {
+
+    std::vector<DataType> ScalarType::getTypes() const {
         return {t};
     }
-    std::vector<std::reference_wrapper<Arity>> ScalarType::getArities()
-    {
-        return {ar};
-    }
-    std::vector<Arity> ScalarType::getArities() const
-    {
+
+    std::vector<std::reference_wrapper<Arity>> ScalarType::getArities() {
         return {ar};
     }
 
-    std::ostream &operator<<(std::ostream &os, const FunctionType &type)
-    {
+    std::vector<Arity> ScalarType::getArities() const {
+        return {ar};
+    }
+
+    std::string ScalarType::stringify() const {
+        return to_string(t) + to_string(ar);
+    }
+
+    std::ostream &operator<<(std::ostream &os, const FunctionType &type) {
         os << fmt::format("T{}:(", type.typeID);
-        for (const auto &t : type.returnTypeIDs)
-        {
-            os << std::string(magic_enum::enum_name(dynamic_cast<ScalarType *>(type.inferer.types.at(t).get())->t))
+        for (const auto &t: type.returnTypeIDs) {
+            os << to_string(dynamic_cast<ScalarType *>(type.inferer.types.at(t).get())->t)
                << "[" << dynamic_cast<ScalarType *>(type.inferer.types.at(t).get())->ar
                << "],"; // TODO: one comma to much
         }
@@ -96,55 +98,48 @@ namespace voila
         os << ")";
         return os;
     }
+
     FunctionType::FunctionType(type_id_t tID,
                                TypeInferer &inferer,
                                std::vector<type_id_t> paramTypeIds,
                                std::vector<type_id_t> returnTypes) :
-        Type(tID, inferer), paramTypeIds{std::move(paramTypeIds)}, returnTypeIDs{std::move(returnTypes)}
-    {
+            Type(tID, inferer), paramTypeIds{std::move(paramTypeIds)}, returnTypeIDs{std::move(returnTypes)} {
     }
 
-    bool FunctionType::convertible(const Type &other) const
-    {
-        if (dynamic_cast<const ScalarType *>(&other))
-        {
+    bool FunctionType::convertible(const Type &other) const {
+        if (dynamic_cast<const ScalarType *>(&other)) {
             auto scalarType = dynamic_cast<const ScalarType &>(other);
 
             if (returnTypeIDs.size() != 1)
                 return false;
-            else
-            {
+            else {
                 return convertibleDataTypes(
-                    dynamic_cast<ScalarType *>(inferer.types.at(returnTypeIDs.front()).get())->t, scalarType.t);
+                        dynamic_cast<ScalarType *>(inferer.types.at(returnTypeIDs.front()).get())->t, scalarType.t);
             }
-        }
-        else
-        {
+        } else {
             auto functionType = dynamic_cast<const FunctionType &>(other);
             if (this->returnTypeIDs.size() != returnTypeIDs.size())
                 return false;
             bool all_eq = true;
-            for (size_t i = 0; i < returnTypeIDs.size(); ++i)
-            {
+            for (size_t i = 0; i < returnTypeIDs.size(); ++i) {
                 all_eq &= convertibleDataTypes(
-                    dynamic_cast<ScalarType *>(inferer.types.at(returnTypeIDs.at(i)).get())->t,
-                    dynamic_cast<ScalarType *>(inferer.types.at(functionType.returnTypeIDs.at(i)).get())->t);
+                        dynamic_cast<ScalarType *>(inferer.types.at(returnTypeIDs.at(i)).get())->t,
+                        dynamic_cast<ScalarType *>(inferer.types.at(functionType.returnTypeIDs.at(i)).get())->t);
             }
             return all_eq;
         }
     }
-    bool FunctionType::convertible(const DataType &type) const
-    {
+
+    bool FunctionType::convertible(const DataType &type) const {
         if (returnTypeIDs.size() != 1)
             return false;
-        else
-        {
+        else {
             return convertibleDataTypes(dynamic_cast<ScalarType *>(inferer.types.at(returnTypeIDs.front()).get())->t,
                                         type);
         }
     }
-    bool FunctionType::compatible(const DataType &other) const
-    {
+
+    bool FunctionType::compatible(const DataType &other) const {
         if (returnTypeIDs.size() == 1)
             return this->convertible(other) ||
                    convertibleDataTypes(other,
@@ -152,45 +147,62 @@ namespace voila
 
         return false;
     }
-    std::vector<DataType> FunctionType::getTypes() const
-    {
+
+    std::vector<DataType> FunctionType::getTypes() const {
         std::vector<DataType> types;
-        for (const auto &t : returnTypeIDs)
-        {
+        for (const auto &t: returnTypeIDs) {
             auto tmp = inferer.types.at(t)->getTypes();
             types.insert(types.end(), tmp.begin(), tmp.end());
         }
 
         return types;
     }
-    std::vector<std::reference_wrapper<Arity>> FunctionType::getArities()
-    {
+
+    std::vector<std::reference_wrapper<Arity>> FunctionType::getArities() {
         std::vector<std::reference_wrapper<Arity>> types;
-        for (const auto &t : returnTypeIDs)
-        {
+        for (const auto &t: returnTypeIDs) {
             auto tmp = inferer.types.at(t)->getArities();
             types.insert(types.end(), tmp.begin(), tmp.end());
         }
 
         return types;
     }
-    std::vector<Arity> FunctionType::getArities() const
-    {
+
+    std::string to_string(const Type &t) {
+        return t.stringify();
+    }
+
+    std::string to_string(const DataType &dt) {
+        return std::string(magic_enum::enum_name(dt));
+    }
+
+    std::vector<Arity> FunctionType::getArities() const {
         std::vector<Arity> types;
-        for (const auto &t : returnTypeIDs)
-        {
+        for (const auto &t: returnTypeIDs) {
             auto tmp = inferer.types.at(t)->getArities();
             types.insert(types.end(), tmp.begin(), tmp.end());
         }
 
         return types;
     }
-    bool Type::convertibleDataTypes(DataType t1, DataType t2)
-    {
+
+    std::string FunctionType::stringify() const {
+        std::string type;
+        for (const auto &t: paramTypeIds) {
+            type += to_string(*inferer.types.at(t)) + "_";
+        }
+        type +="ret_";
+        for (const auto &t: returnTypeIDs) {
+            type += to_string(*inferer.types.at(t)) + "_";
+        }
+
+        return type;
+    }
+
+    bool Type::convertibleDataTypes(DataType t1, DataType t2) {
         if (t1 == t2)
             return true;
-        switch (t1)
-        {
+        switch (t1) {
             case DataType::UNKNOWN:
                 return true;
             case DataType::NUMERIC:

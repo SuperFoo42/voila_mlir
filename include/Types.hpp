@@ -20,14 +20,15 @@ namespace voila
         UNKNOWN
     };
 
+    std::string to_string(const DataType &dt);
+
     class Arity
     {
         size_t arity;
         bool undef;
 
       public:
-        Arity();
-        friend std::ostream &operator<<(std::ostream &os, const Arity &ar);
+        friend std::string to_string(const Arity &ar);
         bool operator==(const Arity &rhs) const;
         bool operator!=(const Arity &rhs) const;
 
@@ -40,7 +41,12 @@ namespace voila
             arity = i;
             undef = false;
         }
+
+
+        Arity() : arity{std::numeric_limits<decltype(arity)>::max()}, undef{true} {}
     };
+
+    std::string to_string(const Arity &ar);
 
     using type_id_t = size_t;
 
@@ -63,7 +69,12 @@ namespace voila
         }
 
         [[nodiscard]] virtual bool compatible(const DataType &other) const = 0;
+
+        [[nodiscard]] virtual std::string stringify() const = 0;
     };
+
+    std::string to_string(const Type &t);
+
 
     class ScalarType;
     class FunctionType;
@@ -82,7 +93,9 @@ namespace voila
         [[nodiscard]] bool compatible(const DataType &other) const override;
         [[nodiscard]] std::vector<DataType> getTypes() const override;
         [[nodiscard]] std::vector<std::reference_wrapper<Arity>> getArities() override;
-        std::vector<Arity> getArities() const override;
+        [[nodiscard]] std::vector<Arity> getArities() const override;
+
+        [[nodiscard]] std::string stringify() const override;
     };
 
     class FunctionType : public Type
@@ -99,8 +112,12 @@ namespace voila
         [[nodiscard]] bool compatible(const DataType &other) const override;
         [[nodiscard]] std::vector<DataType> getTypes() const override;
         [[nodiscard]] std::vector<std::reference_wrapper<Arity>> getArities() override;
-        std::vector<Arity> getArities() const override;
+        [[nodiscard]] std::vector<Arity> getArities() const override;
+
+        std::string stringify() const override;
+
         std::vector<type_id_t> paramTypeIds;
+        std::vector<Type *> paramType;
         std::vector<type_id_t> returnTypeIDs;
     };
 } // namespace voila

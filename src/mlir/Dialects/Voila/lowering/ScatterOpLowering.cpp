@@ -47,7 +47,7 @@ namespace voila::mlir::lowering
             Value idx = builder.create<tensor::ExtractOp>(scatterOpAdaptor.idxs(), vals);
             if (!idx.getType().isIndex())
                 idx = builder.create<IndexCastOp>(builder.getIndexType(), idx);
-            auto res = builder.create<tensor::ExtractOp>(scatterOpAdaptor.src(), vals).result();
+            auto res = builder.create<tensor::ExtractOp>(scatterOpAdaptor.src(), vals).getResult();
             builder.create<memref::StoreOp>(res, out, idx);
         };
 

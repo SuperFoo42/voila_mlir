@@ -154,7 +154,7 @@ namespace voila::mlir
                     }
                     else
                     {
-                        auto dimShape = rewriter.create<tensor::DimOp>(loc, op.values(), 0).result();
+                        auto dimShape = rewriter.create<tensor::DimOp>(loc, op.values(), 0).getResult();
                         tmp = rewriter.create<linalg::InitTensorOp>(loc, ::llvm::makeArrayRef(dimShape),
                                                                     getElementTypeOrSelf(op.values()));
                     };

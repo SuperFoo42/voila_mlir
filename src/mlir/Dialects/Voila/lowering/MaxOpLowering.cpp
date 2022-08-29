@@ -182,7 +182,7 @@ namespace voila::mlir::lowering {
 
         buildAffineLoopNest(rewriter, rewriter.getLoc(),
                             ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(0)),
-                            rewriter.create<tensor::DimOp>(maxOpAdaptor.input(), 0).result(), {1}, fn);
+                            rewriter.create<tensor::DimOp>(maxOpAdaptor.input(), 0).getResult(), {1}, fn);
 
         return rewriter.create<ToTensorOp>(res);
     }

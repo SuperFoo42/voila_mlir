@@ -229,7 +229,7 @@ namespace voila::mlir::lowering
         };
 
         buildAffineLoopNest(builder, builder.getLoc(), lb,
-                            builder.create<tensor::DimOp>(insertOpAdaptor.hashValues(), 0).result(), {1},
+                            builder.create<tensor::DimOp>(insertOpAdaptor.hashValues(), 0).getResult(), {1},
                             [&](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
                             {
                                 ImplicitLocOpBuilder builder(loc, nestedBuilder);

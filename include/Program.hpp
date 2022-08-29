@@ -150,6 +150,11 @@ namespace voila
             return ranges::views::values(functions);
         }
 
+        const auto &get_func(const std::string &func_name) const
+        {
+            return functions.at(func_name);
+        }
+
         ::mlir::OwningOpRef<::mlir::ModuleOp> &generateMLIR();
 
         void lowerMLIR();

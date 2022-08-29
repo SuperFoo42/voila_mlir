@@ -9,6 +9,8 @@
 #include <range/v3/all.hpp>
 
 namespace voila {
+    using std::to_string;
+
     bool TypeInferer::convertible(DataType t1, DataType t2) {
         if (t1 == t2)
             return true;
@@ -311,6 +313,10 @@ namespace voila {
             arg.visit(*this);
         }
 
+        //TODO:
+        // lookup if function already typed
+        // if function types match, just use this
+        //else create function with types, change call and call inference
         std::vector<type_id_t> argIds;
         std::transform(
                 call.args.begin(), call.args.end(),

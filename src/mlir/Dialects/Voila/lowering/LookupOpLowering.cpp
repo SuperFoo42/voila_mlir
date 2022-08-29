@@ -184,7 +184,7 @@ namespace voila::mlir::lowering
                     llvm::makeArrayRef<Value>(rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashes(), 0)));
             buildAffineLoopNest(
                 rewriter, loc, llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),
-                rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashes(), 0).result(),
+                rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.hashes(), 0).getResult(),
                 llvm::makeArrayRef<int64_t>(1),
                 [&](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
                 {

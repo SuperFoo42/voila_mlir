@@ -30,7 +30,7 @@ namespace voila::mlir::lowering
         auto gatherFunc = [&gatherOpAdaptor](OpBuilder & builder, Location loc, ValueRange vals)
         {
             auto idx = vals.front();
-            auto res = builder.create<tensor::ExtractOp>(loc, gatherOpAdaptor.column(), idx).result();
+            auto res = builder.create<tensor::ExtractOp>(loc, gatherOpAdaptor.column(), idx).getResult();
             builder.create<linalg::YieldOp>(loc, res);
         };
 
