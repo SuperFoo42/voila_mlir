@@ -27,4 +27,8 @@ namespace voila::ast
     {
         visitor(*this);
     }
+
+    std::unique_ptr<ASTNode> BooleanConst::clone(llvm::DenseMap<ASTNode *, ASTNode *> &) {
+        return std::make_unique<BooleanConst>(loc, val);
+    }
 } // namespace voila::ast

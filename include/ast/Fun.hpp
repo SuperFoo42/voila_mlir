@@ -33,6 +33,8 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const override;
         void visit(ASTVisitor &visitor) override;
 
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+
         std::string name;
         std::vector<Expression> args;
         std::vector<Statement> body;

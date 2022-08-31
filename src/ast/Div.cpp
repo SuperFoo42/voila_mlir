@@ -1,5 +1,4 @@
 #include "ast/Div.hpp"
-
 namespace voila::ast
 {
     std::string Div::type2string() const

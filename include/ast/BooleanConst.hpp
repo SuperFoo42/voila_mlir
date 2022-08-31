@@ -18,6 +18,8 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+
         const bool val;
     };
 } // namespace voila::ast

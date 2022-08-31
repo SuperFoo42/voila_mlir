@@ -25,5 +25,7 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) final;
 
         Expression param;
+
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
     };
 } // namespace voila::ast

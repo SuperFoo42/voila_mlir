@@ -79,5 +79,7 @@ namespace voila::ast
             */
         Location get_location();
         std::optional<Expression> get_predicate();
+
+        Statement clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) const;
     };
 } // namespace voila::ast

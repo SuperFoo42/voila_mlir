@@ -6,8 +6,8 @@ namespace voila::ast
     class Selection : public IExpression
     {
       public:
-        Expression param;
-        Expression pred;
+        const Expression param;
+        const Expression pred;
         explicit Selection(const Location loc, Expression expr, Expression pred) : IExpression(loc), param(std::move(expr)), pred(std::move(pred))
         {
             // TODO
@@ -21,5 +21,7 @@ namespace voila::ast
         void print(std::ostream &ostream) const final;
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
+
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
     };
 } // namespace voila::ast

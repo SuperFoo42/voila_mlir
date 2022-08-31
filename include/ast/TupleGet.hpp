@@ -20,7 +20,9 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        Expression expr;
-        std::intmax_t idx;
+        const Expression expr;
+        const std::intmax_t idx;
+
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
     };
 } // namespace voila::ast

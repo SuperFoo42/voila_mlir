@@ -23,4 +23,8 @@ namespace voila::ast
     {
         visitor(*this);
     }
+
+    std::unique_ptr<ASTNode> Not::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        return std::make_unique<Not>(loc, param.clone(vmap));
+    }
 } // namespace voila::ast

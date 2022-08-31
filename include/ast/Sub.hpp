@@ -19,6 +19,7 @@ namespace voila::ast
 
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
+        using Arithmetic::clone;
     };
 }
 

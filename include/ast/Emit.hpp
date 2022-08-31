@@ -23,7 +23,8 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        std::vector<Expression> exprs;
+        const std::vector<Expression> exprs;
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
     };
 
 } // namespace voila::ast

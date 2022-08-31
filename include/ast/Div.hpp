@@ -19,5 +19,7 @@ namespace voila::ast
         Div *as_div() final;
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
+
+        using Arithmetic::clone;
     };
 } // namespace voila::ast

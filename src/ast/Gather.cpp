@@ -23,4 +23,8 @@ namespace voila::ast
     {
         visitor(*this);
     }
+
+    std::unique_ptr<ASTNode> Gather::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        return std::make_unique<Gather>(loc, column.clone(vmap), idxs.clone(vmap));
+    }
 } // namespace voila::ast

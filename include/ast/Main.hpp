@@ -30,5 +30,7 @@ namespace voila::ast
 
         void visit(ASTVisitor &visitor) const override;
         void visit(ASTVisitor &visitor) override;
+
+        using Fun::clone;
     };
 } // namespace voila::ast

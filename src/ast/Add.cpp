@@ -1,25 +1,23 @@
 #include "ast/Add.hpp"
 
-namespace voila::ast
-{
-    bool Add::is_add() const
-    {
+namespace voila::ast {
+    bool Add::is_add() const {
         return true;
     }
-    Add *Add::as_add()
-    {
+
+    Add *Add::as_add() {
         return this;
     }
-    std::string Add::type2string() const
-    {
+
+    std::string Add::type2string() const {
         return "add";
     }
-    void Add::visit(ASTVisitor &visitor) const
-    {
+
+    void Add::visit(ASTVisitor &visitor) const {
         visitor(*this);
     }
-    void Add::visit(ASTVisitor &visitor)
-    {
+
+    void Add::visit(ASTVisitor &visitor) {
         visitor(*this);
     }
 } // namespace voila::ast

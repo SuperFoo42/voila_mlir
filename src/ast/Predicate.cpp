@@ -28,4 +28,8 @@ namespace voila::ast
     {
         visitor(*this);
     }
+
+    std::unique_ptr<ASTNode> Predicate::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        return std::make_unique<Predicate>(loc, expr.clone(vmap));
+    }
 }

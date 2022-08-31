@@ -2,6 +2,7 @@
 #include "ASTVisitor.hpp"
 #include "Comparison.hpp"
 #include "Expression.hpp"
+
 namespace voila::ast
 {
     class Eq : public Comparison
@@ -18,5 +19,7 @@ namespace voila::ast
         Eq *as_eq() final;
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
+
+        using Comparison::clone;
     };
 } // namespace voila::ast

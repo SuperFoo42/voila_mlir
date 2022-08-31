@@ -20,5 +20,7 @@ namespace voila::ast
         Le *as_le() final;
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
+
+        using Comparison::clone;
     };
 } // namespace voila::ast

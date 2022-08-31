@@ -18,5 +18,6 @@ namespace voila::ast
         Mul *as_mul() final;
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
+        using Arithmetic::clone;
     };
 } // namespace voila::ast

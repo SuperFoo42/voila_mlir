@@ -18,5 +18,7 @@ namespace voila::ast
         Neq *as_neq() final;
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
+
+        using Comparison::clone;
     };
 } // namespace voila::ast

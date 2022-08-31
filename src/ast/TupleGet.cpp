@@ -26,4 +26,8 @@ namespace voila::ast
     {
         visitor(*this);
     }
+
+    std::unique_ptr<ASTNode> TupleGet::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        return std::make_unique<TupleGet>(loc, expr.clone(vmap), idx);
+    }
 } // namespace voila::ast

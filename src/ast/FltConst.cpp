@@ -27,4 +27,8 @@ namespace voila::ast
     {
         visitor(*this);
     }
+
+    std::unique_ptr<ASTNode> FltConst::clone(llvm::DenseMap<ASTNode *, ASTNode *> &) {
+        return std::make_unique<FltConst>(loc, val);
+    }
 } // namespace voila::ast

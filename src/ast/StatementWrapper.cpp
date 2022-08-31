@@ -31,4 +31,8 @@ namespace voila::ast
     {
         return this;
     }
+
+    std::unique_ptr<ASTNode> StatementWrapper::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        return std::make_unique<StatementWrapper>(loc, expr.clone(vmap));
+    }
 } // namespace voila::ast

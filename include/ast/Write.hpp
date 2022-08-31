@@ -26,6 +26,8 @@ namespace voila::ast
         Expression dest;
         Expression start;
         Expression src;
+
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
     };
 
 } // namespace voila::ast

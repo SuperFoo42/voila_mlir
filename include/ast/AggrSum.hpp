@@ -8,6 +8,7 @@ namespace voila::ast
     {
       public:
         using Aggregation::Aggregation;
+        using Aggregation::clone;
 
         [[nodiscard]] bool is_aggr_sum() const final;
 

@@ -34,4 +34,8 @@ namespace voila::ast
     {
         visitor(*this);
     }
+
+    std::unique_ptr<ASTNode> Write::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        return std::make_unique<Write>(loc, src.clone(vmap), dest.clone(vmap), start.clone(vmap));
+    }
 } // namespace voila::ast

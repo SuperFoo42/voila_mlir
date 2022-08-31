@@ -30,4 +30,8 @@ namespace voila::ast
     {
         visitor(*this);
     }
+
+    std::unique_ptr<ASTNode> Scatter::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        return std::make_unique<Scatter>(loc, idxs.clone(vmap), src.clone(vmap));
+    }
 } // namespace voila::ast

@@ -18,5 +18,7 @@ namespace voila::ast
         void print(std::ostream &ostream) const final;
 
         Expression lhs, rhs;
+
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) final;
     };
 } // namespace voila::ast

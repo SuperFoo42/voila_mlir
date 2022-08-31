@@ -22,7 +22,9 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        std::string fun;
-        std::vector<Expression> args;
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+
+        const std::string fun;
+        const std::vector<Expression> args;
     };
 } // namespace voila::ast

@@ -1,5 +1,5 @@
 #include "ast/Hash.hpp"
-
+#include "range/v3/algorithm.hpp"
 namespace voila::ast
 {
     [[nodiscard]] std::string Hash::type2string() const
@@ -25,4 +25,10 @@ namespace voila::ast
         visitor(*this);
     }
     void Hash::print(std::ostream &) const {}
+
+    std::unique_ptr<ASTNode> Hash::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        std::vector<Expression> clonedItems;
+        ranges::transform(items,clonedItems.begin(), [&vmap](auto &item) { return item.clone(vmap);});
+        return std::make_unique<Hash>(loc, clonedItems);
+    }
 } // namespace voila::ast

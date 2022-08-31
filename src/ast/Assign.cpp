@@ -1,48 +1,57 @@
 #include "ast/Assign.hpp"
-
-namespace voila::ast
-{
+#include "range/v3/all.hpp"
+namespace voila::ast {
     Assign::Assign(Location loc, std::vector<Expression> dests, Statement expr) :
-        IStatement(loc), dests{std::move(dests)}, expr{std::move(expr)}, pred{std::nullopt}
-    {
-        assert(ranges::all_of(this->dests, [](auto &dest) -> auto {return dest.is_variable() || dest.is_reference();}));
+            IStatement(loc), pred{std::nullopt}, dests{std::move(dests)}, expr{std::move(expr)} {
+        assert(ranges::all_of(this->dests,
+                              [](auto &dest) -> auto { return dest.is_variable() || dest.is_reference(); }));
     }
-    Assign *Assign::as_assignment()
-    {
+
+    Assign *Assign::as_assignment() {
         return this;
     }
-    bool Assign::is_assignment() const
-    {
+
+    bool Assign::is_assignment() const {
         return true;
     }
-    void Assign::set_predicate(Expression expression)
-    {
+
+    void Assign::set_predicate(Expression expression) {
         if (expression.is_predicate())
             pred = expression;
         else
             throw std::invalid_argument("Expression is no predicate");
     }
 
-    std::optional<Expression> Assign::get_predicate()
-    {
+    std::optional<Expression> Assign::get_predicate() {
         return pred;
     }
 
-    void Assign::print(std::ostream &) const
-    {
+    void Assign::print(std::ostream &) const {
 
     }
 
-    void Assign::visit(ASTVisitor &visitor) const
-    {
+    void Assign::visit(ASTVisitor &visitor) const {
         visitor(*this);
     }
-    void Assign::visit(ASTVisitor &visitor)
-    {
+
+    void Assign::visit(ASTVisitor &visitor) {
         visitor(*this);
     }
-    std::string Assign::type2string() const
-    {
+
+    std::string Assign::type2string() const {
         return "assignment";
+    }
+
+    std::unique_ptr<ASTNode> Assign::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        auto new_expr = expr.clone(vmap);
+        std::vector<Expression> new_dests;
+        ranges::transform(dests, new_dests.begin(), [&vmap](auto &val) { return val.clone(vmap); });
+
+        auto clonedAssignment = std::make_unique<Assign>(loc, new_dests, new_expr);
+        if (pred.has_value())
+            clonedAssignment->pred = std::make_optional(pred->clone(vmap));
+
+        return clonedAssignment;
+
     }
 } // namespace voila::ast

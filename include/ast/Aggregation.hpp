@@ -24,6 +24,8 @@ namespace voila::ast
 
         void print(std::ostream &) const final {}
 
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+
         Expression src;
         std::optional<Expression> groups;
     };

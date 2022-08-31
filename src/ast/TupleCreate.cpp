@@ -1,4 +1,5 @@
 #include "ast/TupleCreate.hpp"
+#include "range/v3/algorithm.hpp"
 
 namespace voila::ast
 {
@@ -19,5 +20,11 @@ namespace voila::ast
     void TupleCreate::visit(ASTVisitor &visitor)
     {
         visitor(*this);
+    }
+
+    std::unique_ptr<ASTNode> TupleCreate::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        std::vector<Expression> clonedElems;
+        ranges::transform(elems, clonedElems.begin(), [&vmap](auto &elem) { return elem.clone(vmap);});
+        return std::make_unique<TupleCreate>(loc, clonedElems);
     }
 } // namespace voila::ast

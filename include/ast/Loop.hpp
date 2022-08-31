@@ -8,6 +8,7 @@
 
 namespace voila::ast
 {
+    //TODO: fix this
     class Loop : public IStatement
     {
       public:
@@ -26,6 +27,8 @@ namespace voila::ast
 
         Expression pred;
         std::vector<Statement> stms;
+
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
         // TODO
         // CrossingVariables crossing_variables;
     };

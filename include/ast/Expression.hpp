@@ -10,9 +10,13 @@ namespace voila::ast
     class Expression
     {
         std::shared_ptr<IExpression> mImpl;
+
         explicit Expression(std::shared_ptr<IExpression> impl) : mImpl{std::move(impl)} {}
 
-      public:
+        explicit Expression(std::unique_ptr<IExpression> &&impl) : mImpl{std::move(impl)} {}
+
+
+    public:
         Expression() = default;
         Expression(Expression &) = default;
         Expression(const Expression &) = default;
@@ -25,6 +29,13 @@ namespace voila::ast
         static Expression make(Args &&...args)
         {
             return Expression(std::make_shared<ExprImpl>(std::forward<Args>(args)...));
+        }
+
+        template<typename ExprImpl>
+        requires std::is_base_of_v<IExpression, ExprImpl>
+        static Expression make(std::shared_ptr<ExprImpl> ptr)
+        {
+            return Expression(ptr);
         }
 
         friend std::ostream &operator<<(std::ostream &out, const Expression &t);
@@ -198,6 +209,8 @@ namespace voila::ast
 
         void visit(ASTVisitor &visitor);
         void visit(ASTVisitor &visitor) const;
+
+        Expression clone(llvm::DenseMap<ASTNode *, ASTNode *> vmap) const;
 
         void set_predicate(Expression expr);
 

@@ -7,6 +7,10 @@
 #include "ASTVisitor.hpp"
 namespace voila::ast
 {
+    //TODO
+    /**
+     * @deprecated ?
+     */
     class TupleCreate : public IExpression
     {
       public:
@@ -19,6 +23,8 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        std::vector<Expression> elems;
+        const std::vector<Expression> elems;
+
+        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
     };
 } // namespace voila::ast

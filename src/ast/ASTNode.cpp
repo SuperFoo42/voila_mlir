@@ -37,6 +37,7 @@ namespace voila::ast
     {
         visitor(*this);
     }
+
     Location ASTNode::get_location() const
     {
         return loc;

@@ -4,6 +4,7 @@
 
 #include <utility>
 #include "ast/EmitNotLastStatementException.hpp"
+#include "range/v3/all.hpp"
 
 namespace voila::ast
 {
@@ -50,5 +51,16 @@ namespace voila::ast
     void Fun::visit(ASTVisitor &visitor)
     {
         visitor(*this);
+    }
+
+    std::unique_ptr<ASTNode> Fun::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        std::vector<Expression> clonedArgs;
+        ranges::transform(args, clonedArgs.begin(), [&vmap](auto &arg) { return arg.clone(vmap); });
+
+        std::vector<Statement> clonedBody;
+        ranges::transform(body, clonedBody.begin(), [&vmap](auto &stmt) { return stmt.clone(vmap); });
+
+
+        return std::make_unique<Fun>(loc, name, clonedArgs, clonedBody);
     }
 } // namespace voila::ast
