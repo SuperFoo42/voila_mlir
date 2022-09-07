@@ -14,6 +14,6 @@ using namespace ::mlir::voila;
 // Table-generated class definitions
 //===----------------------------------------------------------------------===//
 
-#include "mlir/Interfaces/PredicationOpInterface.cpp.inc"//
+#include "mlir/Dialects/Voila/Interfaces/PredicationOpInterface.cpp.inc"//
 // Created by paul on 02.02.22.
 //

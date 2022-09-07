@@ -369,8 +369,8 @@ namespace voila::ast
         return mImpl->as_scatter();
     }
 
-    Expression Expression::clone(llvm::DenseMap<ASTNode *, ASTNode *> vmap) const
+    Expression Expression::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap)
     {
-        return Expression(std::dynamic_pointer_cast<IExpression>(std::shared_ptr<ASTNode>(mImpl->clone(vmap))));
+        return Expression(std::dynamic_pointer_cast<IExpression>(mImpl->clone(vmap)));
     }
 } // namespace voila::ast

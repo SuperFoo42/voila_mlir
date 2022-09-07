@@ -19,6 +19,9 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        using Comparison::clone;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) final
+        {
+            return Comparison::clone<Neq>(vmap);
+        }
     };
 } // namespace voila::ast

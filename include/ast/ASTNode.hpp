@@ -58,7 +58,7 @@ namespace voila::ast {
 
         virtual bool operator!=(const ASTNode &rhs) const;
 
-        virtual std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) = 0;
+        virtual std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) = 0;
     };
 } // namespace voila::ast
 

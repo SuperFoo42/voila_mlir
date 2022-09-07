@@ -11,7 +11,7 @@ namespace voila::ast {
     }
 
     FunctionCall::FunctionCall(const Location loc, std::string fun, std::vector<Expression> args) :
-            IStatement(loc), fun{std::move(fun)}, args{std::move(args)} {
+            IStatement(loc), mFun{std::move(fun)}, mArgs{std::move(args)} {
     }
 
     std::string FunctionCall::type2string() const {
@@ -19,8 +19,8 @@ namespace voila::ast {
     }
 
     void FunctionCall::print(std::ostream &ostream) const {
-        ostream << fun << "(";
-        for (const auto &arg: args) {
+        ostream << mFun << "(";
+        for (const auto &arg: mArgs) {
             ostream << arg << ",";
         }
         ostream << ")";
@@ -34,9 +34,9 @@ namespace voila::ast {
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> FunctionCall::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+    std::shared_ptr<ASTNode> FunctionCall::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
         std::vector<Expression> clonedArgs;
-        ranges::transform(args, clonedArgs.begin(), [&vmap](auto &arg) { return arg.clone(vmap); });
-        return std::make_unique<FunctionCall>(loc, fun, clonedArgs);
+        ranges::transform(mArgs, clonedArgs.begin(), [&vmap](auto &arg) { return arg.clone(vmap); });
+        return std::make_shared<FunctionCall>(loc, mFun, clonedArgs);
     }
 } // namespace voila::ast

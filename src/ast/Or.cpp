@@ -23,7 +23,7 @@ namespace voila::ast
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> Or::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
-        return std::make_unique<Or>(loc, lhs.clone(vmap), rhs.clone(vmap));
+    std::shared_ptr<ASTNode> Or::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        return std::make_shared<Or>(loc, mLhs.clone(vmap), mRhs.clone(vmap));
     }
 } // namespace voila::ast

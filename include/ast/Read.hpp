@@ -7,9 +7,11 @@ namespace voila::ast
 {
     class Read : public IExpression
     {
+        Expression mColumn, mIdx;
+
       public:
         Read(Location loc, Expression lhs, Expression rhs) :
-            IExpression(loc), column{std::move(lhs)}, idx{std::move(rhs)}
+            IExpression(loc), mColumn{std::move(lhs)}, mIdx{std::move(rhs)}
         {
             // TODO
         }
@@ -23,8 +25,16 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        Expression column, idx;
+        const Expression &column() const
+        {
+            return mColumn;
+        }
+
+        const Expression &idx() const
+        {
+            return mIdx;
+        }
     };
 } // namespace voila::ast

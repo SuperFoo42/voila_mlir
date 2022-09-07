@@ -11,9 +11,12 @@ namespace voila::ast
 {
     class Insert : public IExpression
     {
+        Expression mKeys;
+        std::vector<Expression> mValues;
+
       public:
         Insert(Location loc, Expression keys, std::vector<Expression> values) :
-            IExpression(loc), keys{std::move(keys)}, values{std::move(values)}
+            IExpression(loc), mKeys{std::move(keys)}, mValues{std::move(values)}
         {
             // TODO
         }
@@ -27,9 +30,14 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        const Expression keys;
-        const std::vector<Expression> values;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        [[nodiscard]] const Expression &keys() const {
+            return mKeys;
+        }
+
+        [[nodiscard]] const std::vector<Expression> &values() const {
+            return mValues;
+        }
     };
 } // namespace voila::ast

@@ -25,11 +25,11 @@ namespace voila::ast
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> Lookup::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+    std::shared_ptr<ASTNode> Lookup::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
         std::vector<Expression> clonedValues;
-        ranges::transform(values, clonedValues.begin(), [&vmap](auto &item) { return item.clone(vmap); });
+        ranges::transform(mValues, clonedValues.begin(), [&vmap](auto &item) { return item.clone(vmap); });
         std::vector<Expression> clonedTables;
-        ranges::transform(tables, clonedTables.begin(), [&vmap](auto &item) { return item.clone(vmap); });
-        return std::make_unique<Lookup>(loc, clonedValues, clonedTables, hashes.clone(vmap));
+        ranges::transform(mTables, clonedTables.begin(), [&vmap](auto &item) { return item.clone(vmap); });
+        return std::make_shared<Lookup>(loc, clonedValues, clonedTables, mHashes.clone(vmap));
     }
 } // namespace voila::ast

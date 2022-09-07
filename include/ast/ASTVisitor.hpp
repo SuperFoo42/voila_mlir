@@ -1,4 +1,5 @@
 #pragma once
+#include <stdexcept>
 namespace voila::ast
 {
     class Aggregation;
@@ -56,7 +57,7 @@ namespace voila::ast
     {
       public:
         virtual ~ASTVisitor() = default;
-        virtual void operator()(const ASTNode &) {}
+        virtual void operator()(const ASTNode &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
         virtual void operator()(const Aggregation &) {}
         virtual void operator()(const AggrSum &) {}
         virtual void operator()(const AggrCnt &) {}
@@ -65,6 +66,7 @@ namespace voila::ast
         virtual void operator()(const AggrAvg &) {}
         virtual void operator()(const Write &) {}
         virtual void operator()(const Scatter &) {}
+        virtual void operator()(FunctionCall &) {}
         virtual void operator()(const FunctionCall &) {}
         virtual void operator()(const Assign &) {}
         virtual void operator()(const Emit &) {}

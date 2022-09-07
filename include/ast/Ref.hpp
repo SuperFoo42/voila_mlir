@@ -1,13 +1,15 @@
 #pragma once
+
 #include "ASTVisitor.hpp"
 #include "Expression.hpp"
 #include "IExpression.hpp"
-namespace voila::ast
-{
-    class Ref : public IExpression
-    {
-      public:
-        explicit Ref(Location loc, Expression  ref);
+
+namespace voila::ast {
+    class Ref : public IExpression {
+        Expression mRef;
+
+    public:
+        explicit Ref(Location loc, Expression ref);
 
         [[nodiscard]] bool is_reference() const final;
 
@@ -17,10 +19,14 @@ namespace voila::ast
 
         void print(std::ostream &o) const final;
 
-        Expression ref;
         void visit(ASTVisitor &visitor) const final;
+
         void visit(ASTVisitor &visitor) final;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+
+        [[nodiscard]] const Expression &ref() const {
+            return mRef;
+        }
     };
 } // namespace voila::ast

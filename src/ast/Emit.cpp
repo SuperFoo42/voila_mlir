@@ -1,5 +1,5 @@
 #include "ast/Emit.hpp"
-#include "range/v3/all.hpp"
+
 namespace voila::ast
 {
     bool Emit::is_emit() const
@@ -29,10 +29,13 @@ namespace voila::ast
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> Emit::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+    std::shared_ptr<ASTNode> Emit::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
         std::vector<Expression> clonedExprs;
-        ranges::transform(exprs, clonedExprs.begin(), [&vmap](auto ex) {return ex.clone(vmap); });
+        for (auto &arg : mExprs){
+            auto tmp =  arg.clone(vmap);
+            clonedExprs.push_back(tmp);
+        }
 
-        return std::make_unique<Emit>(loc, clonedExprs);
+        return std::make_shared<Emit>(loc, clonedExprs);
     }
 } // namespace voila::ast

@@ -7,9 +7,11 @@ namespace voila::ast
 {
     class And : public Logical
     {
+        Expression mLhs, mRhs;
+
       public:
         And(const Location loc, Expression lhs, Expression rhs) :
-            Logical(loc), lhs{std::move(lhs)}, rhs{std::move(rhs)}
+            Logical(loc), mLhs{std::move(lhs)}, mRhs{std::move(rhs)}
         {
             // TODO
         }
@@ -20,10 +22,17 @@ namespace voila::ast
 
         And *as_and() final;
 
-        Expression lhs, rhs;
         void visit(ASTVisitor &visitor) final;
         void visit(ASTVisitor &visitor) const final;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+
+        const Expression &lhs() const {
+            return mLhs;
+        }
+
+        const Expression &rhs() const {
+            return mRhs;
+        }
     };
 } // namespace voila::ast

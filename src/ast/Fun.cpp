@@ -4,25 +4,25 @@
 
 #include <utility>
 #include "ast/EmitNotLastStatementException.hpp"
-#include "range/v3/all.hpp"
+#include <algorithm>
 
 namespace voila::ast
 {
     Fun::Fun(const Location loc, std::string fun, std::vector<Expression> args, std::vector<Statement> exprs) :
-        ASTNode(loc), name{std::move(fun)}, args{std::move(args)}, body{std::move(exprs)}
+        ASTNode(loc), mName{std::move(fun)}, mArgs{std::move(args)}, mBody{std::move(exprs)}
     {
-        auto ret = std::find_if(body.begin(),body.end(), [](auto &e) -> auto {return e.is_emit();});
-        if (ret == body.end())
+        auto ret = std::find_if(mBody.begin(),mBody.end(), [](auto &e) -> auto {return e.is_emit();});
+        if (ret == mBody.end())
         {
-            result = std::nullopt;
+            mResult = std::nullopt;
         }
         else
         {
-            if (ret != body.end()-1)
+            if (ret != mBody.end()-1)
             {
                 throw EmitNotLastStatementException();
             }
-            result = *ret;
+            mResult = *ret;
         }
     }
     bool Fun::is_function_definition() const
@@ -39,8 +39,8 @@ namespace voila::ast
     }
     void Fun::print(std::ostream &o) const
     {
-        o << name << "(";
-        for (auto &arg : args)
+        o << mName << "(";
+        for (auto &arg : mArgs)
             o << arg << ",";
         o << ")";
     }
@@ -53,14 +53,21 @@ namespace voila::ast
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> Fun::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+    std::shared_ptr<ASTNode> Fun::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
         std::vector<Expression> clonedArgs;
-        ranges::transform(args, clonedArgs.begin(), [&vmap](auto &arg) { return arg.clone(vmap); });
+
+        for (auto &arg : mArgs){
+            auto tmp =  arg.clone(vmap);
+            clonedArgs.push_back(tmp);
+        }
 
         std::vector<Statement> clonedBody;
-        ranges::transform(body, clonedBody.begin(), [&vmap](auto &stmt) { return stmt.clone(vmap); });
+        for (auto &arg : mBody){
+            auto tmp =  arg.clone(vmap);
+            clonedBody.push_back(tmp);
+        }
 
 
-        return std::make_unique<Fun>(loc, name, clonedArgs, clonedBody);
+        return std::make_shared<Fun>(loc, mName, clonedArgs, clonedBody);
     }
 } // namespace voila::ast

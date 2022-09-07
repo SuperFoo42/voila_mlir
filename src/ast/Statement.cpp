@@ -83,7 +83,7 @@ namespace voila::ast {
     }
 
     Statement Statement::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) const {
-        return Statement(std::dynamic_pointer_cast<IStatement>(std::shared_ptr<ASTNode>(mImpl->clone(vmap))));
+        return Statement(std::dynamic_pointer_cast<IStatement>(mImpl->clone(vmap)));
     }
 
 } // namespace voila::ast

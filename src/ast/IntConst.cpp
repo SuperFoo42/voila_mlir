@@ -27,7 +27,7 @@ namespace voila::ast
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> IntConst::clone(llvm::DenseMap<ASTNode *, ASTNode *> &) {
-        return std::make_unique<IntConst>(loc, val);
+    std::shared_ptr<ASTNode> IntConst::clone(llvm::DenseMap<ASTNode *, ASTNode *> &) {
+        return std::make_shared<IntConst>(loc, val);
     }
 } // namespace voila::ast

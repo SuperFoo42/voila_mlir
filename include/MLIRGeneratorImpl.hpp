@@ -71,8 +71,8 @@ namespace voila::mlir
         ::mlir::Value getCmpOp(const ast::Comparison &cmpNode)
         {
             auto location = loc(cmpNode.get_location());
-            auto lhs = std::get<::mlir::Value>(visitor_gen(cmpNode.lhs));
-            auto rhs = std::get<::mlir::Value>(visitor_gen(cmpNode.rhs));
+            auto lhs = std::get<::mlir::Value>(visitor_gen(cmpNode.lhs()));
+            auto rhs = std::get<::mlir::Value>(visitor_gen(cmpNode.rhs()));
             if (lhs.getType().isa<::mlir::TensorType>() || rhs.getType().isa<::mlir::TensorType>())
             {
                 ::mlir::ArrayRef<int64_t> shape;

@@ -17,6 +17,8 @@ namespace voila::ast
     class Assign : public IStatement
     {
         std::optional<Expression> pred;
+        std::vector<Expression> mDdests;
+        Statement mExpr;
 
       public:
         Assign(Location loc, std::vector<Expression> dests, Statement expr);
@@ -35,10 +37,15 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) final;
         void visit(ASTVisitor &visitor) const final;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        const std::vector<Expression> dests;
-        const Statement expr;
+        const std::vector<Expression>& dests() const {
+            return mDdests;
+        }
+
+        const Statement &expr() const {
+            return mExpr;
+        };
     };
 
 } // namespace voila::ast

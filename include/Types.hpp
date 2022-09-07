@@ -107,6 +107,8 @@ namespace voila
 
     class FunctionType : public Type
     {
+        [[nodiscard]] std::string stringify_rets() const;
+
       public:
         explicit FunctionType(type_id_t tID,
                               TypeInferer &inferer,
@@ -122,6 +124,7 @@ namespace voila
         [[nodiscard]] std::vector<Arity> getArities() const override;
 
         [[nodiscard]] std::string stringify() const override;
+
 
         std::vector<type_id_t> paramTypeIds;
         std::vector<Type *> paramType;

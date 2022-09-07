@@ -116,7 +116,7 @@ namespace voila {
         for (auto &func: get_funcs()) {
             DotVisualizer vis(*func, std::optional<std::reference_wrapper<TypeInferer>>(inferer));
 
-            auto out = std::unique_ptr<std::ostream>(fname.empty() || fname == "-" ? &std::cout : new std::ofstream(func->name + fname, std::ios::out));
+            auto out = std::unique_ptr<std::ostream>(fname.empty() || fname == "-" ? &std::cout : new std::ofstream(func->name() + fname, std::ios::out));
 
             *out << vis;
         }
@@ -551,7 +551,7 @@ namespace voila {
         const auto &main = functions.at("main");
         Expression arg;
         try {
-            arg = main->args.at(nparam++);
+            arg = main->args().at(nparam++);
         }
         catch (std::out_of_range &ex) {
             throw ArgsOutOfRangeError();
@@ -594,7 +594,7 @@ namespace voila {
     // either return void, scalars or pointer to strided memref types as unique_ptr
     std::vector<Program::result_t> Program::operator()() {
         const auto &main = functions.at("main");
-        if (nparam < main->args.size()) {
+        if (nparam < main->args().size()) {
             throw std::runtime_error("Not enough parameters supplied");
         }
 
@@ -633,8 +633,8 @@ namespace voila {
 
         // run jit
         std::vector<result_t> res;
-        if (main->result.has_value()) {
-            auto type = inferer.get_type(main->result.value());
+        if (main->result().has_value()) {
+            auto type = inferer.get_type(main->result().value());
             // test scalar
 
             SmallVector<::llvm::Type *> resTypes;
@@ -742,8 +742,8 @@ namespace voila {
     }
 
     void Program::add_func(ast::Fun *f) {
-        functions.emplace(f->name, f);
-        f->variables = std::move(func_vars);
+        functions.emplace(f->name(), f);
+        f->variables() = std::move(func_vars);
         func_vars.clear();
     }
 
@@ -762,7 +762,7 @@ namespace voila {
             functions(),
             config{std::move(config)},
             max_in_table_size(0),
-            inferer() {
+            inferer(this) {
 
         if (source_path.empty())
             return;

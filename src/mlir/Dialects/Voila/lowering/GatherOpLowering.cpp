@@ -25,7 +25,7 @@ namespace voila::mlir::lowering
         auto out = rewriter
                        .create<linalg::InitTensorOp>(loc, gatherOpAdaptor.indices().getType().dyn_cast<TensorType>().getShape(),
                                                      getElementTypeOrSelf(gatherOpAdaptor.column()))
-                       .result();
+                       ->getResults();
 
         auto gatherFunc = [&gatherOpAdaptor](OpBuilder & builder, Location loc, ValueRange vals)
         {
@@ -37,8 +37,8 @@ namespace voila::mlir::lowering
         llvm::SmallVector<AffineMap, 2> iter_maps(2, rewriter.getDimIdentityMap());
 
         auto linalgOp = rewriter.create<linalg::GenericOp>(
-            loc, /*results*/ llvm::makeArrayRef(out.getType()),
-            /*inputs*/ gatherOpAdaptor.indices(), /*outputs*/ llvm::makeArrayRef(out),
+            loc, /*results*/ out.getType(),
+            /*inputs*/ llvm::makeArrayRef(gatherOpAdaptor.indices()), /*outputs*/ out,
             /*indexing maps*/ iter_maps,
             /*iterator types*/ getParallelIteratorTypeName(), gatherFunc);
 

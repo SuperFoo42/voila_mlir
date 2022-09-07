@@ -2,8 +2,8 @@
 #include "range/v3/all.hpp"
 namespace voila::ast {
     Assign::Assign(Location loc, std::vector<Expression> dests, Statement expr) :
-            IStatement(loc), pred{std::nullopt}, dests{std::move(dests)}, expr{std::move(expr)} {
-        assert(ranges::all_of(this->dests,
+            IStatement(loc), pred{std::nullopt}, mDdests{std::move(dests)}, mExpr{std::move(expr)} {
+        assert(ranges::all_of(this->mDdests,
                               [](auto &dest) -> auto { return dest.is_variable() || dest.is_reference(); }));
     }
 
@@ -42,12 +42,12 @@ namespace voila::ast {
         return "assignment";
     }
 
-    std::unique_ptr<ASTNode> Assign::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
-        auto new_expr = expr.clone(vmap);
+    std::shared_ptr<ASTNode> Assign::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        auto new_expr = mExpr.clone(vmap);
         std::vector<Expression> new_dests;
-        ranges::transform(dests, new_dests.begin(), [&vmap](auto &val) { return val.clone(vmap); });
+        ranges::transform(mDdests, new_dests.begin(), [&vmap](auto &val) { return val.clone(vmap); });
 
-        auto clonedAssignment = std::make_unique<Assign>(loc, new_dests, new_expr);
+        auto clonedAssignment = std::make_shared<Assign>(loc, new_dests, new_expr);
         if (pred.has_value())
             clonedAssignment->pred = std::make_optional(pred->clone(vmap));
 

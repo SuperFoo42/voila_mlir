@@ -189,11 +189,28 @@ namespace voila {
     std::string FunctionType::stringify() const {
         std::string type;
         for (const auto &t: paramTypeIds) {
-            type += to_string(*inferer.types.at(t)) + "_";
+            auto tpe = inferer.types.at(t);
+            if (dynamic_cast<FunctionType *>(tpe.get()))
+                type += std::static_pointer_cast<FunctionType>(tpe)->stringify_rets() + "_";
+            else
+                type += to_string(*tpe) + "_";
         }
         type +="ret_";
-        for (const auto &t: returnTypeIDs) {
-            type += to_string(*inferer.types.at(t)) + "_";
+/*        for (const auto &t: returnTypeIDs) {
+            type += stringify_rets();
+        }*/
+
+        return type;
+    }
+
+    std::string FunctionType::stringify_rets() const {
+        std::string type;
+        for (auto rid : returnTypeIDs) {
+            auto t = inferer.types.at(rid);
+            if (dynamic_cast<FunctionType *>(t.get()))
+                type += std::static_pointer_cast<FunctionType>(t)->stringify_rets() + "_";
+            else
+                type += to_string(*t) + "_";
         }
 
         return type;

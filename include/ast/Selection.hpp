@@ -5,10 +5,11 @@ namespace voila::ast
 {
     class Selection : public IExpression
     {
+        Expression mParam;
+        Expression mPred;
+
       public:
-        const Expression param;
-        const Expression pred;
-        explicit Selection(const Location loc, Expression expr, Expression pred) : IExpression(loc), param(std::move(expr)), pred(std::move(pred))
+        explicit Selection(const Location loc, Expression expr, Expression pred) : IExpression(loc), mParam(std::move(expr)), mPred(std::move(pred))
         {
             // TODO
         }
@@ -22,6 +23,14 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+
+        const Expression &param() const {
+            return mParam;
+        }
+
+        const Expression &pred() const {
+            return mPred;
+        }
     };
 } // namespace voila::ast

@@ -6,6 +6,8 @@ namespace voila::ast
 {
     class Arithmetic : public IExpression
     {
+        Expression mLhs, mRhs;
+
       public:
         Arithmetic(Location loc, Expression lhs, Expression rhs);
         ~Arithmetic() override = default;
@@ -17,8 +19,17 @@ namespace voila::ast
         [[nodiscard]] std::string type2string() const override;
         void print(std::ostream &ostream) const final;
 
-        Expression lhs, rhs;
+        [[nodiscard]] const Expression &lhs() const {
+            return mLhs;
+        }
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) final;
+        [[nodiscard]] const Expression &rhs() const {
+            return mRhs;
+        }
+    protected:
+        template <class T>
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) requires std::is_base_of_v<Arithmetic, T> {
+            return std::make_shared<T>(loc, mLhs.clone(vmap), mRhs.clone(vmap));
+        }
     };
 } // namespace voila::ast

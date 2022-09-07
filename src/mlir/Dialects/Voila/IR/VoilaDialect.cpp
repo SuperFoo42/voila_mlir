@@ -8,12 +8,12 @@ using namespace mlir::voila;
 //===----------------------------------------------------------------------===//
 // Standalone dialect.
 //===----------------------------------------------------------------------===//
-#include "mlir/IR/VoilaOpsDialect.cpp.inc"
+#include "mlir/Dialects/Voila/IR/VoilaOpsDialect.cpp.inc"
 using namespace ::voila::mlir;
 void VoilaDialect::initialize() {
     addOperations<
 #define GET_OP_LIST
-#include "mlir/IR/VoilaOps.cpp.inc"
+#include "mlir/Dialects/Voila/IR/VoilaOps.cpp.inc"
     >();
     addInterfaces<VoilaInlinerInterface>();
 }

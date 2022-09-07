@@ -15,8 +15,4 @@ namespace voila::ast
         return "comparison";
     }
     void Comparison::print(std::ostream &) const {}
-
-    std::unique_ptr<ASTNode> Comparison::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
-        return std::make_unique<Comparison>(loc, lhs.clone(vmap), rhs.clone(vmap));
-    }
 } // namespace voila::ast

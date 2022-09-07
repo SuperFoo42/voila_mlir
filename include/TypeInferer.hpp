@@ -8,13 +8,17 @@
 
 namespace voila
 {
+    class Program;
+
     //TODO pimpl
     class TypeInferer : public ast::ASTVisitor
     {
       public:
+        explicit TypeInferer(Program *prog) : prog(prog) {}
+
         void operator()(const ast::Write &write) final;
         void operator()(const ast::Scatter &scatter) final;
-        void operator()(const ast::FunctionCall &call) final;
+        void operator()(ast::FunctionCall &call) final;
         void operator()(const ast::Assign &assign) final;
         void operator()(const ast::Emit &emit) final;
         void operator()(const ast::Loop &loop) final;
@@ -67,10 +71,12 @@ namespace voila
         void set_type(const ast::ASTNode *node, DataType type);
 
         void insertNewType(const ast::ASTNode &node, DataType t, Arity ar);
+        void insertNewTypeAs(const ast::ASTNode &node, const Type &t);
         void operator()(const ast::Lookup &lookup) override;
         void operator()(const ast::Insert &insert) override;
 
         std::vector<std::shared_ptr<Type>> types;
+        Program *prog;
 
       private:
         void unify(ast::ASTNode &t1, ast::ASTNode &t2);
@@ -104,7 +110,7 @@ namespace voila
         void insertNewFuncType(const ast::ASTNode &node,
                                std::vector<type_id_t> typeParamIDs,
                                std::vector<type_id_t> returnTypeIDs);
-        void unify(ast::ASTNode *const t1, ast::ASTNode *const t2);
+        void unify(ast::ASTNode *t1, ast::ASTNode *const t2);
         void unify(const ast::Expression &t1, const ast::Statement &t2);
 
         std::unordered_map<const ast::ASTNode *, type_id_t> typeIDs;

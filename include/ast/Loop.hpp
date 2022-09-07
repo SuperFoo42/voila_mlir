@@ -11,8 +11,11 @@ namespace voila::ast
     //TODO: fix this
     class Loop : public IStatement
     {
+        Expression mPred;
+        std::vector<Statement> mStms;
+
       public:
-        Loop(const Location loc, Expression pred, std::vector<Statement> stms) : IStatement(loc), pred{std::move(pred)}, stms{std::move(stms)}
+        Loop(const Location loc, Expression pred, std::vector<Statement> stms) : IStatement(loc), mPred{std::move(pred)}, mStms{std::move(stms)}
         {
         }
 
@@ -25,12 +28,19 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const override;
         void visit(ASTVisitor &visitor) override;
 
-        Expression pred;
-        std::vector<Statement> stms;
-
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
         // TODO
         // CrossingVariables crossing_variables;
+
+        const Expression &pred() const {
+            return mPred;
+        }
+
+        const std::vector<Statement> &stmts() const
+        {
+            return mStms;
+        }
+
     };
 
 } // namespace voila::ast

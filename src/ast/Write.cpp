@@ -3,7 +3,7 @@
 namespace voila::ast
 {
     Write::Write(const Location loc, Expression src_col, Expression dest_col, Expression wpos) :
-        IStatement(loc), dest{std::move(dest_col)}, start{std::move(wpos)}, src{std::move(src_col)}
+        IStatement(loc), mDest{std::move(dest_col)}, mStart{std::move(wpos)}, mSrc{std::move(src_col)}
     {
     }
 
@@ -24,7 +24,7 @@ namespace voila::ast
 
     void Write::print(std::ostream &os) const
     {
-        os << "src: " << src << " dest: " << dest;
+        os << "src: " << mSrc << " dest: " << mDest;
     }
     void Write::visit(ASTVisitor &visitor) const
     {
@@ -35,7 +35,7 @@ namespace voila::ast
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> Write::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
-        return std::make_unique<Write>(loc, src.clone(vmap), dest.clone(vmap), start.clone(vmap));
+    std::shared_ptr<ASTNode> Write::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        return std::make_shared<Write>(loc, mSrc.clone(vmap), mDest.clone(vmap), mStart.clone(vmap));
     }
 } // namespace voila::ast

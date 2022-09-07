@@ -9,6 +9,9 @@ namespace voila::ast
 {
     class FunctionCall : public IStatement
     {
+        std::string mFun;
+        std::vector<Expression> mArgs;
+
       public:
         FunctionCall(Location loc, std::string fun, std::vector<Expression> args);
 
@@ -22,9 +25,18 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        const std::string fun;
-        const std::vector<Expression> args;
+        const std::string &fun() const {
+            return mFun;
+        }
+
+        std::string &fun() {
+            return mFun;
+        }
+
+        const std::vector<Expression> &args() const {
+            return mArgs;
+        }
     };
 } // namespace voila::ast

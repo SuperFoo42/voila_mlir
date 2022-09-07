@@ -5,7 +5,7 @@
 namespace voila::ast
 {
     Predicate::Predicate(const Location loc, Expression expr) :
-        IExpression(loc), expr(std::move(expr)){
+        IExpression(loc), mExpr(std::move(expr)){
     }
     std::string Predicate::type2string() const
     {
@@ -29,7 +29,7 @@ namespace voila::ast
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> Predicate::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
-        return std::make_unique<Predicate>(loc, expr.clone(vmap));
+    std::shared_ptr<ASTNode> Predicate::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        return std::make_shared<Predicate>(loc, mExpr.clone(vmap));
     }
 }

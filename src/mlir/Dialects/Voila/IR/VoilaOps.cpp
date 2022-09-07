@@ -8,7 +8,7 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
 #define GET_OP_CLASSES
-#include "mlir/IR/VoilaOps.cpp.inc"
+#include "mlir/Dialects/Voila/IR/VoilaOps.cpp.inc"
 using namespace ::mlir;
 using namespace ::mlir::arith;
 using namespace mlir::voila;

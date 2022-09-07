@@ -5,7 +5,7 @@
 
 namespace voila::ast
 {
-    class Variable : public IExpression, std::enable_shared_from_this<Variable>
+    class Variable : public IExpression, virtual public std::enable_shared_from_this<Variable>
     {
       public:
         //TODO: private ctor to mitigate stack allocations and resulting getptr nullptr
@@ -25,8 +25,8 @@ namespace voila::ast
             return shared_from_this();
         }
 
-        std::string var;
+        const std::string var;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
     };
 } // namespace voila::ast

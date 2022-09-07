@@ -6,4 +6,4 @@
 #include "mlir/IR/BuiltinOps.h"
 
 /// Include the generated interface declarations.
-#include "mlir/Interfaces/PredicationOpInterface.h.inc"
+#include "mlir/Dialects/Voila/Interfaces/PredicationOpInterface.h.inc"

@@ -3,7 +3,7 @@
 namespace voila::ast
 {
     Scatter::Scatter(const Location loc, Expression idxs, Expression src_col) :
-        IExpression(loc), idxs{std::move(idxs)}, src{std::move(src_col)}
+        IExpression(loc), mIdxs{std::move(idxs)}, mSrc{std::move(src_col)}
     {
     }
     bool Scatter::is_scatter() const
@@ -20,7 +20,7 @@ namespace voila::ast
     }
     void Scatter::print(std::ostream &ostream) const
     {
-        ostream << "scatter( " << src << "," << idxs << ")";
+        ostream << "scatter( " << mSrc << "," << mIdxs << ")";
     }
     void Scatter::visit(ASTVisitor &visitor) const
     {
@@ -31,7 +31,7 @@ namespace voila::ast
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> Scatter::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
-        return std::make_unique<Scatter>(loc, idxs.clone(vmap), src.clone(vmap));
+    std::shared_ptr<ASTNode> Scatter::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        return std::make_shared<Scatter>(loc, mIdxs.clone(vmap), mSrc.clone(vmap));
     }
 } // namespace voila::ast

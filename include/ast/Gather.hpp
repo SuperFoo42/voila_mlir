@@ -8,9 +8,11 @@ namespace voila::ast
 {
     class Gather : public IExpression
     {
+        Expression mColumn, mIdxs;
+
       public:
         Gather(const Location loc, Expression lhs, Expression rhs) :
-            IExpression(loc), column{std::move(lhs)}, idxs{std::move(rhs)}
+            IExpression(loc), mColumn{std::move(lhs)}, mIdxs{std::move(rhs)}
         {
             // TODO
         }
@@ -24,8 +26,14 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        Expression column, idxs;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        const Expression &column() const {
+            return mColumn;
+        }
+
+        const Expression &idxs() const {
+            return mIdxs;
+        }
     };
 } // namespace voila::ast

@@ -25,9 +25,9 @@ namespace voila::ast {
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> Variable::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
-        std::unique_ptr<Variable> res = std::make_unique<Variable>(loc, var);
-        vmap.insert(std::make_pair(res.get(), this));
+    std::shared_ptr<ASTNode> Variable::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        std::shared_ptr<Variable> res = std::make_shared<Variable>(loc, var);
+        vmap.insert(std::make_pair(this,res.get()));
         return res;
     }
 } // namespace voila::ast

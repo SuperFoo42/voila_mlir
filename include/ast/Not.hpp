@@ -8,9 +8,11 @@ namespace voila::ast
 {
     class Not : public Logical
     {
+        Expression mParam;
+
       public:
         explicit Not(const Location loc,Expression expr) :
-            Logical(loc), param(std::move(expr))
+            Logical(loc), mParam(std::move(expr))
         {
             // TODO
         }
@@ -24,8 +26,10 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        Expression param;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        const Expression &param() const {
+            return mParam;
+        }
     };
 } // namespace voila::ast

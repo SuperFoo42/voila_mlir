@@ -26,9 +26,9 @@ namespace voila::ast
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> Loop::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+    std::shared_ptr<ASTNode> Loop::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
         std::vector<Statement> clonedStmts;
-        ranges::transform(stms, clonedStmts.begin(), [&vmap](auto &item) { return item.clone(vmap); });
-        return std::make_unique<Loop>(loc, pred.clone(vmap), clonedStmts);
+        ranges::transform(mStms, clonedStmts.begin(), [&vmap](auto &item) { return item.clone(vmap); });
+        return std::make_shared<Loop>(loc, mPred.clone(vmap), clonedStmts);
     }
 } // namespace voila::ast

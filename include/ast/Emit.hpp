@@ -10,8 +10,10 @@ namespace voila::ast
 {
     class Emit : public IStatement
     {
+        std::vector<Expression> mExprs;
+
       public:
-        explicit Emit(Location loc, std::vector<Expression> expr) : IStatement(loc), exprs{std::move(expr)} {}
+        explicit Emit(Location loc, std::vector<Expression> expr) : IStatement(loc), mExprs{std::move(expr)} {}
 
         [[nodiscard]] bool is_emit() const final;
 
@@ -23,8 +25,12 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        const std::vector<Expression> exprs;
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+
+        [[nodiscard]] const std::vector<Expression> &exprs() const
+        {
+            return mExprs;
+        }
     };
 
 } // namespace voila::ast

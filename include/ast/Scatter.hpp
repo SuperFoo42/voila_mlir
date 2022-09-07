@@ -10,6 +10,9 @@ namespace voila::ast
 {
     class Scatter : public IExpression
     {
+        Expression mIdxs;
+        Expression mSrc;
+
       public:
         Scatter(Location loc, Expression idxs, Expression src_col);
 
@@ -22,10 +25,16 @@ namespace voila::ast
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
-        const Expression idxs;
-        const Expression src;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        const Expression &idxs() const
+        {
+            return mIdxs;
+        }
+
+        const Expression &src() const {
+            return mSrc;
+        }
     };
 
 } // namespace voila::ast

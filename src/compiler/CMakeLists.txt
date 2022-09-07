@@ -21,7 +21,7 @@ set(LIBS
         MLIRParser
         MLIRTransforms
         MLIRExecutionEngine
-        MLIRLLVMIR
+       # MLIRLLVMIR
         MLIRLLVMToLLVMIRTranslation
         MLIRTargetLLVMIRExport
         voila_compiler

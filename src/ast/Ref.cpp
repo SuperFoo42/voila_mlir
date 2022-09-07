@@ -5,7 +5,7 @@
 #include "ast/Variable.hpp"
 
 namespace voila::ast {
-    Ref::Ref(const Location loc, Expression var) : IExpression(loc), ref{std::move(var)} {
+    Ref::Ref(const Location loc, Expression var) : IExpression(loc), mRef{std::move(var)} {
         // TODO find reference or error
     }
 
@@ -22,7 +22,7 @@ namespace voila::ast {
     }
 
     void Ref::print(std::ostream &ostream) const {
-        ostream << ref.as_variable()->var;
+        ostream << mRef.as_variable()->var;
     }
 
     void Ref::visit(ASTVisitor &visitor) const {
@@ -33,7 +33,8 @@ namespace voila::ast {
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> Ref::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
-        return std::make_unique<Ref>(loc, Expression::make(dynamic_cast<Variable*>(vmap.lookup(ref.as_variable()))->getptr()));
+    std::shared_ptr<ASTNode> Ref::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+        auto ptr = dynamic_cast<Variable*>(vmap.lookup(mRef.as_variable()))->getptr();
+        return std::make_shared<Ref>(loc, Expression::make(ptr));
     }
 } // namespace voila::ast

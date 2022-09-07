@@ -8,10 +8,13 @@ namespace voila::ast
 {
     class Aggregation : public IExpression
     {
+        Expression mSrc;
+        std::optional<Expression> mGroups;
+
       public:
-        Aggregation(const Location loc, Expression col) : IExpression(loc), src{std::move(col)}, groups(std::nullopt) {}
+        Aggregation(const Location loc, Expression col) : IExpression(loc), mSrc{std::move(col)}, mGroups(std::nullopt) {}
         Aggregation(const Location loc, Expression col, Expression groups) :
-            IExpression(loc), src{std::move(col)}, groups(std::move(groups))
+            IExpression(loc), mSrc{std::move(col)}, mGroups(std::move(groups))
         {
         }
         ~Aggregation() override = default;
@@ -24,9 +27,22 @@ namespace voila::ast
 
         void print(std::ostream &) const final {}
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        [[nodiscard]] const Expression &src() const {
+            return mSrc;
+        }
 
-        Expression src;
-        std::optional<Expression> groups;
+        [[nodiscard]] const std::optional<Expression> &groups() const {
+            return mGroups;
+        }
+
+    protected:
+        template <class T>
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) requires std::is_base_of_v<Aggregation, T>
+        {
+            if (mGroups.has_value())
+                return std::make_shared<T>(loc, mSrc.clone(vmap), mGroups->clone(vmap));
+            else
+                return std::make_shared<T>(loc, mSrc.clone(vmap));
+        }
     };
 } // namespace voila::ast

@@ -22,9 +22,9 @@ namespace voila::ast
         visitor(*this);
     }
 
-    std::unique_ptr<ASTNode> TupleCreate::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+    std::shared_ptr<ASTNode> TupleCreate::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
         std::vector<Expression> clonedElems;
         ranges::transform(elems, clonedElems.begin(), [&vmap](auto &elem) { return elem.clone(vmap);});
-        return std::make_unique<TupleCreate>(loc, clonedElems);
+        return std::make_shared<TupleCreate>(loc, clonedElems);
     }
 } // namespace voila::ast

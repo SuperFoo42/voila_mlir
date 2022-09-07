@@ -8,7 +8,10 @@ namespace voila::ast
     {
       public:
         using Aggregation::Aggregation;
-        using Aggregation::clone;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) final
+        {
+            return Aggregation::clone<AggrSum>(vmap);
+        }
 
         [[nodiscard]] bool is_aggr_sum() const final;
 

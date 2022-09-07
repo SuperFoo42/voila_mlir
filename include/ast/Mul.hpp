@@ -18,6 +18,9 @@ namespace voila::ast
         Mul *as_mul() final;
         void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
-        using Arithmetic::clone;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) final
+        {
+            return Arithmetic::clone<Mul>(vmap);
+        }
     };
 } // namespace voila::ast

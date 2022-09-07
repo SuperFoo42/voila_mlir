@@ -13,4 +13,4 @@
 #include "mlir/Dialects/Voila/Interfaces/PredicationOpInterface.hpp"
 #pragma GCC diagnostic pop
 #define GET_OP_CLASSES
-#include "mlir/IR/VoilaOps.h.inc"
+#include "mlir/Dialects/Voila//IR/VoilaOps.h.inc"

@@ -118,7 +118,7 @@ namespace voila
         ::mlir::OwningOpRef<::mlir::ModuleOp> mlirModule;
         std::unique_ptr<llvm::Module> llvmModule;
         std::optional<std::unique_ptr<::mlir::ExecutionEngine>> maybeEngine;
-        std::unordered_map<std::string, std::unique_ptr<ast::Fun>> functions;
+        std::unordered_map<std::string, std::shared_ptr<ast::Fun>> functions;
         Config config;
         std::unique_ptr<lexer::Lexer> lexer;
         long long timer = 0;
@@ -145,9 +145,25 @@ namespace voila
 
         void add_func(ast::Fun *f);
 
+        void add_func(std::shared_ptr<ast::Fun> f) {
+            f->variables() = std::move(func_vars);
+            functions.emplace(f->name() + "_" + to_string(*inferer.get_type(*f)), std::move(f));
+            func_vars.clear();
+        }
+
         auto get_funcs() const
         {
             return ranges::views::values(functions);
+        }
+
+        const auto &get_func(const std::string &fName, const FunctionType &type)
+        {
+            return functions.at(fName + "_" + to_string(type));
+        }
+
+        auto has_func(const std::string &fName, const FunctionType &type)
+        {
+            return functions.contains(fName + "_" + to_string(type));
         }
 
         const auto &get_func(const std::string &func_name) const
@@ -202,7 +218,7 @@ namespace voila
 
         std::vector<result_t> operator()();
 
-        double getExecTime()
+        double getExecTime() const
         {
             return timer;
         }

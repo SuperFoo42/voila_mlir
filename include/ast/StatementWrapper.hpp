@@ -1,4 +1,5 @@
 #pragma once
+
 #include "Expression.hpp"
 #include "IStatement.hpp"
 #include "Statement.hpp"
@@ -8,15 +9,15 @@
 #include <utility>
 #include <vector>
 
-namespace voila::ast
-{
+namespace voila::ast {
     /**
      * @brief Meta node to wrap expressions into statements
      *
      */
-    class StatementWrapper : public IStatement
-    {
-      public:
+    class StatementWrapper : public IStatement {
+        Expression mExpr;
+
+    public:
         explicit StatementWrapper(Location loc, Expression expr);
 
         [[nodiscard]] std::string type2string() const final;
@@ -30,11 +31,15 @@ namespace voila::ast
         void print(std::ostream &ostream) const final;
 
         void visit(ASTVisitor &visitor) const final;
+
         void visit(ASTVisitor &visitor) final;
 
-        const Expression expr;
+        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        std::unique_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        const Expression &expr() const
+        {
+            return mExpr;
+        }
     };
 
 } // namespace voila::ast

@@ -1,40 +1,53 @@
 #pragma once
+
 #include "IExpression.hpp"
 
 #include <concepts>
 #include <memory>
 #include <utility>
 
-namespace voila::ast
-{
-    class Expression
-    {
+namespace voila::ast {
+    class Expression {
         std::shared_ptr<IExpression> mImpl;
 
         explicit Expression(std::shared_ptr<IExpression> impl) : mImpl{std::move(impl)} {}
 
-        explicit Expression(std::unique_ptr<IExpression> &&impl) : mImpl{std::move(impl)} {}
+        explicit Expression(std::unique_ptr<ASTNode> &&impl) {
+            if (impl->is_expr())
+                mImpl = std::dynamic_pointer_cast<IExpression>(std::shared_ptr<ASTNode>(std::move(impl)));
+            else
+                throw; //TODO type mismatch exception
+        }
 
 
     public:
         Expression() = default;
+
         Expression(Expression &) = default;
+
         Expression(const Expression &) = default;
+
         Expression(Expression &&) = default;
 
-        Expression &operator=(const Expression &) = default;
+        Expression &operator=(const Expression &expr) {
+            Expression(expr).swap(*this);
+            return *this;
+        }
+
+        void swap(Expression &s) noexcept
+        {
+            std::swap(this->mImpl, s.mImpl);
+        }
 
         template<typename ExprImpl, typename... Args>
         requires std::is_base_of_v<IExpression, ExprImpl>
-        static Expression make(Args &&...args)
-        {
+        static Expression make(Args &&...args) {
             return Expression(std::make_shared<ExprImpl>(std::forward<Args>(args)...));
         }
 
         template<typename ExprImpl>
         requires std::is_base_of_v<IExpression, ExprImpl>
-        static Expression make(std::shared_ptr<ExprImpl> ptr)
-        {
+        static Expression make(std::shared_ptr<ExprImpl> ptr) {
             return Expression(ptr);
         }
 
@@ -208,9 +221,10 @@ namespace voila::ast
         [[nodiscard]] std::string type2string() const;
 
         void visit(ASTVisitor &visitor);
+
         void visit(ASTVisitor &visitor) const;
 
-        Expression clone(llvm::DenseMap<ASTNode *, ASTNode *> vmap) const;
+        [[nodiscard]] Expression clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap);
 
         void set_predicate(Expression expr);
 

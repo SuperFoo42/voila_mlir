@@ -7,7 +7,7 @@ namespace voila::ast
         printVertex(sum);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        sum.src.visit(*this);
+        sum.src().visit(*this);
     }
 
     void DotVisualizer::operator()(const AggrCnt &cnt)
@@ -16,7 +16,7 @@ namespace voila::ast
         printVertex(cnt);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        cnt.src.visit(*this);
+        cnt.src().visit(*this);
     }
 
     void DotVisualizer::operator()(const AggrMin &min)
@@ -25,7 +25,7 @@ namespace voila::ast
         printVertex(min);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        min.src.visit(*this);
+        min.src().visit(*this);
     }
 
     void DotVisualizer::operator()(const AggrMax &max)
@@ -34,7 +34,7 @@ namespace voila::ast
         printVertex(max);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        max.src.visit(*this);
+        max.src().visit(*this);
     }
 
     void DotVisualizer::operator()(const AggrAvg &avg)
@@ -43,7 +43,7 @@ namespace voila::ast
         printVertex(avg);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        avg.src.visit(*this);
+        avg.src().visit(*this);
     }
 
     void DotVisualizer::operator()(const Write &write)
@@ -52,7 +52,7 @@ namespace voila::ast
         printVertex(write);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        write.start.visit(*this);
+        write.start().visit(*this);
     }
 
     void DotVisualizer::operator()(const Scatter &scatter)
@@ -61,9 +61,9 @@ namespace voila::ast
         printVertex(scatter);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        scatter.src.visit(*this);
+        scatter.src().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        scatter.idxs.visit(*this);
+        scatter.idxs().visit(*this);
     }
 
     void DotVisualizer::operator()(const FunctionCall &call)
@@ -76,12 +76,12 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(assign);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        for (auto dest : assign.dests)
+        for (auto dest : assign.dests())
         {
             dest.visit(*this);
         }
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        assign.expr.visit(*this);
+        assign.expr().visit(*this);
     }
 
     void DotVisualizer::operator()(const Emit &emit)
@@ -90,7 +90,7 @@ namespace voila::ast
         printVertex(emit);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        for (auto expr : emit.exprs)
+        for (auto expr : emit.exprs())
             expr.visit(*this);
     }
 
@@ -99,14 +99,14 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex<false>(loop);
 
-        for (const auto &stmt : loop.stms)
+        for (const auto &stmt : loop.stmts())
         {
             *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
             stmt.visit(*this);
         }
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        loop.pred.visit(*this);
+        loop.pred().visit(*this);
     }
 
     void DotVisualizer::operator()(const Add &add)
@@ -115,9 +115,9 @@ namespace voila::ast
         printVertex(add);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        add.lhs.visit(*this);
+        add.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        add.rhs.visit(*this);
+        add.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Sub &sub)
@@ -126,9 +126,9 @@ namespace voila::ast
         printVertex(sub);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        sub.lhs.visit(*this);
+        sub.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        sub.rhs.visit(*this);
+        sub.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Mul &mul)
@@ -137,9 +137,9 @@ namespace voila::ast
         printVertex(mul);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        mul.lhs.visit(*this);
+        mul.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        mul.rhs.visit(*this);
+        mul.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Div &div)
@@ -148,9 +148,9 @@ namespace voila::ast
         printVertex(div);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        div.lhs.visit(*this);
+        div.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        div.rhs.visit(*this);
+        div.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Mod &mod)
@@ -159,9 +159,9 @@ namespace voila::ast
         printVertex(mod);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        mod.lhs.visit(*this);
+        mod.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        mod.rhs.visit(*this);
+        mod.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Eq &eq)
@@ -170,9 +170,9 @@ namespace voila::ast
         printVertex(eq);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        eq.lhs.visit(*this);
+        eq.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        eq.rhs.visit(*this);
+        eq.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Neq &neq)
@@ -181,9 +181,9 @@ namespace voila::ast
         printVertex(neq);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        neq.lhs.visit(*this);
+        neq.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        neq.rhs.visit(*this);
+        neq.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Le &le)
@@ -192,9 +192,9 @@ namespace voila::ast
         printVertex(le);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        le.lhs.visit(*this);
+        le.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        le.rhs.visit(*this);
+        le.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Ge &ge)
@@ -203,9 +203,9 @@ namespace voila::ast
         printVertex(ge);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        ge.lhs.visit(*this);
+        ge.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        ge.rhs.visit(*this);
+        ge.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Leq &leq)
@@ -214,9 +214,9 @@ namespace voila::ast
         printVertex(leq);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        leq.lhs.visit(*this);
+        leq.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        leq.rhs.visit(*this);
+        leq.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Geq &geq)
@@ -225,9 +225,9 @@ namespace voila::ast
         printVertex(geq);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        geq.lhs.visit(*this);
+        geq.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        geq.rhs.visit(*this);
+        geq.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const And &anAnd)
@@ -235,9 +235,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(anAnd);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        anAnd.lhs.visit(*this);
+        anAnd.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        anAnd.rhs.visit(*this);
+        anAnd.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Or &anOr)
@@ -245,9 +245,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(anOr);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        anOr.lhs.visit(*this);
+        anOr.lhs().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        anOr.rhs.visit(*this);
+        anOr.rhs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Not &aNot)
@@ -255,7 +255,7 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(aNot);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        aNot.param.visit(*this);
+        aNot.param().visit(*this);
     }
 
     void DotVisualizer::operator()(const IntConst &intConst)
@@ -284,9 +284,9 @@ namespace voila::ast
         printVertex(read);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        read.column.visit(*this);
+        read.column().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        read.idx.visit(*this);
+        read.idx().visit(*this);
     }
 
     void DotVisualizer::operator()(const Gather &gather)
@@ -295,9 +295,9 @@ namespace voila::ast
         printVertex(gather);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        gather.column.visit(*this);
+        gather.column().visit(*this);
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        gather.idxs.visit(*this);
+        gather.idxs().visit(*this);
     }
 
     void DotVisualizer::operator()(const Ref &param)
@@ -328,10 +328,10 @@ namespace voila::ast
         printVertex(create);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        create.param.visit(*this);
+        create.param().visit(*this);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        create.pred.visit(*this);
+        create.pred().visit(*this);
     }
 
     void DotVisualizer::operator()(const StatementWrapper &wrapper)
@@ -340,7 +340,7 @@ namespace voila::ast
         printVertex<false>(wrapper);
 
         *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
-        wrapper.expr.visit(*this);
+        wrapper.expr().visit(*this);
     }
 
     void DotVisualizer::operator()(const Fun &fun)
@@ -348,7 +348,7 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(fun);
 
-        for (const auto &stmt : fun.body)
+        for (const auto &stmt : fun.body())
         {
             *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
             stmt.visit(*this);
@@ -360,7 +360,7 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(fun);
 
-        for (const auto &stmt : fun.body)
+        for (const auto &stmt : fun.body())
         {
             *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
             stmt.visit(*this);
@@ -374,7 +374,7 @@ namespace voila::ast
 
     std::ostream &operator<<(std::ostream &out, DotVisualizer &t)
     {
-        out << "digraph " + t.to_dot.name + "{\n";
+        out << "digraph " + t.to_dot.name() + "{\n";
         t.os = &out;
         t.nodeID = 0;
         t.to_dot.visit(t);

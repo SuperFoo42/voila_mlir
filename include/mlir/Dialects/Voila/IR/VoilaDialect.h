@@ -1,4 +1,4 @@
 #pragma once
 #include "mlir/IR/Dialect.h"
 
-#include "mlir/IR/VoilaOpsDialect.h.inc"
+#include "mlir/Dialects/Voila/IR/VoilaOpsDialect.h.inc"

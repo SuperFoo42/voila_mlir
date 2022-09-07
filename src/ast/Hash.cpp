@@ -26,9 +26,9 @@ namespace voila::ast
     }
     void Hash::print(std::ostream &) const {}
 
-    std::unique_ptr<ASTNode> Hash::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+    std::shared_ptr<ASTNode> Hash::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
         std::vector<Expression> clonedItems;
-        ranges::transform(items,clonedItems.begin(), [&vmap](auto &item) { return item.clone(vmap);});
-        return std::make_unique<Hash>(loc, clonedItems);
+        ranges::transform(mItems,clonedItems.begin(), [&vmap](auto &item) { return item.clone(vmap);});
+        return std::make_shared<Hash>(loc, clonedItems);
     }
 } // namespace voila::ast
