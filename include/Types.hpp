@@ -65,6 +65,7 @@ namespace voila
         [[nodiscard]] virtual std::vector<DataType> getTypes() const = 0;
         [[nodiscard]] virtual std::vector<std::reference_wrapper<Arity>> getArities() = 0;
         [[nodiscard]] virtual std::vector<Arity> getArities() const = 0;
+        [[nodiscard]] virtual bool undef() const = 0;
         [[nodiscard]] bool compatible(const Type &other) const
         {
             return convertible(other) || other.convertible(*this);
@@ -103,6 +104,8 @@ namespace voila
         [[nodiscard]] std::vector<Arity> getArities() const override;
 
         [[nodiscard]] std::string stringify() const override;
+
+        [[nodiscard]] bool undef() const override;
     };
 
     class FunctionType : public Type
@@ -125,6 +128,7 @@ namespace voila
 
         [[nodiscard]] std::string stringify() const override;
 
+        [[nodiscard]] bool undef() const override;
 
         std::vector<type_id_t> paramTypeIds;
         std::vector<Type *> paramType;

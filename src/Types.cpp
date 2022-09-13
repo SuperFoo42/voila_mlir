@@ -2,7 +2,7 @@
 
 #include <fmt/format.h>
 #include "TypeInferer.hpp"
-
+#include <range/v3/algorithm.hpp>
 #include <vector>
 
 namespace voila {
@@ -41,6 +41,11 @@ namespace voila {
         os << fmt::format("T{}:{}[", type.typeID, to_string(type.t));
         os << type.ar << "]";
         return os;
+    }
+
+    bool ScalarType::undef() const
+    {
+        return t == DataType::UNKNOWN && ar.is_undef();
     }
 
     ScalarType::ScalarType(type_id_t tID, TypeInferer &inferer, DataType t, Arity ar) : Type(tID, inferer), t(t),
@@ -214,6 +219,13 @@ namespace voila {
         }
 
         return type;
+    }
+
+    bool FunctionType::undef() const
+    {
+                return 
+                    ranges::all_of(paramTypeIds, [&](auto t){return inferer.types.at(t)->undef();}) && 
+                    ranges::all_of(returnTypeIDs, [&](auto id){ return inferer.types.at(id)->undef();});
     }
 
     bool Type::convertibleDataTypes(DataType t1, DataType t2) {

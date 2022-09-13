@@ -22,7 +22,7 @@ namespace voila::ast
         [[nodiscard]] std::string type2string() const final;
         void print(std::ostream &ostream) const final;
 
-        void visit(ASTVisitor &visitor) const final;
+        //void visit(ASTVisitor &visitor) const final;
         void visit(ASTVisitor &visitor) final;
 
         std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;

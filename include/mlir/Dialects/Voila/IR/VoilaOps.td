@@ -110,7 +110,7 @@ def AddOp : Voila_Op<"add",[NoSideEffect, Commutative]> {
   }];
 
 let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
-let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
+let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>);
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
   //let printer = [{ return ::printBinaryOp(p, *this); }];
@@ -432,8 +432,8 @@ def GenericCallOp : Voila_Op<"generic_call", [DeclareOpInterfaceMethods<CallOpIn
 }];
   // The generic call operation takes a symbol reference attribute as the
   // callee, and inputs for the call.
-  let arguments = (ins SymbolRefAttr:$callee, Variadic<AnyTensor>:$inputs);
-  let results = (outs AnyTensor);
+  let arguments = (ins SymbolRefAttr:$callee, Variadic<AnyType>:$inputs);
+  let results = (outs Variadic<AnyType>);
 let builders = [
 OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments), [{
     // Generic call always returns nothing initially

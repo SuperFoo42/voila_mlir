@@ -25,10 +25,12 @@ namespace voila::ast {
         }
         ostream << ")";
     }
+/*
 
     void FunctionCall::visit(ASTVisitor &visitor) const {
         visitor(*this);
     }
+*/
 
     void FunctionCall::visit(ASTVisitor &visitor) {
         visitor(*this);

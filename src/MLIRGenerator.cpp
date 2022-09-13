@@ -24,7 +24,7 @@ namespace voila
             auto genRes = generatorImpl.getValue();
             // TODO: error handling
             if (std::holds_alternative<std::monostate>(genRes))
-                throw MLIRGenerationException();
+                continue; //unspecified function, ignore
             assert(std::holds_alternative<::mlir::func::FuncOp>(genRes));
             module.push_back(std::get<::mlir::func::FuncOp>(genRes));
         }

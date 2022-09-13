@@ -204,9 +204,22 @@ namespace voila::mlir
             auto arg = visitor_gen(expr);
             operands.push_back(std::get<Value>(arg));
         }
-        // TODO: allow more than only a single return type
+
         result = builder.create<GenericCallOp>(location, call.fun(), operands,
-                                               funcTable.lookup(call.fun()).getFunctionType().getResult(0));
+                                               funcTable.lookup(call.fun()).getFunctionType().getResult(0))->getResults();
+    }
+
+    void MLIRGeneratorImpl::operator()(FunctionCall &call) {
+        auto location = loc(call.get_location());
+        SmallVector<Value> operands;
+        for (auto &expr : call.args())
+        {
+            auto arg = visitor_gen(expr);
+            operands.push_back(std::get<Value>(arg));
+        }
+
+        result = builder.create<GenericCallOp>(location, call.fun(), operands,
+                                               funcTable.lookup(call.fun()).getFunctionType().getResult(0)).getResults();
     }
 
     void MLIRGeneratorImpl::operator()(const Assign &assign)
@@ -463,6 +476,10 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const Fun &fun)
     {
+
+        if (inferer.get_type(fun)->undef())
+            return;
+
         ScopedHashTableScope<StringRef, Value> var_scope(symbolTable);
 
         auto location = loc(fun.loc);

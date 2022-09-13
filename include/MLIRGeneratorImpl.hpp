@@ -109,7 +109,7 @@ namespace voila::mlir
         void operator()(const ast::AggrAvg &avg) final;
         void operator()(const ast::Write &write) final;
         void operator()(const ast::Scatter &scatter) final;
-        void operator()(const ast::FunctionCall &call) final;
+
         void operator()(const ast::Assign &assign) final;
         void operator()(const ast::Emit &emit) final;
         void operator()(const ast::Loop &loop) final;
@@ -145,5 +145,7 @@ namespace voila::mlir
         void operator()(const ast::Hash &hash) final;
         void operator()(const ast::Lookup &lookup) override;
         void operator()(const ast::Insert &insert) override;
+        void operator()(const ast::FunctionCall &call) final;
+        void operator()(ast::FunctionCall &call) override;
     };
 } // namespace voila::mlir
