@@ -262,7 +262,7 @@ namespace voila::mlir
         mlir::Value cond = std::get<Value>(visitor_gen(loop.pred()));
 
         auto voilaLoop = builder.create<LoopOp>(location, builder.getI1Type(), cond);
-        auto &bodyRegion = voilaLoop.body();
+        auto &bodyRegion = voilaLoop.getBody();
         bodyRegion.push_back(new ::mlir::Block());
         ::mlir::Block &bodyBlock = bodyRegion.front();
         ::mlir::OpBuilder::InsertionGuard guard(builder);
@@ -476,7 +476,6 @@ namespace voila::mlir
 
     void MLIRGeneratorImpl::operator()(const Fun &fun)
     {
-
         if (inferer.get_type(fun)->undef())
             return;
 
@@ -575,7 +574,7 @@ namespace voila::mlir
             retTypes.push_back(::mlir::RankedTensorType::get({-1}, getElementTypeOrSelf(val)));
         }
         auto insertOp = builder.create<InsertOp>(location, retTypes, table, data);
-        result = insertOp.hashtables();
+        result = insertOp.getHashtables();
     }
 
     void MLIRGeneratorImpl::operator()(const Variable &variable)

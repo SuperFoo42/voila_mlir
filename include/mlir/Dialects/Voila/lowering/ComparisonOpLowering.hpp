@@ -93,8 +93,8 @@ namespace voila::mlir::lowering
             typename CmpOp::Adaptor opAdaptor(operands);
             auto loc = op->getLoc();
             ::mlir::ImplicitLocOpBuilder builder(loc, rewriter);
-            auto lhs = opAdaptor.lhs();
-            auto rhs = opAdaptor.rhs();
+            auto lhs = opAdaptor.getLhs();
+            auto rhs = opAdaptor.getRhs();
 
             if (lhs.getType().template isa<::mlir::TensorType>() && !rhs.getType().template isa<::mlir::TensorType>())
             {

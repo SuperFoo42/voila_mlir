@@ -23,14 +23,14 @@ namespace voila::mlir::lowering
         GatherOpAdaptor gatherOpAdaptor(operands);
 
         auto out = rewriter
-                       .create<linalg::InitTensorOp>(loc, gatherOpAdaptor.indices().getType().dyn_cast<TensorType>().getShape(),
-                                                     getElementTypeOrSelf(gatherOpAdaptor.column()))
+                       .create<linalg::InitTensorOp>(loc, gatherOpAdaptor.getIndices().getType().dyn_cast<TensorType>().getShape(),
+                                                     getElementTypeOrSelf(gatherOpAdaptor.getColumn()))
                        ->getResults();
 
         auto gatherFunc = [&gatherOpAdaptor](OpBuilder & builder, Location loc, ValueRange vals)
         {
             auto idx = vals.front();
-            auto res = builder.create<tensor::ExtractOp>(loc, gatherOpAdaptor.column(), idx).getResult();
+            auto res = builder.create<tensor::ExtractOp>(loc, gatherOpAdaptor.getColumn(), idx).getResult();
             builder.create<linalg::YieldOp>(loc, res);
         };
 
@@ -38,7 +38,7 @@ namespace voila::mlir::lowering
 
         auto linalgOp = rewriter.create<linalg::GenericOp>(
             loc, /*results*/ out.getType(),
-            /*inputs*/ llvm::makeArrayRef(gatherOpAdaptor.indices()), /*outputs*/ out,
+            /*inputs*/ llvm::makeArrayRef(gatherOpAdaptor.getIndices()), /*outputs*/ out,
             /*indexing maps*/ iter_maps,
             /*iterator types*/ getParallelIteratorTypeName(), gatherFunc);
 

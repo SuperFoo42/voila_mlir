@@ -46,17 +46,17 @@ namespace voila::mlir::lowering
         // start index for store
         SmallVector<Value> iter_args;
         Value cond;
-        if (loopOpAdaptor.cond().getType().isa<TensorType>())
+        if (loopOpAdaptor.getCond().getType().isa<TensorType>())
         {
             cond = builder.create<ToMemrefOp>(
-                 convertTensorToMemRef(loopOpAdaptor.cond().getType().dyn_cast<TensorType>()),
-                loopOpAdaptor.cond());
-            upperBound = builder.create<AddIOp>( builder.create<memref::DimOp>( loopOpAdaptor.cond(), 0),
+                 convertTensorToMemRef(loopOpAdaptor.getCond().getType().dyn_cast<TensorType>()),
+                loopOpAdaptor.getCond());
+            upperBound = builder.create<AddIOp>( builder.create<memref::DimOp>( loopOpAdaptor.getCond(), 0),
                                                 builder.create<ConstantIndexOp>( 1));
         }
         else
         {
-            cond = loopOpAdaptor.cond();
+            cond = loopOpAdaptor.getCond();
             upperBound = builder.create<ConstantIndexOp>( 2);
         }
 

@@ -58,12 +58,12 @@ namespace voila::mlir::lowering
         AvgOpAdaptor adaptor(avgOp);
 
         // this should work as long as ieee 754 is supported and division by 0 is inf
-        if (adaptor.indices() && op->getResultTypes().front().isa<TensorType>())
+        if (adaptor.getIndices() && op->getResultTypes().front().isa<TensorType>())
         {
-            auto sum = builder.create<SumOp>(RankedTensorType::get(-1, builder.getF64Type()), adaptor.input(),
-                                             adaptor.indices(), adaptor.pred());
-            auto count = builder.create<CountOp>(RankedTensorType::get(-1, builder.getI64Type()), adaptor.input(),
-                                                 adaptor.indices(), adaptor.pred());
+            auto sum = builder.create<SumOp>(RankedTensorType::get(-1, builder.getF64Type()), adaptor.getInput(),
+                                             adaptor.getIndices(), adaptor.getPred());
+            auto count = builder.create<CountOp>(RankedTensorType::get(-1, builder.getI64Type()), adaptor.getInput(),
+                                                 adaptor.getIndices(), adaptor.getPred());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())
@@ -88,10 +88,10 @@ namespace voila::mlir::lowering
         }
         else
         {
-            auto sum = builder.create<SumOp>(getElementTypeOrSelf(adaptor.input()), adaptor.input(), adaptor.indices(),
-                                             adaptor.pred());
+            auto sum = builder.create<SumOp>(getElementTypeOrSelf(adaptor.getInput()), adaptor.getInput(), adaptor.getIndices(),
+                                             adaptor.getPred());
             auto count =
-                builder.create<CountOp>(builder.getI64Type(), adaptor.input(), adaptor.indices(), adaptor.pred());
+                builder.create<CountOp>(builder.getI64Type(), adaptor.getInput(), adaptor.getIndices(), adaptor.getPred());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())

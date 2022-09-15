@@ -75,49 +75,49 @@ namespace voila::mlir::lowering
             auto loc = op->getLoc();
             ::mlir::Value newVal;
 
-            if (opAdaptor.lhs().getType().template isa<::mlir::TensorType>() &&
-                !opAdaptor.rhs().getType().template isa<::mlir::TensorType>())
+            if (opAdaptor.getLhs().getType().template isa<::mlir::TensorType>() &&
+                !opAdaptor.getRhs().getType().template isa<::mlir::TensorType>())
             {
                 ::mlir::Value other;
-                if (opAdaptor.lhs().getType().template dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
+                if (opAdaptor.getLhs().getType().template dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
                 {
                     other = rewriter.template create<::mlir::linalg::InitTensorOp>(
-                        loc, opAdaptor.lhs().getType().template dyn_cast<::mlir::RankedTensorType>().getShape(),
-                        opAdaptor.rhs().getType());
+                        loc, opAdaptor.getLhs().getType().template dyn_cast<::mlir::RankedTensorType>().getShape(),
+                        opAdaptor.getRhs().getType());
                 }
                 else
                 {
                     ::mlir::SmallVector<::mlir::Value, 1> size;
-                    size.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.lhs(), 0));
+                    size.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.getLhs(), 0));
                     other =
-                        rewriter.template create<::mlir::linalg::InitTensorOp>(loc, size, opAdaptor.rhs().getType());
+                        rewriter.template create<::mlir::linalg::InitTensorOp>(loc, size, opAdaptor.getRhs().getType());
                 }
-                auto filledOther = rewriter.create<::mlir::linalg::FillOp>(loc, opAdaptor.rhs(), other);
-                newVal = operator()(rewriter, loc, opAdaptor.lhs(), filledOther.result());
+                auto filledOther = rewriter.create<::mlir::linalg::FillOp>(loc, opAdaptor.getRhs(), other);
+                newVal = operator()(rewriter, loc, opAdaptor.getLhs(), filledOther.result());
             }
-            else if (opAdaptor.rhs().getType().template isa<::mlir::TensorType>() &&
-                     !opAdaptor.lhs().getType().template isa<::mlir::TensorType>())
+            else if (opAdaptor.getRhs().getType().template isa<::mlir::TensorType>() &&
+                     !opAdaptor.getLhs().getType().template isa<::mlir::TensorType>())
             {
                 ::mlir::Value other;
-                if (opAdaptor.rhs().getType().template dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
+                if (opAdaptor.getRhs().getType().template dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
                 {
                     other = rewriter.template create<::mlir::linalg::InitTensorOp>(
-                        loc, opAdaptor.rhs().getType().template dyn_cast<::mlir::RankedTensorType>().getShape(),
-                        opAdaptor.lhs().getType());
+                        loc, opAdaptor.getRhs().getType().template dyn_cast<::mlir::RankedTensorType>().getShape(),
+                        opAdaptor.getLhs().getType());
                 }
                 else
                 {
                     ::mlir::SmallVector<::mlir::Value, 1> size;
-                    size.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.rhs(), 0));
+                    size.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.getRhs(), 0));
                     other =
-                        rewriter.template create<::mlir::linalg::InitTensorOp>(loc, size, opAdaptor.lhs().getType());
+                        rewriter.template create<::mlir::linalg::InitTensorOp>(loc, size, opAdaptor.getLhs().getType());
                 }
-                auto filledOther = rewriter.create<::mlir::linalg::FillOp>(loc, opAdaptor.lhs(), other);
-                newVal = operator()(rewriter, loc, filledOther.result(), opAdaptor.rhs());
+                auto filledOther = rewriter.create<::mlir::linalg::FillOp>(loc, opAdaptor.getLhs(), other);
+                newVal = operator()(rewriter, loc, filledOther.result(), opAdaptor.getRhs());
             }
             else // no tensors or all tensors as params
             {
-                newVal = operator()(rewriter, loc, opAdaptor.lhs(), opAdaptor.rhs());
+                newVal = operator()(rewriter, loc, opAdaptor.getLhs(), opAdaptor.getRhs());
             }
 
             // TODO: replace with TypeConverter

@@ -15,7 +15,7 @@ namespace voila::mlir::lowering {
         // here we should only have to deal with the emit of the main function, since all other uses should have been
         // inlined
 
-        rewriter.replaceOpWithNewOp<ReturnOp>(op, adaptor.input());
+        rewriter.replaceOpWithNewOp<ReturnOp>(op, adaptor.getInput());
         return success();
     }
 

@@ -52,7 +52,7 @@ namespace voila::mlir::lowering
 
     static Value scalarCountLowering(CountOpAdaptor &countOpAdaptor, ImplicitLocOpBuilder &builder)
     {
-        if (countOpAdaptor.pred())
+        if (countOpAdaptor.getPred())
         {
             Value start = builder.create<arith::ConstantOp>(DenseIntElementsAttr::get(
                 RankedTensorType::get({}, builder.getIndexType()), builder.getIndexAttr(0).getValue()));
@@ -62,7 +62,7 @@ namespace voila::mlir::lowering
             SmallVector<AffineExpr, 1> dstExprs;
             auto inferred = AffineMap::inferFromExprList({srcExprs, dstExprs});
             return builder
-                .create<linalg::GenericOp>(start.getType(), countOpAdaptor.pred(), start, llvm::makeArrayRef(inferred),
+                .create<linalg::GenericOp>(start.getType(), countOpAdaptor.getPred(), start, llvm::makeArrayRef(inferred),
                                            getReductionIteratorTypeName(),
                                            [](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
                                            {
@@ -75,7 +75,7 @@ namespace voila::mlir::lowering
         }
         else
         {
-            auto cnt = builder.create<DimOp>(countOpAdaptor.input(), 0);
+            auto cnt = builder.create<DimOp>(countOpAdaptor.getInput(), 0);
             return cnt;
         }
     }
@@ -84,7 +84,7 @@ namespace voila::mlir::lowering
     {
         Value res;
         auto allocSize =
-            getHTSize(rewriter, countOpAdaptor.input()); // FIXME: not the best solution, indices can be out of range.
+            getHTSize(rewriter, countOpAdaptor.getInput()); // FIXME: not the best solution, indices can be out of range.
 
         res = rewriter.create<memref::AllocOp>(MemRefType::get(-1, rewriter.getI64Type()),
                                                ::llvm::makeArrayRef(allocSize));
@@ -99,15 +99,15 @@ namespace voila::mlir::lowering
         {
             ImplicitLocOpBuilder builder(loc, nestedBuilder);
             auto idx = vals.front();
-            if (countOpAdaptor.pred())
+            if (countOpAdaptor.getPred())
             {
-                auto pred = builder.create<tensor::ExtractOp>(countOpAdaptor.pred(), idx);
+                auto pred = builder.create<tensor::ExtractOp>(countOpAdaptor.getPred(), idx);
                 builder.create<scf::IfOp>(
                     pred,
                     [&](OpBuilder &b, Location loc)
                     {
                         ImplicitLocOpBuilder nb(loc, b);
-                        Value groupIdx = nb.create<tensor::ExtractOp>(countOpAdaptor.indices(), idx);
+                        Value groupIdx = nb.create<tensor::ExtractOp>(countOpAdaptor.getIndices(), idx);
                         auto oldVal = nb.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
                         Value newVal =
                             nb.create<AddIOp>(oldVal, nb.create<ConstantIntOp>(1, builder.getI64Type()));
@@ -118,7 +118,7 @@ namespace voila::mlir::lowering
             }
             else
             {
-                Value groupIdx = builder.create<tensor::ExtractOp>(countOpAdaptor.indices(), idx);
+                Value groupIdx = builder.create<tensor::ExtractOp>(countOpAdaptor.getIndices(), idx);
                 auto oldVal = builder.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
                 Value newVal = builder.create<AddIOp>(oldVal, builder.create<ConstantIntOp>(1, builder.getI64Type()));
 
@@ -128,7 +128,7 @@ namespace voila::mlir::lowering
 
         buildAffineLoopNest(rewriter, rewriter.getLoc(),
                             ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(0)),
-                            rewriter.create<DimOp>(countOpAdaptor.input(), 0).getResult(), {1}, fn);
+                            rewriter.create<DimOp>(countOpAdaptor.getInput(), 0).getResult(), {1}, fn);
 
         return rewriter.create<ToTensorOp>(res);
     }
@@ -142,7 +142,7 @@ namespace voila::mlir::lowering
         Value res;
         ImplicitLocOpBuilder builder(loc, rewriter);
 
-        if (cntOpAdaptor.indices() && op->getResultTypes().front().isa<TensorType>())
+        if (cntOpAdaptor.getIndices() && op->getResultTypes().front().isa<TensorType>())
         {
             res = groupedCountLowering(cntOpAdaptor, builder);
         }

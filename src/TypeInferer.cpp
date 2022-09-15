@@ -146,7 +146,7 @@ namespace voila {
     std::shared_ptr<Type> TypeInferer::get_type(const ast::ASTNode &node) const {
         try {
             if (dynamic_cast<const ast::Ref *>(&node))
-                return types.at(typeIDs.at(dynamic_cast<const ast::Ref *>(&node)->ref().as_expr()));
+                return types.at(typeIDs.at(dynamic_cast<const ast::Ref &>(node).ref().as_expr()));
             else
                 return types.at(typeIDs.at(&node));
         }
@@ -496,10 +496,11 @@ namespace voila {
 
     void TypeInferer::operator()(const ast::Fun &fun) {
         // TODO: clear infered types at start of new function?
-        for (auto &arg: fun.args()) // infer function args
+        //no need to infer arguments, as they are already passed from calls
+/*        for (auto &arg: fun.args()) // infer function args
         {
             arg.visit(*this);
-        }
+        }*/
         for (auto &stmt: fun.body()) // infer body types
         {
             stmt.visit(*this);

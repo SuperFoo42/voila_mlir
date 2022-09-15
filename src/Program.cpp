@@ -113,7 +113,7 @@ namespace voila {
     }
 
     void Program::to_dot(const std::string &fname = "-") {
-        for (auto &func: get_funcs()) {
+        for (auto &func: life_funcs()) {
             DotVisualizer vis(*func, std::optional<std::reference_wrapper<TypeInferer>>(inferer));
 
             auto out = std::unique_ptr<std::ostream>(fname.empty() || fname == "-" ? &std::cout : new std::ofstream(func->name() + fname, std::ios::out));
@@ -339,7 +339,7 @@ namespace voila {
         pm.addNestedPass<FuncOp>(createCSEPass());
 
         pm.addNestedPass<FuncOp>(createConvertElementwiseToLinalgPass());
-        pm.addNestedPass<FuncOp>(createLinalgStrategyEnablePass());
+        //pm.addNestedPass<FuncOp>(createLinalgStrategyEnablePass());
         // optPM.addPass(createLinalgGeneralizationPass());
         if (config._optimize && config._fuse)
             pm.addNestedPass<FuncOp>(createLinalgElementwiseOpFusionPass());

@@ -54,17 +54,17 @@ namespace voila::mlir
                         // conjunction of conditions
                         auto p1 = predOp.predicated();
                         rewriter.setInsertionPoint(use);
-                        auto newPred = rewriter.create<arith::AndIOp>(op->getLoc(), p1, op.pred());
+                        auto newPred = rewriter.create<arith::AndIOp>(op->getLoc(), p1, op.getPred());
                         predOp.predicate(newPred);
                     }
                     else
                     {
-                        predOp.predicate(op.pred());
+                        predOp.predicate(op.getPred());
                     }
-                    predOp->replaceUsesOfWith(op.getResult(), op.values());
+                    predOp->replaceUsesOfWith(op.getResult(), op.getValues());
                 }
 
-                op->replaceAllUsesWith(llvm::makeArrayRef(op.values()));
+                op->replaceAllUsesWith(llvm::makeArrayRef(op.getValues()));
                 rewriter.eraseOp(op);
 
                 return success();
@@ -94,8 +94,8 @@ namespace voila::mlir
                         isa<LookupOp>(user) || isa<EqOp>(user) || isa<GeOp>(user) || isa<GeOp>(user) ||
                         isa<GeqOp>(user) || isa<LeOp>(user) || isa<LeqOp>(user) || isa<NeqOp>(user))
                     {
-                        llvm::dyn_cast<PredicationOpInterface>(user).predicate(op.pred());
-                        user->replaceUsesOfWith(use.get().get(), op.values());
+                        llvm::dyn_cast<PredicationOpInterface>(user).predicate(op.getPred());
+                        user->replaceUsesOfWith(use.get().get(), op.getValues());
                         // use.drop();
                         continue;
                     }
@@ -103,7 +103,7 @@ namespace voila::mlir
                     {
                         // llvm::dyn_cast<PredicationOpInterface>(user).predicate(op.pred());
                         auto operands = user->getOperands();
-                        operands[use.get().getOperandNumber()] = op.values();
+                        operands[use.get().getOperandNumber()] = op.getValues();
                         rewriter.replaceOpWithNewOp<arith::AddIOp>(user, operands);
                     }
                     else if (isa<AvgOp>(user) || isa<EmitOp>(user))
@@ -112,28 +112,28 @@ namespace voila::mlir
                     }
                     else if (isa<SumOp>(user))
                     {
-                        if (!dyn_cast<SumOp>(user).indices())
+                        if (!dyn_cast<SumOp>(user).getIndices())
                             continue;
                         else
                             return failure();
                     }
                     else if (isa<CountOp>(user))
                     {
-                        if (!dyn_cast<CountOp>(user).indices())
+                        if (!dyn_cast<CountOp>(user).getIndices())
                             continue;
                         else
                             return failure();
                     }
                     else if (isa<MinOp>(user))
                     {
-                        if (!dyn_cast<MinOp>(user).indices())
+                        if (!dyn_cast<MinOp>(user).getIndices())
                             continue;
                         else
                             return failure();
                     }
                     else if (isa<MaxOp>(user))
                     {
-                        if (!dyn_cast<MaxOp>(user).indices())
+                        if (!dyn_cast<MaxOp>(user).getIndices())
                             continue;
                         else
                             return failure();
@@ -146,20 +146,20 @@ namespace voila::mlir
                 {
                     Value falseSel;
                     Value tmp;
-                    if (op.values().getType().dyn_cast<TensorType>().hasStaticShape())
+                    if (op.getValues().getType().dyn_cast<TensorType>().hasStaticShape())
                     {
                         tmp = rewriter.create<linalg::InitTensorOp>(
-                            loc, op.values().getType().dyn_cast<TensorType>().getShape(),
-                            getElementTypeOrSelf(op.values()));
+                            loc, op.getValues().getType().dyn_cast<TensorType>().getShape(),
+                            getElementTypeOrSelf(op.getValues()));
                     }
                     else
                     {
-                        auto dimShape = rewriter.create<tensor::DimOp>(loc, op.values(), 0)->getResultTypes();
+                        auto dimShape = rewriter.create<tensor::DimOp>(loc, op.getValues(), 0)->getResultTypes();
                         tmp = rewriter.create<linalg::InitTensorOp>(loc, dimShape,
                                                                     op->getResults());
                     };
 
-                    if (getElementTypeOrSelf(op.values()).isa<IntegerType>())
+                    if (getElementTypeOrSelf(op.getValues()).isa<IntegerType>())
                     {
                         falseSel = rewriter
                                        .create<linalg::FillOp>(
@@ -169,7 +169,7 @@ namespace voila::mlir
                                            ValueRange(tmp))
                                        .result();
                     }
-                    else if (getElementTypeOrSelf(op.values()).isa<FloatType>())
+                    else if (getElementTypeOrSelf(op.getValues()).isa<FloatType>())
                     {
                         falseSel = rewriter
                                        .create<linalg::FillOp>(
@@ -183,7 +183,7 @@ namespace voila::mlir
                     {
                         throw std::logic_error("Invalid type"); // TODO
                     }
-                    rewriter.replaceOpWithNewOp<::mlir::arith::SelectOp>(op, op.pred(), op.values(), falseSel);
+                    rewriter.replaceOpWithNewOp<::mlir::arith::SelectOp>(op, op.getPred(), op.getValues(), falseSel);
                 }
 
                 return failure();

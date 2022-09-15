@@ -16,14 +16,14 @@ using namespace mlir::voila;
 /// call interface.
 [[maybe_unused]] CallInterfaceCallable GenericCallOp::getCallableForCallee()
 {
-    return callee();
+    return getCallee();
 }
 
 /// Get the argument operands to the called function, this is required by the
 /// call interface.
 [[maybe_unused]] Operation::operand_range GenericCallOp::getArgOperands()
 {
-    return inputs();
+    return getInputs();
 }
 
 bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
@@ -41,122 +41,122 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
 
 void HashOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value HashOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void ScatterOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value ScatterOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void ReadOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value ReadOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void MinOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value MinOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void MaxOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value MaxOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void LookupOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value LookupOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void InsertOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value InsertOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void GatherOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value GatherOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void CountOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value CountOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void AvgOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value AvgOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void WriteOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value WriteOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void SumOp::predicate(Value pred)
 {
-    predMutable().assign(pred);
+    getPredMutable().assign(pred);
 }
 
 Value SumOp::predicated()
 {
-    return pred();
+    return getPred();
 }
 
 void SumOp::build(::mlir::OpBuilder &odsBuilder,

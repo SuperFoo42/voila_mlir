@@ -151,9 +151,16 @@ namespace voila
             func_vars.clear();
         }
 
-        auto get_funcs() const
+        auto funcs() const
         {
             return ranges::views::values(functions);
+        }
+
+        auto life_funcs() const
+        {
+            return ranges::views::values(ranges::views::filter(functions, [](auto &en) { return en.first == "main" ||
+                                                                                                en.first.ends_with(
+                                                                                                        "_ret_");}));
         }
 
         const auto &get_func(const std::string &fName, const FunctionType &type)

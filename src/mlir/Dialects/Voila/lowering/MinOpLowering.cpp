@@ -112,7 +112,7 @@ namespace voila::mlir::lowering
         auto maps = AffineMap::inferFromExprList({srcExprs, dstExprs});
 
         auto linalgOp = builder.create<linalg::GenericOp>(/*results*/ res_type,
-                                                          /*inputs*/ minOpAdaptor.input(), /*outputs*/ res,
+                                                          /*inputs*/ minOpAdaptor.getInput(), /*outputs*/ res,
                                                           /*indexing maps*/ maps,
                                                           /*iterator types*/ iter_type, fn);
 
@@ -123,7 +123,7 @@ namespace voila::mlir::lowering
     {
         Value res;
         auto allocSize =
-            getHTSize(builder, minOpAdaptor.input()); // FIXME: not the best solution, indices can be out of range.
+            getHTSize(builder, minOpAdaptor.getInput()); // FIXME: not the best solution, indices can be out of range.
         if (getElementTypeOrSelf(op->getResultTypes().front()).isa<IntegerType>())
         {
             res = builder.create<memref::AllocOp>(MemRefType::get(-1, builder.getI64Type()),
@@ -135,7 +135,7 @@ namespace voila::mlir::lowering
                                     builder.create<AffineStoreOp>(
                                         loc,
                                         builder.create<ConstantIntOp>(loc, std::numeric_limits<int64_t>::max(),
-                                                                      getElementTypeOrSelf(minOpAdaptor.input())),
+                                                                      getElementTypeOrSelf(minOpAdaptor.getInput())),
                                         res, vals);
                                 });
         }
@@ -164,15 +164,15 @@ namespace voila::mlir::lowering
         {
             ImplicitLocOpBuilder b(loc, builder);
             auto idx = vals.front();
-            if (minOpAdaptor.pred())
+            if (minOpAdaptor.getPred())
             {
-                auto pred = b.create<tensor::ExtractOp>(minOpAdaptor.pred(), idx);
+                auto pred = b.create<tensor::ExtractOp>(minOpAdaptor.getPred(), idx);
                 b.create<scf::IfOp>(pred,
                                     [&](OpBuilder &b, Location loc)
                                     {
                                         ImplicitLocOpBuilder nb(loc, b);
-                                        auto toCmp = nb.create<tensor::ExtractOp>(minOpAdaptor.input(), idx);
-                                        Value groupIdx = nb.create<tensor::ExtractOp>(minOpAdaptor.indices(), idx);
+                                        auto toCmp = nb.create<tensor::ExtractOp>(minOpAdaptor.getInput(), idx);
+                                        Value groupIdx = nb.create<tensor::ExtractOp>(minOpAdaptor.getIndices(), idx);
                                         auto oldVal = nb.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
 
                                         ::mlir::Value minVal;
@@ -187,8 +187,8 @@ namespace voila::mlir::lowering
             }
             else
             {
-                auto toCmp = b.create<tensor::ExtractOp>(minOpAdaptor.input(), idx);
-                Value groupIdx = b.create<tensor::ExtractOp>(minOpAdaptor.indices(), idx);
+                auto toCmp = b.create<tensor::ExtractOp>(minOpAdaptor.getInput(), idx);
+                Value groupIdx = b.create<tensor::ExtractOp>(minOpAdaptor.getIndices(), idx);
                 auto oldVal = b.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
 
                 ::mlir::Value minVal;
@@ -202,7 +202,7 @@ namespace voila::mlir::lowering
         };
 
         buildAffineLoopNest(builder, builder.getLoc(), ::llvm::makeArrayRef<Value>(builder.create<ConstantIndexOp>(0)),
-                            builder.create<tensor::DimOp>(minOpAdaptor.input(), 0).getResult(), {1}, fn);
+                            builder.create<tensor::DimOp>(minOpAdaptor.getInput(), 0).getResult(), {1}, fn);
 
         return builder.create<ToTensorOp>(res);
     }
@@ -216,7 +216,7 @@ namespace voila::mlir::lowering
         Value res;
         ImplicitLocOpBuilder builder(loc, rewriter);
 
-        if (minOpAdaptor.indices() && op->getResultTypes().front().isa<TensorType>())
+        if (minOpAdaptor.getIndices() && op->getResultTypes().front().isa<TensorType>())
         {
             res = groupedMinLowering(op, minOpAdaptor, builder);
         }

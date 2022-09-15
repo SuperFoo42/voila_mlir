@@ -133,19 +133,19 @@ namespace voila::mlir::lowering
                 NotOpAdaptor binaryAdaptor(memRefOperands);
 
                 Value value;
-                if (binaryAdaptor.value().getType().isa<TensorType>())
+                if (binaryAdaptor.getValue().getType().isa<TensorType>())
                 {
                     value = builder.create<ToMemrefOp>(
-                        loc, convertTensorToMemRef(binaryAdaptor.value().getType().template dyn_cast<TensorType>()),
-                        binaryAdaptor.value());
+                        loc, convertTensorToMemRef(binaryAdaptor.getValue().getType().template dyn_cast<TensorType>()),
+                        binaryAdaptor.getValue());
                 }
-                else if (binaryAdaptor.value().getType().template isa<MemRefType>())
+                else if (binaryAdaptor.getValue().getType().template isa<MemRefType>())
                 {
-                    value = binaryAdaptor.value();
+                    value = binaryAdaptor.getValue();
                 }
                 else
                 {
-                    value = binaryAdaptor.value();
+                    value = binaryAdaptor.getValue();
                 }
 
                 auto oneConst = builder.create<arith::ConstantOp>(loc, builder.getIntegerAttr(builder.getI1Type(), 1));
@@ -158,7 +158,7 @@ namespace voila::mlir::lowering
                 else
                 {
                     // Create the binary operation performed on the loaded values.
-                    return builder.create<XOrIOp>(loc, binaryAdaptor.value().getType(), binaryAdaptor.value(),
+                    return builder.create<XOrIOp>(loc, binaryAdaptor.getValue().getType(), binaryAdaptor.getValue(),
                                                   oneConst);
                 }
             });

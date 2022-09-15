@@ -12,7 +12,7 @@ namespace voila::mlir::lowering
 
         ::mlir::LogicalResult matchAndRewrite(ConstOp op, ::mlir::PatternRewriter &rewriter) const final
         {
-            ::mlir::Attribute valAttr = op.valueAttr();
+            ::mlir::Attribute valAttr = op.getValueAttr();
             auto t = op.getType();
             auto loc = op.getLoc();
             if (t.template isa<::mlir::TensorType>())
@@ -21,16 +21,16 @@ namespace voila::mlir::lowering
 
                 ::mlir::Value cst;
                 if constexpr (std::is_same_v<ConstOp, ::mlir::voila::IntConstOp>)
-                    cst = rewriter.template create<::mlir::arith::ConstantIntOp>(loc, op.value(), tt.getElementType());
+                    cst = rewriter.template create<::mlir::arith::ConstantIntOp>(loc, op.getValue(), tt.getElementType());
                 else
                     cst = rewriter.template create<::mlir::arith::ConstantOp>(loc, valAttr, tt.getElementType());
                 auto retT =
                     rewriter.template create<::mlir::linalg::InitTensorOp>(loc, tt.getShape(), tt.getElementType());
-                rewriter.template replaceOpWithNewOp<::mlir::linalg::FillOp>(op, cst, retT.result());
+                rewriter.template replaceOpWithNewOp<::mlir::linalg::FillOp>(op, cst, retT.getResult());
             }
             else if constexpr (std::is_same_v<ConstOp, ::mlir::voila::IntConstOp>)
             {
-                rewriter.template replaceOpWithNewOp<::mlir::arith::ConstantIntOp>(op, op.value(), t);
+                rewriter.template replaceOpWithNewOp<::mlir::arith::ConstantIntOp>(op, op.getValue(), t);
             }
             else
             {

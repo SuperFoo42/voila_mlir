@@ -419,8 +419,8 @@ namespace voila::mlir::lowering
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
 
-        const auto &shape = hashOpAdaptor.input().front().getType().dyn_cast<::mlir::TensorType>().getShape();
-        for (const auto &in : hashOpAdaptor.input())
+        const auto &shape = hashOpAdaptor.getInput().front().getType().dyn_cast<::mlir::TensorType>().getShape();
+        for (const auto &in : hashOpAdaptor.getInput())
         {
             assert(in.getType().isa<TensorType>());
             assert(in.getType().dyn_cast<TensorType>().getShape() == shape);
@@ -435,7 +435,7 @@ namespace voila::mlir::lowering
         else
         {
             SmallVector<Value, 1> outTensorSize;
-            outTensorSize.push_back(builder.create<tensor::DimOp>(hashOpAdaptor.input().front(), 0));
+            outTensorSize.push_back(builder.create<tensor::DimOp>(hashOpAdaptor.getInput().front(), 0));
             outTensor = builder.create<linalg::InitTensorOp>(outTensorSize, builder.getI64Type());
         }
 
@@ -447,13 +447,13 @@ namespace voila::mlir::lowering
 
         SmallVector<Type, 1> ret_type;
         ret_type.push_back(outTensor.getType());
-        SmallVector<AffineMap> indexing_maps(hashOpAdaptor.input().size() + 1 + bool(hashOpAdaptor.pred()),
+        SmallVector<AffineMap> indexing_maps(hashOpAdaptor.getInput().size() + 1 + bool(hashOpAdaptor.getPred()),
                                              builder.getDimIdentityMap());
 
         SmallVector<Value> inputs;
-        if (hashOpAdaptor.pred())
-            inputs.push_back(hashOpAdaptor.pred());
-        inputs.insert(inputs.end(), hashOpAdaptor.input().begin(), hashOpAdaptor.input().end());
+        if (hashOpAdaptor.getPred())
+            inputs.push_back(hashOpAdaptor.getPred());
+        inputs.insert(inputs.end(), hashOpAdaptor.getInput().begin(), hashOpAdaptor.getInput().end());
 
         auto linalgOp = builder.create<linalg::GenericOp>(
             /*results*/ ret_type,
@@ -464,7 +464,7 @@ namespace voila::mlir::lowering
             {
                 ImplicitLocOpBuilder builder(loc, nestedBuilder);
 
-                if (hashOpAdaptor.pred())
+                if (hashOpAdaptor.getPred())
                 {
                     auto pred = vals.take_front()[0];
                     vals = vals.drop_front();

@@ -144,7 +144,7 @@ namespace voila::mlir::lowering
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
         // allocate and prefill hashtable
-        auto tmp = allocHashTables(builder, insertOpAdaptor.values());
+        auto tmp = allocHashTables(builder, insertOpAdaptor.getValues());
         auto hts = tmp.first;
         auto htSize = tmp.second;
 
@@ -152,7 +152,7 @@ namespace voila::mlir::lowering
         // TODO: add separate bucket for 0 keys to not run into problems when inserting INVALID
 
         SmallVector<Value> hashInvalidConsts;
-        for (auto val : insertOpAdaptor.values())
+        for (auto val : insertOpAdaptor.getValues())
         { // we uce all ones value of data type size
             const auto &elementType = getElementTypeOrSelf(val);
             if (elementType.isIntOrFloat())
@@ -185,11 +185,11 @@ namespace voila::mlir::lowering
             const auto loc = builder.getLoc();
             // load values
             auto hashIdx = builder.create<IndexCastOp>(
-                builder.getIndexType(), builder.create<tensor::ExtractOp>(insertOpAdaptor.hashValues(), vals));
+                builder.getIndexType(), builder.create<tensor::ExtractOp>(insertOpAdaptor.getHashValues(), vals));
             Value correctedHashIdx = builder.create<AndIOp>(hashIdx, modSize);
 
             SmallVector<Value> toStores;
-            for (auto val : insertOpAdaptor.values())
+            for (auto val : insertOpAdaptor.getValues())
             {
                 toStores.push_back(builder.create<tensor::ExtractOp>(val, vals));
             }
@@ -229,13 +229,13 @@ namespace voila::mlir::lowering
         };
 
         buildAffineLoopNest(builder, builder.getLoc(), lb,
-                            builder.create<tensor::DimOp>(insertOpAdaptor.hashValues(), 0).getResult(), {1},
+                            builder.create<tensor::DimOp>(insertOpAdaptor.getHashValues(), 0).getResult(), {1},
                             [&](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
                             {
                                 ImplicitLocOpBuilder builder(loc, nestedBuilder);
-                                if (insertOpAdaptor.pred())
+                                if (insertOpAdaptor.getPred())
                                 {
-                                    auto pred = builder.create<tensor::ExtractOp>(insertOpAdaptor.pred(), vals);
+                                    auto pred = builder.create<tensor::ExtractOp>(insertOpAdaptor.getPred(), vals);
                                     builder.create<scf::IfOp>(pred,
                                                               [&](OpBuilder &b, Location loc)
                                                               {

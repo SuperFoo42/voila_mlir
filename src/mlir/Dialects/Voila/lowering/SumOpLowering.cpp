@@ -114,7 +114,7 @@ namespace voila::mlir::lowering
         };
 
         SmallVector<AffineMap, 3> maps;
-        if (sumOpAdaptor.pred())
+        if (sumOpAdaptor.getPred())
                 maps.push_back(builder.getDimIdentityMap());
         SmallVector<AffineExpr, 1> srcExprs;
         srcExprs.push_back(getAffineDimExpr(0, builder.getContext()));
@@ -122,9 +122,9 @@ namespace voila::mlir::lowering
         auto inferred = AffineMap::inferFromExprList({srcExprs, dstExprs});
         maps.insert(maps.end(), inferred.begin(), inferred.end());
         SmallVector<Value, 2> inputs;
-        inputs.push_back(sumOpAdaptor.input());
-        if (sumOpAdaptor.pred())
-            inputs.push_back(sumOpAdaptor.pred());
+        inputs.push_back(sumOpAdaptor.getInput());
+        if (sumOpAdaptor.getPred())
+            inputs.push_back(sumOpAdaptor.getPred());
 
         auto linalgOp = builder.create<linalg::GenericOp>(builder.getLoc(), /*results*/ res_type,
                                                           /*inputs*/ inputs, /*outputs*/ res,
@@ -138,7 +138,7 @@ namespace voila::mlir::lowering
     {
         Value res;
         auto allocSize = getHTSize(builder,
-                                   sumOpAdaptor.input()); // FIXME: not the best solution, indices can be out of range.
+                                   sumOpAdaptor.getInput()); // FIXME: not the best solution, indices can be out of range.
         if (getElementTypeOrSelf(op->getResultTypes().front()).isa<IntegerType>())
         {
             res = builder.create<memref::AllocOp>(MemRefType::get(-1, builder.getI64Type()),
@@ -175,16 +175,16 @@ namespace voila::mlir::lowering
         {
             ImplicitLocOpBuilder builder(loc, nestedBuilder);
             auto idx = vals.front();
-            if (sumOpAdaptor.pred())
+            if (sumOpAdaptor.getPred())
             {
-                auto pred = builder.create<tensor::ExtractOp>(sumOpAdaptor.pred(), idx);
+                auto pred = builder.create<tensor::ExtractOp>(sumOpAdaptor.getPred(), idx);
                 builder.create<scf::IfOp>(pred,
                                           [&](OpBuilder &b, Location loc)
                                           {
                                               ImplicitLocOpBuilder nb(loc, b);
-                                              auto toSum = nb.create<tensor::ExtractOp>(sumOpAdaptor.input(), idx);
+                                              auto toSum = nb.create<tensor::ExtractOp>(sumOpAdaptor.getInput(), idx);
                                               Value groupIdx =
-                                                  nb.create<tensor::ExtractOp>(sumOpAdaptor.indices(), idx);
+                                                  nb.create<tensor::ExtractOp>(sumOpAdaptor.getIndices(), idx);
                                               auto oldVal =
                                                   nb.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
                                               Value newVal;
@@ -209,8 +209,8 @@ namespace voila::mlir::lowering
             }
             else
             {
-                auto toSum = builder.create<tensor::ExtractOp>(sumOpAdaptor.input(), idx);
-                Value groupIdx = builder.create<tensor::ExtractOp>(sumOpAdaptor.indices(), idx);
+                auto toSum = builder.create<tensor::ExtractOp>(sumOpAdaptor.getInput(), idx);
+                Value groupIdx = builder.create<tensor::ExtractOp>(sumOpAdaptor.getIndices(), idx);
                 auto oldVal = builder.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
                 Value newVal;
 
@@ -233,7 +233,7 @@ namespace voila::mlir::lowering
         };
 
         buildAffineLoopNest(builder, builder.getLoc(), ::llvm::makeArrayRef<Value>(builder.create<ConstantIndexOp>(0)),
-                            builder.create<tensor::DimOp>(sumOpAdaptor.input(), 0).getResult(), {1}, fn);
+                            builder.create<tensor::DimOp>(sumOpAdaptor.getInput(), 0).getResult(), {1}, fn);
 
         return builder.create<ToTensorOp>(res);
     }
@@ -247,7 +247,7 @@ namespace voila::mlir::lowering
         auto sumOp = dyn_cast<SumOp>(op);
         SumOpAdaptor sumOpAdaptor(sumOp);
         Value res;
-        if (sumOp.indices() && op->getResultTypes().front().isa<TensorType>())
+        if (sumOp.getIndices() && op->getResultTypes().front().isa<TensorType>())
         {
             res = groupedSumLowering(op, sumOpAdaptor, builder); // grouped aggregation is a pipeline breaker
         }

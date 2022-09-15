@@ -1,0 +1,13 @@
+// RUN: voila-mlir-translate -emit=mlir %s INT32 INT32:100 INT64 INT64:7 DBL DBL:128 BOOL BOOL:7 | FileCheck %s
+
+main(a,b,c,d,e,f,g,h)
+{
+    simple_and(g,h);
+}
+
+//CHECK-LABEL: func @simple_and(%arg0: i1, %arg1: tensor<100xi1>)
+def simple_and(x,y)
+{
+//CHECK-NEXT: voila.and
+    emit and(x,y);
+}

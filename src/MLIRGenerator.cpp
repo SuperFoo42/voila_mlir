@@ -1,7 +1,6 @@
 #include "MLIRGenerator.hpp"
 
 #include "MLIRGeneratorImpl.hpp"
-#include "MlirGenerationException.hpp"
 #include "MlirModuleVerificationError.hpp"
 
 #include <mlir/IR/Verifier.h>
@@ -17,7 +16,7 @@ namespace voila
         // add them to the module.
         module = ::mlir::ModuleOp::create(builder.getUnknownLoc());
 
-        for (const auto &f : program.get_funcs())
+        for (const auto &f : program.life_funcs())
         {
             auto generatorImpl = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, program.inferer);
             generatorImpl(*f);

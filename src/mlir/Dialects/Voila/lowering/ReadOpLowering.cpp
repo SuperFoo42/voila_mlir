@@ -34,15 +34,15 @@ namespace voila::mlir::lowering
 
         Value col;
         // TODO: only for tensors
-        if (readOpAdaptor.column().getType().isa<TensorType>())
+        if (readOpAdaptor.getColumn().getType().isa<TensorType>())
         {
             col = rewriter.create<ToMemrefOp>(
-                loc, convertTensorToMemRef(readOpAdaptor.column().getType().dyn_cast<TensorType>()),
-                readOpAdaptor.column());
+                loc, convertTensorToMemRef(readOpAdaptor.getColumn().getType().dyn_cast<TensorType>()),
+                readOpAdaptor.getColumn());
         }
-        else if (readOpAdaptor.column().getType().isa<MemRefType>())
+        else if (readOpAdaptor.getColumn().getType().isa<MemRefType>())
         {
-            col = readOpAdaptor.column();
+            col = readOpAdaptor.getColumn();
         }
         else
         {
@@ -51,7 +51,7 @@ namespace voila::mlir::lowering
 
         SmallVector<Value> sizes, offsets, strides;
         strides.push_back(rewriter.create<ConstantIndexOp>(loc, 1));
-        offsets.push_back(rewriter.create<IndexCastOp>(loc, rewriter.getIndexType(), readOpAdaptor.index()));
+        offsets.push_back(rewriter.create<IndexCastOp>(loc, rewriter.getIndexType(), readOpAdaptor.getIndex()));
         sizes.push_back(rewriter.create<memref::DimOp>(loc, col, 0));
 
         rewriter.replaceOpWithNewOp<memref::SubViewOp>(op, col, offsets, sizes, strides);

@@ -125,8 +125,8 @@ namespace voila::mlir::lowering
                              Value iter_var, Value dest) -> Value
                        {
                            SelectOpAdaptor binaryAdaptor(memRefOperands);
-                           auto values = binaryAdaptor.values();
-                           auto pred = binaryAdaptor.pred();
+                           auto values = binaryAdaptor.getValues();
+                           auto pred = binaryAdaptor.getPred();
 
                            if (values.getType().isa<TensorType>() && pred.getType().isa<TensorType>())
                            {

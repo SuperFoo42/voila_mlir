@@ -17,10 +17,10 @@ namespace voila
             abort();
         }
 
-        for (auto &func : prog.get_funcs())
+/*        for (auto &func : prog.get_funcs())
         {
             func->visit(inferer);
-        }
+        }*/
 
         return std::move(inferer);
     }
