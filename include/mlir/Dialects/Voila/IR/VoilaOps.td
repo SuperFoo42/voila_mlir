@@ -154,7 +154,7 @@ def DivOp : Voila_Op<"div",[NoSideEffect]> {
   }];
 
 let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
-let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
+let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -176,7 +176,7 @@ let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def AndOp : Voila_Op<"and",[NoSideEffect,Commutative,SameOperandsAndResultShape]> {
+def AndOp : Voila_Op<"and",[NoSideEffect,Commutative]> {
   let summary = "element-wise and operation";
   let description = [{
     The "and" operation performs element-wise and between two tensors.
@@ -184,7 +184,7 @@ def AndOp : Voila_Op<"and",[NoSideEffect,Commutative,SameOperandsAndResultShape]
   }];
 
   let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$lhs, AnyTypeOf<[I1Tensor,I1]>:$rhs);
-  let results = (outs I1Tensor);
+  let results = (outs AnyTypeOf<[I1Tensor,I1]>);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseBinaryOp(parser, result); }];

@@ -5,7 +5,7 @@ main(a,b,c,d,e,f,g,h)
     simple_and(g,h);
 }
 
-//CHECK-LABEL: func @simple_and(%arg0: i1, %arg1: tensor<100xi1>)
+//CHECK-LABEL: func @simple_and
 def simple_and(x,y)
 {
 //CHECK-NEXT: voila.and

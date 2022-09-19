@@ -8,6 +8,8 @@ def bar()
 // CHECK-LABEL: func @main()
 main()
 {
+    bar();
+    foo();
 }
 
 // CHECK-LABEL: func @foo

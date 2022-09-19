@@ -1,0 +1,13 @@
+// RUN: voila-mlir-translate -emit=mlir %s INT32 INT32:100 INT64 INT64:7 DBL DBL:128 BOOL BOOL:7 | FileCheck %s
+
+main(a,b,c,d,e,f,g,h)
+{
+    simple_div(e,f);
+}
+
+//CHECK-LABEL: func @simple_div(%arg0: f64, %arg1: tensor<128xf64>)
+def simple_div(x,y)
+{
+//CHECK-NEXT: voila.div
+    emit div(x,y);
+}

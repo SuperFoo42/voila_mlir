@@ -165,7 +165,7 @@ stmt: expr COLON { $$ = ast::Statement::make<StatementWrapper>(@0,$1); }
 	| effect COLON pred { $$ = $1; $$.set_predicate($3); }
 	| function_call COLON { $$ = $1; }
 
-function_call: ID LPAREN var_list RPAREN { $$ = ast::Statement::make<FunctionCall>(@0+@4,$1, $3); }
+function_call: ID params { $$ = ast::Statement::make<FunctionCall>(@0+@2,$1, $2); }
 
 var: ID {$$ = out.has_var($1) ? ast::Expression::make<Ref>(@0, out.get_var($1)) : ast::Expression::make<Variable>(@0, $1); if ($$.is_variable()){ out.add_var($$);};  };
 
