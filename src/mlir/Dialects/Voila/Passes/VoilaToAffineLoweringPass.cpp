@@ -43,7 +43,7 @@ namespace voila::mlir
             // We define the specific operations, or dialects, that are legal targets for
             // this lowering.
             target.addLegalDialect<BuiltinDialect, AffineDialect, memref::MemRefDialect,func::FuncDialect,
-                                   linalg::LinalgDialect, scf::SCFDialect, arith::ArithmeticDialect,
+                                   linalg::LinalgDialect, scf::SCFDialect, arith::ArithDialect,
                                    bufferization::BufferizationDialect, tensor::TensorDialect>();
 
             // We also define the dialect as Illegal so that the conversion will fail

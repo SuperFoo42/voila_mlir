@@ -1,5 +1,5 @@
 #pragma once
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -81,7 +81,7 @@ namespace voila::mlir::lowering
                 ::mlir::Value other;
                 if (opAdaptor.getLhs().getType().template dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
                 {
-                    other = rewriter.template create<::mlir::linalg::InitTensorOp>(
+                    other = rewriter.template create<::mlir::tensor::EmptyOp>(
                         loc, opAdaptor.getLhs().getType().template dyn_cast<::mlir::RankedTensorType>().getShape(),
                         opAdaptor.getRhs().getType());
                 }
@@ -90,7 +90,7 @@ namespace voila::mlir::lowering
                     ::mlir::SmallVector<::mlir::Value, 1> size;
                     size.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.getLhs(), 0));
                     other =
-                        rewriter.template create<::mlir::linalg::InitTensorOp>(loc, size, opAdaptor.getRhs().getType());
+                        rewriter.template create<::mlir::tensor::EmptyOp>(loc,llvm::makeArrayRef<int64_t>(-1), opAdaptor.getRhs().getType(), size);
                 }
                 auto filledOther = rewriter.create<::mlir::linalg::FillOp>(loc, opAdaptor.getRhs(), other);
                 newVal = operator()(rewriter, loc, opAdaptor.getLhs(), filledOther.result());
@@ -101,7 +101,7 @@ namespace voila::mlir::lowering
                 ::mlir::Value other;
                 if (opAdaptor.getRhs().getType().template dyn_cast<::mlir::RankedTensorType>().hasStaticShape())
                 {
-                    other = rewriter.template create<::mlir::linalg::InitTensorOp>(
+                    other = rewriter.template create<::mlir::tensor::EmptyOp>(
                         loc, opAdaptor.getRhs().getType().template dyn_cast<::mlir::RankedTensorType>().getShape(),
                         opAdaptor.getLhs().getType());
                 }
@@ -110,7 +110,7 @@ namespace voila::mlir::lowering
                     ::mlir::SmallVector<::mlir::Value, 1> size;
                     size.push_back(rewriter.create<::mlir::tensor::DimOp>(loc, opAdaptor.getRhs(), 0));
                     other =
-                        rewriter.template create<::mlir::linalg::InitTensorOp>(loc, size, opAdaptor.getLhs().getType());
+                        rewriter.template create<::mlir::tensor::EmptyOp>(loc, llvm::makeArrayRef<int64_t>(-1),opAdaptor.getLhs().getType(), size);
                 }
                 auto filledOther = rewriter.create<::mlir::linalg::FillOp>(loc, opAdaptor.getLhs(), other);
                 newVal = operator()(rewriter, loc, filledOther.result(), opAdaptor.getRhs());

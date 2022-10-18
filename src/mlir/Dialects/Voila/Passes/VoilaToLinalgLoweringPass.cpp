@@ -8,7 +8,7 @@
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialects/Voila/lowering/ArithmeticOpLowering.hpp"
@@ -42,7 +42,7 @@ namespace voila::mlir
             // this lowering.
             target.addLegalDialect<BuiltinDialect, AffineDialect, memref::MemRefDialect, func::FuncDialect,
                                    linalg::LinalgDialect, tensor::TensorDialect, scf::SCFDialect, vector::VectorDialect,
-                                   arith::ArithmeticDialect, bufferization::BufferizationDialect>();
+                                   arith::ArithDialect, bufferization::BufferizationDialect>();
 
             // We also define the dialect as Illegal so that the conversion will fail
             // if any of these operations are *not* converted. Given that we actually want

@@ -1,6 +1,6 @@
 #include "mlir/Dialects/Voila/lowering/ReadOpLowering.hpp"
 
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"

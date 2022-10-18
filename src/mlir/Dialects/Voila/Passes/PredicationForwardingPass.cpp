@@ -1,6 +1,6 @@
 #include "mlir/Dialects/Voila/Passes/PredicationForwardingPass.hpp"
 
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/IR/Builders.h"
@@ -148,14 +148,14 @@ namespace voila::mlir
                     Value tmp;
                     if (op.getValues().getType().dyn_cast<TensorType>().hasStaticShape())
                     {
-                        tmp = rewriter.create<linalg::InitTensorOp>(
+                        tmp = rewriter.create<tensor::EmptyOp>(
                             loc, op.getValues().getType().dyn_cast<TensorType>().getShape(),
                             getElementTypeOrSelf(op.getValues()));
                     }
                     else
                     {
                         auto dimShape = rewriter.create<tensor::DimOp>(loc, op.getValues(), 0)->getResultTypes();
-                        tmp = rewriter.create<linalg::InitTensorOp>(loc, dimShape,
+                        tmp = rewriter.create<tensor::EmptyOp>(loc, dimShape,
                                                                     op->getResults());
                     };
 

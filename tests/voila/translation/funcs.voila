@@ -1,6 +1,11 @@
 // RUN: voila-mlir-translate -emit=mlir %s | FileCheck %s
 
-// CHECK-LABEL: func @bar
+// CHECK-LABEL: func @foo()
+def foo()
+{
+}
+
+// CHECK-LABEL: func @bar()
 def bar()
 {
 }
@@ -10,9 +15,4 @@ main()
 {
     bar();
     foo();
-}
-
-// CHECK-LABEL: func @foo
-def foo()
-{
 }

@@ -1,0 +1,6 @@
+// RUN: voila-mlir-translate -emit=mlir %s INT32 INT32:100 INT64 INT64:7 DBL DBL:128 BOOL BOOL:7 | voila-opt | FileCheck %s
+
+// CHECK-LABEL: func @main(%arg0: i32, %arg1: tensor<100xi32>, %arg2: i64, %arg3: tensor<7xi64>, %arg4: f64, %arg5: tensor<128xf64>, %arg6: i1, %arg7: tensor<7xi1>)
+main(a,b,c,d,e,f,g,h)
+{
+}

@@ -1,0 +1,12 @@
+// RUN: voila-mlir-translate -emit=mlir %s INT32 INT32:100 INT64 INT64:7 DBL DBL:128 BOOL BOOL:7 | FileCheck %s
+
+main(a,b,c,d,e,f,g,h)
+{
+    simple_or(g,h);
+}
+
+def simple_or(x,y)
+{
+//CHECK: voila.or
+    emit or(x,y);
+}

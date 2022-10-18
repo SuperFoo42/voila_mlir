@@ -1,7 +1,7 @@
 #include "mlir/Dialects/Voila/Passes/VoilaToLLVMLoweringPass.hpp"
 
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
-#include "mlir/Conversion/ArithmeticToLLVM/ArithmeticToLLVM.h"
+#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/MemRefToLLVM//MemRefToLLVM.h"
@@ -69,7 +69,7 @@ void VoilaToLLVMLoweringPass::runOnOperation() {
     RewritePatternSet patterns(&getContext());
     populateAffineToStdConversionPatterns(patterns);
     populateSCFToControlFlowConversionPatterns(patterns);
-    populateArithmeticToLLVMConversionPatterns(typeConverter,
+    populateArithToLLVMConversionPatterns(typeConverter,
                                                             patterns);
     populateMemRefToLLVMConversionPatterns(typeConverter, patterns);
     populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);

@@ -5,9 +5,8 @@ main(a,b,c,d,e,f,g,h)
     simple_add(a,b);
 }
 
-//CHECK-LABEL: func @simple_add(%arg0: i32, %arg1: tensor<100xi32>)
 def simple_add(x,y)
 {
-//CHECK-NEXT: voila.add
+//CHECK: voila.add
     emit add(x,y);
 }

@@ -25,7 +25,7 @@ namespace voila::mlir::lowering
                 else
                     cst = rewriter.template create<::mlir::arith::ConstantOp>(loc, valAttr, tt.getElementType());
                 auto retT =
-                    rewriter.template create<::mlir::linalg::InitTensorOp>(loc, tt.getShape(), tt.getElementType());
+                    rewriter.template create<::mlir::tensor::EmptyOp>(loc, tt.getShape(), tt.getElementType());
                 rewriter.template replaceOpWithNewOp<::mlir::linalg::FillOp>(op, cst, retT.getResult());
             }
             else if constexpr (std::is_same_v<ConstOp, ::mlir::voila::IntConstOp>)

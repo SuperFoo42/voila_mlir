@@ -124,7 +124,7 @@ def SubOp : Voila_Op<"sub",[NoSideEffect]> {
   }];
 
 let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
-let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>:$result);
+let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -138,8 +138,8 @@ def MulOp : Voila_Op<"mul",[NoSideEffect, Commutative]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
-  let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
+let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
+let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -169,7 +169,7 @@ def ModOp : Voila_Op<"mod",[NoSideEffect,SameOperandsShape]> {
   }];
 
 let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
-let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>]>);
+let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];

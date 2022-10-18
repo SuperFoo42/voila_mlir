@@ -2,11 +2,11 @@
 
 main(a,b,c,d,e,f,g,h)
 {
-    simple_and(g,h);
+    simple_mul(e,f);
 }
 
-def simple_and(x,y)
+def simple_mul(x,y)
 {
-//CHECK: voila.and
-    emit and(x,y);
+//CHECK: voila.mul
+    emit mul(x,y);
 }

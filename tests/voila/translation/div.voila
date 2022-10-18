@@ -5,9 +5,8 @@ main(a,b,c,d,e,f,g,h)
     simple_div(e,f);
 }
 
-//CHECK-LABEL: func @simple_div(%arg0: f64, %arg1: tensor<128xf64>)
 def simple_div(x,y)
 {
-//CHECK-NEXT: voila.div
+//CHECK: voila.div
     emit div(x,y);
 }

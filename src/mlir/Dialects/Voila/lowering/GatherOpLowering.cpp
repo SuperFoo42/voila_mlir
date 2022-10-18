@@ -1,7 +1,7 @@
 #include "mlir/Dialects/Voila/lowering/GatherOpLowering.hpp"
 
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
 
@@ -23,7 +23,7 @@ namespace voila::mlir::lowering
         GatherOpAdaptor gatherOpAdaptor(operands);
 
         auto out = rewriter
-                       .create<linalg::InitTensorOp>(loc, gatherOpAdaptor.getIndices().getType().dyn_cast<TensorType>().getShape(),
+                       .create<tensor::EmptyOp>(loc, gatherOpAdaptor.getIndices().getType().dyn_cast<TensorType>().getShape(),
                                                      getElementTypeOrSelf(gatherOpAdaptor.getColumn()))
                        ->getResults();
 

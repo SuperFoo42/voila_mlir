@@ -5,7 +5,7 @@
 #include "mlir/Dialect/Linalg/Transforms/Transforms.h"
 
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/DialectConversion.h"

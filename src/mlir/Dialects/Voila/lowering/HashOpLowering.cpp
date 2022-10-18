@@ -3,7 +3,7 @@
 #include "NotImplementedException.hpp"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
 
@@ -429,14 +429,14 @@ namespace voila::mlir::lowering
         ::mlir::Value outTensor;
         if (hOp.getResult().getType().dyn_cast<ShapedType>().hasStaticShape())
         {
-            outTensor = builder.create<linalg::InitTensorOp>(
+            outTensor = builder.create<tensor::EmptyOp>(
                 hOp.getResult().getType().dyn_cast<ShapedType>().getShape(), builder.getI64Type());
         }
         else
         {
             SmallVector<Value, 1> outTensorSize;
             outTensorSize.push_back(builder.create<tensor::DimOp>(hashOpAdaptor.getInput().front(), 0));
-            outTensor = builder.create<linalg::InitTensorOp>(outTensorSize, builder.getI64Type());
+            outTensor = builder.create<tensor::EmptyOp>( llvm::makeArrayRef<int64_t>(-1), builder.getI64Type(),outTensorSize);
         }
 
         SmallVector<Value, 1> res;

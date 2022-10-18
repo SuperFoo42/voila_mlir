@@ -1,6 +1,6 @@
 #pragma once
 
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -98,16 +98,16 @@ namespace voila::mlir::lowering
 
             if (lhs.getType().template isa<::mlir::TensorType>() && !rhs.getType().template isa<::mlir::TensorType>())
             {
-                auto rhsTensor = builder.template create<::mlir::linalg::InitTensorOp>(
+                auto rhsTensor = builder.template create<::mlir::tensor::EmptyOp>(
                     lhs.getType().template dyn_cast<::mlir::RankedTensorType>().getShape(), rhs.getType());
-                rhs = builder.template create<::mlir::linalg::FillOp>(rhs, rhsTensor.result()).result();
+                rhs = builder.template create<::mlir::linalg::FillOp>(rhs, rhsTensor.getResult()).result();
             }
             else if (!lhs.getType().template isa<::mlir::TensorType>() &&
                      rhs.getType().template isa<::mlir::TensorType>())
             {
-                auto lhsTensor = builder.template create<::mlir::linalg::InitTensorOp>(
+                auto lhsTensor = builder.template create<::mlir::tensor::EmptyOp>(
                     rhs.getType().template dyn_cast<::mlir::RankedTensorType>().getShape(), lhs.getType());
-                lhs = builder.template create<::mlir::linalg::FillOp>(lhs, lhsTensor.result()).result();
+                lhs = builder.template create<::mlir::linalg::FillOp>(lhs, lhsTensor.getResult()).result();
             }
 
             if (::mlir::getElementTypeOrSelf(lhs).template isa<::mlir::IndexType>() xor

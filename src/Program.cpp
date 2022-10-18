@@ -394,8 +394,7 @@ namespace voila {
 
         pm.addNestedPass<FuncOp>(createConvertLinalgToAffineLoopsPass());
         if (config._optimize && config._vectorize) {
-            std::unique_ptr<Pass> vectorizationPass =
-                    createSuperVectorizePass(llvm::makeArrayRef<int64_t>(config._vector_size));
+            std::unique_ptr<Pass> vectorizationPass = createAffineVectorize();
             if (config._vectorize_reductions) {
                 (void) vectorizationPass->initializeOptions("vectorize-reductions=true");
             }
@@ -482,8 +481,9 @@ namespace voila {
         pm.addNestedPass<FuncOp>(::mlir::bufferization::createFinalizingBufferizePass());
 
         if (config._optimize && config._vectorize) {
-            pm.addNestedPass<FuncOp>(createLinalgStrategyLowerVectorsPass(
-                    linalg::LinalgVectorLoweringOptions()
+            //TODO
+/*            pm.addNestedPass<FuncOp>(createLinalgStrategyLowerVectorsPass(
+                    linalg::LinalgVectorizationOptions()
                             .enableContractionLowering()
                             .enableMultiReductionLowering()
                             .enableTransferLowering()
@@ -492,7 +492,7 @@ namespace voila {
                             .setVectorTransferToSCFOptions(VectorTransferToSCFOptions().enableFullUnroll())
                             .setVectorTransformsOptions(
                                     vector::VectorTransformsOptions().setVectorMultiReductionLowering(
-                                            vector::VectorMultiReductionLowering::InnerReduction))));
+                                            vector::VectorMultiReductionLowering::InnerReduction))));*/
             pm.addPass(createConvertVectorToLLVMPass(LowerVectorToLLVMOptions()
                                                              .enableIndexOptimizations(true)
                                                              .enableReassociateFPReductions(true)
@@ -500,7 +500,7 @@ namespace voila {
         }
 
 
-        pm.addNestedPass<FuncOp>(arith::createArithmeticExpandOpsPass());
+        pm.addNestedPass<FuncOp>(arith::createArithExpandOpsPass());
         pm.addNestedPass<FuncOp>(memref::createExpandOpsPass());
         //pm.addPass(createLowerHostCodeToLLVMPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());

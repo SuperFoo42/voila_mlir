@@ -2,11 +2,11 @@
 
 main(a,b,c,d,e,f,g,h)
 {
-    simple_and(g,h);
+    simple_not(h);
 }
 
-def simple_and(x,y)
+def simple_not(x)
 {
-//CHECK: voila.and
-    emit and(x,y);
+//CHECK: voila.not
+    emit not(x);
 }

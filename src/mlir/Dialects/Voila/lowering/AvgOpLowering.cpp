@@ -2,7 +2,7 @@
 
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/IR/TypeUtilities.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
 
@@ -19,13 +19,13 @@ namespace voila::mlir::lowering
         Value res;
         if (tensor.getType().dyn_cast<TensorType>().hasStaticShape())
         {
-            res = builder.create<linalg::InitTensorOp>(tensor.getType().dyn_cast<TensorType>().getShape(),
+            res = builder.create<tensor::EmptyOp>(tensor.getType().dyn_cast<TensorType>().getShape(),
                                                        builder.getF64Type());
         }
         else
         {
             Value dimSize = builder.create<::mlir::tensor::DimOp>(tensor, 0);
-            res = builder.create<linalg::InitTensorOp>(::llvm::makeArrayRef(dimSize), builder.getF64Type());
+            res = builder.create<tensor::EmptyOp>( llvm::makeArrayRef<int64_t>(-1), builder.getF64Type(),dimSize);
         }
 
         SmallVector<Type, 1> res_type(1, res.getType());

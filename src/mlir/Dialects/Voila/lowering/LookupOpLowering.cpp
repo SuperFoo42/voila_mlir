@@ -6,7 +6,7 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/Arithmetic/IR/Arithmetic.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
 
@@ -252,12 +252,11 @@ namespace voila::mlir::lowering
         }
         else
         {
-            Value outTensor = rewriter.create<linalg::InitTensorOp>(
-                loc,
+            Value outTensor = rewriter.create<tensor::EmptyOp>(loc,
+                lookupOpAdaptor.getHashes().getType().dyn_cast<TensorType>().getShape(), rewriter.getIndexType(),
                 lookupOpAdaptor.getHashes().getType().dyn_cast<TensorType>().hasStaticShape() ?
-                    ValueRange() :
-                    llvm::makeArrayRef<Value>(rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.getHashes(), 0)),
-                lookupOpAdaptor.getHashes().getType().dyn_cast<TensorType>().getShape(), rewriter.getIndexType());
+                ValueRange() :
+                llvm::makeArrayRef<Value>(rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.getHashes(), 0)));
 
             llvm::SmallVector<AffineMap> indexing_maps(/*hashes+outTensor*/ 2 + lookupOpAdaptor.getValues().size(),
                                                        rewriter.getDimIdentityMap());
