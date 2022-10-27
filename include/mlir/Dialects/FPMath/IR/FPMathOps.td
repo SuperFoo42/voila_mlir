@@ -2,6 +2,9 @@
 #define FPMATH_OPS
 
 include "FPMathDialect.td"
+include "FPMathTypes.td"
+include "FPMathAttr.td"
+
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/CastInterfaces.td"
@@ -11,21 +14,154 @@ def ConstantOp : FPMath_Op<"constant"> {
 // auto-generate documentation of the operations within our dialect.
 let summary = "constant operation";
 let description = [{
-Constant operation turns a literal into an SSA value. The data is attached
-to the operation as an attribute. For example:
-
-%0 = "toy.constant"()
-{ value = dense<[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]> : tensor<2x3xf64> }
-: () -> tensor<2x3xf64>
+TBD
 }];
 
 // The constant operation takes an attribute as the only input.
 // `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
-let arguments = (ins F64ElementsAttr:$value);
+let arguments = (ins FPMath_FixedAttr:$value);
 
 // The generic call operation returns a single value of TensorType.
 // F64Tensor corresponds to a 64-bit floating-point TensorType.
-let results = (outs F64Tensor);
+let results = (outs DecimalType);
+}
+
+def AddOp : FPMath_Op<"add"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "add operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$lhs, DecimalType:$rhs);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
+
+def SubOp : FPMath_Op<"sub"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "sub operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$lhs, DecimalType:$rhs);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
+
+def MulOp : FPMath_Op<"mul"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "mul operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$lhs, DecimalType:$rhs);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
+
+
+def DivOp : FPMath_Op<"div"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "div operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$lhs, DecimalType:$rhs);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
+
+def FpToDecOp : FPMath_Op<"fptodec"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "float to decimal cast operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins AnyFloat:$arg);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
+
+def IntToDecOp : FPMath_Op<"inttodec"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "int to decimal cast operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins AnyInteger:$arg);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
+
+def DecToFltOp : FPMath_Op<"dectoflt"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "decimal to float cast operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$arg);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs AnyFloat);
+}
+
+def DecToIntOp : FPMath_Op<"dectoint"> {
+    //TODO: rounding mode
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "decimal to int rounding operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$arg);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs AnyInteger);
 }
 
 #endif
