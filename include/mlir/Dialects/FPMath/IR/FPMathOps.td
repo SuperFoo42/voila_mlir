@@ -164,4 +164,105 @@ let arguments = (ins DecimalType:$arg);
 let results = (outs AnyInteger);
 }
 
+def EqOp : FPMath_Op<"eq"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "equals operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$lhs, DecimalType:$rhs);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
+
+def NeqOp : FPMath_Op<"neq"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "not-equals operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$lhs, DecimalType:$rhs);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
+
+def LtOp : FPMath_Op<"lt"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "less-than operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$lhs, DecimalType:$rhs);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
+
+def LeOp : FPMath_Op<"le"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "less-equal operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$lhs, DecimalType:$rhs);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
+
+def GeOp : FPMath_Op<"ge"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "greater-equal operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$lhs, DecimalType:$rhs);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
+
+def GtOp : FPMath_Op<"gt"> {
+// Provide a summary and description for this operation. This can be used to
+// auto-generate documentation of the operations within our dialect.
+let summary = "greater-than operation";
+let description = [{
+TBD
+}];
+
+// The constant operation takes an attribute as the only input.
+// `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
+let arguments = (ins DecimalType:$lhs, DecimalType:$rhs);
+
+// The generic call operation returns a single value of TensorType.
+// F64Tensor corresponds to a 64-bit floating-point TensorType.
+let results = (outs DecimalType);
+}
 #endif

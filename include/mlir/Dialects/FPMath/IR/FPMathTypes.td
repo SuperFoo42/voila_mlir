@@ -19,7 +19,7 @@ def DecimalType : FPMath_Type<"Decimal", "fixed"> {
 
   let assemblyFormat = "`<` $width `,` $scale `>`";
 
-  //let genVerifyDecl = 1;
+  //let genVerifyDecl = 1; //TODO: check unsignedness of with and scale
 }
 
 #endif

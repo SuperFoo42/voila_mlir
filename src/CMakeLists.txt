@@ -62,6 +62,8 @@ target_link_libraries(voila_compiler
         MLIRExecutionEngine
         MLIRJitRunner
         MLIRTransforms
+        MLIRFPMath
+        MLIRFPMathToLLVMIRTranslation
         ${LLVM_LINK_COMPONENTS}
         papi
         )
