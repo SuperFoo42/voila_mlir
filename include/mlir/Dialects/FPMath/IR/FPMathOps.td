@@ -1,9 +1,9 @@
 #ifndef FPMATH_OPS
 #define FPMATH_OPS
 
-include "FPMathDialect.td"
-include "FPMathTypes.td"
-include "FPMathAttr.td"
+include "mlir/Dialects/FPMath/IR/FPMathDialect.td"
+include "mlir/Dialects/FPMath/IR/FPMathTypes.td"
+include "mlir/Dialects/FPMath/IR/FPMathAttr.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
@@ -19,7 +19,7 @@ TBD
 
 // The constant operation takes an attribute as the only input.
 // `F64ElementsAttr` corresponds to a 64-bit floating-point ElementsAttr.
-let arguments = (ins FPMath_FixedAttr:$value);
+let arguments = (ins FixedAttr:$value);
 
 // The generic call operation returns a single value of TensorType.
 // F64Tensor corresponds to a 64-bit floating-point TensorType.

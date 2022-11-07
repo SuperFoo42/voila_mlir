@@ -1,12 +1,26 @@
 #ifndef VOILA_OPS
 #define VOILA_OPS
 
-include "VoilaDialect.td"
+include "mlir/Dialects/Voila/IR/VoilaDialect.td"
+include "mlir/Dialects/FPMath/IR/FPMathTypes.td"
+include "mlir/Dialects/FPMath/IR/FPMathAttr.td"
 include "../Interfaces/PredicationOpInterface.td"
 include "mlir/IR/OpBase.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/CastInterfaces.td"
+
+def RationalLike : TypeConstraint<Or<[
+        FloatLike.predicate, DecimalLike.predicate]>,
+"floating-point or decimal-like">;
+
+def AnyVoilaType : TypeConstraint<Or<[
+        AnySignlessIntegerOrIndex.predicate, AnyFloat.predicate, DecimalType.predicate]>,
+"any valid type in Voila">;
+
+def AnyVoilaTypeLike : TypeConstraint<Or<[
+        AnyVoilaType.predicate, TensorRankOf<[AnySignlessIntegerOrIndex, AnyFloat, DecimalType], [1]>.predicate]>,
+"any valid type in Voila">;
 
 
 def IntConstOp : Voila_Op<"integer constant", [NoSideEffect]> {
@@ -23,7 +37,7 @@ def IntConstOp : Voila_Op<"integer constant", [NoSideEffect]> {
 
   // The constant operation returns a single value of TensorType.
   //TODO:
-  let results = (outs AnyTypeOf<[I32,I64, TensorOf<[I64]>, TensorOf<[I32]>]>);
+  let results = (outs SignlessIntegerLike);
 
 let builders = [
 OpBuilder<(ins "mlir::IntegerAttr":$value), [{
@@ -48,10 +62,10 @@ def FltConstOp : Voila_Op<"float constant", [NoSideEffect]> {
   }];
 
   // The constant operation takes an attribute as the only input.
-  let arguments = (ins F64Attr:$value);
+  let arguments = (ins AnyAttrOf<[F64Attr, FixedAttr]>:$value);
 
   // The constant operation returns a single value of TensorType.
-  let results = (outs AnyTypeOf<[F64, TensorOf<[F64]>]>);
+  let results = (outs RationalLike);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseConstantOp(parser, result); }];
@@ -63,6 +77,9 @@ build($_builder, $_state, value.getType(), value);
 }]>,
 OpBuilder<(ins "double":$value), [{
     FltConstOp::build($_builder, $_state, RankedTensorType::get({}, $_builder.getF64Type()), $_builder.getF64FloatAttr(value));
+}]>,
+OpBuilder<(ins "mlir::fpmath::FixedAttr":$value), [{
+build($_builder, $_state, mlir::fpmath::DecimalType(), value);
 }]>
 ];
 
@@ -83,7 +100,7 @@ def BoolConstOp : Voila_Op<"bool constant", [NoSideEffect]> {
   let arguments = (ins I1Attr:$value);
 
   // The constant operation returns a single value of TensorType.
-  let results = (outs AnyTypeOf<[I1, TensorOf<[I1]>]>);
+  let results = (outs BoolLike);
 
 let builders = [
 OpBuilder<(ins "mlir::IntegerAttr":$value), [{
@@ -109,8 +126,8 @@ def AddOp : Voila_Op<"add",[NoSideEffect, Commutative]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
-let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>);
+let arguments = (ins AnyVoilaTypeLike:$lhs, AnyVoilaTypeLike:$rhs);
+let results = (outs AnyVoilaTypeLike);
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
   //let printer = [{ return ::printBinaryOp(p, *this); }];
@@ -123,8 +140,8 @@ def SubOp : Voila_Op<"sub",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
-let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>);
+let arguments = (ins AnyVoilaTypeLike:$lhs, AnyVoilaTypeLike:$rhs);
+let results = (outs AnyVoilaTypeLike);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -138,8 +155,8 @@ def MulOp : Voila_Op<"mul",[NoSideEffect, Commutative]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
-let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>);
+let arguments = (ins AnyVoilaTypeLike:$lhs, AnyVoilaTypeLike:$rhs);
+let results = (outs AnyVoilaTypeLike);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -153,8 +170,8 @@ def DivOp : Voila_Op<"div",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
-let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>);
+let arguments = (ins AnyVoilaTypeLike:$lhs, AnyVoilaTypeLike:$rhs);
+let results = (outs AnyVoilaTypeLike);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -168,8 +185,8 @@ def ModOp : Voila_Op<"mod",[NoSideEffect,SameOperandsShape]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-let arguments = (ins AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$lhs, AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>:$rhs);
-let results = (outs AnyTypeOf<[TensorOf<[AnyInteger]>, TensorOf<[AnyFloat]>, AnyInteger, AnyFloat]>);
+let arguments = (ins AnyVoilaTypeLike:$lhs, AnyVoilaTypeLike:$rhs);
+let results = (outs AnyVoilaTypeLike);
 
   // Specify a parser and printer method.
  // let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -183,14 +200,14 @@ def AndOp : Voila_Op<"and",[NoSideEffect,Commutative]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$lhs, AnyTypeOf<[I1Tensor,I1]>:$rhs);
-  let results = (outs AnyTypeOf<[I1Tensor,I1]>);
+  let arguments = (ins BoolLike:$lhs, BoolLike:$rhs);
+  let results = (outs BoolLike);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseBinaryOp(parser, result); }];
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 
-  //TODO: verifyer checking same shape
+  //TODO: verifier checking same shape
 }
 
 def OrOp : Voila_Op<"or",[NoSideEffect,Commutative]> {
@@ -200,8 +217,8 @@ def OrOp : Voila_Op<"or",[NoSideEffect,Commutative]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$lhs, AnyTypeOf<[I1Tensor,I1]>:$rhs);
-  let results = (outs I1Tensor);
+  let arguments = (ins BoolLike:$lhs, BoolLike:$rhs);
+  let results = (outs BoolLike);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -214,8 +231,8 @@ let description = [{
 The "not" operation performs element-wise not on a tensor.
 }];
 
-let arguments = (ins AnyTypeOf<[I1Tensor,I1]>:$value);
-let results = (outs I1Tensor);
+let arguments = (ins BoolLike:$value);
+let results = (outs BoolLike);
 
 // Specify a parser and printer method.
 //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -230,8 +247,8 @@ def EqOp : Voila_Op<"eq",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
-  let results = (outs I1Tensor);
+  let arguments = (ins AnyVoilaTypeLike:$lhs, AnyVoilaTypeLike:$rhs);
+  let results = (outs BoolLike);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -245,8 +262,8 @@ def NeqOp : Voila_Op<"neq",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
-  let results = (outs I1Tensor);
+  let arguments = (ins AnyVoilaTypeLike:$lhs, AnyVoilaTypeLike:$rhs);
+  let results = (outs BoolLike);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -260,8 +277,8 @@ def LeOp : Voila_Op<"le",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
-  let results = (outs I1Tensor);
+  let arguments = (ins AnyVoilaTypeLike:$lhs, AnyVoilaTypeLike:$rhs);
+  let results = (outs BoolLike);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -275,8 +292,8 @@ def LeqOp : Voila_Op<"leq",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
-  let results = (outs I1Tensor);
+  let arguments = (ins AnyVoilaTypeLike:$lhs, AnyVoilaTypeLike:$rhs);
+  let results = (outs BoolLike);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -290,8 +307,8 @@ def GeOp : Voila_Op<"ge",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
-  let results = (outs I1Tensor);
+  let arguments = (ins AnyVoilaTypeLike:$lhs, AnyVoilaTypeLike:$rhs);
+  let results = (outs BoolLike);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -305,8 +322,8 @@ def GeqOp : Voila_Op<"geq",[NoSideEffect]> {
     The shapes of the tensor operands are expected to match.
   }];
 
-  let arguments = (ins AnyType:$lhs, AnyType:$rhs);
-  let results = (outs I1Tensor);
+  let arguments = (ins AnyVoilaTypeLike:$lhs, AnyVoilaTypeLike:$rhs);
+  let results = (outs BoolLike);
 
   // Specify a parser and printer method.
   //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -320,8 +337,8 @@ The "read" operation loads data from "column" starting at "index".
 The start index is expected to be within "column" bounds.
 }];
 
-let arguments = (ins 1DTensorOf<[AnyType]>:$column, 1DTensorOf<[AnySignlessInteger]>:$index, Optional<I1Tensor>:$pred);
-let results = (outs 1DTensorOf<[AnyType]>);
+let arguments = (ins AnyVoilaTypeLike:$column, 1DTensorOf<[AnySignlessInteger]>:$index, Optional<I1Tensor>:$pred);
+let results = (outs AnyVoilaTypeLike);
 
 // Specify a parser and printer method.
 //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -335,8 +352,8 @@ The "gather" operation loads data from "column" at "indices".
 The start "indices" are expected to be within "column" bounds and the shape "indices" is smaller than "column".
 }];
 
-let arguments = (ins 1DTensorOf<[AnyType]>:$column, AnyTypeOf<[1DTensorOf<[AnyInteger]>, 1DTensorOf<[Index]>]>:$indices, Optional<I1Tensor>:$pred);
-let results = (outs 1DTensorOf<[AnyType]>);
+let arguments = (ins AnyVoilaTypeLike:$column, 1DTensorOf<[AnySignlessInteger]>:$indices, Optional<1DTensorOf<[I1]>>:$pred);
+let results = (outs AnyVoilaTypeLike);
 
 // Specify a parser and printer method.
 //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -351,8 +368,8 @@ The "write" operation writes data from "src" to "dest" starting from "start_idx"
 The "start_idx" is expected to be within "column" bounds.
 }];
 
-let arguments = (ins AnyTensor:$src, AnyUnrankedMemRef:$dest ,Index:$start_idx, Optional<I1Tensor>:$pred);
-let results = (outs AnyTensor);
+let arguments = (ins AnyVoilaTypeLike:$src, AnyUnrankedMemRef:$dest ,Index:$start_idx, Optional<1DTensorOf<[I1]>>:$pred);
+let results = (outs AnyVoilaTypeLike);
 
 // Specify a parser and printer method.
 //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -367,8 +384,8 @@ The "scatter" operation writes data at "idxs" from "src" from to "dest".
 The "idxs" are expected to be within "dest" bounds and the shape smaller than src.
 }];
 
-let arguments = (ins IndexTensor:$idxs,AnyTensor:$src, Optional<I1Tensor>:$pred);
-let results = (outs AnyTensor);
+let arguments = (ins 1DTensorOf<[AnySignlessInteger]>:$idxs,AnyVoilaTypeLike:$src, Optional<1DTensorOf<[I1]>>:$pred);
+let results = (outs AnyVoilaTypeLike);
 
 // Specify a parser and printer method.
 //let parser = [{ return ::parseBinaryOp(parser, result); }];
@@ -382,8 +399,8 @@ The "select" operation returns the "values" where "pred" is true.
 The "pred" is expected to have the same shape as "values".
 }];
 
-let arguments = (ins AnyTensor:$values ,I1Tensor:$pred);
-let results = (outs AnyTensor);
+let arguments = (ins AnyVoilaTypeLike:$values ,1DTensorOf<[I1]>:$pred);
+let results = (outs AnyVoilaTypeLike);
 // Specify a parser and printer method.
 //let parser = [{ return ::parseBinaryOp(parser, result); }];
 //let printer = [{ return ::printBinaryOp(p, *this); }];
@@ -456,7 +473,7 @@ let summary = "loop operation";
 let description = [{
     //TODO
 }];
-let arguments = (ins I1Tensor:$cond);
+let arguments = (ins 1DTensorOf<[I1]>:$cond);
 let results = (outs I1); //only needed because we translate this to affine loop with iter_var
 let regions = (region AnyRegion:$body);
 }
@@ -475,8 +492,8 @@ must both be tensor types with the same element type. If both are ranked,
         to a mismatching constant dimension.
 }];
 
-let arguments = (ins AnyTensor:$input);
-let results = (outs AnyTensor:$output);
+let arguments = (ins AnyVoilaTypeLike:$input);
+let results = (outs AnyVoilaTypeLike:$output);
 }
 
 /* TODO: ops aggregations*/
@@ -486,8 +503,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Optional<1DTensorOf<[Index, AnyInteger]>>:$indices, Optional<I1Tensor>:$pred);
-let results = (outs AnyTypeOf<[AnyInteger,AnyFloat, 1DTensorOf<[AnyInteger,AnyFloat]>]>:$output);
+let arguments = (ins AnyVoilaTypeLike:$input, Optional<1DTensorOf<[AnySignlessInteger]>>:$indices, Optional<1DTensorOf<[I1]>>:$pred);
+let results = (outs AnyVoilaTypeLike:$output);
 let skipDefaultBuilders = 1;
  let builders = [
     OpBuilder<(ins "Value":$input,
@@ -506,8 +523,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Optional<1DTensorOf<[Index, AnyInteger]>>:$indices, Optional<I1Tensor>:$pred);
-let results = (outs AnyTypeOf<[AnyInteger,AnyFloat, 1DTensorOf<[AnyInteger,AnyFloat]>]>:$output);
+let arguments = (ins AnyVoilaTypeLike:$input, Optional<1DTensorOf<[AnySignlessIntegerOrIndex]>>:$indices, Optional<1DTensorOf<[I1]>>:$pred);
+let results = (outs AnyVoilaTypeLike:$output);
 let skipDefaultBuilders = 1;
  let builders = [
     OpBuilder<(ins "Value":$input,
@@ -526,8 +543,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Optional<1DTensorOf<[Index, I32, I64]>>:$indices, Optional<I1Tensor>:$pred);
-let results = (outs AnyTypeOf<[I64,F64, 1DTensorOf<[AnyTypeOf<[I64,F64]>]>]>:$output);
+let arguments = (ins AnyVoilaTypeLike:$input, Optional<1DTensorOf<[AnySignlessIntegerOrIndex]>>:$indices, Optional<1DTensorOf<[I1]>>:$pred);
+let results = (outs AnyVoilaType:$output);
 let skipDefaultBuilders = 1;
  let builders = [
     OpBuilder<(ins "Value":$input,
@@ -546,8 +563,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyType]>:$input, Optional<1DTensorOf<[Index, AnyInteger]>>:$indices, Optional<I1Tensor>:$pred);
-let results = (outs AnyTypeOf<[I64, 1DTensorOf<[I64]>]>:$output);
+let arguments = (ins AnyVoilaTypeLike:$input, Optional<1DTensorOf<[AnySignlessIntegerOrIndex]>>:$indices, Optional<1DTensorOf<[I1]>>:$pred);
+let results = (outs 1DTensorOf<[AnySignlessIntegerOrIndex]>:$output);
 let skipDefaultBuilders = 1;
  let builders = [
     OpBuilder<(ins "Value":$input,CArg<"Value", "{}">:$indices,
@@ -564,8 +581,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins 1DTensorOf<[AnyTypeOf<[AnyInteger,AnyFloat]>]>:$input, Optional<1DTensorOf<[Index, AnyInteger]>>:$indices, Optional<I1Tensor>:$pred);
-let results = (outs AnyTypeOf<[F64, 1DTensorOf<[F64]>]>:$output);
+let arguments = (ins AnyVoilaTypeLike:$input, Optional<1DTensorOf<[AnySignlessIntegerOrIndex]>>:$indices, Optional<1DTensorOf<[I1]>>:$pred);
+let results = (outs RationalLike:$output);
 
 let skipDefaultBuilders = 1;
  let builders = [
@@ -583,8 +600,8 @@ let description = [{
 //TODO
 }];
 
-let arguments = (ins Variadic<1DTensorOf<[AnyType]>>:$input,Optional<I1Tensor>:$pred);
-let results = (outs I64Tensor:$output);
+let arguments = (ins Variadic<1DTensorOf<[AnyType]>>:$input,Optional<1DTensorOf<[I1]>>:$pred);
+let results = (outs 1DTensorOf<[I64]>:$output);
 
 let skipDefaultBuilders = 1;
  let builders = [
@@ -600,7 +617,7 @@ let description = [{
 This is a convenience function, allocating a hashtable, hashing and scatter + linear probing for collision resolution
 }];
 
-let arguments = (ins I64Tensor:$hashValues, Variadic<1DTensorOf<[AnyType]>>:$values,Optional<I1Tensor>:$pred);
+let arguments = (ins 1DTensorOf<[I64]>:$hashValues, Variadic<1DTensorOf<[AnyType]>>:$values,Optional<1DTensorOf<[I1]>>:$pred);
 let results = (outs Variadic<1DTensorOf<[AnyType]>>:$hashtables);
 
 let skipDefaultBuilders = 1;
@@ -621,8 +638,8 @@ let description = [{
 This is a convenience function, basically consisting of hashing and gather + linear probing for collision resolution
 }];
 
-let arguments = (ins Variadic<1DTensorOf<[AnyType]>>:$values, Variadic<1DTensorOf<[AnyType]>>:$hashtables, 1DTensorOf<[I64]>:$hashes, Optional<I1Tensor>:$pred);
-let results = (outs IndexTensor:$output);
+let arguments = (ins Variadic<1DTensorOf<[AnyType]>>:$values, Variadic<1DTensorOf<[AnyType]>>:$hashtables, 1DTensorOf<[I64]>:$hashes, Optional<1DTensorOf<[I1]>>:$pred);
+let results = (outs 1DTensorOf<[AnySignlessIntegerOrIndex]>:$output);
 
 let skipDefaultBuilders = 1;
  let builders = [

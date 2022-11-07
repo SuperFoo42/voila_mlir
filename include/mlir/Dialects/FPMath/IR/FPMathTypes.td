@@ -2,7 +2,8 @@
 #define FPMATH_TYPES
 
 include "mlir/IR/AttrTypeBase.td"
-include "FPMathDialect.td"
+include "mlir/IR/OpBase.td"
+include "mlir/Dialects/FPMath/IR/FPMathDialect.td"
 
 class FPMath_Type<string name, string typeMnemonic, list<Trait> traits = []>
     : TypeDef<FPMathDialect, name, traits> {
@@ -22,4 +23,5 @@ def DecimalType : FPMath_Type<"Decimal", "fixed"> {
   //let genVerifyDecl = 1; //TODO: check unsignedness of with and scale
 }
 
+def DecimalLike : TypeOrContainer<DecimalType, "decimal-like">;
 #endif

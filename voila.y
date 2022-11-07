@@ -220,7 +220,7 @@ pred_expr:
 constant:
     bool_constant { $$= $1; }
 	| INT { $$ = ast::Expression::make<IntConst>(@0,$1);  }
-	| FLT { $$ = ast::Expression::make<FltConst>(@0,$1); }
+	| FLT { $$ = ast::Expression::make<FltConst>(@0,$1); } //TODO: decimal
 	| STR { $$ = ast::Expression::make<StrConst>(@0,$1); }
 
 bool_constant:

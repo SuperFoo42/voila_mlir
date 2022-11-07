@@ -1,6 +1,8 @@
 #include "mlir/Dialects/Voila/IR/VoilaDialect.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
 #include "mlir//Dialects/Voila/Interfaces/VoilaInlinerInterface.hpp"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialects/FPMath/IR/FPMathDialect.h"
 
 using namespace mlir;
 using namespace mlir::voila;

@@ -78,7 +78,7 @@ using namespace voila::ast;
 "lookup" return voila::parser::Parser::make_LOOKUP(location());
 
 -?[[:digit:]]+ return voila::parser::Parser::make_INT(std::strtoimax(str().c_str(), nullptr, 10), location());
--?([[:digit:]]+|[[:digit:]]*\.[[:digit:]]+([eE][-+]?[[:digit:]]+)?)      return voila::parser::Parser::make_FLT(std::stod(str()), location());
+-?([[:digit:]]+|[[:digit:]]*\.[[:digit:]]+([eE][-+]?[[:digit:]]+)?)      return voila::parser::Parser::make_FLT(std::stod(str()), location()); //TODO: decimal
 
 [[:alpha:]_][[:alnum:]_]* return voila::parser::Parser::make_ID(str(), location());
 [\"]([^\\\"]|\\.)*?[\"]             return voila::parser::Parser::make_STR(str(), location());

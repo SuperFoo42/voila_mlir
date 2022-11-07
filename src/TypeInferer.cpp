@@ -18,13 +18,16 @@ namespace voila {
             case DataType::UNKNOWN:
                 return true;
             case DataType::NUMERIC:
-                return t2 == DataType::INT32 || t2 == DataType::INT64 || t2 == DataType::DBL || t2 == DataType::BOOL;
+                return t2 == DataType::INT32 || t2 == DataType::INT64 || t2 == DataType::DBL || t2 == DataType::BOOL || t2 == DataType::DEC;
             case DataType::BOOL:
                 return t2 == DataType::INT64 || t2 == DataType::INT32;
             case DataType::INT32:
-                return t2 == DataType::INT64 || t2 == DataType::DBL;
+                return t2 == DataType::INT64 || t2 == DataType::DBL || t2 == DataType::DEC;
             case DataType::INT64:
-                return t2 == DataType::DBL;
+                return t2 == DataType::DBL || t2 == DataType::DEC;
+            case DataType::DBL:
+                return t2 == DataType::DEC;
+                //TODO DEC -> DBL?
             default:
                 return false;
         }

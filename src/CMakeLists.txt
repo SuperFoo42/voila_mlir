@@ -24,6 +24,9 @@ add_subdirectory(ast)
 add_subdirectory(mlir)
 add_subdirectory(compiler)
 
+get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
+get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
+
 target_sources(voila_compiler PRIVATE
         ${CMAKE_BINARY_DIR}/src/voila_parser.cpp
         ${CMAKE_BINARY_DIR}/src/voila_lexer.cpp
@@ -43,8 +46,8 @@ set(LLVM_LINK_COMPONENTS
         )
 
 target_link_libraries(voila_compiler
-        MLIRVoila
-        MLIRVoilaToInternal
+        ${dialect_libs}
+        ${conversion_libs}
         magic_enum
         reflex
         voila_ast
@@ -62,8 +65,6 @@ target_link_libraries(voila_compiler
         MLIRExecutionEngine
         MLIRJitRunner
         MLIRTransforms
-        MLIRFPMath
-        MLIRFPMathToLLVMIRTranslation
         ${LLVM_LINK_COMPONENTS}
         papi
         )

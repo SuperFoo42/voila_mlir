@@ -1,5 +1,5 @@
 include "mlir/IR/AttrTypeBase.td"
-include "FPMathDialect.td"
+include "mlir/Dialects/FPMath/IR/FPMathDialect.td"
 
 // It's common to define a base classes for attributes in the same dialect. This
 // removes the need to pass in the dialect for each attribute, and can also be used
@@ -22,7 +22,7 @@ class APFixedParameter<string desc> : AttrOrTypeParameter<"::llvm::APFixedPoint"
 }
 
 // Here is a simple definition of an "integer" attribute, with a type and value parameter.
-def FPMath_FixedAttr : FPMathDialect_Attr<"Fixed", "fixed"> {
+def FixedAttr : FPMathDialect_Attr<"Fixed", "fixed"> {
   let summary = "An Attribute containing a integer value";
   let description = [{
     An integer attribute is a literal attribute that represents an integral

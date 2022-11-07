@@ -1,9 +1,11 @@
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/Dialects/FPMath/IR/FPMathTypes.h"
+#include "mlir/Dialects/FPMath/IR/FPMathAttr.h"
 
 #include "NotImplementedException.hpp"
 #include "mlir/Analysis/SliceAnalysis.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/Vector/IR/VectorOps.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
@@ -12,6 +14,7 @@
 using namespace ::mlir;
 using namespace ::mlir::arith;
 using namespace mlir::voila;
+using namespace mlir::fpmath;
 /// Return the callee of the generic call operation, this is required by the
 /// call interface.
 [[maybe_unused]] CallInterfaceCallable GenericCallOp::getCallableForCallee()

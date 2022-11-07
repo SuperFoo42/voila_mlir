@@ -17,6 +17,7 @@ namespace voila
         INT32,
         INT64,
         DBL,
+        DEC,
         STRING,
         VOID,
         UNKNOWN

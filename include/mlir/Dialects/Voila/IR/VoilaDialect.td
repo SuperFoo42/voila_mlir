@@ -12,6 +12,11 @@ def Voila_Dialect : Dialect {
     }];
 
     let cppNamespace = "::mlir::voila";
+let dependentDialects = [
+"::mlir::arith::ArithDialect",
+"::mlir::func::FuncDialect",
+"::mlir::fpmath::FPMathDialect"
+];
 }
 
 //base operation definition
