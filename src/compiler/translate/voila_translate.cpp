@@ -13,16 +13,12 @@
 #include <mlir/Dialects/Voila/IR/VoilaDialect.h>
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 #include <llvm/Support/CommandLine.h>
-#include <mlir/Support/FileUtilities.h>
-#include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/SourceMgr.h>
-#include <llvm/Support/ToolOutputFile.h>
 
 #pragma GCC diagnostic pop
 
 #include <cstdlib>
 #include <filesystem>
-#include <spdlog/spdlog.h>
 #include <charconv>
 
 namespace cl = llvm::cl;
@@ -108,7 +104,6 @@ static cl::opt<enum Action> emitAction("emit", cl::desc("Select the kind of outp
 
 
 int main(int argc, char *argv[]) {
-    spdlog::set_level(spdlog::level::warn);
     mlir::registerAllPasses();
     mlir::DialectRegistry registry;
     registry.insert<mlir::voila::VoilaDialect>();

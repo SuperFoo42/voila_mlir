@@ -12,5 +12,4 @@ add_mlir_dialect_library(MLIRFPMath
         LINK_LIBS PUBLIC
         MLIRIR
         range-v3
-        fmt
         )

@@ -3,8 +3,8 @@
 #include "TypeInferer.hpp"
 #include "Types.hpp"
 #include "ast/ASTVisitor.hpp"
+#include "llvm/Support/FormatVariadic.h"
 
-#include <fmt/core.h>
 #include <iostream>
 #include <utility>
 
@@ -21,7 +21,7 @@ namespace voila::ast
         template<bool infer_type = false>
         void printVertex(const ASTNode &node)
         {
-            *os << fmt::format("n{} [label=<<b>{} <br/>", nodeID, node.type2string());
+            *os << llvm::formatv("n{0} [label=<<b>{1} <br/>", nodeID, node.type2string()).str();
             if (infer_type && inferer.has_value())
             {
                 const auto type = inferer->get().get_type(node);

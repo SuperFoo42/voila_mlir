@@ -1,10 +1,11 @@
+//TODO Refactor
+
 #pragma once
 #include "ProfilingException.hpp"
 
 #include <bitset>
 #include <experimental/array>
 #include <fmt/format.h>
-#include <spdlog/spdlog.h>
 #include <ostream>
 #include <papi.h>
 #include <range/v3/view/zip.hpp>

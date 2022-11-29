@@ -1,4 +1,6 @@
 #include "DotVisualizer.hpp"
+#include "llvm/Support/FormatVariadic.h"
+
 namespace voila::ast
 {
     void DotVisualizer::operator()(const AggrSum &sum)
@@ -6,7 +8,7 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(sum);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         sum.src().visit(*this);
     }
 
@@ -15,7 +17,7 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(cnt);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         cnt.src().visit(*this);
     }
 
@@ -24,7 +26,7 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(min);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         min.src().visit(*this);
     }
 
@@ -33,7 +35,7 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(max);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         max.src().visit(*this);
     }
 
@@ -42,7 +44,7 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(avg);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         avg.src().visit(*this);
     }
 
@@ -51,7 +53,7 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(write);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         write.start().visit(*this);
     }
 
@@ -60,9 +62,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(scatter);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         scatter.src().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         scatter.idxs().visit(*this);
     }
 
@@ -75,12 +77,12 @@ namespace voila::ast
     {
         const auto id = nodeID;
         printVertex(assign);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         for (auto dest : assign.dests())
         {
             dest.visit(*this);
         }
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         assign.expr().visit(*this);
     }
 
@@ -89,7 +91,7 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(emit);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         for (auto expr : emit.exprs())
             expr.visit(*this);
     }
@@ -101,11 +103,11 @@ namespace voila::ast
 
         for (const auto &stmt : loop.stmts())
         {
-            *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+            *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
             stmt.visit(*this);
         }
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         loop.pred().visit(*this);
     }
 
@@ -114,9 +116,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(add);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         add.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         add.rhs().visit(*this);
     }
 
@@ -125,9 +127,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(sub);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         sub.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         sub.rhs().visit(*this);
     }
 
@@ -136,9 +138,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(mul);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         mul.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         mul.rhs().visit(*this);
     }
 
@@ -147,9 +149,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(div);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         div.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         div.rhs().visit(*this);
     }
 
@@ -158,9 +160,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(mod);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         mod.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         mod.rhs().visit(*this);
     }
 
@@ -169,9 +171,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(eq);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         eq.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         eq.rhs().visit(*this);
     }
 
@@ -180,9 +182,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(neq);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         neq.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         neq.rhs().visit(*this);
     }
 
@@ -191,9 +193,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(le);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         le.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         le.rhs().visit(*this);
     }
 
@@ -202,9 +204,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(ge);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         ge.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         ge.rhs().visit(*this);
     }
 
@@ -213,9 +215,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(leq);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         leq.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         leq.rhs().visit(*this);
     }
 
@@ -224,9 +226,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(geq);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         geq.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         geq.rhs().visit(*this);
     }
 
@@ -234,9 +236,9 @@ namespace voila::ast
     {
         const auto id = nodeID;
         printVertex(anAnd);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         anAnd.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         anAnd.rhs().visit(*this);
     }
 
@@ -244,9 +246,9 @@ namespace voila::ast
     {
         const auto id = nodeID;
         printVertex(anOr);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         anOr.lhs().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         anOr.rhs().visit(*this);
     }
 
@@ -254,7 +256,7 @@ namespace voila::ast
     {
         const auto id = nodeID;
         printVertex(aNot);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         aNot.param().visit(*this);
     }
 
@@ -283,9 +285,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(read);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         read.column().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         read.idx().visit(*this);
     }
 
@@ -294,9 +296,9 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(gather);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         gather.column().visit(*this);
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         gather.idxs().visit(*this);
     }
 
@@ -317,7 +319,7 @@ namespace voila::ast
 
         for (const auto &elem : create.elems)
         {
-            *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+            *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
             elem.visit(*this);
         }
     }
@@ -327,10 +329,10 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex(create);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         create.param().visit(*this);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         create.pred().visit(*this);
     }
 
@@ -339,7 +341,7 @@ namespace voila::ast
         const auto id = nodeID;
         printVertex<false>(wrapper);
 
-        *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+        *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
         wrapper.expr().visit(*this);
     }
 
@@ -350,7 +352,7 @@ namespace voila::ast
 
         for (const auto &stmt : fun.body())
         {
-            *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+            *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
             stmt.visit(*this);
         }
     }
@@ -362,7 +364,7 @@ namespace voila::ast
 
         for (const auto &stmt : fun.body())
         {
-            *os << fmt::format("n{} -> n{}\n", id, ++nodeID);
+            *os << llvm::formatv("n{0} -> n{1}\n", id, ++nodeID).str();
             stmt.visit(*this);
         }
     }

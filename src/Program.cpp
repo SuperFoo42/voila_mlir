@@ -10,7 +10,6 @@
 #include "MLIRLoweringError.hpp"
 #include "NotImplementedException.hpp"
 #include "ParsingError.hpp"
-#include "Profiler.hpp"
 #include "TypeInferencePass.hpp"
 #include "TypeInferer.hpp"
 #include "ast/Fun.hpp"
@@ -20,7 +19,6 @@
 #include <MlirModuleVerificationError.hpp>
 #include <fstream>
 #include <llvm/IR/AssemblyAnnotationWriter.h>
-#include <spdlog/spdlog.h>
 #include <utility>
 
 #pragma GCC diagnostic push
@@ -291,7 +289,8 @@ namespace voila {
             throw err; // TODO: rethrow with other exception
         }
         // TODO:
-        spdlog::debug(LLVMModuleToString(*llvmModule));
+
+        llvm::dbgs() << LLVMModuleToString(*llvmModule);
     }
 
     void Program::printLLVM(const std::string &filename) {
@@ -519,7 +518,7 @@ namespace voila {
         pm.addPass(LLVM::createLegalizeForExportPass());
 
         auto state = pm.run(*mlirModule);
-        spdlog::debug(MLIRModuleToString(mlirModule));
+        llvm::dbgs() << MLIRModuleToString(mlirModule);
         if (failed(state)) {
             throw MLIRLoweringError();
         }
@@ -536,14 +535,14 @@ namespace voila {
             mlirModule = ::voila::MLIRGenerator::mlirGen(context, *this);
         }
         catch (MLIRModuleVerificationError &err) {
-            spdlog::error(MLIRModuleToString(mlirModule));
+            llvm::errs() << MLIRModuleToString(mlirModule);
             throw err;
         }
         if (!mlirModule) {
-            spdlog::error(MLIRModuleToString(mlirModule));
+            llvm::errs() << MLIRModuleToString(mlirModule);
             throw ::voila::MLIRGenerationError();
         }
-        spdlog::debug(MLIRModuleToString(mlirModule));
+        llvm::dbgs() << MLIRModuleToString(mlirModule);
         return mlirModule;
     }
 
@@ -604,31 +603,31 @@ namespace voila {
             }
 
             // generate mlir
-            spdlog::debug("Start type inference");
+            llvm::dbgs() << "Start type inference";
             inferTypes();
-            spdlog::debug("Finished type inference");
+            llvm::dbgs() << "Finished type inference";
 
-            spdlog::debug("Start mlir generation");
+            llvm::dbgs() << "Start mlir generation";
             // generate mlir
             generateMLIR();
-            spdlog::debug("Finished mlir generation");
+            llvm::dbgs() << "Finished mlir generation";
             if (config._printMLIR) {
                 printMLIR(config.MLIROutFile);
             }
-            spdlog::debug("Start mlir lowering");
+            llvm::dbgs() <<"Start mlir lowering";
             // lower mlir
             lowerMLIR();
-            spdlog::debug("Finished mlir lowering");
+            llvm::dbgs() << "Finished mlir lowering";
             if (config._printLoweredMLIR) {
                 printMLIR(config.MLIRLoweredOutFile);
             }
-            spdlog::debug("Start mlir to llvm conversion");
+            llvm::dbgs() << "Start mlir to llvm conversion";
             // lower to llvm
             convertToLLVM();
             if (config._printLLVM) {
                 printLLVM(config.LLVMOutFile);
             }
-            spdlog::debug("Finished mlir to llvm conversion");
+            llvm::dbgs() << "Finished mlir to llvm conversion";
         }
 
         // run jit
@@ -701,9 +700,9 @@ namespace voila {
             auto resStruct = llvm::StructType::create(llvmContext, resTypes);
             const auto resLayout = layout.getStructLayout(resStruct);
             params.push_back(std::malloc(resLayout->getSizeInBytes()));
-            spdlog::debug("Running JIT Program");
+            llvm::dbgs() << "Running JIT Program";
             runJIT(config.ObjectFile.empty() ? std::nullopt : std::optional(config.ObjectFile));
-            spdlog::debug("Finished Running JIT Program");
+            llvm::dbgs() << "Finished Running JIT Program";
             std::shared_ptr<void> basePtr(params.pop_back_val(), ProgramResultDeleter());
 
             for (size_t i = 0; i < types.size(); ++i) {
@@ -778,7 +777,7 @@ namespace voila {
             if (parser() != 0)
                 throw ::voila::ParsingError();
         } else {
-            spdlog::error("failed to read from input", source_path);
+            llvm::errs() << "failed to read from input" << source_path;
         }
 
         // llvm::DebugFlag = config.debug;

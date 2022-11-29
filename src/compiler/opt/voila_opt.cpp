@@ -18,14 +18,11 @@
 #include <llvm/Support/ToolOutputFile.h>
 #pragma GCC diagnostic pop
 
-#include <cstdlib>
 #include <filesystem>
-#include <fstream>
-#include <spdlog/spdlog.h>
+
 //FIXME: this function is largely outdated
 int main(int argc, char *argv[])
 {
-    spdlog::set_level(spdlog::level::warn);
     mlir::registerAllPasses();
     mlir::DialectRegistry registry;
     registry.insert<mlir::voila::VoilaDialect>();

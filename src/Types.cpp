@@ -1,6 +1,6 @@
 #include "Types.hpp"
 
-#include <fmt/format.h>
+#include "llvm/Support/FormatVariadic.h"
 #include "TypeInferer.hpp"
 #include <range/v3/algorithm.hpp>
 #include <vector>
@@ -38,7 +38,7 @@ namespace voila {
     }
 
     std::ostream &operator<<(std::ostream &os, const ScalarType &type) {
-        os << fmt::format("T{}:{}[", type.typeID, to_string(type.t));
+        os << llvm::formatv("T{0}:{1}[", type.typeID, to_string(type.t)).str();
         os << type.ar << "]";
         return os;
     }
@@ -92,14 +92,14 @@ namespace voila {
     }
 
     std::ostream &operator<<(std::ostream &os, const FunctionType &type) {
-        os << fmt::format("T{}:(", type.typeID);
+        os << llvm::formatv("T{0}:(", type.typeID).str();
         for (const auto &t: type.returnTypeIDs) {
             os << to_string(dynamic_cast<ScalarType *>(type.inferer.types.at(t).get())->t)
                << "[" << dynamic_cast<ScalarType *>(type.inferer.types.at(t).get())->ar
                << "],"; // TODO: one comma to much
         }
         os << ")(";
-        os << fmt::format("T{}", fmt::join(type.paramTypeIds, ", T"));
+        os << llvm::formatv("{0:@[T]}", llvm::make_range(type.paramTypeIds.begin(), type.paramTypeIds.end())).str();
         os << ")";
         return os;
     }

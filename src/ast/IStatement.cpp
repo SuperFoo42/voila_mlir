@@ -1,15 +1,16 @@
 #include "ast/IStatement.hpp"
-#include <fmt/format.h>
+#include "llvm/Support/FormatVariadic.h"
+
 namespace voila::ast
 {
     void IStatement::set_predicate(Expression)
     {
-        throw PredicationUnsupportedException(fmt::format("Predication not supported for: {}.", type2string()));
+        throw PredicationUnsupportedException(llvm::formatv("Predication not supported for: {0}.", type2string()));
     }
 
     std::optional<Expression> IStatement::get_predicate()
     {
-        throw PredicationUnsupportedException(fmt::format("Predication not supported for: {}.", type2string()));
+        throw PredicationUnsupportedException(llvm::formatv("Predication not supported for: {0}.", type2string()));
     }
 
     bool IStatement::is_stmt() const

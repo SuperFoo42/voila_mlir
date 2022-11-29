@@ -6,8 +6,8 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "llvm/Support/FormatVariadic.h"
 
-#include "fmt/format.h"
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -84,7 +84,7 @@ namespace voila::mlir::lowering
         else
         {
             throw std::logic_error(
-                fmt::format("Can not hash value with {} bits", val.getType().getIntOrFloatBitWidth()));
+                llvm::formatv("Can not hash value with {0} bits", val.getType().getIntOrFloatBitWidth()));
         }
     }
 

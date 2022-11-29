@@ -2,18 +2,18 @@
 
 #include "ast/Expression.hpp"
 
-#include <fmt/format.h>
+#include "llvm/Support/FormatVariadic.h"
 
 namespace voila::ast
 {
     void IExpression::set_predicate(Expression)
     {
-        throw PredicationUnsupportedException(fmt::format("Predication not supported for: {}.", type2string()));
+        throw PredicationUnsupportedException(llvm::formatv("Predication not supported for: {0}.", type2string()));
     }
 
     std::optional<Expression> IExpression::get_predicate()
     {
-        throw PredicationUnsupportedException(fmt::format("Predication not supported for: {}.", type2string()));
+        throw PredicationUnsupportedException(llvm::formatv("Predication not supported for: {0}.", type2string()));
     }
 
     bool IExpression::is_expr() const

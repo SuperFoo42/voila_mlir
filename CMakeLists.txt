@@ -153,24 +153,6 @@ add_custom_command(
         COMMENT "Generating Voila lexer"
 )
 
-CPMAddPackage("bb:icl/papi#papi-6-0-0-1-t")
-if (papi_ADDED)
-    execute_process(
-            COMMAND sh ./configure --prefix=${papi_BINARY_DIR} #TODO: add components for amd or nvidia gpus if needed
-            WORKING_DIRECTORY ${papi_SOURCE_DIR}/src
-    )
-    execute_process(COMMAND make
-            WORKING_DIRECTORY ${papi_SOURCE_DIR}/src
-            )
-    execute_process(COMMAND make install
-            WORKING_DIRECTORY ${papi_SOURCE_DIR}/src
-            )
-    include_directories("${papi_BINARY_DIR}/include")
-    #TODO: properly import without static name
-    add_library(papi STATIC IMPORTED)
-    set_property(TARGET papi PROPERTY IMPORTED_LOCATION "${papi_BINARY_DIR}/lib/libpapi.a")
-endif ()
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR}/include)
 

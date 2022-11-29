@@ -21,11 +21,9 @@ set(LIBS
         MLIRParser
         MLIRTransforms
         MLIRExecutionEngine
-       # MLIRLLVMIR
         MLIRLLVMToLLVMIRTranslation
         MLIRTargetLLVMIRExport
         reflex
-        spdlog
         magic_enum
         )
 

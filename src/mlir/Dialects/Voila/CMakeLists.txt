@@ -12,13 +12,14 @@ add_mlir_dialect_library(MLIRVoila
        ${PROJECT_SOURCE_DIR}/include/mlir/Dialects/Voila
 
         DEPENDS
+        MLIRFPMathOpsIncGen
+        MLIRFPMathAttrIncGen
         MLIRVoilaOpsIncGen
         MLIRPredicationOpInterfaceIncGen
 
         LINK_LIBS PUBLIC
         MLIRIR
         range-v3
-        fmt
         )
 
 
