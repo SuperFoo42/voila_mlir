@@ -1,5 +1,10 @@
 #include "ast/TupleCreate.hpp"
-#include "range/v3/algorithm.hpp"
+#include <utility>                           // for move
+#include "ast/ASTVisitor.hpp"                // for ASTVisitor
+#include "ast/Expression.hpp"                // for Expression
+#include "ast/IExpression.hpp"               // for IExpression
+#include "range/v3/algorithm/transform.hpp"  // for transform, transform_fn
+#include "range/v3/functional/identity.hpp"  // for identity
 
 namespace voila::ast
 {

@@ -1,17 +1,16 @@
 #pragma once
 
-#include "Program.hpp"
-#include "TypeInferer.hpp"
-
-#include <ast/Fun.hpp>
 namespace voila
 {
+    class Program;
+    class TypeInferer;
+
     class TypeInferencePass
     {
         TypeInferer &inferer;
 
       public:
-        TypeInferencePass(TypeInferer &inferer) : inferer{inferer} {};
+        explicit TypeInferencePass(TypeInferer &inferer) : inferer{inferer} {};
 
         TypeInferer &&inferTypes(Program &prog);
     };

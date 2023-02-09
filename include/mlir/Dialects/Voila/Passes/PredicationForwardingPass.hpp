@@ -1,11 +1,9 @@
 #pragma once
-#include "mlir/Pass/Pass.h"
-
-#include <memory>
-
-namespace mlir::func {
-    class FuncOp;
-}
+#include <memory>                          // for unique_ptr
+#include "llvm/ADT/StringRef.h"            // for operator==, StringRef
+#include "mlir/Dialect/Func/IR/FuncOps.h"  // for FuncOp
+#include "mlir/Pass/Pass.h"                // for OperationPass, Pass (ptr o...
+#include "mlir/Support/LLVM.h"             // for StringRef
 
 namespace voila::mlir
 {

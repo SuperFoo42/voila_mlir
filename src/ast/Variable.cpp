@@ -1,4 +1,5 @@
 #include "ast/Variable.hpp"
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
 
 namespace voila::ast {
     bool Variable::is_variable() const {

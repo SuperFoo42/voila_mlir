@@ -1,8 +1,21 @@
 #pragma once
 
-#include "mlir/Transforms/DialectConversion.h"
+#include "mlir/Support/LLVM.h"                 // for function_ref
+#include "mlir/Support/LogicalResult.h"        // for LogicalResult
+#include "mlir/Transforms/DialectConversion.h" // for ConversionPattern
+#include "llvm/ADT/ArrayRef.h"                 // for ArrayRef
 
-namespace mlir {
+namespace mlir
+{
+    class ImplicitLocOpBuilder;
+    class MLIRContext;
+    class Operation;
+    class ValueRange;
+    class Value;
+} // namespace mlir
+
+namespace mlir
+{
     class ImplicitLocOpBuilder;
 }
 namespace voila::mlir::lowering
@@ -11,8 +24,8 @@ namespace voila::mlir::lowering
     {
         explicit NotOpLowering(::mlir::MLIRContext *ctx);
 
-        using LoopIterationFn = ::mlir::function_ref<
-            ::mlir::Value(::mlir::ImplicitLocOpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs)>;
+        using LoopIterationFn = ::mlir::function_ref<::mlir::Value(
+            ::mlir::ImplicitLocOpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs)>;
 
         ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
                                               llvm::ArrayRef<::mlir::Value> operands,

@@ -1,5 +1,9 @@
 #pragma once
 #include "IExpression.hpp"
+#include <iosfwd>           // for ostream
+#include <string>           // for string
+#include "ast/ASTNode.hpp"  // for Location
+
 namespace voila::ast
 {
     class Logical : public IExpression

@@ -1,4 +1,6 @@
 #include "ast/And.hpp"
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
+#include "ast/Expression.hpp"  // for Expression
 
 namespace voila::ast
 {

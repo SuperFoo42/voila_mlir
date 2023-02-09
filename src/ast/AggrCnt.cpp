@@ -1,4 +1,5 @@
 #include "ast/AggrCnt.hpp"
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
 
 namespace voila::ast
 {

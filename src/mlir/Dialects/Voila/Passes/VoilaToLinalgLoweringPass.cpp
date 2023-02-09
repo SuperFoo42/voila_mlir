@@ -1,16 +1,13 @@
 #include "mlir/Dialects/Voila/Passes/VoilaToLinalgLoweringPass.hpp"
-
-#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Vector/IR/VectorOps.h"
-#include "mlir/Dialects/Voila/IR/VoilaDialect.h"
-#include "mlir/Dialects/Voila/IR/VoilaOps.h"
-#include "mlir/Dialect/Tensor/IR/Tensor.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Dialect/Vector/IR/VectorOps.h"
+#include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/Dialects/Voila/IR/VoilaDialect.h"
 #include "mlir/Dialects/Voila/lowering/ArithmeticOpLowering.hpp"
 #include "mlir/Dialects/Voila/lowering/ComparisonOpLowering.hpp"
 #include "mlir/Dialects/Voila/lowering/ConstOpLowering.hpp"
@@ -19,6 +16,14 @@
 #include "mlir/Dialects/Voila/lowering/LogicalOpLowering.hpp"
 #include "mlir/Dialects/Voila/lowering/LookupOpLowering.hpp"
 #include "mlir/Dialects/Voila/lowering/NotOpLowering.hpp"
+#include "mlir/IR/BuiltinDialect.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/Support/LLVM.h"
+#include "mlir/Support/LogicalResult.h"
+#include "mlir/Transforms/DialectConversion.h"
+#include <algorithm>
+#include <utility>
+
 namespace voila::mlir
 {
     using namespace ::mlir;

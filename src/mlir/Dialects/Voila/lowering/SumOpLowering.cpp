@@ -1,14 +1,47 @@
 #include "mlir/Dialects/Voila/lowering/SumOpLowering.hpp"
 
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Bufferization/IR/AllocationOpInterface.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Vector/IR/VectorOps.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/IR/AffineExpr.h"
+#include "mlir/IR/AffineMap.h"
+#include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
+#include "mlir/IR/Location.h"
+#include "mlir/IR/OpDefinition.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/TypeRange.h"
+#include "mlir/IR/TypeUtilities.h"
+#include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/STLForwardCompat.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/Support/Casting.h"
+#include <bit>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <stdexcept>
+
+namespace mlir
+{
+    class MLIRContext;
+    class OpBuilder;
+} // namespace mlir
 
 namespace voila::mlir::lowering
 {
@@ -84,9 +117,6 @@ namespace voila::mlir::lowering
         SmallVector<Type, 1> res_type;
         res_type.push_back(res.front().getType());
 
-        SmallVector<StringRef, 1> iter_type;
-        iter_type.push_back(getReductionIteratorTypeName());
-
         auto fn = [](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
         {
             ImplicitLocOpBuilder builder(loc, nestedBuilder);
@@ -115,7 +145,7 @@ namespace voila::mlir::lowering
 
         SmallVector<AffineMap, 3> maps;
         if (sumOpAdaptor.getPred())
-                maps.push_back(builder.getDimIdentityMap());
+            maps.push_back(builder.getDimIdentityMap());
         SmallVector<AffineExpr, 1> srcExprs;
         srcExprs.push_back(getAffineDimExpr(0, builder.getContext()));
         SmallVector<AffineExpr, 1> dstExprs;
@@ -129,7 +159,7 @@ namespace voila::mlir::lowering
         auto linalgOp = builder.create<linalg::GenericOp>(builder.getLoc(), /*results*/ res_type,
                                                           /*inputs*/ inputs, /*outputs*/ res,
                                                           /*indexing maps*/ maps,
-                                                          /*iterator types*/ iter_type, fn);
+                                                          /*iterator types*/ utils::IteratorType::reduction, fn);
 
         return builder.create<tensor::ExtractOp>(linalgOp->getResult(0));
     }
@@ -137,34 +167,31 @@ namespace voila::mlir::lowering
     static Value groupedSumLowering(Operation *op, SumOpAdaptor &sumOpAdaptor, ImplicitLocOpBuilder &builder)
     {
         Value res;
-        auto allocSize = getHTSize(builder,
-                                   sumOpAdaptor.getInput()); // FIXME: not the best solution, indices can be out of range.
+        auto allocSize =
+            getHTSize(builder,
+                      sumOpAdaptor.getInput()); // FIXME: not the best solution, indices can be out of range.
         if (getElementTypeOrSelf(op->getResultTypes().front()).isa<IntegerType>())
         {
-            res = builder.create<memref::AllocOp>(MemRefType::get(-1, builder.getI64Type()),
-                                                  ::llvm::makeArrayRef(allocSize));
-            buildAffineLoopNest(builder, builder.getLoc(),
-                                ::llvm::makeArrayRef<Value>(builder.create<ConstantIndexOp>(0)), allocSize, {1},
-                                [&res](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
-                                {
-                                    ImplicitLocOpBuilder builder(loc, nestedBuilder);
-                                    builder.create<AffineStoreOp>(
-                                        builder.create<ConstantIntOp>(0, builder.getI64Type()), res, vals);
-                                });
+            res = builder.create<memref::AllocOp>(MemRefType::get(-1, builder.getI64Type()), ArrayRef(allocSize));
+            buildAffineLoopNest(
+                builder, builder.getLoc(), builder.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
+                [&res](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
+                {
+                    ImplicitLocOpBuilder builder(loc, nestedBuilder);
+                    builder.create<AffineStoreOp>(builder.create<ConstantIntOp>(0, builder.getI64Type()), res, vals);
+                });
         }
         else if (getElementTypeOrSelf(op->getResultTypes().front()).isa<FloatType>())
         {
-            res = builder.create<memref::AllocOp>(MemRefType::get(-1, builder.getF64Type()),
-                                                  ::llvm::makeArrayRef(allocSize));
-            buildAffineLoopNest(builder, builder.getLoc(),
-                                ::llvm::makeArrayRef<Value>(builder.create<ConstantIndexOp>(0)), allocSize, {1},
-                                [&res](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
-                                {
-                                    ImplicitLocOpBuilder builder(loc, nestedBuilder);
-                                    builder.create<AffineStoreOp>(
-                                        builder.create<ConstantFloatOp>(::llvm::APFloat(0.0), builder.getF64Type()),
-                                        res, vals);
-                                });
+            res = builder.create<memref::AllocOp>(MemRefType::get(-1, builder.getF64Type()), ArrayRef(allocSize));
+            buildAffineLoopNest(
+                builder, builder.getLoc(), builder.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
+                [&res](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
+                {
+                    ImplicitLocOpBuilder builder(loc, nestedBuilder);
+                    builder.create<AffineStoreOp>(
+                        builder.create<ConstantFloatOp>(::llvm::APFloat(0.0), builder.getF64Type()), res, vals);
+                });
         }
         else
         {
@@ -185,8 +212,7 @@ namespace voila::mlir::lowering
                                               auto toSum = nb.create<tensor::ExtractOp>(sumOpAdaptor.getInput(), idx);
                                               Value groupIdx =
                                                   nb.create<tensor::ExtractOp>(sumOpAdaptor.getIndices(), idx);
-                                              auto oldVal =
-                                                  nb.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+                                              auto oldVal = nb.create<memref::LoadOp>(res, groupIdx);
                                               Value newVal;
 
                                               if (toSum.getType().isa<IntegerType>())
@@ -211,7 +237,7 @@ namespace voila::mlir::lowering
             {
                 auto toSum = builder.create<tensor::ExtractOp>(sumOpAdaptor.getInput(), idx);
                 Value groupIdx = builder.create<tensor::ExtractOp>(sumOpAdaptor.getIndices(), idx);
-                auto oldVal = builder.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+                auto oldVal = builder.create<memref::LoadOp>(res, groupIdx);
                 Value newVal;
 
                 if (toSum.getType().isa<IntegerType>())
@@ -232,7 +258,7 @@ namespace voila::mlir::lowering
             }
         };
 
-        buildAffineLoopNest(builder, builder.getLoc(), ::llvm::makeArrayRef<Value>(builder.create<ConstantIndexOp>(0)),
+        buildAffineLoopNest(builder, builder.getLoc(), builder.create<ConstantIndexOp>(0).getResult(),
                             builder.create<tensor::DimOp>(sumOpAdaptor.getInput(), 0).getResult(), {1}, fn);
 
         return builder.create<ToTensorOp>(res);

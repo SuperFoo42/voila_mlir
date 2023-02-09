@@ -1,15 +1,17 @@
 #pragma once
 
-#include "Expression.hpp"
-#include "IStatement.hpp"
-#include "Statement.hpp"
-#include "ASTVisitor.hpp"
-
-#include <optional>
-#include <utility>
-#include <vector>
+#include <iosfwd>               // for ostream
+#include <memory>               // for shared_ptr
+#include <optional>             // for optional
+#include <string>               // for string
+#include "Expression.hpp"       // for Expression
+#include "IStatement.hpp"       // for IStatement
+#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h"  // for DenseMap
 
 namespace voila::ast {
+    class ASTVisitor;
+
     /**
      * @brief Meta node to wrap expressions into statements
      *

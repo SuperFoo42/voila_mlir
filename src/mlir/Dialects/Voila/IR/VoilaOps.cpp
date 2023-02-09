@@ -1,14 +1,23 @@
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
-#include "mlir/Dialects/FPMath/IR/FPMathTypes.h"
-#include "mlir/Dialects/FPMath/IR/FPMathAttr.h"
-
-#include "NotImplementedException.hpp"
-#include "mlir/Analysis/SliceAnalysis.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include <cassert>
+#include <cstdint>
+#include "llvm/ADT/SmallVector.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/IR/AsmState.h"
+#include "mlir/Dialects/FPMath/IR/FPMathAttr.h"
+#include "mlir/Dialects/FPMath/IR/FPMathTypes.h"
+#include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/Dialects/Voila/Interfaces/PredicationOpInterface.hpp"
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/IR/OperationSupport.h"
+#include "mlir/IR/TypeRange.h"
+#include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
+#include "mlir/Interfaces/CallInterfaces.h"
+#include "mlir/Support/LLVM.h"
 #define GET_OP_CLASSES
 #include "mlir/Dialects/Voila/IR/VoilaOps.cpp.inc"
 using namespace ::mlir;

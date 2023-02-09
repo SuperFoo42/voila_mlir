@@ -1,10 +1,17 @@
-#include "Expression.hpp"
-#include "Arithmetic.hpp"
-#include "ASTVisitor.hpp"
 #pragma once
+
+#include "Arithmetic.hpp"      // for Arithmetic
+#include "Expression.hpp"      // for Expression
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <memory>              // for shared_ptr
+#include <string>              // for string
+#include <utility>             // for move
 
 namespace voila::ast
 {
+    class ASTVisitor;
+
     class Sub : public Arithmetic
     {
       public:
@@ -24,5 +31,4 @@ namespace voila::ast
             return Arithmetic::clone<Sub>(vmap);
         }
     };
-}
-
+} // namespace voila::ast

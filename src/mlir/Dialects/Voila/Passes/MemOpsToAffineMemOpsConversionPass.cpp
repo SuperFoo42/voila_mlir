@@ -1,13 +1,25 @@
 #include "mlir/Dialects/Voila/Passes/MemOpsToAffineMemOpsConversionPass.hpp"
+#include "mlir/Dialect/Affine/IR/AffineOps.h" // for AffineForOp
+#include "mlir/Dialect/Func/IR/FuncOps.h"     // for FuncOp
+#include "mlir/Dialect/MemRef/IR/MemRef.h"    // for StoreOp
+#include "mlir/IR/Block.h"                    // for Block
+#include "mlir/IR/DialectRegistry.h"          // for DialectRegi...
+#include "mlir/IR/Operation.h"                // for Operation
+#include "mlir/IR/PatternMatch.h"             // for OpRewritePa...
+#include "mlir/IR/Value.h"                    // for Value, Bloc...
+#include "mlir/Support/LogicalResult.h"       // for success
+#include "llvm/ADT/ArrayRef.h"                // for MutableArra...
+#include "llvm/ADT/STLExtras.h"               // for all_of, find
+#include "llvm/ADT/SmallVector.h"             // for SmallVector
+#include "llvm/ADT/Twine.h"                   // for operator+
+#include "llvm/Support/Casting.h"             // for isa, dyn_cast
+#include <algorithm>                          // for max
 
-#include "mlir/Analysis/SliceAnalysis.h"
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/Dialect/Linalg/Transforms/Transforms.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
+namespace mlir
+{
+    class MLIRContext;
+}
+
 namespace voila::mlir
 {
     using namespace ::mlir;

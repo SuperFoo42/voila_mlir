@@ -1,12 +1,35 @@
 #include "mlir/Dialects/Voila/lowering/LoopOpLowering.hpp"
-
+#include <cassert>
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/STLForwardCompat.h"
+#include "llvm/ADT/STLFunctionalExtras.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Bufferization/IR/AllocationOpInterface.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/IR/ImplicitLocOpBuilder.h"
-#include "mlir/Dialects/Voila/IR/VoilaOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/IR/AffineMap.h"
+#include "mlir/IR/Block.h"
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
+#include "mlir/IR/Location.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/Region.h"
+#include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
+
+namespace mlir
+{
+    class MLIRContext;
+}
 
 namespace voila::mlir::lowering
 {
@@ -23,7 +46,7 @@ namespace voila::mlir::lowering
     }
 
     LoopOpLowering::LoopOpLowering(MLIRContext *ctx) : ConversionPattern(LoopOp::getOperationName(), 1, ctx) {}
-//TODO: refactor
+    // TODO: refactor
     static void lowerOpToLoops(Operation *op,
                                ValueRange operands,
                                PatternRewriter &rewriter,
@@ -38,7 +61,7 @@ namespace voila::mlir::lowering
         // the body of the innermost loop given a builder, a location and a range of
         // loop induction variables.
 
-        Value lowerBound = builder.create<ConstantIndexOp>( 1);
+        Value lowerBound = builder.create<ConstantIndexOp>(1);
         Value upperBound;
 
         // find first tensor operand and use its result type
@@ -49,22 +72,22 @@ namespace voila::mlir::lowering
         if (loopOpAdaptor.getCond().getType().isa<TensorType>())
         {
             cond = builder.create<ToMemrefOp>(
-                 convertTensorToMemRef(loopOpAdaptor.getCond().getType().dyn_cast<TensorType>()),
+                convertTensorToMemRef(loopOpAdaptor.getCond().getType().dyn_cast<TensorType>()),
                 loopOpAdaptor.getCond());
-            upperBound = builder.create<AddIOp>( builder.create<memref::DimOp>( loopOpAdaptor.getCond(), 0),
-                                                builder.create<ConstantIndexOp>( 1));
+            upperBound = builder.create<AddIOp>(builder.create<memref::DimOp>(loopOpAdaptor.getCond(), 0),
+                                                builder.create<ConstantIndexOp>(1));
         }
         else
         {
             cond = loopOpAdaptor.getCond();
-            upperBound = builder.create<ConstantIndexOp>( 2);
+            upperBound = builder.create<ConstantIndexOp>(2);
         }
 
         if (cond.getType().isa<MemRefType>())
         {
             SmallVector<Value> idx;
-            idx.push_back(builder.create<ConstantIndexOp>( 0));
-            iter_args.push_back(builder.create<memref::LoadOp>( cond, idx));
+            idx.push_back(builder.create<ConstantIndexOp>(0));
+            iter_args.push_back(builder.create<memref::LoadOp>(cond, idx));
         }
         else
         {

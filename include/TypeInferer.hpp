@@ -1,16 +1,69 @@
 #pragma once
-#include "ASTNodes.hpp"
-#include "Types.hpp"
-#include "range/v3/all.hpp"
-
-#include <ast/ASTVisitor.hpp>
-#include <unordered_map>
+#include "Types.hpp"          // for DataType (ptr only), type_id_t, Type (...
+#include <ast/ASTVisitor.hpp> // for ASTVisitor
+#include <cstddef>            // for size_t
+#include <memory>             // for shared_ptr
+#include <unordered_map>      // for unordered_map
+#include <utility>            // for pair
+#include <vector>             // for vector
 
 namespace voila
 {
     class Program;
 
-    //TODO pimpl
+    namespace ast
+    {
+        class ASTNode;
+        class Add;
+        class AggrAvg;
+        class AggrCnt;
+        class AggrMax;
+        class AggrMin;
+        class AggrSum;
+        class And;
+        class Arithmetic;
+        class Assign;
+        class BooleanConst;
+        class Comparison;
+        class Div;
+        class Emit;
+        class Eq;
+        class Expression;
+        class FltConst;
+        class Fun;
+        class FunctionCall;
+        class Gather;
+        class Ge;
+        class Geq;
+        class Hash;
+        class Insert;
+        class IntConst;
+        class Le;
+        class Leq;
+        class Lookup;
+        class Loop;
+        class Main;
+        class Mod;
+        class Mul;
+        class Neq;
+        class Not;
+        class Or;
+        class Predicate;
+        class Read;
+        class Ref;
+        class Scatter;
+        class Selection;
+        class Statement;
+        class StatementWrapper;
+        class StrConst;
+        class Sub;
+        class TupleCreate;
+        class TupleGet;
+        class Variable;
+        class Write;
+    } // namespace ast
+
+    // TODO pimpl
     class TypeInferer : public ast::ASTVisitor
     {
       public:

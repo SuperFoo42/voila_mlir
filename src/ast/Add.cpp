@@ -1,4 +1,5 @@
 #include "ast/Add.hpp"
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
 
 namespace voila::ast {
     bool Add::is_add() const {

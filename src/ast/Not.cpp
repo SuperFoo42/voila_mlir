@@ -1,30 +1,18 @@
 #include "ast/Not.hpp"
+#include "ast/ASTVisitor.hpp" // for ASTVisitor
+#include "ast/Expression.hpp" // for Expression
 
 namespace voila::ast
 {
-    std::string Not::type2string() const
-    {
-        return "not";
-    }
-    bool Not::is_not() const
-    {
-        return true;
-    }
-    Not *Not::as_not()
-    {
-        return this;
-    }
+    std::string Not::type2string() const { return "not"; }
+    bool Not::is_not() const { return true; }
+    Not *Not::as_not() { return this; }
 
-    void Not::visit(ASTVisitor &visitor) const
-    {
-        visitor(*this);
-    }
-    void Not::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
-    }
+    void Not::visit(ASTVisitor &visitor) const { visitor(*this); }
+    void Not::visit(ASTVisitor &visitor) { visitor(*this); }
 
-    std::shared_ptr<ASTNode> Not::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
+    std::shared_ptr<ASTNode> Not::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap)
+    {
         return std::make_shared<Not>(loc, mParam.clone(vmap));
     }
 } // namespace voila::ast

@@ -1,9 +1,15 @@
 #pragma once
-#include "Aggregation.hpp"
-#include "Expression.hpp"
-#include "ASTVisitor.hpp"
+#include <memory>               // for shared_ptr
+#include <string>               // for string
+#include "Aggregation.hpp"      // for Aggregation
+#include "Expression.hpp"       // for Expression
+#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h"  // for DenseMap
+
 namespace voila::ast
 {
+    class ASTVisitor;
+
     class AggrMax : public Aggregation
     {
       public:

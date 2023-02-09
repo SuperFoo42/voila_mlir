@@ -1,10 +1,19 @@
 #pragma once
-#include "mlir/Transforms/DialectConversion.h"
+#include "mlir/IR/Value.h"              // for Value
+#include "mlir/IR/ValueRange.h"         // for ValueRange
+#include "mlir/Support/LLVM.h"          // for function_ref
+#include "mlir/Support/LogicalResult.h" // for LogicalResult
+#include "mlir/Transforms/DialectConversion.h" // for ConversionPattern
+#include "llvm/ADT/ArrayRef.h"                 // for ArrayRef
 
 namespace mlir
 {
     class ImplicitLocOpBuilder;
+    class MLIRContext;
+    class Operation;
+    class PatternRewriter;
 }
+
 namespace voila::mlir::lowering
 {
     class SelectOpLowering : public ::mlir::ConversionPattern

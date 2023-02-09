@@ -1,14 +1,34 @@
 #include "mlir/Dialects/Voila/lowering/SelectOpLowering.hpp"
-
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Bufferization/IR/AllocationOpInterface.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
-#include "mlir/Dialect/Bufferization/Transforms/Bufferize.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/IR/IntegerSet.h"
+#include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/IR/AffineMap.h"
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
+#include "mlir/IR/Location.h"
+#include "mlir/IR/OpDefinition.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/TypeRange.h"
+#include "mlir/IR/Types.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/STLForwardCompat.h"
+#include "llvm/ADT/STLFunctionalExtras.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
+#include <cassert>
+
+namespace mlir
+{
+    class MLIRContext;
+}
 
 namespace voila::mlir::lowering
 {
@@ -211,8 +231,8 @@ namespace voila::mlir::lowering
         return success();
     }
 
-    SelectOpLowering::SelectOpLowering(::mlir::MLIRContext *ctx) :
-        ConversionPattern(::mlir::voila::SelectOp::getOperationName(), 1, ctx)
+    SelectOpLowering::SelectOpLowering(::mlir::MLIRContext *ctx)
+        : ConversionPattern(::mlir::voila::SelectOp::getOperationName(), 1, ctx)
     {
     }
 } // namespace voila::mlir::lowering

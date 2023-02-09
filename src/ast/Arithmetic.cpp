@@ -1,6 +1,7 @@
-#include <utility>
-
 #include "ast/Arithmetic.hpp"
+#include <utility>              // for move
+#include "ast/Expression.hpp"   // for Expression
+#include "ast/IExpression.hpp"  // for IExpression
 
 namespace voila::ast
 {

@@ -1,13 +1,20 @@
 #pragma once
 
-#include "Const.hpp"
+#include "Const.hpp"           // for Const
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <iosfwd>              // for ostream
+#include <memory>              // for shared_ptr
+#include <string>              // for string
+#include <utility>             // for move
 
-#include <utility>
-#include "ASTVisitor.hpp"
+namespace voila::ast
+{
+    class ASTVisitor;
 
-namespace voila::ast {
-    class StrConst : public Const {
-    public:
+    class StrConst : public Const
+    {
+      public:
         explicit StrConst(const Location loc, std::string val) : Const(loc), val{std::move(val)} {}
 
         [[nodiscard]] bool is_string() const final;

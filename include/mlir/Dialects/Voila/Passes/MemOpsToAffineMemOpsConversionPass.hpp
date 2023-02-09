@@ -1,16 +1,25 @@
 #pragma once
 
-#include "mlir/Pass/Pass.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h" // for FuncOp
+#include "mlir/Pass/Pass.h"               // for OperationPass, Pass (ptr o...
+#include "mlir/Support/LLVM.h"            // for StringRef
+#include "llvm/ADT/StringRef.h"           // for operator==, StringRef
+#include <memory>                         // for unique_ptr
 
-namespace mlir::func {
-    class FuncOp;
+namespace mlir
+{
+    class DialectRegistry;
 }
 
-namespace voila::mlir {
-    namespace lowering {
+namespace voila::mlir
+{
+    namespace lowering
+    {
         class MemOpsToAffineMemOpsConversionPass
-                : public ::mlir::PassWrapper<MemOpsToAffineMemOpsConversionPass, ::mlir::OperationPass<::mlir::func::FuncOp>> {
-        public:
+            : public ::mlir::PassWrapper<MemOpsToAffineMemOpsConversionPass,
+                                         ::mlir::OperationPass<::mlir::func::FuncOp>>
+        {
+          public:
             MemOpsToAffineMemOpsConversionPass() = default;
 
             MemOpsToAffineMemOpsConversionPass(const MemOpsToAffineMemOpsConversionPass &pass) = default;

@@ -1,15 +1,15 @@
 #pragma once
-#include "ASTNode.hpp"
-#include "ASTVisitor.hpp"
-#include "Statement.hpp"
-#include "ast/Fun.hpp"
-#include "ast/IStatement.hpp"
-
-#include <utility>
-#include <vector>
+#include "ASTNode.hpp" // for Location
+#include "ast/Fun.hpp" // for Fun
+#include <string>      // for string
+#include <vector>      // for vector
 
 namespace voila::ast
 {
+    class ASTVisitor;
+    class Expression;
+    class Statement;
+
     class Main : public Fun
     {
       public:

@@ -1,5 +1,32 @@
 #include "Program.hpp"
-
+#include <llvm/IR/AssemblyAnnotationWriter.h>
+#include <llvm/IR/Module.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Support/raw_ostream.h>
+#include <mlir/ExecutionEngine/ExecutionEngine.h>
+#include <mlir/ExecutionEngine/CRunnerUtils.h>
+#include <mlir/ExecutionEngine/OptUtils.h>
+#include <mlir/IR/MLIRContext.h>
+#include <mlir/Pass/Pass.h>
+#include <mlir/Pass/PassManager.h>
+#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
+#include <mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h>
+#include <mlir/Target/LLVMIR/Export.h>
+#include <mlir/Transforms/Passes.h>
+#include <MlirModuleVerificationError.hpp>
+#include <algorithm>
+#include <functional>
+#include <iostream>
+#include <fstream>
+#include <mlir/Dialects/Voila/Passes/ParallelLoopToGpuMappingPass.hpp>
+#include <mlir/Dialects/Voila/Passes/PredicationForwardingPass.hpp>
+#include <mlir/Dialects/Voila/Passes/VoilaToAffineLoweringPass.hpp>
+#include <mlir/Dialects/Voila/Passes/VoilaToLLVMLoweringPass.hpp>
+#include <mlir/Dialects/Voila/Passes/VoilaToLinalgLoweringPass.hpp>
+#include <stdexcept>
+#include <system_error>
+#include <type_traits>
+#include <utility>
 #include "ArgsOutOfRangeError.hpp"
 #include "Config.hpp"
 #include "DotVisualizer.hpp"
@@ -12,49 +39,58 @@
 #include "ParsingError.hpp"
 #include "TypeInferencePass.hpp"
 #include "TypeInferer.hpp"
+#include "ast/ASTNode.hpp"
 #include "ast/Fun.hpp"
+#include "ast/Statement.hpp"
+#include "ast/Variable.hpp"
 #include "defs.hpp"
-#include "voila_lexer.hpp"
-
-#include <MlirModuleVerificationError.hpp>
-#include <fstream>
-#include <llvm/IR/AssemblyAnnotationWriter.h>
-#include <utility>
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
-
-#include "mlir/Dialects/Voila/Passes/MemOpsToAffineMemOpsConversionPass.hpp"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include <llvm/CodeGen/CommandFlags.h>
-#include <llvm/IR/Module.h>
-#include <llvm/Support/ErrorOr.h>
-#include <llvm/Support/Host.h>
-#include <llvm/Support/SourceMgr.h>
-#include <llvm/Support/TargetSelect.h>
-#include <llvm/Support/raw_ostream.h>
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/STLFunctionalExtras.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/ADT/StringMap.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
+#include "llvm/IR/DataLayout.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Type.h"
+#include "llvm/Support/CodeGen.h"
+#include "llvm/Support/Debug.h"
+#include "llvm/Support/DynamicLibrary.h"
+#include "llvm/Support/Error.h"
+#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_os_ostream.h"
-#include <mlir/ExecutionEngine/ExecutionEngine.h>
-#include <mlir/ExecutionEngine/OptUtils.h>
-#include <mlir/IR/AsmState.h>
-#include <mlir/Dialects/Voila/IR/VoilaDialect.h>
-#include <mlir/InitAllPasses.h>
-#include <mlir/Pass/Pass.h>
-#include <mlir/Pass/PassManager.h>
-#include <mlir/Dialects/Voila/Passes/ParallelLoopToGpuMappingPass.hpp>
-#include <mlir/Dialects/Voila/Passes/PredicationForwardingPass.hpp>
-#include <mlir/Dialects/Voila/Passes/VoilaToAffineLoweringPass.hpp>
-#include <mlir/Dialects/Voila/Passes/VoilaToLinalgLoweringPass.hpp>
-#include <mlir/Dialects/Voila/Passes/VoilaToLLVMLoweringPass.hpp>
-#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
-#include <mlir/Target/LLVMIR/Dialect/OpenMP/OpenMPToLLVMIRTranslation.h>
-#include <mlir/Target/LLVMIR/Export.h>
-#include <mlir/Transforms/Passes.h>
-#include <mlir/Dialect/Bufferization/Transforms/OneShotAnalysis.h>
+#include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
+#include "mlir/Conversion/AsyncToLLVM/AsyncToLLVM.h"
+#include "mlir/Conversion/OpenMPToLLVM/ConvertOpenMPToLLVM.h"
+#include "mlir/Conversion/SCFToGPU/SCFToGPUPass.h"
+#include "mlir/Conversion/SCFToOpenMP/SCFToOpenMP.h"
+#include "mlir/Conversion/VectorToGPU/VectorToGPU.h"
+#include "mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h"
+#include "mlir/Dialect/Affine/Passes.h"
+#include "mlir/Dialect/Arith/Transforms/Passes.h"
+#include "mlir/Dialect/Async/Passes.h"
+#include "mlir/Dialect/Bufferization/Transforms/Passes.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/LLVMIR/Transforms/LegalizeForExport.h"
+#include "mlir/Dialect/Linalg/Passes.h"
+#include "mlir/Dialect/Linalg/Transforms/Transforms.h"
+#include "mlir/Dialect/MemRef/Transforms/Passes.h"
+#include "mlir/Dialect/SCF/Transforms/Passes.h"
+#include "mlir/Dialect/Tensor/Transforms/Passes.h"
+#include "mlir/Dialects/Voila/IR/VoilaOpsDialect.h.inc"
+#include "mlir/Dialects/Voila/Passes/MemOpsToAffineMemOpsConversionPass.hpp"
 #include "mlir/Dialects/Voila/Passes/VoilaBufferizePass.hpp"
+#include "mlir/IR/OwningOpRef.h"
+#include "mlir/Support/LLVM.h"
+#include "mlir/Support/LogicalResult.h"
+#include "range/v3/iterator/basic_iterator.hpp"
+#include "range/v3/range_fwd.hpp"
+#include "range/v3/view/adaptor.hpp"
+#include "range/v3/view/facade.hpp"
+#include "voila_lexer.hpp"
+#include "voila_parser.hpp"
+#include "ast/ASTVisitor.hpp"
 
-#pragma GCC diagnostic pop
 
 namespace voila {
     using namespace ast;
@@ -137,7 +173,7 @@ namespace voila {
         return mlirModule;
     }
 
-    [[maybe_unused]] const MLIRContext &Program::getMLIRContext() const {
+    [[maybe_unused]] const ::mlir::MLIRContext &Program::getMLIRContext() const {
         return context;
     }
 
@@ -213,7 +249,7 @@ namespace voila {
             opts.transformer = optPipeline;
             //opts.enableObjectCache = true;
             opts.jitCodeGenOptLevel = llvm::CodeGenOpt::Level::Aggressive;
-            opts.enableObjectCache = true;
+            opts.enableObjectDump = true;
             SmallVector<StringRef> pathRefs;
             for (auto &path: libPaths)
                 pathRefs.push_back(path);
@@ -379,7 +415,7 @@ namespace voila {
         pm.addPass(createVoilaBufferizePass());
         pm.addNestedPass<FuncOp>(createTensorBufferizePass());
         pm.addNestedPass<FuncOp>(createLinalgBufferizePass());
-        pm.addPass(createFuncBufferizePass());
+        //FIXME: pm.addPass(createFuncBufferizePass());
 
         pm.addNestedPass<FuncOp>(bufferization::createBufferHoistingPass());
         pm.addNestedPass<FuncOp>(bufferization::createBufferLoopHoistingPass());

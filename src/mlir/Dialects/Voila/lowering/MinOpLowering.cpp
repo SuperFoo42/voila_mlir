@@ -76,9 +76,6 @@ namespace voila::mlir::lowering
         SmallVector<Type, 1> res_type;
         res_type.push_back(res.front().getType());
 
-        SmallVector<StringRef, 1> iter_type;
-        iter_type.push_back(getReductionIteratorTypeName());
-
         auto fn = [](OpBuilder &builder, Location loc, ValueRange vals)
         {
             Value input;
@@ -114,7 +111,7 @@ namespace voila::mlir::lowering
         auto linalgOp = builder.create<linalg::GenericOp>(/*results*/ res_type,
                                                           /*inputs*/ minOpAdaptor.getInput(), /*outputs*/ res,
                                                           /*indexing maps*/ maps,
-                                                          /*iterator types*/ iter_type, fn);
+                                                          /*iterator types*/ utils::IteratorType::reduction, fn);
 
         return builder.create<tensor::ExtractOp>(linalgOp->getResult(0));
     }
@@ -127,9 +124,9 @@ namespace voila::mlir::lowering
         if (getElementTypeOrSelf(op->getResultTypes().front()).isa<IntegerType>())
         {
             res = builder.create<memref::AllocOp>(MemRefType::get(-1, builder.getI64Type()),
-                                                  ::llvm::makeArrayRef(allocSize));
+                                                  ArrayRef(allocSize));
             buildAffineLoopNest(builder, builder.getLoc(),
-                                ::llvm::makeArrayRef<Value>(builder.create<ConstantIndexOp>(0)), allocSize, {1},
+                                builder.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
                                 [&res, &minOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
                                 {
                                     builder.create<AffineStoreOp>(
@@ -142,9 +139,9 @@ namespace voila::mlir::lowering
         else if (getElementTypeOrSelf(op->getResultTypes().front()).isa<FloatType>())
         {
             res = builder.create<memref::AllocOp>(MemRefType::get(-1, builder.getF64Type()),
-                                                  ::llvm::makeArrayRef(allocSize));
+                                                  ArrayRef(allocSize));
             buildAffineLoopNest(
-                builder, builder.getLoc(), ::llvm::makeArrayRef<Value>(builder.create<ConstantIndexOp>(0)), allocSize,
+                builder, builder.getLoc(), builder.create<ConstantIndexOp>(0)->getResults(), allocSize,
                 {1},
                 [&res](OpBuilder &builder, Location loc, ValueRange vals)
                 {
@@ -173,7 +170,7 @@ namespace voila::mlir::lowering
                                         ImplicitLocOpBuilder nb(loc, b);
                                         auto toCmp = nb.create<tensor::ExtractOp>(minOpAdaptor.getInput(), idx);
                                         Value groupIdx = nb.create<tensor::ExtractOp>(minOpAdaptor.getIndices(), idx);
-                                        auto oldVal = nb.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+                                        auto oldVal = nb.create<memref::LoadOp>(res, groupIdx);
 
                                         ::mlir::Value minVal;
                                         if (toCmp.getType().isa<IntegerType>())
@@ -189,7 +186,7 @@ namespace voila::mlir::lowering
             {
                 auto toCmp = b.create<tensor::ExtractOp>(minOpAdaptor.getInput(), idx);
                 Value groupIdx = b.create<tensor::ExtractOp>(minOpAdaptor.getIndices(), idx);
-                auto oldVal = b.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+                auto oldVal = b.create<memref::LoadOp>(res, groupIdx);
 
                 ::mlir::Value minVal;
                 if (toCmp.getType().isa<IntegerType>())
@@ -201,7 +198,7 @@ namespace voila::mlir::lowering
             }
         };
 
-        buildAffineLoopNest(builder, builder.getLoc(), ::llvm::makeArrayRef<Value>(builder.create<ConstantIndexOp>(0)),
+        buildAffineLoopNest(builder, builder.getLoc(), builder.create<ConstantIndexOp>(0)->getResults(),
                             builder.create<tensor::DimOp>(minOpAdaptor.getInput(), 0).getResult(), {1}, fn);
 
         return builder.create<ToTensorOp>(res);
@@ -212,7 +209,7 @@ namespace voila::mlir::lowering
     {
         assert(!op->getResultTypes().empty() && op->getResultTypes().size() == 1);
         auto loc = op->getLoc();
-        MinOpAdaptor minOpAdaptor(operands);
+        MinOpAdaptor minOpAdaptor(operands, {});
         Value res;
         ImplicitLocOpBuilder builder(loc, rewriter);
 

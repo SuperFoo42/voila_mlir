@@ -1,16 +1,20 @@
 #pragma once
 
-#include "mlir/Transforms/DialectConversion.h"
+#include "mlir/IR/PatternMatch.h"       // for OpRewritePattern, PatternRew...
+#include "mlir/Support/LogicalResult.h" // for LogicalResult
 
-namespace mlir::voila
+namespace mlir
 {
-    class EmitOp;
-}
-
-namespace mlir::func
-{
-    class FuncOp;
-}
+    class MLIRContext;
+    namespace voila
+    {
+        class EmitOp;
+    }
+    namespace func
+    {
+        class FuncOp;
+    }
+} // namespace mlir
 
 namespace voila::mlir::lowering
 {

@@ -1,5 +1,11 @@
 #include "ast/FunctionCall.hpp"
-#include "range/v3/all.hpp"
+#include <ostream>                           // for operator<<, ostream, bas...
+#include <utility>                           // for move
+#include "ast/ASTVisitor.hpp"                // for ASTVisitor
+#include "ast/Expression.hpp"                // for Expression, operator<<
+#include "ast/IStatement.hpp"                // for IStatement
+#include "range/v3/algorithm/transform.hpp"  // for transform, transform_fn
+#include "range/v3/functional/identity.hpp"  // for identity
 
 namespace voila::ast {
     bool FunctionCall::is_function_call() const {

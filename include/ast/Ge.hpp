@@ -1,10 +1,16 @@
 #pragma once
-#include "ASTVisitor.hpp"
-#include "Comparison.hpp"
-#include "Expression.hpp"
+#include <memory>               // for shared_ptr
+#include <string>               // for string
+#include <utility>              // for move
+#include "Comparison.hpp"       // for Comparison
+#include "Expression.hpp"       // for Expression
+#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h"  // for DenseMap
 
 namespace voila::ast
 {
+    class ASTVisitor;
+
     class Ge : public Comparison
     {
       public:

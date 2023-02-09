@@ -1,40 +1,47 @@
 #pragma once
 
-#include <memory>
-#include <range/v3/all.hpp>
-#include <string>
-#include <unordered_map>
-#include <variant>
-#include <vector>
-#include <filesystem>
+#include <cassert>                                // for assert
+#include <cstdint>                                // for int64_t, uint32_t
+#include <cstdlib>                                 // for free, size_t
+#include <memory>                                  // for allocator, shared_ptr
+#include <optional>                                // for optional, nullopt
+#include <string>                                  // for string, operator+
+#include <unordered_map>                           // for operator==, unorde...
+#include <utility>                                 // for move
+#include <variant>                                 // for variant
+#include <vector>                                  // for vector
+#include "Config.hpp"                              // for Config
+#include "TypeInferer.hpp"                         // for TypeInferer
+#include "Types.hpp"                               // for to_string, DataType
+#include "ast/Expression.hpp"                      // for Expression
+#include "ast/Fun.hpp"                             // for Fun
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
-#include "llvm/IR/LLVMContext.h"
-#include <mlir/ExecutionEngine/MemRefUtils.h>
-#include <mlir/IR/MLIRContext.h>
-#include <mlir/IR/OwningOpRef.h>
-#include <mlir/InitAllDialects.h>
-#include <mlir/IR/BuiltinOps.h>
+#include <mlir/IR/BuiltinOps.h>                    // for ModuleOp
+#include <mlir/IR/MLIRContext.h>                   // for MLIRContext
+#include <mlir/IR/OwningOpRef.h>                   // for OwningOpRef
+#include "llvm/ADT/SmallVector.h"                  // for SmallVector
+#include "llvm/IR/LLVMContext.h"                   // for LLVMContext
+#include "mlir/ExecutionEngine/ExecutionEngine.h"  // for ExecutionEngine
+//#include "mlir/ExecutionEngine/CRunnerUtils.h"      // for StridedMemref
 #pragma GCC diagnostic pop
 
-#include "TypeInferer.hpp"
-#include "Types.hpp"
-#include "ast/Expression.hpp"
-#include "Config.hpp"
+#include "range/v3/view/all.hpp"                   // for all_t
+#include "range/v3/view/filter.hpp"                // for filter_view, cpp20...
+#include "range/v3/view/map.hpp"                   // for values, values_fn
+#include "range/v3/view/view.hpp"                  // for view_closure
 
-namespace mlir
-{
-    class ExecutionEngine;
-}
+template <typename T, int N> struct StridedMemRefType;
 
+namespace llvm { class Module; }
 namespace voila
 {
     namespace ast
     {
-        class Expression;
-        class Fun;
         class Statement;
+        class ASTNode;
     } // namespace ast
     namespace lexer
     {

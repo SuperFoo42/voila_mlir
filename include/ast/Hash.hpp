@@ -1,16 +1,23 @@
 #pragma once
+#include "IExpression.hpp"     // for IExpression
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "ast/Expression.hpp"  // for Expression
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <iosfwd>              // for ostream
+#include <memory>              // for shared_ptr
+#include <string>              // for string
+#include <utility>             // for move
+#include <vector>              // for vector
 
-#include "ASTVisitor.hpp"
-#include "Comparison.hpp"
-#include "IExpression.hpp"
+namespace voila::ast
+{
+    class ASTVisitor;
 
-#include <utility>
-#include <vector>
-
-namespace voila::ast {
-    class Hash : public IExpression {
+    class Hash : public IExpression
+    {
         std::vector<Expression> mItems;
-    public:
+
+      public:
         Hash(const Location loc, std::vector<Expression> items) : IExpression(loc), mItems{std::move(items)} {}
 
         [[nodiscard]] std::string type2string() const final;
@@ -27,8 +34,6 @@ namespace voila::ast {
 
         std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        const std::vector<Expression> &items() const {
-            return mItems;
-        }
+        [[nodiscard]] const std::vector<Expression> &items() const { return mItems; }
     };
 } // namespace voila::ast

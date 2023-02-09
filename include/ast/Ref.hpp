@@ -1,10 +1,16 @@
 #pragma once
 
-#include "ASTVisitor.hpp"
-#include "Expression.hpp"
-#include "IExpression.hpp"
+#include <iosfwd>               // for ostream
+#include <memory>               // for shared_ptr
+#include <string>               // for string
+#include "Expression.hpp"       // for Expression
+#include "IExpression.hpp"      // for IExpression
+#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h"  // for DenseMap
 
 namespace voila::ast {
+    class ASTVisitor;
+
     class Ref : public IExpression {
         Expression mRef;
 

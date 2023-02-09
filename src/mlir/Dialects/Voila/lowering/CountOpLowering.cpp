@@ -62,8 +62,8 @@ namespace voila::mlir::lowering
             SmallVector<AffineExpr, 1> dstExprs;
             auto inferred = AffineMap::inferFromExprList({srcExprs, dstExprs});
             return builder
-                .create<linalg::GenericOp>(start.getType(), countOpAdaptor.getPred(), start, llvm::makeArrayRef(inferred),
-                                           getReductionIteratorTypeName(),
+                .create<linalg::GenericOp>(start.getType(), countOpAdaptor.getPred(), start, inferred,
+                                           utils::IteratorType::reduction,
                                            [](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
                                            {
                                                auto indexPred = nestedBuilder.create<arith::IndexCastOp>(
@@ -87,9 +87,8 @@ namespace voila::mlir::lowering
             getHTSize(rewriter, countOpAdaptor.getInput()); // FIXME: not the best solution, indices can be out of range.
 
         res = rewriter.create<memref::AllocOp>(MemRefType::get(-1, rewriter.getI64Type()),
-                                               ::llvm::makeArrayRef(allocSize));
-        buildAffineLoopNest(rewriter, rewriter.getLoc(),
-                            ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(0)), allocSize, {1},
+                                               ArrayRef(allocSize));
+        buildAffineLoopNest(rewriter, rewriter.getLoc(),rewriter.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
                             [&res](OpBuilder &builder, Location loc, ValueRange vals) {
                                 builder.create<AffineStoreOp>(
                                     loc, builder.create<ConstantIntOp>(loc, 0, builder.getI64Type()), res, vals);
@@ -108,7 +107,7 @@ namespace voila::mlir::lowering
                     {
                         ImplicitLocOpBuilder nb(loc, b);
                         Value groupIdx = nb.create<tensor::ExtractOp>(countOpAdaptor.getIndices(), idx);
-                        auto oldVal = nb.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+                        auto oldVal = nb.create<memref::LoadOp>(res, groupIdx);
                         Value newVal =
                             nb.create<AddIOp>(oldVal, nb.create<ConstantIntOp>(1, builder.getI64Type()));
 
@@ -119,7 +118,7 @@ namespace voila::mlir::lowering
             else
             {
                 Value groupIdx = builder.create<tensor::ExtractOp>(countOpAdaptor.getIndices(), idx);
-                auto oldVal = builder.create<memref::LoadOp>(res, ::llvm::makeArrayRef(groupIdx));
+                auto oldVal = builder.create<memref::LoadOp>(res, groupIdx);
                 Value newVal = builder.create<AddIOp>(oldVal, builder.create<ConstantIntOp>(1, builder.getI64Type()));
 
                 builder.create<memref::StoreOp>(newVal, res, groupIdx);
@@ -127,7 +126,7 @@ namespace voila::mlir::lowering
         };
 
         buildAffineLoopNest(rewriter, rewriter.getLoc(),
-                            ::llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(0)),
+                            ValueRange(rewriter.create<ConstantIndexOp>(0).getResult()),
                             rewriter.create<DimOp>(countOpAdaptor.getInput(), 0).getResult(), {1}, fn);
 
         return rewriter.create<ToTensorOp>(res);

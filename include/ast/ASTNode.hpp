@@ -1,15 +1,14 @@
 #pragma once
-
-#include "location.hpp"
-
-#include <bit>
-#include <climits>
-#include <cmath>
-#include <cstddef>
-#include <iostream>
-#include <string>
-#include <memory>
-#include "llvm/IR/ValueMap.h"
+#include <bit>                  // for rotl
+#include <climits>              // for CHAR_BIT
+#include <cstddef>              // for size_t
+#include <functional>           // for hash
+#include <iostream>             // for ostream
+#include <memory>               // for shared_ptr
+#include <string>               // for string
+#include <variant>              // for hash
+#include "llvm/ADT/DenseMap.h"  // for DenseMap
+#include "location.hpp"         // for position, location
 
 namespace voila::ast {
     class ASTVisitor;

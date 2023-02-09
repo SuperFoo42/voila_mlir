@@ -1,4 +1,7 @@
 #include "ast/Emit.hpp"
+#include <algorithm>           // for max
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
+#include "ast/Expression.hpp"  // for Expression
 
 namespace voila::ast
 {

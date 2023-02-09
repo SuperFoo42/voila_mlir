@@ -1,12 +1,38 @@
 #include "mlir/Dialects/Voila/Passes/PredicationForwardingPass.hpp"
-
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
-#include "mlir/IR/Builders.h"
-#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/Dialects/Voila/Interfaces/PredicationOpInterface.hpp"
+#include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/OpDefinition.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/TypeUtilities.h"
+#include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
+#include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/Support/Casting.h"
+#include <algorithm>
+#include <cassert>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
+
+namespace mlir
+{
+    class MLIRContext;
+}
 
 namespace voila::mlir
 {
@@ -34,8 +60,9 @@ namespace voila::mlir
                         return failure();
                     }
                     else if (isa<AvgOp>(user) || isa<SumOp>(user) || isa<CountOp>(user) || isa<MinOp>(user) ||
-                             isa<MaxOp>(user) || isa<LookupOp>(user) ||isa<InsertOp>(user) || isa<HashOp>(user)) // TODO: gather and scatter, but the semantic of
-                                                                      // predication seems unclear at this point
+                             isa<MaxOp>(user) || isa<LookupOp>(user) || isa<InsertOp>(user) ||
+                             isa<HashOp>(user)) // TODO: gather and scatter, but the semantic of
+                                                // predication seems unclear at this point
                     {
                         toPredicate.push_back(user);
                         continue;
@@ -64,7 +91,7 @@ namespace voila::mlir
                     predOp->replaceUsesOfWith(op.getResult(), op.getValues());
                 }
 
-                op->replaceAllUsesWith(llvm::makeArrayRef(op.getValues()));
+                op->replaceAllUsesWith(ValueRange(op.getValues()));
                 rewriter.eraseOp(op);
 
                 return success();
@@ -155,29 +182,33 @@ namespace voila::mlir
                     else
                     {
                         auto dimShape = rewriter.create<tensor::DimOp>(loc, op.getValues(), 0)->getResultTypes();
-                        tmp = rewriter.create<tensor::EmptyOp>(loc, dimShape,
-                                                                    op->getResults());
-                    };
+                        tmp = rewriter.create<tensor::EmptyOp>(loc, dimShape, op->getResults());
+                    }
 
                     if (getElementTypeOrSelf(op.getValues()).isa<IntegerType>())
                     {
                         falseSel = rewriter
                                        .create<linalg::FillOp>(
                                            loc,
-                                           rewriter.create<arith::ConstantIntOp>(
-                                               loc, std::numeric_limits<int64_t>::max(), rewriter.getI64Type()).getResult(),
+                                           rewriter
+                                               .create<arith::ConstantIntOp>(loc, std::numeric_limits<int64_t>::max(),
+                                                                             rewriter.getI64Type())
+                                               .getResult(),
                                            ValueRange(tmp))
                                        .result();
                     }
                     else if (getElementTypeOrSelf(op.getValues()).isa<FloatType>())
                     {
-                        falseSel = rewriter
-                                       .create<linalg::FillOp>(
-                                           loc,
-                                           ValueRange(rewriter.create<arith::ConstantFloatOp>(
-                                               loc, rewriter.getF64FloatAttr(0).getValue(), rewriter.getF64Type()).getResult()),
-                                           ValueRange(tmp))
-                                       .result();
+                        falseSel =
+                            rewriter
+                                .create<linalg::FillOp>(loc,
+                                                        ValueRange(rewriter
+                                                                       .create<arith::ConstantFloatOp>(
+                                                                           loc, rewriter.getF64FloatAttr(0).getValue(),
+                                                                           rewriter.getF64Type())
+                                                                       .getResult()),
+                                                        ValueRange(tmp))
+                                .result();
                     }
                     else
                     {
@@ -199,10 +230,7 @@ namespace voila::mlir
                 patterns.add<PredicationForwardingPattern>(context);
         }
 
-        StringRef PredicationForwardingPass::getArgument() const
-        {
-            return "predication-forwarding-pass";
-        }
+        StringRef PredicationForwardingPass::getArgument() const { return "predication-forwarding-pass"; }
         StringRef PredicationForwardingPass::getDescription() const
         {
             return "This pass tries to reduce selections with materialization by predication of operations or lazy "
@@ -212,7 +240,7 @@ namespace voila::mlir
         {
             RewritePatternSet patterns(&getContext());
             populatePredicationForwardingPattern(patterns, predicateBlockersOnly);
-            (void) applyPatternsAndFoldGreedily(getOperation(), std::move(patterns));
+            (void)applyPatternsAndFoldGreedily(getOperation(), std::move(patterns));
         }
     } // namespace lowering
 

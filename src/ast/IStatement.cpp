@@ -1,5 +1,7 @@
 #include "ast/IStatement.hpp"
 #include "llvm/Support/FormatVariadic.h"
+#include "ast/Expression.hpp"                       // for Expression
+#include "ast/PredicationUnsupportedException.hpp"  // for PredicationUnsupp...
 
 namespace voila::ast
 {

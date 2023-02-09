@@ -1,4 +1,5 @@
 #include "ast/AggrMax.hpp"
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
 
 namespace voila::ast
 {

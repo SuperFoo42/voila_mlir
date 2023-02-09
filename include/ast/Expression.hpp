@@ -1,12 +1,58 @@
 #pragma once
-
-#include "IExpression.hpp"
-
-#include <concepts>
-#include <memory>
-#include <utility>
+#include <iosfwd>               // for ostream
+#include <memory>               // for shared_ptr, dynamic_pointer_cast, swap
+#include <optional>             // for optional
+#include <string>               // for string
+#include <utility>              // for move, forward
+#include "ast/ASTNode.hpp"      // for ASTNode, Location
+#include "llvm/ADT/DenseMap.h"  // for DenseMap
+#include "ast/IExpression.hpp"
 
 namespace voila::ast {
+    class Selection;
+    class Const;
+    class Add;
+    class Arithmetic;
+    class Sub;
+    class Mul;
+    class Div;
+    class Mod;
+    class Comparison;
+    class Eq;
+    class Neq;
+    class Le;
+    class Ge;
+    class Leq;
+    class Geq;
+    class And;
+    class Or;
+    class Not;
+    class Logical;
+    class IntConst;
+    class BooleanConst;
+    class FltConst;
+    class StrConst;
+    class Read;
+    class Gather;
+    class Ref;
+    class TupleGet;
+    class TupleCreate;
+    class Expression;
+    class Predicate;
+    class Variable;
+    class Aggregation;
+    class AggrSum;
+    class AggrCnt;
+    class AggrMin;
+    class AggrMax;
+    class AggrAvg;
+    class Hash;
+    class Lookup;
+    class Insert;
+    class Scatter;
+
+    class ASTVisitor;
+
     class Expression {
         std::shared_ptr<IExpression> mImpl;
 

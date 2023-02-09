@@ -1,21 +1,28 @@
 #pragma once
-#include "Expression.hpp"
-#include "IStatement.hpp"
-#include "Statement.hpp"
-#include "ASTVisitor.hpp"
-#include <utility>
-#include <vector>
+#include "Expression.hpp"      // for Expression
+#include "IStatement.hpp"      // for IStatement
+#include "Statement.hpp"       // for Statement
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <iosfwd>              // for ostream
+#include <memory>              // for shared_ptr
+#include <string>              // for string
+#include <utility>             // for move
+#include <vector>              // for vector
 
 namespace voila::ast
 {
-    //TODO: fix this
+    class ASTVisitor;
+
+    // TODO: fix this
     class Loop : public IStatement
     {
         Expression mPred;
         std::vector<Statement> mStms;
 
       public:
-        Loop(const Location loc, Expression pred, std::vector<Statement> stms) : IStatement(loc), mPred{std::move(pred)}, mStms{std::move(stms)}
+        Loop(const Location loc, Expression pred, std::vector<Statement> stms)
+            : IStatement(loc), mPred{std::move(pred)}, mStms{std::move(stms)}
         {
         }
 
@@ -32,15 +39,9 @@ namespace voila::ast
         // TODO
         // CrossingVariables crossing_variables;
 
-        const Expression &pred() const {
-            return mPred;
-        }
+        [[nodiscard]] const Expression &pred() const { return mPred; }
 
-        const std::vector<Statement> &stmts() const
-        {
-            return mStms;
-        }
-
+        [[nodiscard]] const std::vector<Statement> &stmts() const { return mStms; }
     };
 
 } // namespace voila::ast

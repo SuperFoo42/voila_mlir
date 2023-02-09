@@ -1,18 +1,22 @@
 #pragma once
-#include <utility>
+#include "Expression.hpp"      // for Expression
+#include "Logical.hpp"         // for Logical
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <memory>              // for shared_ptr
+#include <string>              // for string
+#include <utility>             // for move
 
-#include "Expression.hpp"
-#include "Logical.hpp"
-#include "ASTVisitor.hpp"
 namespace voila::ast
 {
+    class ASTVisitor;
+
     class Not : public Logical
     {
         Expression mParam;
 
       public:
-        explicit Not(const Location loc,Expression expr) :
-            Logical(loc), mParam(std::move(expr))
+        explicit Not(const Location loc, Expression expr) : Logical(loc), mParam(std::move(expr))
         {
             // TODO
         }
@@ -28,8 +32,6 @@ namespace voila::ast
 
         std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        const Expression &param() const {
-            return mParam;
-        }
+        [[nodiscard]] const Expression &param() const { return mParam; }
     };
 } // namespace voila::ast

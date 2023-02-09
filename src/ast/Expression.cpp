@@ -1,6 +1,52 @@
 #include "ast/Expression.hpp"
+#include "ast/IExpression.hpp"
+
 namespace voila::ast
 {
+    class Selection;
+    class Const;
+    class Add;
+    class Arithmetic;
+    class Sub;
+    class Mul;
+    class Div;
+    class Mod;
+    class Comparison;
+    class Eq;
+    class Neq;
+    class Le;
+    class Ge;
+    class Leq;
+    class Geq;
+    class And;
+    class Or;
+    class Not;
+    class Logical;
+    class IntConst;
+    class BooleanConst;
+    class FltConst;
+    class StrConst;
+    class Read;
+    class Gather;
+    class Ref;
+    class TupleGet;
+    class TupleCreate;
+    class Expression;
+    class Predicate;
+    class Variable;
+    class Aggregation;
+    class AggrSum;
+    class AggrCnt;
+    class AggrMin;
+    class AggrMax;
+    class AggrAvg;
+    class Hash;
+    class Lookup;
+    class Insert;
+    class Scatter;
+
+    class ASTVisitor;
+
     std::ostream &operator<<(std::ostream &out, const Expression &t)
     {
         t.mImpl->print(out);

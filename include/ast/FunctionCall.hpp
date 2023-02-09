@@ -1,12 +1,17 @@
 #pragma once
-#include "Expression.hpp"
-#include "IStatement.hpp"
+#include <iosfwd>               // for ostream
+#include <memory>               // for shared_ptr
+#include <string>               // for string
+#include <vector>               // for vector
+#include "Expression.hpp"       // for Expression
+#include "IStatement.hpp"       // for IStatement
+#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h"  // for DenseMap
 
-#include <utility>
-#include <vector>
-#include "ASTVisitor.hpp"
 namespace voila::ast
 {
+    class ASTVisitor;
+
     class FunctionCall : public IStatement
     {
         std::string mFun;
@@ -27,7 +32,7 @@ namespace voila::ast
 
         std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        const std::string &fun() const {
+        [[nodiscard]] const std::string &fun() const {
             return mFun;
         }
 
@@ -35,7 +40,7 @@ namespace voila::ast
             return mFun;
         }
 
-        const std::vector<Expression> &args() const {
+        [[nodiscard]] const std::vector<Expression> &args() const {
             return mArgs;
         }
     };

@@ -1,4 +1,6 @@
 #include "ast/Div.hpp"
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
+
 namespace voila::ast
 {
     std::string Div::type2string() const

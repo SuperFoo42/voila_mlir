@@ -1,8 +1,15 @@
 #pragma once
-#include "Const.hpp"
-#include "ASTVisitor.hpp"
+#include <iosfwd>               // for ostream
+#include <memory>               // for shared_ptr
+#include <string>               // for string
+#include "Const.hpp"            // for Const
+#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h"  // for DenseMap
+
 namespace voila::ast
 {
+    class ASTVisitor;
+
     class BooleanConst : public Const
     {
       public:

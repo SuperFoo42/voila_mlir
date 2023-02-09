@@ -1,4 +1,6 @@
 #include "ast/BooleanConst.hpp"
+#include <ios>                 // for boolalpha, noboolalpha, ostream
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
 
 namespace voila::ast
 {

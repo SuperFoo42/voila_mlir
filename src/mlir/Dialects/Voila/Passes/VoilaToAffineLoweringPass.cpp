@@ -1,25 +1,34 @@
 #include "mlir/Dialects/Voila/Passes/VoilaToAffineLoweringPass.hpp"
 
-#include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/Dialect/Bufferization/IR/Bufferization.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/Dialects/Voila/IR/VoilaDialect.h"
-#include "mlir/Dialects/Voila/lowering/ArithmeticOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/AvgOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/ComparisonOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/ConstOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/CountOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/EmitOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/InsertOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/LogicalOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/LoopOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/MaxOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/MinOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/ReadOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/SelectOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/SumOpLowering.hpp"
-#include "mlir/Dialects/Voila/lowering/ScatterOpLowering.hpp"
-
+#include "mlir/Dialect/Arith/IR/Arith.h"                         // for Ari...
+#include "mlir/Dialect/Func/IR/FuncOps.h"                        // for FuncOp
+#include "mlir/Dialect/Tensor/IR/Tensor.h"                      // for Ten...
+#include "mlir/Dialects/Voila/IR/VoilaDialect.h"                    // for Voi...
+#include "mlir/Dialects/Voila/lowering/ArithmeticOpLowering.hpp" // for Add...
+#include "mlir/Dialects/Voila/lowering/AvgOpLowering.hpp"        // for Avg...
+#include "mlir/Dialects/Voila/lowering/ComparisonOpLowering.hpp" // for EqO...
+#include "mlir/Dialects/Voila/lowering/CountOpLowering.hpp"      // for Cou...
+#include "mlir/Dialects/Voila/lowering/EmitOpLowering.hpp"       // for Emi...
+#include "mlir/Dialects/Voila/lowering/InsertOpLowering.hpp"     // for Ins...
+#include "mlir/Dialects/Voila/lowering/LogicalOpLowering.hpp"    // for And...
+#include "mlir/Dialects/Voila/lowering/LoopOpLowering.hpp"       // for Loo...
+#include "mlir/Dialects/Voila/lowering/MaxOpLowering.hpp"        // for Max...
+#include "mlir/Dialects/Voila/lowering/MinOpLowering.hpp"        // for Min...
+#include "mlir/Dialects/Voila/lowering/ReadOpLowering.hpp"       // for Rea...
+#include "mlir/Dialects/Voila/lowering/ScatterOpLowering.hpp"    // for Sca...
+#include "mlir/Dialects/Voila/lowering/SelectOpLowering.hpp"     // for Sel...
+#include "mlir/Dialects/Voila/lowering/SumOpLowering.hpp"        // for Sum...
+#include "mlir/IR/Block.h"                                       // for Block
+#include "mlir/IR/BuiltinDialect.h"                              // for Bui...
+#include "mlir/IR/BuiltinTypes.h"                                // for Fun...
+#include "mlir/IR/Operation.h"                                   // for Ope...
+#include "mlir/IR/PatternMatch.h"                                // for Rew...
+#include "mlir/IR/Region.h"                                      // for Region
+#include "mlir/Support/LLVM.h"                                   // for mlir
+#include "mlir/Support/LogicalResult.h"                          // for failed
+#include "mlir/Transforms/DialectConversion.h"                   // for Con...
+#include <algorithm>                                             // for max
+#include <utility>                                               // for move
 
 namespace voila::mlir
 {
@@ -42,7 +51,7 @@ namespace voila::mlir
 
             // We define the specific operations, or dialects, that are legal targets for
             // this lowering.
-            target.addLegalDialect<BuiltinDialect, AffineDialect, memref::MemRefDialect,func::FuncDialect,
+            target.addLegalDialect<BuiltinDialect, AffineDialect, memref::MemRefDialect, func::FuncDialect,
                                    linalg::LinalgDialect, scf::SCFDialect, arith::ArithDialect,
                                    bufferization::BufferizationDialect, tensor::TensorDialect>();
 
@@ -54,9 +63,8 @@ namespace voila::mlir
             // Now that the conversion target has been defined, we just need to provide
             // the set of patterns that will lower the Toy operations.
             RewritePatternSet patterns(&getContext());
-            patterns.add<SelectOpLowering, ReadOpLowering,
-                         ScatterOpLowering, LoopOpLowering, InsertOpLowering, SumOpLowering, CountOpLowering,
-                         MinOpLowering, MaxOpLowering, AvgOpLowering>(&getContext());
+            patterns.add<SelectOpLowering, ReadOpLowering, ScatterOpLowering, LoopOpLowering, InsertOpLowering,
+                         SumOpLowering, CountOpLowering, MinOpLowering, MaxOpLowering, AvgOpLowering>(&getContext());
             patterns.add<AndOpLowering, OrOpLowering, AddOpLowering, SubOpLowering, MulOpLowering, DivOpLowering,
                          ModOpLowering, EqOpLowering, NeqOpLowering, LeOpLowering, LeqOpLowering, GeOpLowering,
                          GeqOpLowering>(&getContext());
@@ -80,8 +88,5 @@ namespace voila::mlir
         }
     } // namespace lowering
 
-    std::unique_ptr<Pass> createLowerToAffinePass()
-    {
-        return std::make_unique<lowering::VoilaToAffineLoweringPass>();
-    }
+    std::unique_ptr<Pass> createLowerToAffinePass() { return std::make_unique<lowering::VoilaToAffineLoweringPass>(); }
 } // namespace voila::mlir

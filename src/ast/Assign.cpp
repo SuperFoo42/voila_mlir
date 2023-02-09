@@ -1,5 +1,15 @@
 #include "ast/Assign.hpp"
-#include "range/v3/all.hpp"
+#include <cassert>                           // for assert
+#include <stdexcept>                         // for invalid_argument
+#include <utility>                           // for move
+#include "ast/ASTVisitor.hpp"                // for ASTVisitor
+#include "ast/Expression.hpp"                // for Expression
+#include "ast/IStatement.hpp"                // for IStatement
+#include "ast/Statement.hpp"                 // for Statement
+#include "range/v3/algorithm/all_of.hpp"     // for all_of, all_of_fn
+#include "range/v3/algorithm/transform.hpp"  // for transform, transform_fn
+#include "range/v3/functional/identity.hpp"  // for identity
+
 namespace voila::ast {
     Assign::Assign(Location loc, std::vector<Expression> dests, Statement expr) :
             IStatement(loc), pred{std::nullopt}, mDdests{std::move(dests)}, mExpr{std::move(expr)} {

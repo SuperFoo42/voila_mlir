@@ -1,9 +1,17 @@
 #pragma once
 
-#include "Const.hpp"
-#include "ast/ASTVisitor.hpp"
+#include <cstdint>              // for intmax_t
+#include <iosfwd>               // for ostream
+#include <memory>               // for shared_ptr
+#include <string>               // for string
+#include "Const.hpp"            // for Const
+#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h"  // for DenseMap
 
 namespace voila::ast {
+
+    class ASTVisitor;
+
     class IntConst : public Const {
 
     public:

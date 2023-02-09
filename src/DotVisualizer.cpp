@@ -1,5 +1,47 @@
 #include "DotVisualizer.hpp"
-#include "llvm/Support/FormatVariadic.h"
+#include <vector>                         // for vector
+#include "ast/Add.hpp"                    // for Add
+#include "ast/AggrAvg.hpp"                // for AggrAvg
+#include "ast/AggrCnt.hpp"                // for AggrCnt
+#include "ast/AggrMax.hpp"                // for AggrMax
+#include "ast/AggrMin.hpp"                // for AggrMin
+#include "ast/AggrSum.hpp"                // for AggrSum
+#include "ast/And.hpp"                    // for And
+#include "ast/Assign.hpp"                 // for Assign
+#include "ast/BooleanConst.hpp"           // for BooleanConst
+#include "ast/Div.hpp"                    // for Div
+#include "ast/Emit.hpp"                   // for Emit
+#include "ast/Eq.hpp"                     // for Eq
+#include "ast/Expression.hpp"             // for Expression
+#include "ast/FltConst.hpp"               // for FltConst
+#include "ast/Fun.hpp"                    // for Fun
+#include "ast/FunctionCall.hpp"           // for FunctionCall
+#include "ast/Gather.hpp"                 // for Gather
+#include "ast/Ge.hpp"                     // for Ge
+#include "ast/Geq.hpp"                    // for Geq
+#include "ast/IntConst.hpp"               // for IntConst
+#include "ast/Le.hpp"                     // for Le
+#include "ast/Leq.hpp"                    // for Leq
+#include "ast/Loop.hpp"                   // for Loop
+#include "ast/Main.hpp"                   // for Main
+#include "ast/Mod.hpp"                    // for Mod
+#include "ast/Mul.hpp"                    // for Mul
+#include "ast/Neq.hpp"                    // for Neq
+#include "ast/Not.hpp"                    // for Not
+#include "ast/Or.hpp"                     // for Or
+#include "ast/Read.hpp"                   // for Read
+#include "ast/Ref.hpp"                    // for Ref
+#include "ast/Scatter.hpp"                // for Scatter
+#include "ast/Selection.hpp"              // for Selection
+#include "ast/Statement.hpp"              // for Statement
+#include "ast/StatementWrapper.hpp"       // for StatementWrapper
+#include "ast/StrConst.hpp"               // for StrConst
+#include "ast/Sub.hpp"                    // for Sub
+#include "ast/TupleCreate.hpp"            // for TupleCreate
+#include "ast/TupleGet.hpp"               // for TupleGet
+#include "ast/Variable.hpp"               // for Variable
+#include "ast/Write.hpp"                  // for Write
+#include "llvm/Support/FormatVariadic.h"  // for formatv, formatv_object
 
 namespace voila::ast
 {

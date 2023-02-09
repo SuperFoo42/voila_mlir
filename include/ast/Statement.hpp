@@ -1,14 +1,22 @@
 #pragma once
-#include "IStatement.hpp"
-
-#include <algorithm>
-#include <concepts>
-#include <memory>
-#include <utility>
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <iosfwd>              // for ostream
+#include <memory>              // for shared_ptr, make_shared
+#include <optional>            // for optional
+#include <utility>             // for move, forward
 
 namespace voila::ast
 {
     class ASTVisitor;
+    class Assign;
+    class Emit;
+    class Expression;
+    class FunctionCall;
+    class IStatement;
+    class Loop;
+    class StatementWrapper;
+    class Write;
 
     class Statement
     {
@@ -23,8 +31,8 @@ namespace voila::ast
 
         Statement &operator=(const Statement &) = default;
 
-        template<typename StmtImpl, typename... Args>
-        requires std::is_base_of_v<IStatement, StmtImpl>
+        template <typename StmtImpl, typename... Args>
+            requires std::is_base_of_v<IStatement, StmtImpl>
         static Statement make(Args &&...args)
         {
             return Statement(std::make_shared<StmtImpl>(std::forward<Args>(args)...));
@@ -44,7 +52,6 @@ namespace voila::ast
 
         [[nodiscard]] bool is_write() const;
 
-
         // type conversions
         [[nodiscard]] IStatement *as_stmt() const;
 
@@ -59,7 +66,7 @@ namespace voila::ast
         [[nodiscard]] Write *as_write() const;
 
         [[nodiscard]] bool is_statement_wrapper() const;
-        [[nodiscard]] StatementWrapper * as_statement_wrapper() const;
+        [[nodiscard]] StatementWrapper *as_statement_wrapper() const;
 
         [[nodiscard]] std::optional<Expression> as_expression() const;
 

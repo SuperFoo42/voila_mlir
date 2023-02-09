@@ -1,9 +1,14 @@
 #pragma once
 
-#include "mlir/Pass/Pass.h"
 #include <memory>
 
-namespace voila::mlir {
+namespace mlir
+{
+    class Pass;
+}
+
+namespace voila::mlir
+{
     /**
      * Create a pass for lowering operations the remaining `Voila` operations, as
      * well as `Affine` and `Std`, to the LLVM dialect for codegen.

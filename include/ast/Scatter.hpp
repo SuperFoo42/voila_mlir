@@ -1,13 +1,16 @@
 #pragma once
-#include "Expression.hpp"
-#include "IStatement.hpp"
-
-#include <utility>
-#include <vector>
-#include "ASTVisitor.hpp"
+#include "Expression.hpp"      // for Expression
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "ast/IExpression.hpp" // for IExpression
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <iosfwd>              // for ostream
+#include <memory>              // for shared_ptr
+#include <string>              // for string
 
 namespace voila::ast
 {
+    class ASTVisitor;
+
     class Scatter : public IExpression
     {
         Expression mIdxs;
@@ -27,14 +30,9 @@ namespace voila::ast
 
         std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        const Expression &idxs() const
-        {
-            return mIdxs;
-        }
+        const Expression &idxs() const { return mIdxs; }
 
-        const Expression &src() const {
-            return mSrc;
-        }
+        const Expression &src() const { return mSrc; }
     };
 
 } // namespace voila::ast

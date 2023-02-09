@@ -1,4 +1,6 @@
 #include "ast/StrConst.hpp"
+#include <ostream>             // for operator<<, basic_ostream, ostream
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
 
 namespace voila::ast
 {

@@ -1,11 +1,36 @@
 #include "mlir/Dialects/Voila/lowering/NotOpLowering.hpp"
-
-#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Bufferization/IR/AllocationOpInterface.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
+#include "mlir/IR/Location.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/TypeRange.h"
+#include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"      // for Value
+#include "mlir/IR/ValueRange.h" // for ValueRange
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/STLForwardCompat.h"
+#include "llvm/ADT/STLFunctionalExtras.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/ADT/iterator.h"
+#include <cassert>
+#include <cstdint>
+
+namespace mlir
+{
+    class MLIRContext;
+    class OpBuilder;
+} // namespace mlir
+
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -25,7 +50,7 @@ namespace voila::mlir::lowering
 
     /// Insert an allocation and deallocation for the given MemRefType.
     static ::mlir::Value
-    insertAllocAndDealloc(MemRefType type, Value dynamicMemref, Location loc, ImplicitLocOpBuilder &builder)
+    insertAllocAndDealloc(MemRefType type, Value dynamicMemref, Location, ImplicitLocOpBuilder &builder)
     {
         // This has to be located before the loop and after participating ops
         memref::AllocOp alloc;
@@ -138,10 +163,6 @@ namespace voila::mlir::lowering
                     value = builder.create<ToMemrefOp>(
                         loc, convertTensorToMemRef(binaryAdaptor.getValue().getType().template dyn_cast<TensorType>()),
                         binaryAdaptor.getValue());
-                }
-                else if (binaryAdaptor.getValue().getType().template isa<MemRefType>())
-                {
-                    value = binaryAdaptor.getValue();
                 }
                 else
                 {

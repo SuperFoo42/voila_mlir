@@ -1,19 +1,19 @@
 #pragma once
-#include "ASTVisitor.hpp"
-#include "Expression.hpp"
-#include "IStatement.hpp"
-#include "Predicate.hpp"
-#include "Statement.hpp"
-
-#include <ast/Statement.hpp>
-#include <cassert>
-#include <optional>
-#include <range/v3/all.hpp>
-#include <utility>
-#include <vector>
+#include "Expression.hpp"      // for Expression
+#include "IStatement.hpp"      // for IStatement
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <ast/Statement.hpp>   // for Statement
+#include <iosfwd>              // for ostream
+#include <memory>              // for shared_ptr
+#include <optional>            // for optional
+#include <string>              // for string
+#include <vector>              // for vector
 
 namespace voila::ast
 {
+    class ASTVisitor;
+
     class Assign : public IStatement
     {
         std::optional<Expression> pred;
@@ -39,13 +39,9 @@ namespace voila::ast
 
         std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        const std::vector<Expression>& dests() const {
-            return mDdests;
-        }
+        const std::vector<Expression> &dests() const { return mDdests; }
 
-        const Statement &expr() const {
-            return mExpr;
-        };
+        const Statement &expr() const { return mExpr; };
     };
 
 } // namespace voila::ast

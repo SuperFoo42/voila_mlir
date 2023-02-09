@@ -23,7 +23,7 @@ def AnyVoilaTypeLike : TypeConstraint<Or<[
 "any valid type in Voila">;
 
 
-def IntConstOp : Voila_Op<"integer constant", [NoSideEffect]> {
+def IntConstOp : Voila_Op<"integer constant", []> {
   // Provide a summary and description for this operation. This can be used to
   // auto-generate documentation of the operations within our dialect.
   let summary = "integer constant";
@@ -52,7 +52,7 @@ OpBuilder<(ins "long":$value), [{
   //let verifier = [{ return ::verify(*this); }];
 }
 
-def FltConstOp : Voila_Op<"float constant", [NoSideEffect]> {
+def FltConstOp : Voila_Op<"float constant", []> {
   // Provide a summary and description for this operation. This can be used to
   // auto-generate documentation of the operations within our dialect.
   let summary = "float constant";
@@ -87,7 +87,7 @@ build($_builder, $_state, mlir::fpmath::DecimalType(), value);
   //let verifier = [{ return ::verify(*this); }];
 }
 
-def BoolConstOp : Voila_Op<"bool constant", [NoSideEffect]> {
+def BoolConstOp : Voila_Op<"bool constant", []> {
   // Provide a summary and description for this operation. This can be used to
   // auto-generate documentation of the operations within our dialect.
   let summary = "bool constant";
@@ -119,7 +119,7 @@ BoolConstOp::build($_builder, $_state, RankedTensorType::get({}, $_builder.getI1
 }
 
 //TODO: SameOperandsAndResultShape,Elementwise,Vectorizable
-def AddOp : Voila_Op<"add",[NoSideEffect, Commutative]> {
+def AddOp : Voila_Op<"add",[]> {
   let summary = "element-wise addition operation";
   let description = [{
     The "add" operation performs element-wise addition between two tensors.
@@ -133,7 +133,7 @@ let results = (outs AnyVoilaTypeLike);
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def SubOp : Voila_Op<"sub",[NoSideEffect]> {
+def SubOp : Voila_Op<"sub",[]> {
   let summary = "element-wise subtraction operation";
   let description = [{
     The "sub" operation performs element-wise subtraction between two tensors.
@@ -148,7 +148,7 @@ let results = (outs AnyVoilaTypeLike);
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def MulOp : Voila_Op<"mul",[NoSideEffect, Commutative]> {
+def MulOp : Voila_Op<"mul",[]> {
   let summary = "element-wise multiplication operation";
   let description = [{
     The "mul" operation performs element-wise multiplication between two tensors.
@@ -163,7 +163,7 @@ let results = (outs AnyVoilaTypeLike);
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def DivOp : Voila_Op<"div",[NoSideEffect]> {
+def DivOp : Voila_Op<"div",[]> {
   let summary = "element-wise division operation";
   let description = [{
     The "div" operation performs element-wise division between two tensors.
@@ -178,7 +178,7 @@ let results = (outs AnyVoilaTypeLike);
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def ModOp : Voila_Op<"mod",[NoSideEffect,SameOperandsShape]> {
+def ModOp : Voila_Op<"mod",[SameOperandsShape]> {
   let summary = "element-wise modulo operation";
   let description = [{
     The "mod" operation performs element-wise modulo between two tensors.
@@ -193,7 +193,7 @@ let results = (outs AnyVoilaTypeLike);
  // let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def AndOp : Voila_Op<"and",[NoSideEffect,Commutative]> {
+def AndOp : Voila_Op<"and",[Commutative]> {
   let summary = "element-wise and operation";
   let description = [{
     The "and" operation performs element-wise and between two tensors.
@@ -210,7 +210,7 @@ def AndOp : Voila_Op<"and",[NoSideEffect,Commutative]> {
   //TODO: verifier checking same shape
 }
 
-def OrOp : Voila_Op<"or",[NoSideEffect,Commutative]> {
+def OrOp : Voila_Op<"or",[Commutative]> {
   let summary = "element-wise or operation";
   let description = [{
     The "or" operation performs element-wise or between two tensors.
@@ -225,7 +225,7 @@ def OrOp : Voila_Op<"or",[NoSideEffect,Commutative]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def NotOp : Voila_Op<"not",[NoSideEffect,SameOperandsAndResultShape]> {
+def NotOp : Voila_Op<"not",[SameOperandsAndResultShape]> {
 let summary = "element-wise not operation";
 let description = [{
 The "not" operation performs element-wise not on a tensor.
@@ -240,7 +240,7 @@ let results = (outs BoolLike);
 }
 
 
-def EqOp : Voila_Op<"eq",[NoSideEffect]> {
+def EqOp : Voila_Op<"eq",[]> {
   let summary = "element-wise equality comparison operation";
   let description = [{
     The "eq" operation performs element-wise equality comparison between two tensors.
@@ -255,7 +255,7 @@ def EqOp : Voila_Op<"eq",[NoSideEffect]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def NeqOp : Voila_Op<"neq",[NoSideEffect]> {
+def NeqOp : Voila_Op<"neq",[]> {
   let summary = "element-wise inequality comparison operation";
   let description = [{
     The "neq" operation performs element-wise inequality comparison between two tensors.
@@ -270,7 +270,7 @@ def NeqOp : Voila_Op<"neq",[NoSideEffect]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def LeOp : Voila_Op<"le",[NoSideEffect]> {
+def LeOp : Voila_Op<"le",[]> {
   let summary = "element-wise less comparison operation";
   let description = [{
     The "le" operation performs element-wise less comparison between two tensors.
@@ -285,7 +285,7 @@ def LeOp : Voila_Op<"le",[NoSideEffect]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def LeqOp : Voila_Op<"leq",[NoSideEffect]> {
+def LeqOp : Voila_Op<"leq",[]> {
   let summary = "element-wise less-equal comparison operation";
   let description = [{
     The "leq" operation performs element-wise less-equal comparison between two tensors.
@@ -300,7 +300,7 @@ def LeqOp : Voila_Op<"leq",[NoSideEffect]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def GeOp : Voila_Op<"ge",[NoSideEffect]> {
+def GeOp : Voila_Op<"ge",[]> {
   let summary = "element-wise greater comparison operation";
   let description = [{
     The "ge" operation performs element-wise greater comparison between two tensors.
@@ -315,7 +315,7 @@ def GeOp : Voila_Op<"ge",[NoSideEffect]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def GeqOp : Voila_Op<"geq",[NoSideEffect]> {
+def GeqOp : Voila_Op<"geq",[]> {
   let summary = "element-wise greater-equal comparison operation";
   let description = [{
     The "geq" operation performs element-wise greater-equal comparison between two tensors.
@@ -330,7 +330,7 @@ def GeqOp : Voila_Op<"geq",[NoSideEffect]> {
   //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def ReadOp : Voila_Op<"read",[NoSideEffect,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def ReadOp : Voila_Op<"read",[DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "read elements from column";
 let description = [{
 The "read" operation loads data from "column" starting at "index".
@@ -345,7 +345,7 @@ let results = (outs AnyVoilaTypeLike);
 //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def GatherOp : Voila_Op<"gather",[NoSideEffect,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def GatherOp : Voila_Op<"gather",[DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "read elements from column";
 let description = [{
 The "gather" operation loads data from "column" at "indices".
@@ -361,7 +361,7 @@ let results = (outs AnyVoilaTypeLike);
 }
 
 //TODO
-def WriteOp : Voila_Op<"write",[NoSideEffect,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def WriteOp : Voila_Op<"write",[DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "write elements to column";
 let description = [{
 The "write" operation writes data from "src" to "dest" starting from "start_idx".
@@ -377,7 +377,7 @@ let results = (outs AnyVoilaTypeLike);
 }
 
 //TODO
-def ScatterOp : Voila_Op<"scatter",[NoSideEffect,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def ScatterOp : Voila_Op<"scatter",[DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "scatter elements to column";
 let description = [{
 The "scatter" operation writes data at "idxs" from "src" from to "dest".
@@ -392,7 +392,7 @@ let results = (outs AnyVoilaTypeLike);
 //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def SelectOp : Voila_Op<"select",[NoSideEffect]> {
+def SelectOp : Voila_Op<"select",[]> {
 let summary = "filter elements where pred matches";
 let description = [{
 The "select" operation returns the "values" where "pred" is true.
@@ -406,7 +406,7 @@ let results = (outs AnyVoilaTypeLike);
 //let printer = [{ return ::printBinaryOp(p, *this); }];
 }
 
-def EmitOp : Voila_Op<"emit", [NoSideEffect,HasParent<"::mlir::func::FuncOp">,
+def EmitOp : Voila_Op<"emit", [HasParent<"::mlir::func::FuncOp">,
                                  Terminator]> {
   let summary = "emit operation";
   let description = [{
@@ -424,7 +424,7 @@ bool hasOperand() { return getNumOperands() != 0; }
 }];
 
 let builders = [
-OpBuilder<(ins), [{ build($_builder, $_state, llvm::None); }]>
+OpBuilder<(ins), [{ build($_builder, $_state, std::nullopt); }]>
 ];
 /*
   // Allow building a ReturnOp with no return operand.
@@ -454,7 +454,7 @@ def GenericCallOp : Voila_Op<"generic_call", [DeclareOpInterfaceMethods<CallOpIn
 let builders = [
 OpBuilder<(ins "StringRef":$callee, "ArrayRef<Value>":$arguments), [{
     // Generic call always returns nothing initially
-    $_state.addTypes(llvm::None);
+    $_state.addTypes(std::nullopt);
     $_state.addOperands(arguments);
     $_state.addAttribute("callee", mlir::SymbolRefAttr::get($_builder.getContext(), callee));
 }]>,
@@ -480,7 +480,6 @@ let regions = (region AnyRegion:$body);
 
 def CastOp : Voila_Op<"cast", [
 DeclareOpInterfaceMethods<CastOpInterface>,
-NoSideEffect,
 SameOperandsAndResultShape]
 > {
 let summary = "shape cast operation";
@@ -497,7 +496,7 @@ let results = (outs AnyVoilaTypeLike:$output);
 }
 
 /* TODO: ops aggregations*/
-def MaxOp : Voila_Op<"aggr_max", [NoSideEffect,AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def MaxOp : Voila_Op<"aggr_max", [AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "maximum value reduction operation";
 let description = [{
 //TODO
@@ -517,7 +516,7 @@ let skipDefaultBuilders = 1;
   ];
 }
 
-def MinOp : Voila_Op<"aggr_min", [NoSideEffect,AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def MinOp : Voila_Op<"aggr_min", [AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "minimum value reduction operation";
 let description = [{
 //TODO
@@ -537,7 +536,7 @@ let skipDefaultBuilders = 1;
   ];
 }
 
-def SumOp : Voila_Op<"aggr_sum", [NoSideEffect,AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def SumOp : Voila_Op<"aggr_sum", [AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "sum value reduction operation";
 let description = [{
 //TODO
@@ -557,7 +556,7 @@ let skipDefaultBuilders = 1;
   ];
 }
 
-def CountOp : Voila_Op<"aggr_count", [NoSideEffect,AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def CountOp : Voila_Op<"aggr_count", [AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "sum value reduction operation";
 let description = [{
 //TODO
@@ -575,7 +574,7 @@ let skipDefaultBuilders = 1;
   ];
 }
 
-def AvgOp : Voila_Op<"aggr_avg", [NoSideEffect,AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def AvgOp : Voila_Op<"aggr_avg", [AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "sum value reduction operation";
 let description = [{
 //TODO
@@ -594,7 +593,7 @@ let skipDefaultBuilders = 1;
   ];
 }
 
-def HashOp : Voila_Op<"hash", [NoSideEffect,AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def HashOp : Voila_Op<"hash", [AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "hash input values for use with hash tables";
 let description = [{
 //TODO
@@ -632,7 +631,7 @@ let skipDefaultBuilders = 1;
   ];
 }
 
-def LookupOp : Voila_Op<"lookup", [NoSideEffect,AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
+def LookupOp : Voila_Op<"lookup", [AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "lookup index of hash values";
 let description = [{
 This is a convenience function, basically consisting of hashing and gather + linear probing for collision resolution

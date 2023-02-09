@@ -1,18 +1,24 @@
 #pragma once
-#include "ASTVisitor.hpp"
-#include "Expression.hpp"
-
-#include <utility>
+#include "Expression.hpp"      // for Expression
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "ast/IExpression.hpp" // for IExpression
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <iosfwd>              // for ostream
+#include <memory>              // for shared_ptr
+#include <string>              // for string
+#include <utility>             // for move
 
 namespace voila::ast
 {
+    class ASTVisitor;
+
     class Gather : public IExpression
     {
         Expression mColumn, mIdxs;
 
       public:
-        Gather(const Location loc, Expression lhs, Expression rhs) :
-            IExpression(loc), mColumn{std::move(lhs)}, mIdxs{std::move(rhs)}
+        Gather(const Location loc, Expression lhs, Expression rhs)
+            : IExpression(loc), mColumn{std::move(lhs)}, mIdxs{std::move(rhs)}
         {
             // TODO
         }
@@ -28,12 +34,8 @@ namespace voila::ast
 
         std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        const Expression &column() const {
-            return mColumn;
-        }
+        const Expression &column() const { return mColumn; }
 
-        const Expression &idxs() const {
-            return mIdxs;
-        }
+        const Expression &idxs() const { return mIdxs; }
     };
 } // namespace voila::ast

@@ -1,20 +1,19 @@
 #pragma once
 
-#include <magic_enum.hpp>
-#include <string>
-#include <thread>
-namespace cxxopts
-{
-    class ParseResult;
-}
+#include <algorithm> // for max
+#include <cstdint>   // for int32_t, int64_t
+#include <iosfwd>    // for ostream
+#include <string>    // for string, allocator
+#include <thread>    // for thread
 
 namespace voila
 {
-    class Program;
     class Config
     {
         friend std::ostream &operator<<(std::ostream &o, const Config &c);
+
         friend class Program;
+
         bool _debug : 1;
         bool _optimize : 1;
         bool _fuse : 1;
@@ -72,32 +71,59 @@ namespace voila
                         std::string mlirLoweredOutFile = "",
                         std::string llvmOutFile = "",
                         std::string ObjectFile = "");
+
         Config &debug(bool flag = true);
+
         Config &optimize(bool flag = true);
+
         Config &fuse(bool flag = true);
+
         Config &tile(bool flag = true);
+
         Config &optimize_selections(bool flag = true);
+
         Config &vectorize(bool flag = true);
+
         Config &vectorize_reductions(bool flag = true);
+
         Config &parallelize(bool flag = true);
+
         Config &parallelize_reductions(bool flag = true);
+
         Config &profile(bool flag = true);
+
         Config &plot_ast(bool flag = true);
+
         Config &print_mlir(bool flag = true);
+
         Config &print_lowered_mlir(bool flag = true);
+
         Config &print_llvm(bool flag = true);
+
         Config &tile_size(int64_t tileSize = -1);
+
         Config &vector_size(int32_t vectorSize = 8);
+
         Config &parallel_threads(int32_t parallelThreads = std::thread::hardware_concurrency());
+
         Config &unroll_factor(int32_t unrollFactor = 1);
+
         Config &ht_size_factor(int32_t htSizeFactor = -1);
+
         Config &ast_out_file(const std::string &astOutFile);
+
         Config &mlir_out_file(std::string mlirOutFile);
+
         Config &mlir_lowered_out_file(std::string mlirLoweredOutFile);
+
         Config &llvm_out_file(std::string llvmOutFile);
+
         Config &object_out_file(std::string objectOutFile);
+
         Config &gpu_parallel(bool flag = true);
+
         Config &async_parallel(bool flag = true);
+
         Config &openmp_parallel(bool flag = true);
     };
 

@@ -1,5 +1,12 @@
 #include "mlir/Dialects/Voila/Passes/LinalgTiledLoopsToAffineForPass.hpp"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"              // for linalg
+#include "mlir/Dialect/SCF/Utils/Utils.h"               // for func
+#include "mlir/IR/DialectRegistry.h"                    // for DialectRegi...
+#include "mlir/IR/PatternMatch.h"                       // for RewritePatt...
+#include "mlir/Transforms/GreedyPatternRewriteDriver.h" // for applyPatter...
+#include <utility>                                      // for move
+
 namespace voila::mlir
 {
     using namespace ::mlir;
@@ -14,8 +21,8 @@ namespace voila::mlir
         void LinalgTiledLoopsToAffineForPass::runOnOperation()
         {
             RewritePatternSet patterns(&getContext());
-            //populateLinalgTiledLoopsToAffineForPatterns(patterns);
-            (void) applyPatternsAndFoldGreedily(getOperation(), std::move(patterns));
+            // populateLinalgTiledLoopsToAffineForPatterns(patterns);
+            (void)applyPatternsAndFoldGreedily(getOperation(), std::move(patterns));
         }
 
         ::mlir::StringRef LinalgTiledLoopsToAffineForPass::getDescription() const

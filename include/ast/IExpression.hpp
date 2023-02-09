@@ -1,8 +1,6 @@
 #pragma once
 
 #include "ASTNode.hpp"
-#include "PredicationUnsupportedException.hpp"
-
 #include <optional>
 
 namespace voila::ast

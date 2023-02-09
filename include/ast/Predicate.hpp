@@ -1,10 +1,15 @@
 #pragma once
-#include "IExpression.hpp"
-#include "ASTVisitor.hpp"
-#include "Expression.hpp"
+#include "Expression.hpp"      // for Expression
+#include "IExpression.hpp"     // for IExpression
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <iosfwd>              // for ostream
+#include <memory>              // for shared_ptr
+#include <string>              // for string
 
 namespace voila::ast
 {
+    class ASTVisitor;
 
     /**
      * @brief Meta node to wrap expressions into predicates
@@ -21,7 +26,7 @@ namespace voila::ast
 
         [[nodiscard]] bool is_predicate() const final;
 
-        Predicate * as_predicate() final;
+        Predicate *as_predicate() final;
 
         void print(std::ostream &ostream) const final;
 
@@ -30,9 +35,7 @@ namespace voila::ast
 
         std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
 
-        const Expression &expr() const {
-            return mExpr;
-        }
+        [[nodiscard]] const Expression &expr() const { return mExpr; }
     };
 
 } // namespace voila::ast

@@ -1,8 +1,27 @@
-#include "Config.hpp"
-#include "ParsingError.hpp"
-#include "Program.hpp"
-
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
+#include <llvm/Support/CommandLine.h>                    // for opt, desc
+#include <mlir/IR/MLIRContext.h>                         // for registerMLIR...
+#include <mlir/InitAllDialects.h>                        // for registerAllD...
+#include <mlir/InitAllPasses.h>                          // for registerAllP...
+#include <charconv>                                      // for from_chars
+#include <cstdlib>                                       // for size_t, EXIT...
+#include <filesystem>                                    // for is_regular_file
+#include <magic_enum.hpp>                                // for enum_cast
+#include <optional>                                      // for optional
+#include <stdexcept>                                     // for invalid_argu...
+#include <string>                                        // for string, oper...
+#include <system_error>                                  // for errc
+#include <vector>                                        // for vector
+#include "Program.hpp"                                   // for Program, mak...
+#include "Types.hpp"                                     // for Arity, DataT...
+#include "llvm/ADT/SmallVector.h"                        // for SmallVector
+#include "llvm/ADT/StringRef.h"                          // for StringRef
+#include "mlir/Dialects/Voila/IR/VoilaOpsDialect.h.inc"  // for VoilaDialect
+#include "mlir/IR/DialectRegistry.h"                     // for DialectRegistry
+#pragma GCC diagnostic pop
+/*#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
 
@@ -14,12 +33,13 @@
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/SourceMgr.h>
+#include <magic_enum.hpp>
 
 #pragma GCC diagnostic pop
 
 #include <cstdlib>
 #include <filesystem>
-#include <charconv>
+#include <charconv>*/
 
 namespace cl = llvm::cl;
 

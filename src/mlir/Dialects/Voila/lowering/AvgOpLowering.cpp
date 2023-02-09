@@ -1,10 +1,32 @@
 #include "mlir/Dialects/Voila/lowering/AvgOpLowering.hpp"
-
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/IR/TypeUtilities.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/Dialects/Voila/Interfaces/PredicationOpInterface.hpp"
+#include "mlir/IR/AffineMap.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
+#include "mlir/IR/Location.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/TypeRange.h"
+#include "mlir/IR/TypeUtilities.h"
+#include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/Support/Casting.h"
+#include <cassert>
+
+namespace mlir
+{
+    class MLIRContext;
+    class OpBuilder;
+} // namespace mlir
 
 namespace voila::mlir::lowering
 {
@@ -20,17 +42,15 @@ namespace voila::mlir::lowering
         if (tensor.getType().dyn_cast<TensorType>().hasStaticShape())
         {
             res = builder.create<tensor::EmptyOp>(tensor.getType().dyn_cast<TensorType>().getShape(),
-                                                       builder.getF64Type());
+                                                  builder.getF64Type());
         }
         else
         {
             Value dimSize = builder.create<::mlir::tensor::DimOp>(tensor, 0);
-            res = builder.create<tensor::EmptyOp>( llvm::makeArrayRef<int64_t>(-1), builder.getF64Type(),dimSize);
+            res = builder.create<tensor::EmptyOp>(-1, builder.getF64Type(), dimSize);
         }
 
         SmallVector<Type, 1> res_type(1, res.getType());
-
-        SmallVector<StringRef, 1> iter_type(1, getParallelIteratorTypeName());
 
         auto fn = [](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
         {
@@ -44,7 +64,7 @@ namespace voila::mlir::lowering
         auto linalgOp = builder.create<linalg::GenericOp>(/*results*/ res_type,
                                                           /*inputs*/ tensor, /*outputs*/ res,
                                                           /*indexing maps*/ maps,
-                                                          /*iterator types*/ iter_type, fn);
+                                                          /*iterator types*/ utils::IteratorType::parallel, fn);
         return linalgOp.getResult(0);
     }
 
@@ -88,10 +108,10 @@ namespace voila::mlir::lowering
         }
         else
         {
-            auto sum = builder.create<SumOp>(getElementTypeOrSelf(adaptor.getInput()), adaptor.getInput(), adaptor.getIndices(),
-                                             adaptor.getPred());
-            auto count =
-                builder.create<CountOp>(builder.getI64Type(), adaptor.getInput(), adaptor.getIndices(), adaptor.getPred());
+            auto sum = builder.create<SumOp>(getElementTypeOrSelf(adaptor.getInput()), adaptor.getInput(),
+                                             adaptor.getIndices(), adaptor.getPred());
+            auto count = builder.create<CountOp>(builder.getI64Type(), adaptor.getInput(), adaptor.getIndices(),
+                                                 adaptor.getPred());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())

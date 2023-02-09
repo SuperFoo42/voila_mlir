@@ -1,13 +1,20 @@
 #pragma once
-#include "Arithmetic.hpp"
-#include "Expression.hpp"
-#include "ASTVisitor.hpp"
+#include "Arithmetic.hpp"      // for Arithmetic
+#include "Expression.hpp"      // for Expression
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <memory>              // for shared_ptr
+#include <string>              // for string
+#include <utility>             // for move
+
 namespace voila::ast
 {
+    class ASTVisitor;
+
     class Div : public Arithmetic
     {
       public:
-        Div(const Location loc, Expression lhs, Expression rhs) : Arithmetic(loc, std::move(lhs),std::move(rhs))
+        Div(const Location loc, Expression lhs, Expression rhs) : Arithmetic(loc, std::move(lhs), std::move(rhs))
         {
             // TODO
         }

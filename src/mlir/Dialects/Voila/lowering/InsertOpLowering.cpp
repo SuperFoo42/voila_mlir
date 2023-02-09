@@ -1,15 +1,47 @@
 #include "mlir/Dialects/Voila/lowering/InsertOpLowering.hpp"
-
 #include "NotImplementedException.hpp"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Bufferization/IR/AllocationOpInterface.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
-
+#include "mlir/IR/Block.h"
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
+#include "mlir/IR/Location.h"
+#include "mlir/IR/OpDefinition.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/TypeUtilities.h"
+#include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
+#include "mlir/Support/LLVM.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/STLForwardCompat.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/ADT/iterator.h"
+#include "llvm/Support/Casting.h"
+#include <cassert>
 #include <bit>
+#include <limits>
+#include <cstddef>
+#include <cstdint>
+#include <tuple>
+#include <utility>
+
+
+namespace mlir
+{
+    class MLIRContext;
+}
 
 namespace voila::mlir::lowering
 {
@@ -196,7 +228,7 @@ namespace voila::mlir::lowering
             SmallVector<Type, 1> resTypes;
             resTypes.push_back(hashIdx.getType());
             // probing
-            auto loop = builder.create<::mlir::scf::WhileOp>(resTypes, llvm::makeArrayRef(correctedHashIdx));
+            auto loop = builder.create<::mlir::scf::WhileOp>(resTypes, correctedHashIdx);
 
             // condition block
             auto beforeBlock = builder.createBlock(&loop.getBefore());

@@ -1,19 +1,18 @@
 #pragma once
 
 #include "ASTNode.hpp"
-#include "Expression.hpp"
 
 #include <optional>
 
 namespace voila::ast
 {
+    class Expression;
     class Write;
     class FunctionCall;
     class Assign;
     class Emit;
     class Loop;
     class StatementWrapper;
-    class Predicate;
 
     class IStatement : public ASTNode
     {

@@ -1,14 +1,38 @@
 #include "mlir/Dialects/Voila/lowering/LookupOpLowering.hpp"
-
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 #include "NotImplementedException.hpp"
+#include "llvm/ADT/PointerUnion.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/STLForwardCompat.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/ADT/iterator.h"
+#include "llvm/Support/Casting.h"
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Bufferization/IR/AllocationOpInterface.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/Arith/IR/Arith.h"
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/IR/AffineMap.h"
+#include "mlir/IR/Block.h"
+#include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
+#include "mlir/IR/Location.h"
+#include "mlir/IR/OpDefinition.h"
+#include "mlir/IR/Operation.h"
+#include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/TypeUtilities.h"
+#include "mlir/IR/Types.h"
+#include "mlir/IR/Value.h"
+#include "mlir/IR/ValueRange.h"
 
 namespace voila::mlir::lowering
 {
@@ -153,7 +177,7 @@ namespace voila::mlir::lowering
                 loc,
                 bodyBuilder.create<AddIOp>(loc, afterBlock->getArgument(0), builder.create<ConstantIndexOp>(loc, 1)),
                 modSize);
-            bodyBuilder.create<scf::YieldOp>(loc, llvm::makeArrayRef(inc));
+            bodyBuilder.create<scf::YieldOp>(loc, ArrayRef(inc));
             builder.setInsertionPointAfter(loop);
             // check index empty
 
@@ -181,11 +205,11 @@ namespace voila::mlir::lowering
                                 rewriter.getIndexType()),
                 lookupOpAdaptor.getHashes().getType().dyn_cast<TensorType>().hasStaticShape() ?
                     ValueRange() :
-                    llvm::makeArrayRef<Value>(rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.getHashes(), 0)));
+                    rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.getHashes(), 0).getResult());
             buildAffineLoopNest(
-                rewriter, loc, llvm::makeArrayRef<Value>(rewriter.create<ConstantIndexOp>(loc, 0)),
+                rewriter, loc,rewriter.create<ConstantIndexOp>(loc, 0).getResult(),
                 rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.getHashes(), 0).getResult(),
-                llvm::makeArrayRef<int64_t>(1),
+                ArrayRef<int64_t>(1),
                 [&](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
                 {
                     ImplicitLocOpBuilder builder(loc, nestedBuilder);
@@ -228,7 +252,7 @@ namespace voila::mlir::lowering
                                 bodyBuilder.create<AddIOp>(loc, afterBlock->getArgument(0),
                                                            nb.create<ConstantIndexOp>(loc, 1)),
                                 modSize);
-                            bodyBuilder.create<scf::YieldOp>(loc, llvm::makeArrayRef(inc));
+                            bodyBuilder.create<scf::YieldOp>(loc, ArrayRef(inc));
                             nb.setInsertionPointAfter(loop);
                             // check index empty
 
@@ -255,17 +279,16 @@ namespace voila::mlir::lowering
             Value outTensor = rewriter.create<tensor::EmptyOp>(loc,
                 lookupOpAdaptor.getHashes().getType().dyn_cast<TensorType>().getShape(), rewriter.getIndexType(),
                 lookupOpAdaptor.getHashes().getType().dyn_cast<TensorType>().hasStaticShape() ?
-                ValueRange() :
-                llvm::makeArrayRef<Value>(rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.getHashes(), 0)));
+                ValueRange() : rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.getHashes(), 0).getResult());
 
             llvm::SmallVector<AffineMap> indexing_maps(/*hashes+outTensor*/ 2 + lookupOpAdaptor.getValues().size(),
                                                        rewriter.getDimIdentityMap());
             auto linalgOp = rewriter.create<linalg::GenericOp>(
-                loc, /*results*/ llvm::makeArrayRef(outTensor.getType()),
+                loc, /*results*/ outTensor.getType(),
                 /*inputs*/ inputs,
-                /*outputs*/ llvm::makeArrayRef(outTensor),
+                /*outputs*/ outTensor,
                 /*indexing maps*/ indexing_maps,
-                /*iterator types*/ llvm::makeArrayRef(getParallelIteratorTypeName()), lookupFunc);
+                /*iterator types*/ utils::IteratorType::parallel, lookupFunc);
             rewriter.replaceOp(op, linalgOp->getResults());
         }
 

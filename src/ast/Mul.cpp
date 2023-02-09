@@ -1,4 +1,5 @@
 #include "ast/Mul.hpp"
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
 
 namespace voila::ast
 {

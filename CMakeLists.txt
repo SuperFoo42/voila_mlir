@@ -9,14 +9,14 @@ project(voila_mlir LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 
 #Enable sanitizers globally
-set(DEBUG_BUILD -O0 -g -Wno-ambiguous-reversed-operator -Wno-covered-switch-default)
-set(RELEASE_BUILD -O3 -g -march=native -mavx2 -Wno-ambiguous-reversed-operator -Wno-unused-function -Wno-covered-switch-default)
+set(DEBUG_BUILD -O0 -g -Wno-ambiguous-reversed-operator -Wno-covered-switch-default -Wno-unused-parameter)
+set(RELEASE_BUILD -O3 -g -march=native -mavx2 -Wno-ambiguous-reversed-operator -Wno-unused-function -Wno-covered-switch-default -Wno-unused-parameter)
 add_compile_options(
         "$<$<CONFIG:Debug>:${DEBUG_BUILD}>"
         "$<$<CONFIG:Release>:${RELEASE_BUILD}>")
 
-add_link_options(-fuse-ld=lld)
-#add_link_options("$<$<CONFIG:DEBUG>:-fsanitize=address>")
+add_link_options(-fuse-ld=mold)
+add_link_options("$<$<CONFIG:DEBUG>:-fsanitize=address>")
 
 include(cmake/CPM.cmake)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
@@ -52,7 +52,12 @@ CPMAddPackage(
 )
 #-DLLVM_ENABLE_LTO="${CMAKE_INTERPROCEDURAL_OPTIMIZATION}"  -DLLVM_PARALLEL_LINK_JOBS=2
 execute_process(
-        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -G ${CMAKE_GENERATOR} -DLLVM_PARALLEL_LINK_JOBS=1 -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True -DLLVM_ENABLE_LLD=True -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_CCACHE_BUILD=True -DLLVM_BUILD_TESTS=False -DLLVM_ENABLE_IDE=TRUE -DLLVM_OPTIMIZED_TABLEGEN=TRUE -DLLVM_USE_SPLIT_DWARF=True -DLLVM_INSTALL_UTILS=ON
+        COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+                -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+                -G ${CMAKE_GENERATOR} -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True
+                -DLLVM_USE_LINKER=mold -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_PARALLEL_LINK_JOBS=1
+                -DLLVM_CCACHE_BUILD=True -DLLVM_BUILD_TESTS=False -DLLVM_ENABLE_IDE=TRUE -DLLVM_OPTIMIZED_TABLEGEN=TRUE
+                -DLLVM_USE_SPLIT_DWARF=True -DLLVM_INSTALL_UTILS=ON
         WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
 )
 message(STATUS "build llvm")

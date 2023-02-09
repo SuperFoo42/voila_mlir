@@ -1,4 +1,5 @@
 #include "ast/Leq.hpp"
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
 
 namespace voila::ast {
     std::string Leq::type2string() const {

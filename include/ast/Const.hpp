@@ -1,5 +1,8 @@
 #pragma once
-#include "IExpression.hpp"
+#include <string>           // for string
+#include "IExpression.hpp"  // for IExpression
+#include "ast/ASTNode.hpp"  // for Location
+
 namespace voila::ast
 {
     class Const : public IExpression

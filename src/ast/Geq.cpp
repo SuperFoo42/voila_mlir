@@ -1,4 +1,5 @@
 #include "ast/Geq.hpp"
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
 
 namespace voila::ast
 {

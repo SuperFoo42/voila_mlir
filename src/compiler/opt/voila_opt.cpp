@@ -1,24 +1,14 @@
-#include "Config.hpp"
-#include "ParsingError.hpp"
-#include "Program.hpp"
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
-#include <mlir/IR/Dialect.h>
-#include <mlir/IR/MLIRContext.h>
-#include <mlir/InitAllDialects.h>
-#include <mlir/InitAllPasses.h>
-#include <mlir/Dialects/Voila/IR/VoilaDialect.h>
-#include <mlir/Tools/mlir-opt/MlirOptMain.h>
-#include <llvm/Support/CommandLine.h>
-#include <mlir/Support/FileUtilities.h>
-#include <llvm/Support/InitLLVM.h>
-#include <llvm/Support/SourceMgr.h>
-#include <llvm/Support/ToolOutputFile.h>
+#include <mlir/IR/MLIRContext.h>                         // for registerMLIR...
+#include <mlir/InitAllDialects.h>                        // for registerAllD...
+#include <mlir/InitAllPasses.h>                          // for registerAllP...
+#include <mlir/Tools/mlir-opt/MlirOptMain.h>             // for MlirOptMain
+#include "mlir/Dialects/Voila/IR/VoilaOpsDialect.h.inc"  // for VoilaDialect
+#include "mlir/IR/DialectRegistry.h"                     // for DialectRegistry
 #pragma GCC diagnostic pop
 
-#include <filesystem>
 
 //FIXME: this function is largely outdated
 int main(int argc, char *argv[])

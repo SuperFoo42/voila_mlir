@@ -1,23 +1,89 @@
 #pragma once
-#include "ASTNodes.hpp"
-#include "Program.hpp"
+#include "VariableAlreadyDeclaredException.hpp" // for VariableAlreadyDecla...
+#include "ast/ASTNode.hpp"                      // for ASTNode (ptr only)
+#include "ast/ASTVisitor.hpp"                   // for ASTVisitor
+#include "ast/Comparison.hpp"                   // for Comparison
+#include <cstdint>                              // for int64_t
+#include <memory>                               // for shared_ptr
+#include <mlir/IR/Builders.h>                   // for OpBuilder
+#include <variant>                              // for get, variant, monostate
+#include <vector>                               // for vector
 
-#include <NotInferedException.hpp>
-#include <variant>
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
-#include "VariableAlreadyDeclaredException.hpp"
-#include <llvm/ADT/ScopedHashTable.h>
-#include <llvm/Support/raw_ostream.h>
-#include <mlir/IR/Builders.h>
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/BuiltinOps.h"       // for IntegerType, TensorType
+#include "mlir/IR/BuiltinTypes.h"     // for IntegerType, TensorType
+#include "mlir/IR/Location.h"         // for Location
+#include "mlir/IR/Types.h"            // for Type
+#include "mlir/IR/Value.h"            // for Value
+#include "llvm/ADT/ArrayRef.h"        // for ArrayRef
+#include "llvm/ADT/SmallVector.h"     // for SmallVector
+#include "llvm/ADT/StringMap.h"       // for StringMap
+#include "llvm/ADT/StringRef.h"       // for StringRef, DenseMapInfo
+#include <llvm/ADT/ScopedHashTable.h> // for ScopedHashTable
+
 #pragma GCC diagnostic pop
 
-namespace mlir::func
+namespace mlir
 {
-    class FuncOp;
+    struct LogicalResult;
 }
+
+namespace voila
+{
+    class Type;
+    class TypeInferer;
+    namespace ast
+    {
+        class Add;
+        class AggrAvg;
+        class AggrCnt;
+        class AggrMax;
+        class AggrMin;
+        class AggrSum;
+        class And;
+        class Assign;
+        class BooleanConst;
+        class Div;
+        class Emit;
+        class Eq;
+        class Expression;
+        class FltConst;
+        class Fun;
+        class FunctionCall;
+        class Gather;
+        class Ge;
+        class Geq;
+        class Hash;
+        class Insert;
+        class IntConst;
+        class Le;
+        class Leq;
+        class Lookup;
+        class Loop;
+        class Main;
+        class Mod;
+        class Mul;
+        class Neq;
+        class Not;
+        class Or;
+        class Predicate;
+        class Read;
+        class Ref;
+        class Scatter;
+        class Selection;
+        class Statement;
+        class StatementWrapper;
+        class StrConst;
+        class Sub;
+        class TupleCreate;
+        class TupleGet;
+        class Variable;
+        class Write;
+    } // namespace ast
+} // namespace voila
 
 namespace voila::mlir
 {
@@ -49,7 +115,7 @@ namespace voila::mlir
         // TODO: is this correct?
         void declare(llvm::StringRef var, ::mlir::Value value)
         {
-            (void) module;
+            (void)module;
             if (symbolTable.count(var))
                 throw ast::VariableAlreadyDeclaredException();
             symbolTable.insert(var, value);
@@ -67,8 +133,7 @@ namespace voila::mlir
 
         static llvm::ArrayRef<int64_t> getShape(const ::mlir::Value &lhs, const ::mlir::Value &rhs);
 
-        template<class Op>
-        ::mlir::Value getCmpOp(const ast::Comparison &cmpNode)
+        template <class Op>::mlir::Value getCmpOp(const ast::Comparison &cmpNode)
         {
             auto location = loc(cmpNode.get_location());
             auto lhs = std::get<::mlir::Value>(visitor_gen(cmpNode.lhs()));
@@ -97,10 +162,7 @@ namespace voila::mlir
                           llvm::StringMap<::mlir::func::FuncOp> &funcTable,
                           const TypeInferer &inferer);
 
-        result_variant getValue()
-        {
-            return result;
-        }
+        result_variant getValue() { return result; }
 
         void operator()(const ast::AggrSum &sum) final;
         void operator()(const ast::AggrCnt &cnt) final;

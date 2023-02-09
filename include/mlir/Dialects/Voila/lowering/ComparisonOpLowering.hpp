@@ -3,6 +3,7 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "mlir/Dialects/Voila/IR/VoilaOps.h"
 
 namespace mlir::voila
 {

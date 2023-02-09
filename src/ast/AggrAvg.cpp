@@ -1,4 +1,5 @@
 #include "ast/AggrAvg.hpp"
+#include "ast/ASTVisitor.hpp"  // for ASTVisitor
 
 namespace voila::ast
 {

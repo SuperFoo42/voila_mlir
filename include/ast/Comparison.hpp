@@ -1,8 +1,13 @@
 #pragma once
-#include <utility>
+#include <iosfwd>               // for ostream
+#include <memory>               // for make_shared, shared_ptr
+#include <string>               // for string
+#include <utility>              // for move
+#include "Expression.hpp"       // for Expression
+#include "IExpression.hpp"      // for IExpression
+#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h"  // for DenseMap
 
-#include "IExpression.hpp"
-#include "Expression.hpp"
 namespace voila::ast
 {
     class Comparison : public IExpression

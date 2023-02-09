@@ -1,23 +1,28 @@
 #pragma once
 
-#include "mlir/Analysis/SliceAnalysis.h"
-#include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Linalg/IR/Linalg.h"
-#include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Pass/Pass.h"
-#include "mlir/Transforms/GreedyPatternRewriteDriver.h"
-#include "mlir/Dialect/Linalg/Transforms/Transforms.h"
-//#include "mlir/lowering/LinalgTiledLoopsToAffineForPattern.hpp"
+#include "mlir/Dialect/Func/IR/FuncOps.h" // for FuncOp
+#include "mlir/Pass/Pass.h"               // for OperationPass, Pass (ptr o...
+#include "mlir/Support/LLVM.h"            // for StringRef
+#include "llvm/ADT/StringRef.h"           // for operator==, StringRef
+#include <memory>                         // for unique_ptr
 
+namespace mlir
+{
+    class DialectRegistry;
+    namespace func
+    {
+        class FuncOp;
+    }
+} // namespace mlir
 
-namespace mlir::func {
-    class FuncOp;
-}
-namespace voila::mlir {
-    namespace lowering {
+namespace voila::mlir
+{
+    namespace lowering
+    {
         class LinalgTiledLoopsToAffineForPass
-                : public ::mlir::PassWrapper<LinalgTiledLoopsToAffineForPass, ::mlir::OperationPass<::mlir::func::FuncOp>> {
-        public:
+            : public ::mlir::PassWrapper<LinalgTiledLoopsToAffineForPass, ::mlir::OperationPass<::mlir::func::FuncOp>>
+        {
+          public:
             LinalgTiledLoopsToAffineForPass() = default;
 
             LinalgTiledLoopsToAffineForPass(const LinalgTiledLoopsToAffineForPass &pass) = default;
@@ -28,7 +33,7 @@ namespace voila::mlir {
 
             void runOnOperation() final;
         };
-    }
+    } // namespace lowering
 
     std::unique_ptr<::mlir::Pass> createConvertLinalgTiledLoopsToAffineForPass();
-}
+} // namespace voila::mlir
