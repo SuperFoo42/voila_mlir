@@ -17,16 +17,7 @@ namespace voila::ast
         ostream << "\"" << val << "\"";
     }
 
-    void StrConst::visit(ASTVisitor &visitor) const
-    {
-        visitor(*this);
-    }
-    void StrConst::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
-    }
-
-    std::shared_ptr<ASTNode> StrConst::clone(llvm::DenseMap<ASTNode *, ASTNode *> &) {
+    ASTNodeVariant StrConst::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &) {
         return std::make_shared<StrConst>(loc, val);
     }
 } // namespace voila::ast

@@ -1,67 +1,67 @@
 #include "ast/Assign.hpp"
-#include <cassert>                           // for assert
-#include <stdexcept>                         // for invalid_argument
-#include <utility>                           // for move
-#include "ast/ASTVisitor.hpp"                // for ASTVisitor
-#include "ast/Expression.hpp"                // for Expression
-#include "ast/IStatement.hpp"                // for IStatement
-#include "ast/Statement.hpp"                 // for Statement
-#include "range/v3/algorithm/all_of.hpp"     // for all_of, all_of_fn
-#include "range/v3/algorithm/transform.hpp"  // for transform, transform_fn
-#include "range/v3/functional/identity.hpp"  // for identity
+#include "ASTNodes.hpp"
+#include "ast/ASTNodeVariant.hpp"
+#include "ast/ASTVisitor.hpp"               // for ASTVisitor
+#include "ast/IStatement.hpp"               // for IStatement
+#include "range/v3/algorithm/all_of.hpp"    // for all_of, all_of_fn
+#include "range/v3/algorithm/transform.hpp" // for transform, transform_fn
+#include "range/v3/functional/identity.hpp" // for identity
+#include <cassert>                          // for assert
+#include <stdexcept>                        // for invalid_argument
+#include <utility>                          // for move
 
-namespace voila::ast {
-    Assign::Assign(Location loc, std::vector<Expression> dests, Statement expr) :
-            IStatement(loc), pred{std::nullopt}, mDdests{std::move(dests)}, mExpr{std::move(expr)} {
+namespace voila::ast
+{
+    Assign::Assign(Location loc, std::vector<ASTNodeVariant> dests, ASTNodeVariant expr)
+        : IStatement(loc), pred{}, mDdests{std::move(dests)}, mExpr{std::move(expr)}
+    {
         assert(ranges::all_of(this->mDdests,
-                              [](auto &dest) -> auto { return dest.is_variable() || dest.is_reference(); }));
+                              [](auto &dest) -> auto
+                              {
+                                  return std::visit(overloaded{[](auto) { return false; },
+                                                               [](const std::shared_ptr<Variable> &) { return true; },
+                                                               [](const std::shared_ptr<Ref> &) { return true; }},
+                                                    dest);
+                              }));
     }
 
-    Assign *Assign::as_assignment() {
-        return this;
+    Assign *Assign::as_assignment() { return this; }
+
+    bool Assign::is_assignment() const { return true; }
+
+    void Assign::set_predicate(ASTNodeVariant expression)
+    {
+        pred = std::visit(overloaded{[](std::shared_ptr<Predicate> &p) -> ASTNodeVariant { return p; },
+                                     [](auto) -> ASTNodeVariant
+                                     { throw std::invalid_argument("Expression is no predicate"); }},
+                          expression);
     }
 
-    bool Assign::is_assignment() const {
-        return true;
+    std::optional<ASTNodeVariant> Assign::get_predicate()
+    {
+        return std::visit(overloaded{[](std::monostate) -> std::optional<ASTNodeVariant> { return std::nullopt; },
+                                     [](auto &e) -> std::optional<ASTNodeVariant> { return ASTNodeVariant(e); }},
+                          pred);
     }
 
-    void Assign::set_predicate(Expression expression) {
-        if (expression.is_predicate())
-            pred = expression;
-        else
-            throw std::invalid_argument("Expression is no predicate");
-    }
+    void Assign::print(std::ostream &) const {}
 
-    std::optional<Expression> Assign::get_predicate() {
-        return pred;
-    }
+    std::string Assign::type2string() const { return "assignment"; }
 
-    void Assign::print(std::ostream &) const {
+    ASTNodeVariant Assign::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
+    {
+        auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
+                                       [](std::monostate &) -> ASTNodeVariant { return std::monostate(); }};
+        auto new_expr = std::visit(cloneVisitor, mExpr);
 
-    }
-
-    void Assign::visit(ASTVisitor &visitor) const {
-        visitor(*this);
-    }
-
-    void Assign::visit(ASTVisitor &visitor) {
-        visitor(*this);
-    }
-
-    std::string Assign::type2string() const {
-        return "assignment";
-    }
-
-    std::shared_ptr<ASTNode> Assign::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
-        auto new_expr = mExpr.clone(vmap);
-        std::vector<Expression> new_dests;
-        ranges::transform(mDdests, new_dests.begin(), [&vmap](auto &val) { return val.clone(vmap); });
+        std::vector<ASTNodeVariant> new_dests;
+        ranges::transform(mDdests, new_dests.begin(),
+                          [&cloneVisitor](auto &val) { return std::visit(cloneVisitor, val); });
 
         auto clonedAssignment = std::make_shared<Assign>(loc, new_dests, new_expr);
-        if (pred.has_value())
-            clonedAssignment->pred = std::make_optional(pred->clone(vmap));
+
+        clonedAssignment->pred = std::visit(cloneVisitor, pred);
 
         return clonedAssignment;
-
     }
 } // namespace voila::ast

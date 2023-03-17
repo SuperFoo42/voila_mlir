@@ -123,7 +123,7 @@ namespace voila::mlir::lowering
             getHTSize(builder, minOpAdaptor.getInput()); // FIXME: not the best solution, indices can be out of range.
         if (getElementTypeOrSelf(op->getResultTypes().front()).isa<IntegerType>())
         {
-            res = builder.create<memref::AllocOp>(MemRefType::get(-1, builder.getI64Type()),
+            res = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, builder.getI64Type()),
                                                   ArrayRef(allocSize));
             buildAffineLoopNest(builder, builder.getLoc(),
                                 builder.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
@@ -138,7 +138,7 @@ namespace voila::mlir::lowering
         }
         else if (getElementTypeOrSelf(op->getResultTypes().front()).isa<FloatType>())
         {
-            res = builder.create<memref::AllocOp>(MemRefType::get(-1, builder.getF64Type()),
+            res = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, builder.getF64Type()),
                                                   ArrayRef(allocSize));
             buildAffineLoopNest(
                 builder, builder.getLoc(), builder.create<ConstantIndexOp>(0)->getResults(), allocSize,

@@ -16,7 +16,6 @@ target_sources(voila_ast PRIVATE
         Div.cpp
         Emit.cpp
         Eq.cpp
-        Expression.cpp
         FltConst.cpp
         Fun.cpp
         FunctionCall.cpp
@@ -40,12 +39,9 @@ target_sources(voila_ast PRIVATE
         Ref.cpp
         Scatter.cpp
         Selection.cpp
-        Statement.cpp
         StatementWrapper.cpp
         StrConst.cpp
         Sub.cpp
-        TupleCreate.cpp
-        TupleGet.cpp
         Write.cpp
         Assign.cpp
         Predicate.cpp

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Expression.hpp"      // for Expression
 #include "IExpression.hpp"     // for IExpression
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h" // for DenseMap
@@ -12,19 +11,13 @@
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
     class Lookup : public IExpression
     {
-        Expression mHashes;
-        std::vector<Expression> mTables, mValues;
+        ASTNodeVariant mHashes;
+        std::vector<ASTNodeVariant> mTables, mValues;
 
       public:
-        Lookup(Location loc, std::vector<Expression> values, std::vector<Expression> tables, Expression hashes)
-            : IExpression(loc), mHashes{std::move(hashes)}, mTables{std::move(tables)}, mValues{std::move(values)}
-        {
-            // TODO
-        }
+        Lookup(Location loc, std::vector<ASTNodeVariant> values, std::vector<ASTNodeVariant> tables, ASTNodeVariant hashes);
 
         [[nodiscard]] bool is_lookup() const final;
 
@@ -34,16 +27,12 @@ namespace voila::ast
 
         void print(std::ostream &ostream) const final;
 
-        void visit(ASTVisitor &visitor) const final;
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
 
-        void visit(ASTVisitor &visitor) final;
+        [[nodiscard]] const ASTNodeVariant &hashes() const { return mHashes; }
 
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        [[nodiscard]] const std::vector<ASTNodeVariant> &tables() const { return mTables; }
 
-        [[nodiscard]] const Expression &hashes() const { return mHashes; }
-
-        [[nodiscard]] const std::vector<Expression> &tables() const { return mTables; }
-
-        [[nodiscard]] const std::vector<Expression> &values() const { return mValues; }
+        [[nodiscard]] const std::vector<ASTNodeVariant> &values() const { return mValues; }
     };
 } // namespace voila::ast

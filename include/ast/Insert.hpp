@@ -4,22 +4,19 @@
 #include <string>               // for string
 #include <utility>              // for move
 #include <vector>               // for vector
-#include "Expression.hpp"       // for Expression
 #include "IExpression.hpp"      // for IExpression
 #include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h"  // for DenseMap
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
     class Insert : public IExpression
     {
-        Expression mKeys;
-        std::vector<Expression> mValues;
+        ASTNodeVariant mKeys;
+        std::vector<ASTNodeVariant> mValues;
 
       public:
-        Insert(Location loc, Expression keys, std::vector<Expression> values) :
+        Insert(Location loc, ASTNodeVariant keys, std::vector<ASTNodeVariant> values) :
             IExpression(loc), mKeys{std::move(keys)}, mValues{std::move(values)}
         {
             // TODO
@@ -31,16 +28,14 @@ namespace voila::ast
 
         [[nodiscard]] std::string type2string() const final;
         void print(std::ostream &ostream) const final;
-        void visit(ASTVisitor &visitor) const final;
-        void visit(ASTVisitor &visitor) final;
 
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
 
-        [[nodiscard]] const Expression &keys() const {
+        [[nodiscard]] const ASTNodeVariant &keys() const {
             return mKeys;
         }
 
-        [[nodiscard]] const std::vector<Expression> &values() const {
+        [[nodiscard]] const std::vector<ASTNodeVariant> &values() const {
             return mValues;
         }
     };

@@ -1,5 +1,8 @@
 #include "ast/AggrAvg.hpp"
+#include "ASTNodes.hpp"
 #include "ast/ASTVisitor.hpp"  // for ASTVisitor
+#include "ast/ASTNodeVariant.hpp"
+#include "ASTNodes.hpp"
 
 namespace voila::ast
 {
@@ -15,12 +18,8 @@ namespace voila::ast
     {
         return this;
     }
-    void AggrAvg::visit(ASTVisitor &visitor) const
+    ASTNodeVariant AggrAvg::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
     {
-        visitor(*this);
-    }
-    void AggrAvg::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
+        return Aggregation::clone<AggrAvg>(vmap);
     }
 } // namespace voila::ast

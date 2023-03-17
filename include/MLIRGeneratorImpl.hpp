@@ -1,21 +1,24 @@
 #pragma once
 #include "VariableAlreadyDeclaredException.hpp" // for VariableAlreadyDecla...
 #include "ast/ASTNode.hpp"                      // for ASTNode (ptr only)
-#include "ast/ASTVisitor.hpp"                   // for ASTVisitor
-#include "ast/Comparison.hpp"                   // for Comparison
-#include <cstdint>                              // for int64_t
-#include <memory>                               // for shared_ptr
-#include <mlir/IR/Builders.h>                   // for OpBuilder
-#include <variant>                              // for get, variant, monostate
-#include <vector>                               // for vector
+#include "ast/ASTNodeVariant.hpp"
+#include "ast/ASTVisitor.hpp" // for ASTVisitor
+#include "ast/Comparison.hpp" // for Comparison
+#include <cstdint>            // for int64_t
+#include <memory>             // for shared_ptr
+#include <mlir/IR/Builders.h> // for OpBuilder
+#include <variant>            // for get, variant, monostate
+#include <vector>             // for vector
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
+#include "../src/MlirGenerationException.hpp"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
-#include "mlir/IR/BuiltinOps.h"       // for IntegerType, TensorType
-#include "mlir/IR/BuiltinTypes.h"     // for IntegerType, TensorType
-#include "mlir/IR/Location.h"         // for Location
+#include "mlir/IR/BuiltinOps.h"   // for IntegerType, TensorType
+#include "mlir/IR/BuiltinTypes.h" // for IntegerType, TensorType
+#include "mlir/IR/Location.h"     // for Location
+#include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/Types.h"            // for Type
 #include "mlir/IR/Value.h"            // for Value
 #include "llvm/ADT/ArrayRef.h"        // for ArrayRef
@@ -23,7 +26,7 @@
 #include "llvm/ADT/StringMap.h"       // for StringMap
 #include "llvm/ADT/StringRef.h"       // for StringRef, DenseMapInfo
 #include <llvm/ADT/ScopedHashTable.h> // for ScopedHashTable
-
+#include "mlir/Dialects/Voila/IR/VoilaOps.h"
 #pragma GCC diagnostic pop
 
 namespace mlir
@@ -85,30 +88,66 @@ namespace voila
     } // namespace ast
 } // namespace voila
 
+using result_variant =
+    std::variant<std::monostate,
+                 ::mlir::ModuleOp,
+                 ::mlir::Value,
+                 ::mlir::ValueRange, // does not extend lifetime of underlying object //TODO: all types contained?
+                 //::mlir::SmallVector<::mlir::Value>,
+                 ::mlir::Type,
+                 ::mlir::LogicalResult,
+                 ::mlir::func::FuncOp>;
+
+namespace
+{
+    template <typename T> struct aggr_ret_type
+    {
+        ::mlir::Type operator()(::mlir::OpBuilder &builder, ::mlir::Value &expr)
+        {
+            if (::mlir::getElementTypeOrSelf(expr).isIntOrIndex())
+                return builder.getI64Type();
+            else if (::mlir::getElementTypeOrSelf(expr).isIntOrFloat())
+                return builder.getF64Type();
+            else
+                throw voila::ast::MLIRGenerationException();
+        }
+    };
+
+    template <> struct aggr_ret_type<voila::ast::AggrCnt>
+    {
+        ::mlir::Type operator()(::mlir::OpBuilder &builder, ::mlir::Value &) { return builder.getI64Type(); }
+    };
+
+    template <> struct aggr_ret_type<voila::ast::AggrAvg>
+    {
+        ::mlir::Type operator()(::mlir::OpBuilder &builder, ::mlir::Value &) { return builder.getF64Type(); }
+    };
+
+    template <typename T> struct aggr_to_op;
+    template <> struct aggr_to_op<voila::ast::AggrSum> { using type = ::mlir::voila::SumOp; };
+    template <> struct aggr_to_op<voila::ast::AggrAvg> { using type = ::mlir::voila::AvgOp; };
+    template <> struct aggr_to_op<voila::ast::AggrMin> { using type = ::mlir::voila::MinOp; };
+    template <> struct aggr_to_op<voila::ast::AggrMax> { using type = ::mlir::voila::MaxOp; };
+    template <> struct aggr_to_op<voila::ast::AggrCnt> { using type = ::mlir::voila::CountOp; };
+
+    template <typename T > using aggr_to_op_t = typename aggr_to_op<T>::type;
+
+} // namespace
+
 namespace voila::mlir
 {
-    class MLIRGeneratorImpl : public ast::ASTVisitor
+    class MLIRGeneratorImpl : public ast::ASTVisitor<result_variant>
     {
         ::mlir::OpBuilder &builder;
         ::mlir::ModuleOp &module;
         llvm::ScopedHashTable<llvm::StringRef, ::mlir::Value> &symbolTable;
         llvm::StringMap<::mlir::func::FuncOp> &funcTable;
         const TypeInferer &inferer;
-        using result_variant =
-            std::variant<std::monostate,
-                         ::mlir::ModuleOp,
-                         ::mlir::Value,
-                         ::mlir::SmallVector<::mlir::Value>, // FIXME: ugly, but needed because ValueRange does not
-                                                             // extend lifetime of underlying object
-                         ::mlir::Type,
-                         ::mlir::LogicalResult,
-                         ::mlir::func::FuncOp>;
-        result_variant result;
 
         // helper functions to map ast types to mlir
         ::mlir::Location loc(ast::Location loc);
 
-        std::vector<::mlir::Type> getTypes(const ast::ASTNode &node);
+        std::vector<::mlir::Type> getTypes(const ast::ASTNodeVariant &node);
 
         ::mlir::Type convert(const Type &t);
 
@@ -121,39 +160,37 @@ namespace voila::mlir
             symbolTable.insert(var, value);
         }
 
-        void mlirGenBody(const std::vector<ast::Statement> &block);
-
-        result_variant visitor_gen(const ast::Statement &node);
-
-        result_variant visitor_gen(const ast::Expression &node);
-
-        result_variant visitor_gen(const std::vector<ast::Expression> &nodes);
-
-        result_variant visitor_gen(const std::vector<ast::Statement> &nodes);
+        void mlirGenBody(const std::vector<ast::ASTNodeVariant> &block);
 
         static llvm::ArrayRef<int64_t> getShape(const ::mlir::Value &lhs, const ::mlir::Value &rhs);
 
-        template <class Op>::mlir::Value getCmpOp(const ast::Comparison &cmpNode)
-        {
-            auto location = loc(cmpNode.get_location());
-            auto lhs = std::get<::mlir::Value>(visitor_gen(cmpNode.lhs()));
-            auto rhs = std::get<::mlir::Value>(visitor_gen(cmpNode.rhs()));
-            if (lhs.getType().isa<::mlir::TensorType>() || rhs.getType().isa<::mlir::TensorType>())
-            {
-                ::mlir::ArrayRef<int64_t> shape;
-                shape = getShape(lhs, rhs);
+        template <class Op>::mlir::Value getCmpOp(const ast::Comparison &cmpNode);
 
-                return builder.create<Op>(location, ::mlir::RankedTensorType::get(shape, builder.getI1Type()), lhs,
-                                          rhs);
-            }
-            else
-                return builder.create<Op>(location, builder.getI1Type(), lhs, rhs);
-        }
-
-        ::mlir::Type getScalarType(const ast::ASTNode &node);
+        ::mlir::Type getScalarType(const ast::ASTNodeVariant &node);
 
         ::mlir::Type scalarConvert(const std::shared_ptr<::voila::Type> &t);
         ::mlir::Type scalarConvert(const ::voila::Type &t);
+
+        template <class AggrType>
+        [[nodiscard]] ::mlir::Type getResultType(std::shared_ptr<AggrType> &aggr, ::mlir::Value &expr)
+        {
+            auto type = aggr_ret_type<AggrType>()(builder, expr);
+            return aggr->groups()
+                       ? static_cast<::mlir::Type>(type)
+                       : static_cast<::mlir::Type>(::mlir::RankedTensorType::get(::mlir::ShapedType::kDynamic, type));
+        }
+
+        template <class T>
+        ::mlir::Value createAggr(std::shared_ptr<T> &aggr)
+        {
+            auto location = loc(aggr->get_location());
+
+            ::mlir::Value expr = std::get<::mlir::Value>(std::visit(*this, aggr->src()));
+
+            auto idxs = std::get<::mlir::Value>(std::visit(*this, aggr->groups()));
+
+            return builder.create<aggr_to_op_t<T>>(location, getResultType(aggr, expr), expr, idxs);
+        }
 
       public:
         MLIRGeneratorImpl(::mlir::OpBuilder &builder,
@@ -162,52 +199,49 @@ namespace voila::mlir
                           llvm::StringMap<::mlir::func::FuncOp> &funcTable,
                           const TypeInferer &inferer);
 
-        result_variant getValue() { return result; }
+        result_variant operator()(std::shared_ptr<ast::AggrSum> sum) final;
+        result_variant operator()(std::shared_ptr<ast::AggrCnt> cnt) final;
+        result_variant operator()(std::shared_ptr<ast::AggrMin> min) final;
+        result_variant operator()(std::shared_ptr<ast::AggrMax> max) final;
+        result_variant operator()(std::shared_ptr<ast::AggrAvg> avg) final;
+        result_variant operator()(std::shared_ptr<ast::Write> write) final;
+        result_variant operator()(std::shared_ptr<ast::Scatter> scatter) final;
 
-        void operator()(const ast::AggrSum &sum) final;
-        void operator()(const ast::AggrCnt &cnt) final;
-        void operator()(const ast::AggrMin &min) final;
-        void operator()(const ast::AggrMax &max) final;
-        void operator()(const ast::AggrAvg &avg) final;
-        void operator()(const ast::Write &write) final;
-        void operator()(const ast::Scatter &scatter) final;
+        result_variant operator()(std::shared_ptr<ast::Assign> assign) final;
+        result_variant operator()(std::shared_ptr<ast::Emit> emit) final;
+        result_variant operator()(std::shared_ptr<ast::Loop> loop) final;
+        result_variant operator()(std::shared_ptr<ast::StatementWrapper> wrapper) final;
+        result_variant operator()(std::shared_ptr<ast::Add> add) final;
+        result_variant operator()(std::shared_ptr<ast::Sub> sub) final;
+        result_variant operator()(std::shared_ptr<ast::Mul> mul) final;
+        result_variant operator()(std::shared_ptr<ast::Div> div) final;
+        result_variant operator()(std::shared_ptr<ast::Mod> mod) final;
+        result_variant operator()(std::shared_ptr<ast::Eq> eq) final;
+        result_variant operator()(std::shared_ptr<ast::Neq> neq) final;
+        result_variant operator()(std::shared_ptr<ast::Le> le) final;
+        result_variant operator()(std::shared_ptr<ast::Ge> ge) final;
+        result_variant operator()(std::shared_ptr<ast::Leq> leq) final;
+        result_variant operator()(std::shared_ptr<ast::Geq> geq) final;
+        result_variant operator()(std::shared_ptr<ast::And> anAnd) final;
+        result_variant operator()(std::shared_ptr<ast::Or> anOr) final;
+        result_variant operator()(std::shared_ptr<ast::Not> aNot) final;
+        result_variant operator()(std::shared_ptr<ast::IntConst> intConst) final;
+        result_variant operator()(std::shared_ptr<ast::BooleanConst> booleanConst) final;
+        result_variant operator()(std::shared_ptr<ast::FltConst> fltConst) final;
+        result_variant operator()(std::shared_ptr<ast::StrConst> aConst) final;
+        result_variant operator()(std::shared_ptr<ast::Read> read) final;
+        result_variant operator()(std::shared_ptr<ast::Gather> gather) final;
+        result_variant operator()(std::shared_ptr<ast::Ref> param) final;
+        result_variant operator()(std::shared_ptr<ast::Fun> fun) final;
+        result_variant operator()(std::shared_ptr<ast::Main> main) final;
+        result_variant operator()(std::shared_ptr<ast::Selection> selection) final;
+        result_variant operator()(std::shared_ptr<ast::Variable> variable) final;
+        result_variant operator()(std::shared_ptr<ast::Predicate> pred) final;
+        result_variant operator()(std::shared_ptr<ast::Hash> hash) final;
+        result_variant operator()(std::shared_ptr<ast::Lookup> lookup) final;
+        result_variant operator()(std::shared_ptr<ast::Insert> insert) final;
+        result_variant operator()(std::shared_ptr<ast::FunctionCall> call) final;
 
-        void operator()(const ast::Assign &assign) final;
-        void operator()(const ast::Emit &emit) final;
-        void operator()(const ast::Loop &loop) final;
-        void operator()(const ast::StatementWrapper &wrapper) final;
-        void operator()(const ast::Add &add) final;
-        void operator()(const ast::Sub &sub) final;
-        void operator()(const ast::Mul &mul) final;
-        void operator()(const ast::Div &div) final;
-        void operator()(const ast::Mod &mod) final;
-        void operator()(const ast::Eq &eq) final;
-        void operator()(const ast::Neq &neq) final;
-        void operator()(const ast::Le &le) final;
-        void operator()(const ast::Ge &ge) final;
-        void operator()(const ast::Leq &leq) final;
-        void operator()(const ast::Geq &geq) final;
-        void operator()(const ast::And &anAnd) final;
-        void operator()(const ast::Or &anOr) final;
-        void operator()(const ast::Not &aNot) final;
-        void operator()(const ast::IntConst &intConst) final;
-        void operator()(const ast::BooleanConst &booleanConst) final;
-        void operator()(const ast::FltConst &fltConst) final;
-        void operator()(const ast::StrConst &aConst) final;
-        void operator()(const ast::Read &read) final;
-        void operator()(const ast::Gather &gather) final;
-        void operator()(const ast::Ref &param) final;
-        void operator()(const ast::TupleGet &get) final;
-        void operator()(const ast::TupleCreate &create) final;
-        void operator()(const ast::Fun &fun) final;
-        void operator()(const ast::Main &main) final;
-        void operator()(const ast::Selection &selection) final;
-        void operator()(const ast::Variable &variable) final;
-        void operator()(const ast::Predicate &pred) final;
-        void operator()(const ast::Hash &hash) final;
-        void operator()(const ast::Lookup &lookup) override;
-        void operator()(const ast::Insert &insert) override;
-        void operator()(const ast::FunctionCall &call) final;
-        void operator()(ast::FunctionCall &call) override;
+        result_variant operator()(std::monostate) final;
     };
 } // namespace voila::mlir

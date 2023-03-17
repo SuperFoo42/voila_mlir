@@ -55,13 +55,13 @@ namespace voila::mlir::lowering
         else if (dynamicMemref.getType().dyn_cast<TensorType>().isDynamicDim(0))
         {
             auto allocSize = builder.create<memref::DimOp>(dynamicMemref, 0);
-            alloc = builder.create<memref::AllocOp>(MemRefType::get(-1, type.getElementType()), Value(allocSize));
+            alloc = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, type.getElementType()), Value(allocSize));
         }
         else
         {
             auto allocSize =
                 builder.create<ConstantIndexOp>(dynamicMemref.getType().dyn_cast<TensorType>().getDimSize(0));
-            alloc = builder.create<memref::AllocOp>(MemRefType::get(-1, type.getElementType()), Value(allocSize));
+            alloc = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, type.getElementType()), Value(allocSize));
         }
 
         // buffer deallocation instructions are added in the buffer deallocation pass

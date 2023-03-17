@@ -1,20 +1,20 @@
 #pragma once
-#include <iosfwd>               // for ostream
-#include <memory>               // for make_shared, shared_ptr
-#include <string>               // for string
-#include "Expression.hpp"       // for Expression
-#include "IExpression.hpp"      // for IExpression
-#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
-#include "llvm/ADT/DenseMap.h"  // for DenseMap
+#include "ASTNodeVariant.hpp"
+#include "IExpression.hpp"     // for IExpression
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <iosfwd>              // for ostream
+#include <memory>              // for make_shared, shared_ptr
+#include <string>              // for string
 
 namespace voila::ast
 {
     class Arithmetic : public IExpression
     {
-        Expression mLhs, mRhs;
+        ASTNodeVariant mLhs, mRhs;
 
       public:
-        Arithmetic(Location loc, Expression lhs, Expression rhs);
+        Arithmetic(Location loc, ASTNodeVariant lhs, ASTNodeVariant rhs);
         ~Arithmetic() override = default;
 
         [[nodiscard]] bool is_arithmetic() const final;
@@ -24,17 +24,18 @@ namespace voila::ast
         [[nodiscard]] std::string type2string() const override;
         void print(std::ostream &ostream) const final;
 
-        [[nodiscard]] const Expression &lhs() const {
-            return mLhs;
-        }
+        [[nodiscard]] const ASTNodeVariant &lhs() const { return mLhs; }
 
-        [[nodiscard]] const Expression &rhs() const {
-            return mRhs;
-        }
-    protected:
+        [[nodiscard]] const ASTNodeVariant &rhs() const { return mRhs; }
+
+      protected:
         template <class T>
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) requires std::is_base_of_v<Arithmetic, T> {
-            return std::make_shared<T>(loc, mLhs.clone(vmap), mRhs.clone(vmap));
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
+            requires std::is_base_of_v<Arithmetic, T>
+        {
+            auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
+                                           [](std::monostate &) -> ASTNodeVariant  { throw std::logic_error(""); }};
+            return std::make_shared<T>(loc, std::visit(cloneVisitor, mLhs), std::visit(cloneVisitor, mRhs));
         }
     };
 } // namespace voila::ast

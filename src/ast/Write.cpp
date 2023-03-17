@@ -1,6 +1,7 @@
 #include "ast/Write.hpp"
 #include "ast/ASTVisitor.hpp" // for ASTVisitor
-#include "ast/Expression.hpp" // for Expression, operator<<
+#include "ASTNodes.hpp"
+#include "ast/ASTNodeVariant.hpp"
 #include "ast/IStatement.hpp" // for IStatement
 #include <ostream>            // for operator<<, ostream, basic_ostream
 #include <utility>            // for move
@@ -8,7 +9,7 @@
 
 namespace voila::ast
 {
-    Write::Write(const Location loc, Expression src_col, Expression dest_col, Expression wpos)
+    Write::Write(const Location loc, ASTNodeVariant src_col, ASTNodeVariant dest_col, ASTNodeVariant wpos)
         : IStatement(loc), mDest{std::move(dest_col)}, mStart{std::move(wpos)}, mSrc{std::move(src_col)}
     {
     }
@@ -19,12 +20,19 @@ namespace voila::ast
 
     std::string Write::type2string() const { return "write"; }
 
-    void Write::print(std::ostream &os) const { os << "src: " << mSrc << " dest: " << mDest; }
-    void Write::visit(ASTVisitor &visitor) const { visitor(*this); }
-    void Write::visit(ASTVisitor &visitor) { visitor(*this); }
-
-    std::shared_ptr<ASTNode> Write::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap)
+    void Write::print(std::ostream &os) const
     {
-        return std::make_shared<Write>(loc, mSrc.clone(vmap), mDest.clone(vmap), mStart.clone(vmap));
+        std::visit(overloaded{[&os](auto &src) { os << "src: " << *src; }, [](std::monostate) {}}, mSrc);
+        std::visit(overloaded{[&os](auto &dest) { os << "dest: " << *dest; }, [](std::monostate) {}}, mDest);
     }
+
+    ASTNodeVariant Write::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
+    {
+        auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
+                                       [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};
+        return std::make_shared<Write>(loc, std::visit(cloneVisitor, mSrc), std::visit(cloneVisitor, mDest), std::visit(cloneVisitor, mStart));
+    }
+    const ASTNodeVariant &Write::dest() const { return mDest; }
+    const ASTNodeVariant &Write::start() const { return mStart; }
+    const ASTNodeVariant &Write::src() const { return mSrc; }
 } // namespace voila::ast

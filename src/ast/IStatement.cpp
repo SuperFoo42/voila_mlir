@@ -1,16 +1,15 @@
 #include "ast/IStatement.hpp"
 #include "llvm/Support/FormatVariadic.h"
-#include "ast/Expression.hpp"                       // for Expression
 #include "ast/PredicationUnsupportedException.hpp"  // for PredicationUnsupp...
 
 namespace voila::ast
 {
-    void IStatement::set_predicate(Expression)
+    void IStatement::set_predicate(ASTNodeVariant)
     {
         throw PredicationUnsupportedException(llvm::formatv("Predication not supported for: {0}.", type2string()));
     }
 
-    std::optional<Expression> IStatement::get_predicate()
+    std::optional<ASTNodeVariant> IStatement::get_predicate()
     {
         throw PredicationUnsupportedException(llvm::formatv("Predication not supported for: {0}.", type2string()));
     }
@@ -77,8 +76,4 @@ namespace voila::ast
         return nullptr;
     }
 
-    std::optional<Expression> IStatement::as_expression()
-    {
-        return std::nullopt;
-    }
 } // namespace voila::ast

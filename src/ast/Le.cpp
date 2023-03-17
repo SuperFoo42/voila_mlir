@@ -1,5 +1,7 @@
 #include "ast/Le.hpp"
 #include "ast/ASTVisitor.hpp"  // for ASTVisitor
+#include "ASTNodes.hpp"
+#include "ast/ASTNodeVariant.hpp"
 
 namespace voila::ast
 {
@@ -15,12 +17,8 @@ namespace voila::ast
     {
         return this;
     }
-    void Le::visit(ASTVisitor &visitor) const
+    ASTNodeVariant Le::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
     {
-        visitor(*this);
-    }
-    void Le::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
+        return Comparison::clone<Le>(vmap);
     }
 } // namespace voila::ast

@@ -1,5 +1,4 @@
 #pragma once
-#include "Expression.hpp"      // for Expression
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "ast/IExpression.hpp" // for IExpression
 #include "llvm/ADT/DenseMap.h" // for DenseMap
@@ -10,15 +9,13 @@
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
     class Selection : public IExpression
     {
-        Expression mParam;
-        Expression mPred;
+        ASTNodeVariant mParam;
+        ASTNodeVariant mPred;
 
       public:
-        explicit Selection(const Location loc, Expression expr, Expression pred)
+        explicit Selection(const Location loc, ASTNodeVariant expr, ASTNodeVariant pred)
             : IExpression(loc), mParam(std::move(expr)), mPred(std::move(pred))
         {
             // TODO
@@ -30,13 +27,11 @@ namespace voila::ast
 
         [[nodiscard]] std::string type2string() const final;
         void print(std::ostream &ostream) const final;
-        void visit(ASTVisitor &visitor) const final;
-        void visit(ASTVisitor &visitor) final;
 
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
 
-        [[nodiscard]] const Expression &param() const { return mParam; }
+        [[nodiscard]] const ASTNodeVariant &param() const { return mParam; }
 
-        [[nodiscard]] const Expression &pred() const { return mPred; }
+        [[nodiscard]] const ASTNodeVariant &pred() const { return mPred; }
     };
 } // namespace voila::ast

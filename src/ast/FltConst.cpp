@@ -20,16 +20,7 @@ namespace voila::ast
         ostream << std::to_string(val);
     }
 
-    void FltConst::visit(ASTVisitor &visitor) const
-    {
-        visitor(*this);
-    }
-    void FltConst::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
-    }
-
-    std::shared_ptr<ASTNode> FltConst::clone(llvm::DenseMap<ASTNode *, ASTNode *> &) {
+    ASTNodeVariant FltConst::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &) {
         return std::make_shared<FltConst>(loc, val);
     }
 } // namespace voila::ast

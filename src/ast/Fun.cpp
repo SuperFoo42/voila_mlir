@@ -1,23 +1,21 @@
 #include "ast/Fun.hpp"
-#include "ast/ASTNode.hpp"                       // for ASTNode, Location
+#include "ASTNodes.hpp"
+#include "ast/ASTNode.hpp" // for ASTNode, Location
+#include "ast/ASTNodeVariant.hpp"
 #include "ast/ASTVisitor.hpp"                    // for ASTVisitor
 #include "ast/EmitNotLastStatementException.hpp" // for EmitNotLastStatemen...
-#include "ast/Statement.hpp"                     // for Statement
 #include <algorithm>                             // for max, find_if
 #include <ostream>                               // for operator<<, ostream
 #include <utility>                               // for move
 
 namespace voila::ast
 {
-    Fun::Fun(const Location loc, std::string fun, std::vector<Expression> args, std::vector<Statement> exprs)
-        : ASTNode(loc), mName{std::move(fun)}, mArgs{std::move(args)}, mBody{std::move(exprs)}
+    Fun::Fun(const Location loc, std::string fun, std::vector<ASTNodeVariant> args, std::vector<ASTNodeVariant> exprs)
+        : AbstractASTNode(loc), mName{std::move(fun)}, mArgs{std::move(args)}, mBody{std::move(exprs)}, mResult{std::monostate()}
     {
-        auto ret = std::find_if(mBody.begin(), mBody.end(), [](auto &e) -> auto { return e.is_emit(); });
-        if (ret == mBody.end())
-        {
-            mResult = std::nullopt;
-        }
-        else
+        auto ret = std::find_if(mBody.begin(), mBody.end(),
+                                [](auto &e) -> auto { return std::holds_alternative<std::shared_ptr<Emit>>(e); });
+        if (ret != mBody.end())
         {
             if (ret != mBody.end() - 1)
             {
@@ -33,26 +31,25 @@ namespace voila::ast
     {
         o << mName << "(";
         for (auto &arg : mArgs)
-            o << arg << ",";
+            std::visit(overloaded{[&o](auto &a) -> void { o << *a << ","; }, [](std::monostate) {}}, arg);
         o << ")";
     }
-    void Fun::visit(ASTVisitor &visitor) const { visitor(*this); }
-    void Fun::visit(ASTVisitor &visitor) { visitor(*this); }
 
-    std::shared_ptr<ASTNode> Fun::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap)
+    ASTNodeVariant Fun::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
     {
-        std::vector<Expression> clonedArgs;
-
+        std::vector<ASTNodeVariant> clonedArgs;
+        auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
+                                       [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};
         for (auto &arg : mArgs)
         {
-            auto tmp = arg.clone(vmap);
+            auto tmp = std::visit(cloneVisitor, arg);
             clonedArgs.push_back(tmp);
         }
 
-        std::vector<Statement> clonedBody;
+        std::vector<ASTNodeVariant> clonedBody;
         for (auto &arg : mBody)
         {
-            auto tmp = arg.clone(vmap);
+            auto tmp = std::visit(cloneVisitor, arg);
             clonedBody.push_back(tmp);
         }
 

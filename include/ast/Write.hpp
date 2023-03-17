@@ -1,7 +1,5 @@
-
 #pragma once
 
-#include "Expression.hpp"      // for Expression
 #include "IStatement.hpp"      // for IStatement
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h" // for DenseMap
@@ -11,16 +9,14 @@
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
     class Write : public IStatement
     {
-        Expression mDest;
-        Expression mStart;
-        Expression mSrc;
+        ASTNodeVariant mDest;
+        ASTNodeVariant mStart;
+        ASTNodeVariant mSrc;
 
       public:
-        Write(Location loc, Expression src_col, Expression dest_col, Expression wpos);
+        Write(Location loc, ASTNodeVariant src_col, ASTNodeVariant dest_col, ASTNodeVariant wpos);
 
         [[nodiscard]] bool is_write() const final;
 
@@ -30,17 +26,12 @@ namespace voila::ast
 
         void print(std::ostream &ostream) const final;
 
-        void visit(ASTVisitor &visitor) const final;
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
 
-        void visit(ASTVisitor &visitor) final;
+        [[nodiscard]] const ASTNodeVariant &dest() const;
 
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        [[nodiscard]] const ASTNodeVariant &start() const;
 
-        [[nodiscard]] const Expression &dest() const { return mDest; }
-
-        [[nodiscard]] const Expression &start() const { return mStart; }
-
-        [[nodiscard]] const Expression &src() const { return mSrc; }
+        [[nodiscard]] const ASTNodeVariant &src() const;
     };
-
 } // namespace voila::ast

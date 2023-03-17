@@ -21,16 +21,7 @@ namespace voila::ast
         ostream << std::boolalpha << val << std::noboolalpha;
     }
 
-    void BooleanConst::visit(ASTVisitor &visitor) const
-    {
-        visitor(*this);
-    }
-    void BooleanConst::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
-    }
-
-    std::shared_ptr<ASTNode> BooleanConst::clone(llvm::DenseMap<ASTNode *, ASTNode *> &) {
+    ASTNodeVariant BooleanConst::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &) {
         return std::make_shared<BooleanConst>(loc, val);
     }
 } // namespace voila::ast

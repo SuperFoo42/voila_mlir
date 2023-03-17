@@ -466,7 +466,7 @@ namespace voila::mlir::lowering
         {
             SmallVector<Value, 1> outTensorSize;
             outTensorSize.push_back(builder.create<tensor::DimOp>(hashOpAdaptor.getInput().front(), 0));
-            outTensor = builder.create<tensor::EmptyOp>(-1, builder.getI64Type(),outTensorSize);
+            outTensor = builder.create<tensor::EmptyOp>(ShapedType::kDynamic, builder.getI64Type(),outTensorSize);
         }
 
         SmallVector<Value, 1> res;

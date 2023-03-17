@@ -1,7 +1,5 @@
 #pragma once
-#include "Expression.hpp"      // for Expression
 #include "IStatement.hpp"      // for IStatement
-#include "Statement.hpp"       // for Statement
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <iosfwd>              // for ostream
@@ -12,16 +10,15 @@
 
 namespace voila::ast
 {
-    class ASTVisitor;
 
     // TODO: fix this
     class Loop : public IStatement
     {
-        Expression mPred;
-        std::vector<Statement> mStms;
+        ASTNodeVariant mPred;
+        std::vector<ASTNodeVariant> mStms;
 
       public:
-        Loop(const Location loc, Expression pred, std::vector<Statement> stms)
+        Loop(const Location loc, ASTNodeVariant pred, std::vector<ASTNodeVariant> stms)
             : IStatement(loc), mPred{std::move(pred)}, mStms{std::move(stms)}
         {
         }
@@ -32,16 +29,14 @@ namespace voila::ast
 
         Loop *as_loop() final;
         void print(std::ostream &ostream) const final;
-        void visit(ASTVisitor &visitor) const override;
-        void visit(ASTVisitor &visitor) override;
 
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
         // TODO
         // CrossingVariables crossing_variables;
 
-        [[nodiscard]] const Expression &pred() const { return mPred; }
+        [[nodiscard]] const ASTNodeVariant &pred() const { return mPred; }
 
-        [[nodiscard]] const std::vector<Statement> &stmts() const { return mStms; }
+        [[nodiscard]] const std::vector<ASTNodeVariant> &stmts() const { return mStms; }
     };
 
 } // namespace voila::ast

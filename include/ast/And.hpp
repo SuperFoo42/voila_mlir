@@ -2,21 +2,18 @@
 #include <memory>               // for shared_ptr
 #include <string>               // for string
 #include <utility>              // for move
-#include "Expression.hpp"       // for Expression
 #include "Logical.hpp"          // for Logical
 #include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h"  // for DenseMap
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
     class And : public Logical
     {
-        Expression mLhs, mRhs;
+        ASTNodeVariant mLhs, mRhs;
 
       public:
-        And(const Location loc, Expression lhs, Expression rhs) :
+        And(const Location loc, ASTNodeVariant lhs, ASTNodeVariant rhs) :
             Logical(loc), mLhs{std::move(lhs)}, mRhs{std::move(rhs)}
         {
             // TODO
@@ -28,16 +25,13 @@ namespace voila::ast
 
         And *as_and() final;
 
-        void visit(ASTVisitor &visitor) final;
-        void visit(ASTVisitor &visitor) const final;
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
 
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
-
-        [[nodiscard]] [[nodiscard]] const Expression &lhs() const {
+        [[nodiscard]] [[nodiscard]] const ASTNodeVariant &lhs() const {
             return mLhs;
         }
 
-        [[nodiscard]] [[nodiscard]] const Expression &rhs() const {
+        [[nodiscard]] [[nodiscard]] const ASTNodeVariant &rhs() const {
             return mRhs;
         }
     };

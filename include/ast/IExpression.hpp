@@ -46,15 +46,15 @@ namespace voila::ast
     class Lookup;
     class Insert;
     class Scatter;
-    class IExpression : public ASTNode
+    class IExpression : public AbstractASTNode
     {
       public:
-        explicit IExpression(const Location loc) : ASTNode(loc) {}
+        explicit IExpression(const Location loc) : AbstractASTNode(loc) {}
         ~IExpression() override = default;
 
-        virtual void set_predicate(Expression);
+        virtual void set_predicate(ASTNodeVariant);
 
-        virtual std::optional<Expression> get_predicate();
+        virtual std::optional<ASTNodeVariant> get_predicate();
 
         // type checks
         [[nodiscard]] bool is_expr() const final;

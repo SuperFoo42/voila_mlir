@@ -8,15 +8,17 @@ endif()
 project(voila_mlir LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20 CACHE STRING "C++ standard to conform to")
 
+set(CMAKE_BUILD_TYPE DEBUG)
 #Enable sanitizers globally
 set(DEBUG_BUILD -O0 -g -Wno-ambiguous-reversed-operator -Wno-covered-switch-default -Wno-unused-parameter)
 set(RELEASE_BUILD -O3 -g -march=native -mavx2 -Wno-ambiguous-reversed-operator -Wno-unused-function -Wno-covered-switch-default -Wno-unused-parameter)
-add_compile_options(
-        "$<$<CONFIG:Debug>:${DEBUG_BUILD}>"
-        "$<$<CONFIG:Release>:${RELEASE_BUILD}>")
+add_compile_options(${DEBUG_BUILD}
+ #      "$<$<CONFIG:Debug>:${DEBUG_BUILD}>"
+#        "$<$<CONFIG:Release>:${RELEASE_BUILD}>"
+)
 
 add_link_options(-fuse-ld=mold)
-add_link_options("$<$<CONFIG:DEBUG>:-fsanitize=address>")
+#add_link_options("$<$<CONFIG:DEBUG>:-fsanitize=address>")
 
 include(cmake/CPM.cmake)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
@@ -57,7 +59,8 @@ execute_process(
                 -G ${CMAKE_GENERATOR} -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True
                 -DLLVM_USE_LINKER=mold -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_PARALLEL_LINK_JOBS=1
                 -DLLVM_CCACHE_BUILD=True -DLLVM_BUILD_TESTS=False -DLLVM_ENABLE_IDE=TRUE -DLLVM_OPTIMIZED_TABLEGEN=TRUE
-                -DLLVM_USE_SPLIT_DWARF=True -DLLVM_INSTALL_UTILS=ON
+        #        -DLLVM_USE_SPLIT_DWARF=True
+        -DLLVM_INSTALL_UTILS=ON
         WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
 )
 message(STATUS "build llvm")

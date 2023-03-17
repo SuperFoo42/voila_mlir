@@ -1,7 +1,7 @@
 #include "ast/Loop.hpp"
+#include "ASTNodes.hpp"
+#include "ast/ASTNodeVariant.hpp"
 #include "ast/ASTVisitor.hpp"               // for ASTVisitor
-#include "ast/Expression.hpp"               // for Expression
-#include "ast/Statement.hpp"                // for Statement
 #include "range/v3/algorithm/transform.hpp" // for transform, transform_fn
 #include "range/v3/functional/identity.hpp" // for identity
 
@@ -11,13 +11,14 @@ namespace voila::ast
     Loop *Loop::as_loop() { return this; }
     bool Loop::is_loop() const { return true; }
     void Loop::print(std::ostream &) const {}
-    void Loop::visit(ASTVisitor &visitor) const { visitor(*this); }
-    void Loop::visit(ASTVisitor &visitor) { visitor(*this); }
 
-    std::shared_ptr<ASTNode> Loop::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap)
+    ASTNodeVariant Loop::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
     {
-        std::vector<Statement> clonedStmts;
-        ranges::transform(mStms, clonedStmts.begin(), [&vmap](auto &item) { return item.clone(vmap); });
-        return std::make_shared<Loop>(loc, mPred.clone(vmap), clonedStmts);
+        std::vector<ASTNodeVariant> clonedStmts;
+        auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
+                                       [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};
+        ranges::transform(mStms, clonedStmts.begin(),
+                          [&cloneVisitor](auto &item) { return std::visit(cloneVisitor, item); });
+        return std::make_shared<Loop>(loc, std::visit(cloneVisitor, mPred), clonedStmts);
     }
 } // namespace voila::ast

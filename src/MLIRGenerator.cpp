@@ -35,8 +35,8 @@ namespace voila
         for (const auto &f : program.life_funcs())
         {
             auto generatorImpl = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, program.inferer);
-            generatorImpl(*f);
-            auto genRes = generatorImpl.getValue();
+
+            auto genRes = std::visit(generatorImpl, ASTNodeVariant(f));
             // TODO: error handling
             if (std::holds_alternative<std::monostate>(genRes))
                 continue; // unspecified function, ignore

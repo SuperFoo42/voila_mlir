@@ -1,5 +1,7 @@
 #include "ast/Leq.hpp"
 #include "ast/ASTVisitor.hpp"  // for ASTVisitor
+#include "ASTNodes.hpp"
+#include "ast/ASTNodeVariant.hpp"
 
 namespace voila::ast {
     std::string Leq::type2string() const {
@@ -13,12 +15,8 @@ namespace voila::ast {
     Leq *Leq::as_leq() {
         return this;
     }
-
-    void Leq::visit(ASTVisitor &visitor) const {
-        visitor(*this);
-    }
-
-    void Leq::visit(ASTVisitor &visitor) {
-        visitor(*this);
+    ASTNodeVariant Leq::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
+    {
+        return Comparison::clone<Leq>(vmap);
     }
 } // namespace voila::ast

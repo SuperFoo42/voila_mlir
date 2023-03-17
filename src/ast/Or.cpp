@@ -1,17 +1,17 @@
 #include "ast/Or.hpp"
 #include "ast/ASTVisitor.hpp" // for ASTVisitor
-#include "ast/Expression.hpp" // for Expression
+#include "ASTNodes.hpp"
+#include "ast/ASTNodeVariant.hpp"
 
 namespace voila::ast
 {
     std::string Or::type2string() const { return "or"; }
     bool Or::is_or() const { return true; }
     Or *Or::as_or() { return this; }
-    void Or::visit(ASTVisitor &visitor) const { visitor(*this); }
-    void Or::visit(ASTVisitor &visitor) { visitor(*this); }
-
-    std::shared_ptr<ASTNode> Or::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap)
+    ASTNodeVariant Or::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
     {
-        return std::make_shared<Or>(loc, mLhs.clone(vmap), mRhs.clone(vmap));
+        auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
+                                       [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};
+        return std::make_shared<Or>(loc, std::visit(cloneVisitor,mLhs), std::visit(cloneVisitor,mRhs));
     }
 } // namespace voila::ast

@@ -2,7 +2,8 @@
 
 #include <stdexcept>
 
-namespace voila::ast {
+namespace voila::ast
+{
     class Aggregation;
 
     class AggrSum;
@@ -85,7 +86,7 @@ namespace voila::ast {
 
     class TupleCreate;
 
-    class ASTNode;
+    class AbstractASTNode;
 
     class Fun;
 
@@ -103,167 +104,245 @@ namespace voila::ast {
 
     class Insert;
 
-    class ASTVisitor {
-    public:
+    template <typename T = void> class ASTVisitor
+    {
+      public:
+        using result_type = T;
         virtual ~ASTVisitor() = default;
 
-        virtual void operator()(const ASTNode &) {
+        virtual T operator()(std::shared_ptr<Aggregation>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Aggregation &) {
+        virtual T operator()(std::shared_ptr<AggrSum>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const AggrSum &) {
+        virtual T operator()(std::shared_ptr<AggrCnt>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const AggrCnt &) {
+        virtual T operator()(std::shared_ptr<AggrMin>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const AggrMin &) {
+        virtual T operator()(std::shared_ptr<AggrMax>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const AggrMax &) {
+        virtual T operator()(std::shared_ptr<AggrAvg>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const AggrAvg &) {
+        virtual T operator()(std::shared_ptr<Write>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Write &) {
+        virtual T operator()(std::shared_ptr<Scatter>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Scatter &) {
+        virtual T operator()(std::shared_ptr<FunctionCall>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(FunctionCall &) {
+        virtual T operator()(std::shared_ptr<Assign>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const FunctionCall &) {
+        virtual T operator()(std::shared_ptr<Emit>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Assign &) {
+        virtual T operator()(std::shared_ptr<Loop>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Emit &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Loop &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const StatementWrapper &) {
+        virtual T operator()(std::shared_ptr<StatementWrapper>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Const &) {
+        virtual T operator()(std::shared_ptr<Const>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Add &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Arithmetic &) {
+        virtual T operator()(std::shared_ptr<Add>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Sub &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Mul &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Div &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Mod &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Eq &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Neq &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Le &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Ge &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Leq &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Geq &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const And &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Or &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Not &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Logical &) {
+        virtual T operator()(std::shared_ptr<Arithmetic>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Comparison &) {
+        virtual T operator()(std::shared_ptr<Sub>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const IntConst &) {
+        virtual T operator()(std::shared_ptr<Mul>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const BooleanConst &) {
+        virtual T operator()(std::shared_ptr<Div>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const FltConst &) {
+        virtual T operator()(std::shared_ptr<Mod>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const StrConst &) {
+        virtual T operator()(std::shared_ptr<Eq>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Read &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Gather &) {
+        virtual T operator()(std::shared_ptr<Neq>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Ref &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const TupleGet &) {
+        virtual T operator()(std::shared_ptr<Le>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const TupleCreate &) {
+        virtual T operator()(std::shared_ptr<Ge>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Fun &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Main &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        virtual void operator()(const Selection &) {
+        virtual T operator()(std::shared_ptr<Leq>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Variable &) {
+        virtual T operator()(std::shared_ptr<Geq>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Predicate &) {
+        virtual T operator()(std::shared_ptr<And>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Hash &) { throw std::logic_error("Pure ASTNodes are not allowed to be visited"); }
-
-        //TODO: insert in visitors
-        virtual void operator()(const Lookup &) {
+        virtual T operator()(std::shared_ptr<Or>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }
 
-        virtual void operator()(const Insert &) {
+        virtual T operator()(std::shared_ptr<Not>)
+        {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Logical>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Comparison>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<IntConst>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<BooleanConst>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<FltConst>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<StrConst>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Read>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Gather>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Ref>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Fun>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Main>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Selection>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Variable>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Predicate>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Hash>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Lookup>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::shared_ptr<Insert>)
+        {
+            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+        }
+
+        virtual T operator()(std::monostate)
+        {
+            throw std::logic_error("No ASTNode");
         }
     };
 } // namespace voila::ast

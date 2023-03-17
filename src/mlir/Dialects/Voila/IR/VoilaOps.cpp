@@ -209,7 +209,7 @@ void SumOp::build(::mlir::OpBuilder &odsBuilder,
         sizes.push_back(0);
     }
     odsState.addTypes(resType);
-    odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
+    odsState.addAttribute("operand_segment_sizes", odsBuilder.getDenseI32ArrayAttr(sizes));
 }
 
 void InsertOp::build(::mlir::OpBuilder &odsBuilder,
@@ -243,7 +243,7 @@ void InsertOp::build(mlir::OpBuilder &odsBuilder,
         sizes.push_back(0);
     }
     odsState.addTypes(resTypes);
-    odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
+    odsState.addAttribute("operand_segment_sizes", odsBuilder.getDenseI32ArrayAttr(sizes));
 }
 
 void LookupOp::build(::mlir::OpBuilder &odsBuilder,
@@ -286,7 +286,7 @@ void LookupOp::build(::mlir::OpBuilder &odsBuilder,
         sizes.push_back(0);
     }
     odsState.addTypes(resTypes);
-    odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
+    odsState.addAttribute("operand_segment_sizes", odsBuilder.getDenseI32ArrayAttr(sizes));
 }
 
 void MinOp::build(::mlir::OpBuilder &odsBuilder,
@@ -327,7 +327,7 @@ void MinOp::build(::mlir::OpBuilder &odsBuilder,
         sizes.push_back(0);
     }
     odsState.addTypes(resType);
-    odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
+    odsState.addAttribute("operand_segment_sizes", odsBuilder.getDenseI32ArrayAttr(sizes));
 }
 
 void MaxOp::build(::mlir::OpBuilder &odsBuilder,
@@ -368,7 +368,7 @@ void MaxOp::build(::mlir::OpBuilder &odsBuilder,
         sizes.push_back(0);
     }
     odsState.addTypes(resType);
-    odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
+    odsState.addAttribute("operand_segment_sizes", odsBuilder.getDenseI32ArrayAttr(sizes));
 }
 
 void CountOp::build(::mlir::OpBuilder &odsBuilder,
@@ -409,7 +409,7 @@ void CountOp::build(::mlir::OpBuilder &odsBuilder,
         sizes.push_back(0);
     }
     odsState.addTypes(resType);
-    odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
+    odsState.addAttribute("operand_segment_sizes", odsBuilder.getDenseI32ArrayAttr(sizes));
 }
 
 void AvgOp::build(::mlir::OpBuilder &odsBuilder,
@@ -467,5 +467,5 @@ void HashOp::build(::mlir::OpBuilder &odsBuilder, ::mlir::OperationState &odsSta
         sizes.push_back(0);
     }
     odsState.addTypes(retType);
-    odsState.addAttribute("operand_segment_sizes", odsBuilder.getI32VectorAttr(sizes));
+    odsState.addAttribute("operand_segment_sizes", odsBuilder.getDenseI32ArrayAttr(sizes));
 }

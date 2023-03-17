@@ -1,5 +1,7 @@
 #include "ast/Add.hpp"
 #include "ast/ASTVisitor.hpp"  // for ASTVisitor
+#include "ASTNodes.hpp"
+#include "ast/ASTNodeVariant.hpp"
 
 namespace voila::ast {
     bool Add::is_add() const {
@@ -13,12 +15,8 @@ namespace voila::ast {
     std::string Add::type2string() const {
         return "add";
     }
-
-    void Add::visit(ASTVisitor &visitor) const {
-        visitor(*this);
-    }
-
-    void Add::visit(ASTVisitor &visitor) {
-        visitor(*this);
+    ASTNodeVariant Add::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
+    {
+        return Arithmetic::clone<Add>(vmap);
     }
 } // namespace voila::ast

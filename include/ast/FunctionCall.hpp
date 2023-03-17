@@ -3,22 +3,19 @@
 #include <memory>               // for shared_ptr
 #include <string>               // for string
 #include <vector>               // for vector
-#include "Expression.hpp"       // for Expression
 #include "IStatement.hpp"       // for IStatement
 #include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h"  // for DenseMap
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
     class FunctionCall : public IStatement
     {
         std::string mFun;
-        std::vector<Expression> mArgs;
+        std::vector<ASTNodeVariant> mArgs;
 
       public:
-        FunctionCall(Location loc, std::string fun, std::vector<Expression> args);
+        FunctionCall(Location loc, std::string fun, std::vector<ASTNodeVariant> args);
 
         [[nodiscard]] bool is_function_call() const final;
 
@@ -27,10 +24,7 @@ namespace voila::ast
         [[nodiscard]] std::string type2string() const final;
         void print(std::ostream &ostream) const final;
 
-        //void visit(ASTVisitor &visitor) const final;
-        void visit(ASTVisitor &visitor) final;
-
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
 
         [[nodiscard]] const std::string &fun() const {
             return mFun;
@@ -40,7 +34,7 @@ namespace voila::ast
             return mFun;
         }
 
-        [[nodiscard]] const std::vector<Expression> &args() const {
+        [[nodiscard]] const std::vector<ASTNodeVariant> &args() const {
             return mArgs;
         }
     };

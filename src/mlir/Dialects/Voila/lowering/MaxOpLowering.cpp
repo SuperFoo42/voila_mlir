@@ -152,7 +152,7 @@ namespace voila::mlir::lowering
                       maxOpAdaptor.getInput()); // FIXME: not the best solution, indices can be out of range.
         if (getElementTypeOrSelf(op->getResultTypes().front()).isa<IntegerType>())
         {
-            res = rewriter.create<memref::AllocOp>(MemRefType::get(-1, rewriter.getI64Type()), ArrayRef(allocSize));
+            res = rewriter.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, rewriter.getI64Type()), ArrayRef(allocSize));
             buildAffineLoopNest(
                 rewriter, rewriter.getLoc(), rewriter.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
                 [&res, &maxOpAdaptor](OpBuilder &builder, Location loc, ValueRange vals)
@@ -165,7 +165,7 @@ namespace voila::mlir::lowering
         }
         else if (getElementTypeOrSelf(op->getResultTypes().front()).isa<FloatType>())
         {
-            res = rewriter.create<memref::AllocOp>(MemRefType::get(-1, rewriter.getF64Type()), ArrayRef(allocSize));
+            res = rewriter.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, rewriter.getF64Type()), ArrayRef(allocSize));
             buildAffineLoopNest(rewriter, rewriter.getLoc(), rewriter.create<ConstantIndexOp>(0).getResult(), allocSize,
                                 {1},
                                 [&res](OpBuilder &builder, Location loc, ValueRange vals)

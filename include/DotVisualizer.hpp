@@ -1,213 +1,113 @@
 #pragma once
 
+#include "TypeInferer.hpp"               // for TypeInferer
+#include "Types.hpp"                     // for operator<<, FunctionType (p...
+#include "ast/ASTNode.hpp"               // for ASTNode
+#include "ast/ASTVisitor.hpp"            // for ASTVisitor
+#include "location.hpp"                  // for operator<<
+#include "llvm/Support/FormatVariadic.h" // for formatv, formatv_object
 #include <cstddef>                       // for size_t
-#include <functional>                     // for reference_wrapper
-#include <iostream>                       // for operator<<, ostream, basic_...
-#include <memory>                         // for dynamic_pointer_cast, share...
-#include <optional>                       // for optional, nullopt
-#include <string>                         // for operator<<
-#include "TypeInferer.hpp"                // for TypeInferer
-#include "Types.hpp"                      // for operator<<, FunctionType (p...
-#include "ast/ASTNode.hpp"                // for ASTNode
-#include "ast/ASTVisitor.hpp"             // for ASTVisitor
-#include "llvm/Support/FormatVariadic.h"  // for formatv, formatv_object
-#include "location.hpp"                   // for operator<<
+#include <functional>                    // for reference_wrapper
+#include <iostream>                      // for operator<<, ostream, basic_...
+#include <memory>                        // for dynamic_pointer_cast, share...
+#include <optional>                      // for optional, nullopt
+#include <string>                        // for operator<<
 
+namespace voila::ast
+{
 
-namespace voila::ast {
-    class Add;
-
-    class AggrAvg;
-
-    class AggrCnt;
-
-    class AggrMax;
-
-    class AggrMin;
-
-    class AggrSum;
-
-    class And;
-
-    class Assign;
-
-    class BooleanConst;
-
-    class Div;
-
-    class Emit;
-
-    class Eq;
-
-    class FltConst;
-
-    class Fun;
-
-    class FunctionCall;
-
-    class Gather;
-
-    class Ge;
-
-    class Geq;
-
-    class IntConst;
-
-    class Le;
-
-    class Leq;
-
-    class Loop;
-
-    class Main;
-
-    class Mod;
-
-    class Mul;
-
-    class Neq;
-
-    class Not;
-
-    class Or;
-
-    class Read;
-
-    class Ref;
-
-    class Scatter;
-
-    class Selection;
-
-    class StatementWrapper;
-
-    class StrConst;
-
-    class Sub;
-
-    class TupleCreate;
-
-    class TupleGet;
-
-    class Variable;
-
-    class Write;
-
-    class DotVisualizer : public ASTVisitor {
-    protected:
-        Fun &to_dot;
+    class DotVisualizer : public ASTVisitor<>
+    {
+      protected:
+        std::shared_ptr<Fun> to_dot;
         std::ostream *os;
         size_t nodeID;
         const std::optional<std::reference_wrapper<TypeInferer>> inferer;
 
-        template<bool infer_type = false>
-        void printVertex(const ASTNode &node) {
-            *os << llvm::formatv("n{0} [label=<<b>{1} <br/>", nodeID, node.type2string()).str();
-            if (infer_type && inferer.has_value()) {
-                const auto type = inferer->get().get_type(node);
-                // FIXME: overload does not work, need dynamic cast
-                const auto res = std::dynamic_pointer_cast<FunctionType>(type);
-                if (!res) {
-                    if (std::dynamic_pointer_cast<const ScalarType>(type)) {
-                        *os << *std::dynamic_pointer_cast<const ScalarType>(type);
-                    } else {
-                        *os << *std::dynamic_pointer_cast<FunctionType>(type);
-                    }
-                } else {
-                    *os << *res;
-                }
+        template <bool infer_type = false> void printVertex(const ASTNodeVariant &node);
 
-                *os << "<br/>";
-            }
-            *os << "@" << node.get_location() << "</b> <br/>";
-            node.print(*os);
-            *os << ">]" << std::endl;
+      public:
+        explicit DotVisualizer(std::shared_ptr<Fun> start,
+                               const std::optional<std::reference_wrapper<TypeInferer>> &inferer = std::nullopt)
+            : to_dot{std::move(start)}, os{nullptr}, nodeID{0}, inferer{inferer}
+        {
         }
 
-    public:
-        explicit DotVisualizer(Fun &start,
-                               const std::optional<std::reference_wrapper<TypeInferer>> &inferer = std::nullopt) :
-                to_dot{start}, os{nullptr}, nodeID{0}, inferer{inferer} {
-        }
+        void operator()(std::shared_ptr<AggrSum> sum) final;
 
-        void operator()(const AggrSum &sum) final;
+        void operator()(std::shared_ptr<AggrCnt> cnt) final;
 
-        void operator()(const AggrCnt &cnt) final;
+        void operator()(std::shared_ptr<AggrMin> min) final;
 
-        void operator()(const AggrMin &min) final;
+        void operator()(std::shared_ptr<AggrMax> max) final;
 
-        void operator()(const AggrMax &max) final;
+        void operator()(std::shared_ptr<AggrAvg> avg) final;
 
-        void operator()(const AggrAvg &avg) final;
+        void operator()(std::shared_ptr<Write> write) final;
 
-        void operator()(const Write &write) final;
+        void operator()(std::shared_ptr<Scatter> scatter) final;
 
-        void operator()(const Scatter &scatter) final;
+        void operator()(std::shared_ptr<FunctionCall> call) final;
 
-        void operator()(const FunctionCall &call) final;
+        void operator()(std::shared_ptr<Assign> assign) final;
 
-        void operator()(const Assign &assign) final;
+        void operator()(std::shared_ptr<Emit> emit) final;
 
-        void operator()(const Emit &emit) final;
+        void operator()(std::shared_ptr<Loop> loop) final;
 
-        void operator()(const Loop &loop) final;
+        void operator()(std::shared_ptr<StatementWrapper> wrapper) final;
 
-        void operator()(const StatementWrapper &wrapper) final;
+        void operator()(std::shared_ptr<Add> add) final;
 
-        void operator()(const Add &add) final;
+        void operator()(std::shared_ptr<Sub> sub) final;
 
-        void operator()(const Sub &sub) final;
+        void operator()(std::shared_ptr<Mul> mul) final;
 
-        void operator()(const Mul &mul) final;
+        void operator()(std::shared_ptr<Div> div) final;
 
-        void operator()(const Div &div) final;
+        void operator()(std::shared_ptr<Mod> mod) final;
 
-        void operator()(const Mod &mod) final;
+        void operator()(std::shared_ptr<Eq> eq) final;
 
-        void operator()(const Eq &eq) final;
+        void operator()(std::shared_ptr<Neq> neq) final;
 
-        void operator()(const Neq &neq) final;
+        void operator()(std::shared_ptr<Le> le) final;
 
-        void operator()(const Le &le) final;
+        void operator()(std::shared_ptr<Ge> ge) final;
 
-        void operator()(const Ge &ge) final;
+        void operator()(std::shared_ptr<Leq> leq) final;
 
-        void operator()(const Leq &leq) final;
+        void operator()(std::shared_ptr<Geq> geq) final;
 
-        void operator()(const Geq &geq) final;
+        void operator()(std::shared_ptr<And> anAnd) final;
 
-        void operator()(const And &anAnd) final;
+        void operator()(std::shared_ptr<Or> anOr) final;
 
-        void operator()(const Or &anOr) final;
+        void operator()(std::shared_ptr<Not> aNot) final;
 
-        void operator()(const Not &aNot) final;
+        void operator()(std::shared_ptr<IntConst> aConst) final;
 
-        void operator()(const IntConst &aConst) final;
+        void operator()(std::shared_ptr<BooleanConst> aConst) final;
 
-        void operator()(const BooleanConst &aConst) final;
+        void operator()(std::shared_ptr<FltConst> aConst) final;
 
-        void operator()(const FltConst &aConst) final;
+        void operator()(std::shared_ptr<StrConst> aConst) final;
 
-        void operator()(const StrConst &aConst) final;
+        void operator()(std::shared_ptr<Read> read) final;
 
-        void operator()(const Read &read) final;
+        void operator()(std::shared_ptr<Gather> gather) final;
 
-        void operator()(const Gather &gather) final;
+        void operator()(std::shared_ptr<Ref> param) final;
 
-        void operator()(const Ref &param) final;
+        void operator()(std::shared_ptr<Main> create) final;
 
-        void operator()(const TupleGet &get) final;
+        void operator()(std::shared_ptr<Fun> create) final;
 
-        void operator()(const TupleCreate &create) final;
+        void operator()(std::shared_ptr<Selection> create) final;
 
-        void operator()(const Main &create) final;
-
-        void operator()(const Fun &create) final;
-
-        void operator()(const Selection &create) final;
-
-        void operator()(const Variable &var) final;
+        void operator()(std::shared_ptr<Variable> var) final;
+        using ASTVisitor<void>::operator();
 
         friend std::ostream &operator<<(std::ostream &out, DotVisualizer &t);
     };
-}
+} // namespace voila::ast

@@ -1,6 +1,5 @@
 #pragma once
 #include "Comparison.hpp"      // for Comparison
-#include "Expression.hpp"      // for Expression
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <memory>              // for shared_ptr
@@ -9,12 +8,10 @@
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
     class Eq : public Comparison
     {
       public:
-        Eq(Location loc, Expression lhs, Expression rhs) : Comparison(loc, std::move(lhs), std::move(rhs))
+        Eq(Location loc, ASTNodeVariant lhs, ASTNodeVariant rhs) : Comparison(loc, lhs, rhs)
         {
             // TODO
         }
@@ -23,12 +20,7 @@ namespace voila::ast
         [[nodiscard]] bool is_eq() const final;
 
         Eq *as_eq() final;
-        void visit(ASTVisitor &visitor) const final;
-        void visit(ASTVisitor &visitor) final;
 
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) final
-        {
-            return Comparison::clone<Eq>(vmap);
-        }
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) final;
     };
 } // namespace voila::ast

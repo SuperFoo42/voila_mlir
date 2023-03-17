@@ -1,5 +1,7 @@
 #include "ast/Geq.hpp"
 #include "ast/ASTVisitor.hpp"  // for ASTVisitor
+#include "ASTNodes.hpp"
+#include "ast/ASTNodeVariant.hpp"
 
 namespace voila::ast
 {
@@ -15,12 +17,8 @@ namespace voila::ast
     {
         return this;
     }
-    void Geq::visit(ASTVisitor &visitor) const
+    ASTNodeVariant Geq::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
     {
-        visitor(*this);
-    }
-    void Geq::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
+        return Comparison::clone<Geq>(vmap);
     }
 } // namespace voila::ast

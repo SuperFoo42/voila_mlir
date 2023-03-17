@@ -4,55 +4,60 @@
 
 namespace voila::ast
 {
-    bool ASTNode::is_stmt() const
+    bool AbstractASTNode::is_stmt() const
     {
         return false;
     }
-    bool ASTNode::is_function_definition() const
+    bool AbstractASTNode::is_function_definition() const
     {
         return false;
     }
-    bool ASTNode::is_main() const
+    bool AbstractASTNode::is_main() const
     {
         return false;
     }
-    Fun *ASTNode::as_function_definition()
+    Fun *AbstractASTNode::as_function_definition()
     {
         return nullptr;
     }
-    Main *ASTNode::as_main()
+    Main *AbstractASTNode::as_main()
     {
         return nullptr;
     }
-    bool ASTNode::is_expr() const
+    bool AbstractASTNode::is_expr() const
     {
         return false;
     }
-    void ASTNode::visit(ASTVisitor &visitor) const
-    {
-        visitor(*this);
-    }
 
-    void ASTNode::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
-    }
-
-    Location ASTNode::get_location() const
+    Location AbstractASTNode::get_location() const
     {
         return loc;
     }
-    ASTNode::ASTNode(const Location loc) : loc(loc) {}
-    bool ASTNode::operator==(const ASTNode &rhs) const
+    AbstractASTNode::AbstractASTNode(const Location loc) : loc(loc) {}
+    bool AbstractASTNode::operator==(const AbstractASTNode &rhs) const
     {
         return *loc.begin.filename == *rhs.loc.begin.filename && loc.begin.column == rhs.loc.begin.column &&
                loc.begin.line == rhs.loc.begin.line && loc.end.filename == rhs.loc.end.filename &&
                loc.end.column == rhs.loc.end.column && loc.end.line == rhs.loc.end.line;
     }
-    bool ASTNode::operator!=(const ASTNode &rhs) const
+    bool AbstractASTNode::operator!=(const AbstractASTNode &rhs) const
     {
         return !(rhs == *this);
     }
 
-    ASTNode::ASTNode() = default;
+    AbstractASTNode::AbstractASTNode() = default;
 } // namespace voila::ast
+std::ostream &operator<<(std::ostream &out, const voila::ast::AbstractASTNode &t)
+{
+    t.print(out);
+    return out;
+}
+
+
+std::size_t std::hash<voila::ast::AbstractASTNode>::operator()(const voila::ast::AbstractASTNode &node)
+{
+    std::size_t res = 0;
+    hash_combine(res, *node.loc.begin.filename, *node.loc.end.filename, node.loc.begin.line, node.loc.end.line,
+                 node.loc.begin.column, node.loc.end.column);
+    return res;
+}

@@ -9,8 +9,6 @@
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
     class Variable : public IExpression, virtual public std::enable_shared_from_this<Variable>
     {
       public:
@@ -24,13 +22,10 @@ namespace voila::ast
         [[nodiscard]] std::string type2string() const final;
         void print(std::ostream &ostream) const final;
 
-        void visit(ASTVisitor &visitor) const final;
-        void visit(ASTVisitor &visitor) final;
-
         std::shared_ptr<Variable> getptr() { return shared_from_this(); }
 
         const std::string var;
 
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
     };
 } // namespace voila::ast

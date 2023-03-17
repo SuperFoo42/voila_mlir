@@ -1,8 +1,6 @@
 #pragma once
 
 #include "ASTNode.hpp"
-#include "Statement.hpp"
-#include "ast/Expression.hpp"  // for Expression
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <iosfwd>              // for ostream
 #include <memory>              // for shared_ptr
@@ -13,18 +11,16 @@
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
-    class Fun : public ASTNode
+    class Fun : public AbstractASTNode
     {
         std::string mName;
-        std::vector<Expression> mArgs;
-        std::vector<Statement> mBody;
-        std::optional<Statement> mResult;
-        std::unordered_map<std::string, Expression> mVariables;
+        std::vector<ASTNodeVariant> mArgs;
+        std::vector<ASTNodeVariant> mBody;
+        ASTNodeVariant mResult;
+        std::unordered_map<std::string, ASTNodeVariant> mVariables;
 
       public:
-        Fun(Location loc, std::string fun, std::vector<Expression> args, std::vector<Statement> exprs);
+        Fun(Location loc, std::string fun, std::vector<ASTNodeVariant> args, std::vector<ASTNodeVariant> exprs);
 
         Fun() = default;
 
@@ -46,22 +42,21 @@ namespace voila::ast
 
         void print(std::ostream &o) const override;
 
-        void visit(ASTVisitor &visitor) const override;
-
-        void visit(ASTVisitor &visitor) override;
-
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
 
         const std::string &name() const { return mName; }
 
-        const std::vector<Expression> &args() const { return mArgs; }
+        const std::vector<ASTNodeVariant> &args() const { return mArgs; }
 
-        const std::vector<Statement> &body() const { return mBody; }
+        const std::vector<ASTNodeVariant> &body() const { return mBody; }
 
-        const std::optional<Statement> &result() const { return mResult; }
+        const ASTNodeVariant &result() const
+        {
+            return mResult;
+        }
 
-        std::unordered_map<std::string, Expression> &variables() { return mVariables; }
+        std::unordered_map<std::string, ASTNodeVariant> &variables() { return mVariables; }
 
-        const std::unordered_map<std::string, Expression> &variables() const { return mVariables; }
+        const std::unordered_map<std::string, ASTNodeVariant> &variables() const { return mVariables; }
     };
 } // namespace voila::ast

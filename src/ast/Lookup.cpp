@@ -1,8 +1,9 @@
 #include "ast/Lookup.hpp"
 #include "ast/ASTVisitor.hpp"               // for ASTVisitor
-#include "ast/Expression.hpp"               // for Expression
 #include "range/v3/algorithm/transform.hpp" // for transform, transform_fn
 #include "range/v3/functional/identity.hpp" // for identity
+#include "ASTNodes.hpp"
+#include "ast/ASTNodeVariant.hpp"
 
 namespace voila::ast
 {
@@ -10,15 +11,30 @@ namespace voila::ast
     Lookup *Lookup::as_lookup() { return this; }
     std::string Lookup::type2string() const { return "hash_insert"; }
     void Lookup::print(std::ostream &) const {}
-    void Lookup::visit(ASTVisitor &visitor) const { visitor(*this); }
-    void Lookup::visit(ASTVisitor &visitor) { visitor(*this); }
 
-    std::shared_ptr<ASTNode> Lookup::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap)
+    ASTNodeVariant Lookup::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
     {
-        std::vector<Expression> clonedValues;
-        ranges::transform(mValues, clonedValues.begin(), [&vmap](auto &item) { return item.clone(vmap); });
-        std::vector<Expression> clonedTables;
-        ranges::transform(mTables, clonedTables.begin(), [&vmap](auto &item) { return item.clone(vmap); });
-        return std::make_shared<Lookup>(loc, clonedValues, clonedTables, mHashes.clone(vmap));
+        std::vector<ASTNodeVariant> clonedValues;
+        auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
+                                       [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};
+        for (auto &item : mValues)
+        {
+            clonedValues.push_back(std::visit(cloneVisitor, item));
+        }
+        std::vector<ASTNodeVariant> clonedTables;
+        for (auto &item : mTables)
+        {
+            clonedTables.push_back(std::visit(cloneVisitor, item));
+        }
+        return std::make_shared<Lookup>(loc, clonedValues, clonedTables,std::visit(cloneVisitor, mHashes));
+    }
+
+    Lookup::Lookup(Location loc,
+                   std::vector<ASTNodeVariant> values,
+                   std::vector<ASTNodeVariant> tables,
+                   ASTNodeVariant hashes)
+        : IExpression(loc), mHashes{std::move(hashes)}, mTables{std::move(tables)}, mValues{std::move(values)}
+    {
+        // TODO
     }
 } // namespace voila::ast

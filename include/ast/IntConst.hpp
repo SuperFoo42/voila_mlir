@@ -10,8 +10,6 @@
 
 namespace voila::ast {
 
-    class ASTVisitor;
-
     class IntConst : public Const {
 
     public:
@@ -25,11 +23,7 @@ namespace voila::ast {
 
         void print(std::ostream &ostream) const final;
 
-        void visit(ASTVisitor &visitor) const final;
-
-        void visit(ASTVisitor &visitor) final;
-
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &) override;
+        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &) override;
 
         const std::intmax_t val;
     };

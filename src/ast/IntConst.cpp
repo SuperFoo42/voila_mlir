@@ -19,16 +19,7 @@ namespace voila::ast
     {
         ostream << std::to_string(val);
     }
-    void IntConst::visit(ASTVisitor &visitor) const
-    {
-        visitor(*this);
-    }
-    void IntConst::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
-    }
-
-    std::shared_ptr<ASTNode> IntConst::clone(llvm::DenseMap<ASTNode *, ASTNode *> &) {
+    ASTNodeVariant IntConst::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &) {
         return std::make_shared<IntConst>(loc, val);
     }
 } // namespace voila::ast

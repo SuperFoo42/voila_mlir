@@ -96,7 +96,7 @@ namespace voila::mlir::lowering
         for (auto val : values)
         {
             hts.push_back(rewriter.create<memref::AllocOp>(
-                MemRefType::get(-1, val.getType().dyn_cast<TensorType>().getElementType()), htSize));
+                MemRefType::get(ShapedType::kDynamic, val.getType().dyn_cast<TensorType>().getElementType()), htSize));
         }
 
         return std::make_pair(hts, htSize);

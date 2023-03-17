@@ -1,6 +1,7 @@
 #include "ast/And.hpp"
 #include "ast/ASTVisitor.hpp"  // for ASTVisitor
-#include "ast/Expression.hpp"  // for Expression
+#include "ASTNodes.hpp"
+#include "ast/ASTNodeVariant.hpp"
 
 namespace voila::ast
 {
@@ -8,24 +9,20 @@ namespace voila::ast
     {
         return "and";
     }
+
     bool And::is_and() const
     {
         return true;
     }
+
     And *And::as_and()
     {
         return this;
     }
-    void And::visit(ASTVisitor &visitor) const
-    {
-        visitor(*this);
-    }
-    void And::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
-    }
 
-    std::shared_ptr<ASTNode> And::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
-        return std::make_shared<And>(loc, mLhs.clone(vmap), mRhs.clone(vmap));
+    ASTNodeVariant And::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) {
+        auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
+                                       [](std::monostate &)-> ASTNodeVariant { throw std::logic_error(""); }};
+        return std::make_shared<And>(loc, std::visit(cloneVisitor, mLhs), std::visit(cloneVisitor, mRhs));
     }
 } // namespace voila::ast

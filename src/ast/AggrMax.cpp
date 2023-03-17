@@ -1,5 +1,7 @@
 #include "ast/AggrMax.hpp"
 #include "ast/ASTVisitor.hpp"  // for ASTVisitor
+#include "ast/ASTNodeVariant.hpp"
+#include "ASTNodes.hpp"
 
 namespace voila::ast
 {
@@ -15,12 +17,8 @@ namespace voila::ast
     {
         return "max aggregation";
     }
-    void AggrMax::visit(ASTVisitor &visitor) const
+    ASTNodeVariant AggrMax::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
     {
-        visitor(*this);
-    }
-    void AggrMax::visit(ASTVisitor &visitor)
-    {
-        visitor(*this);
+        return Aggregation::clone<AggrMax>(vmap);
     }
 } // namespace voila::ast

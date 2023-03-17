@@ -6,6 +6,8 @@
 #include <stdexcept>       // for out_of_range
 #include <cstdlib>        // for abort
 #include <utility>         // for move
+#include "ast/ASTNodeVariant.hpp"
+#include "ASTNodes.hpp"
 
 namespace voila
 {
@@ -15,7 +17,7 @@ namespace voila
         try
         {
             const auto &main = prog.get_func("main");
-            main->visit(inferer);
+            std::visit(inferer, ast::ASTNodeVariant(main));
         }
         catch (const std::out_of_range &ex)
         {

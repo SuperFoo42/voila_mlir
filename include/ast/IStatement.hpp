@@ -14,14 +14,14 @@ namespace voila::ast
     class Loop;
     class StatementWrapper;
 
-    class IStatement : public ASTNode
+    class IStatement : public AbstractASTNode
     {
       public:
-        explicit IStatement(const Location loc) : ASTNode(loc){};
+        explicit IStatement(const Location loc) : AbstractASTNode(loc){};
         ~IStatement() override = default;
 
-        virtual void set_predicate(Expression);
-        virtual std::optional<Expression> get_predicate();
+        virtual void set_predicate(ASTNodeVariant);
+        virtual std::optional<ASTNodeVariant> get_predicate();
 
         // type checks
         [[nodiscard]] bool is_stmt() const final;
@@ -52,7 +52,5 @@ namespace voila::ast
         virtual FunctionCall *as_function_call();
 
         virtual Write *as_write();
-
-        virtual std::optional<Expression> as_expression();
     };
 } // namespace voila::ast

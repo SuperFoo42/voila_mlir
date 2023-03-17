@@ -1,4 +1,5 @@
 #include "MLIRGeneratorImpl.hpp"
+#include "ASTNodes.hpp"
 #include "MlirGenerationException.hpp"
 #include "NotImplementedException.hpp"
 #include "TypeInferer.hpp"
@@ -15,7 +16,6 @@
 #include "ast/Div.hpp"
 #include "ast/Emit.hpp"
 #include "ast/Eq.hpp"
-#include "ast/Expression.hpp"
 #include "ast/FltConst.hpp"
 #include "ast/Fun.hpp"
 #include "ast/FunctionCall.hpp"
@@ -42,7 +42,6 @@
 #include "ast/Ref.hpp"
 #include "ast/Scatter.hpp"
 #include "ast/Selection.hpp"
-#include "ast/Statement.hpp"
 #include "ast/StatementWrapper.hpp"
 #include "ast/Sub.hpp"
 #include "ast/Variable.hpp"
@@ -60,7 +59,6 @@
 #include "mlir/IR/ValueRange.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
-//#include "llvm/ADT/None.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/ScopedHashTable.h"
 #include "llvm/ADT/Twine.h"
@@ -99,249 +97,98 @@ namespace voila::mlir
     using ::mlir::ValueRange;
     using std::to_string;
 
-    void MLIRGeneratorImpl::operator()(const AggrSum &sum)
-    {
-        auto location = loc(sum.get_location());
-        auto expr = std::get<Value>(visitor_gen(sum.src()));
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<AggrSum> sum) { return createAggr(sum); }
 
-        ::mlir::Type resType;
-        if (sum.groups())
-        {
-            if (getElementTypeOrSelf(expr).isIntOrIndex())
-            {
-                resType = RankedTensorType::get(-1, builder.getI64Type());
-            }
-            else if (getElementTypeOrSelf(expr).isIntOrFloat())
-            {
-                resType = RankedTensorType::get(-1, builder.getF64Type());
-            }
-            else
-            {
-                throw MLIRGenerationException();
-            }
-            auto idxs = std::get<Value>(visitor_gen(*sum.groups()));
-            result = builder.create<SumOp>(location, resType, expr, idxs);
-        }
-        else
-        {
-            if (getElementTypeOrSelf(expr).isIntOrIndex())
-            {
-                resType = builder.getI64Type();
-            }
-            else if (getElementTypeOrSelf(expr).isIntOrFloat())
-            {
-                resType = builder.getF64Type();
-            }
-            else
-            {
-                throw MLIRGenerationException();
-            }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<AggrCnt> cnt) { return createAggr(cnt); }
 
-            result = builder.create<SumOp>(location, resType, expr);
-        }
-    }
+    // TODO: is this behaviour better than explicit type checking and throw on monostate?
+    result_variant MLIRGeneratorImpl::operator()(std::monostate) { return Value(); }
 
-    void MLIRGeneratorImpl::operator()(const AggrCnt &cnt)
-    {
-        auto location = loc(cnt.get_location());
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<AggrMin> min) { return createAggr(min); }
 
-        mlir::Value expr = std::get<Value>(visitor_gen(cnt.src()));
-
-        if (cnt.groups())
-        {
-            auto idxs = std::get<Value>(visitor_gen(*cnt.groups()));
-            result = builder.create<CountOp>(location, RankedTensorType::get(-1, builder.getI64Type()), expr, idxs);
-        }
-        else
-        {
-            result = builder.create<CountOp>(location, builder.getI64Type(), expr);
-        }
-    }
-
-    void MLIRGeneratorImpl::operator()(const AggrMin &min)
-    {
-        auto location = loc(min.get_location());
-
-        mlir::Value expr = std::get<Value>(visitor_gen(min.src()));
-        ::mlir::Type resType;
-        if (min.groups())
-        {
-            if (getElementTypeOrSelf(expr).isIntOrIndex())
-            {
-                resType = RankedTensorType::get(-1, builder.getI64Type());
-            }
-            else if (getElementTypeOrSelf(expr).isIntOrFloat())
-            {
-                resType = RankedTensorType::get(-1, builder.getF64Type());
-            }
-            else
-            {
-                throw MLIRGenerationException();
-            }
-            auto idxs = std::get<Value>(visitor_gen(*min.groups()));
-
-            result = builder.create<MinOp>(location, resType, expr, idxs);
-        }
-        else
-        {
-            if (getElementTypeOrSelf(expr).isIntOrIndex())
-            {
-                resType = builder.getI64Type();
-            }
-            else if (getElementTypeOrSelf(expr).isIntOrFloat())
-            {
-                resType = builder.getF64Type();
-            }
-            else
-            {
-                throw MLIRGenerationException();
-            }
-
-            result = builder.create<MinOp>(location, resType, expr);
-        }
-    }
-
-    void MLIRGeneratorImpl::operator()(const AggrMax &max)
-    {
-        auto location = loc(max.get_location());
-
-        mlir::Value expr = std::get<Value>(visitor_gen(max.src()));
-        ::mlir::Type resType;
-        if (max.groups())
-        {
-            if (getElementTypeOrSelf(expr).isIntOrIndex())
-            {
-                resType = RankedTensorType::get(-1, builder.getI64Type());
-            }
-            else if (getElementTypeOrSelf(expr).isIntOrFloat())
-            {
-                resType = RankedTensorType::get(-1, builder.getF64Type());
-            }
-            else
-            {
-                throw MLIRGenerationException();
-            }
-            auto idxs = std::get<Value>(visitor_gen(*max.groups()));
-
-            result = builder.create<MaxOp>(location, resType, expr, idxs);
-        }
-        else
-        {
-            if (getElementTypeOrSelf(expr).isIntOrIndex())
-            {
-                resType = builder.getI64Type();
-            }
-            else if (getElementTypeOrSelf(expr).isIntOrFloat())
-            {
-                resType = builder.getF64Type();
-            }
-            else
-            {
-                throw MLIRGenerationException();
-            }
-
-            result = builder.create<MaxOp>(location, resType, expr);
-        }
-    }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<AggrMax> max) { return createAggr(max); }
 
     // TODO
-    void MLIRGeneratorImpl::operator()(const AggrAvg &avg)
-    {
-        auto location = loc(avg.get_location());
-        mlir::Value expr = std::get<Value>(visitor_gen(avg.src()));
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<AggrAvg> avg) { return createAggr(avg); }
 
-        if (avg.groups())
-        {
-            auto idxs = std::get<Value>(visitor_gen(*avg.groups()));
-            result = builder.create<AvgOp>(location, RankedTensorType::get(-1, builder.getF64Type()), expr, idxs);
-        }
-        else
-        {
-            result = builder.create<AvgOp>(location, builder.getF64Type(), expr);
-        }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Write> write)
+    {
+        return ASTVisitor<result_variant>::operator()(write);
     }
 
-    void MLIRGeneratorImpl::operator()(const Write &write) { ASTVisitor::operator()(write); }
-
-    void MLIRGeneratorImpl::operator()(const Scatter &scatter)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Scatter> scatter)
     {
-        auto location = loc(scatter.get_location());
-        auto col = std::get<Value>(visitor_gen(scatter.src()));
-        auto idx = std::get<Value>(visitor_gen(scatter.idxs()));
-        result = builder.create<ScatterOp>(location, col.getType(), idx, col, Value());
+        auto location = loc(scatter->get_location());
+        auto col = std::get<Value>(std::visit(*this, scatter->src()));
+        auto idx = std::get<Value>(std::visit(*this, scatter->idxs()));
+        return builder.create<ScatterOp>(location, col.getType(), idx, col, Value());
     }
 
-    void MLIRGeneratorImpl::operator()(const FunctionCall &call)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<FunctionCall> call)
     {
-        auto location = loc(call.get_location());
+        auto location = loc(call->get_location());
         SmallVector<Value> operands;
-        for (auto &expr : call.args())
+        for (auto &expr : call->args())
         {
-            auto arg = visitor_gen(expr);
+            auto arg = std::visit(*this, expr);
             operands.push_back(std::get<Value>(arg));
         }
 
-        result = builder
-                     .create<GenericCallOp>(location, call.fun(), operands,
-                                            funcTable.lookup(call.fun()).getFunctionType().getResult(0))
-                     ->getResults();
+        return builder
+            .create<GenericCallOp>(location, call->fun(), operands,
+                                   funcTable.lookup(call->fun()).getFunctionType().getResult(0))
+            ->getResults();
     }
 
-    void MLIRGeneratorImpl::operator()(FunctionCall &call)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Assign> assign)
     {
-        auto location = loc(call.get_location());
-        SmallVector<Value> operands;
-        for (auto &expr : call.args())
-        {
-            auto arg = visitor_gen(expr);
-            operands.push_back(std::get<Value>(arg));
-        }
-
-        auto fOp = funcTable.lookup(call.fun());
-        result =
-            builder
-                .create<GenericCallOp>(location, fOp.getFunctionType().getResults(), SymbolRefAttr::get(fOp), operands)
-                .getResults();
-    }
-
-    void MLIRGeneratorImpl::operator()(const Assign &assign)
-    {
-        auto res = visitor_gen(assign.expr());
-        result = res;
+        auto res = std::visit(*this, assign->expr());
         ValueRange val;
         if (std::holds_alternative<Value>(res))
-            val = {std::get<Value>(res)};
-        else if ((std::holds_alternative<SmallVector<Value>>(res)))
-            val = std::get<SmallVector<Value>>(res);
+            val = std::get<Value>(res);
+        else if (std::holds_alternative<ValueRange>(res))
+            val = std::get<ValueRange>(res);
 
         // assign value to variable
-        for (auto &en : llvm::enumerate(llvm::zip(assign.dests(), val)))
+        for (auto &en : llvm::enumerate(llvm::zip(assign->dests(), val)))
         {
             Value value;
-            Expression dest;
+            ASTNodeVariant dest;
             std::tie(dest, val) = en.value();
 
             symbolTable.insert(
-                (dest.is_variable() ? dest.as_variable() : dest.as_reference()->ref().as_variable())->var, value);
+                std::visit(overloaded{[](std::shared_ptr<Variable> &var) { return var; },
+                                      [](std::shared_ptr<Ref> &ref)
+                                      { return std::get<std::shared_ptr<Variable>>(ref->ref()); },
+                                      [](auto &) -> std::shared_ptr<Variable> { throw std::bad_variant_access(); }},
+                           dest)
+                    ->var,
+                value);
         }
+
+        return res;
     }
 
-    void MLIRGeneratorImpl::operator()(const Emit &emit)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Emit> emit)
     {
-        auto location = loc(emit.get_location());
+        auto location = loc(emit->get_location());
 
         // 'return' takes an optional expression, handle that case here.
-        auto exprs = std::get<SmallVector<Value>>(visitor_gen(emit.exprs()));
+        SmallVector<Value> exprs;
+        for (auto &val : emit->exprs())
+        {
+            exprs.push_back(std::get<Value>(std::visit(*this, val)));
+        }
 
         // Otherwise, this return operation has zero operands.
         builder.create<EmitOp>(location, exprs);
-        result = ::mlir::success();
+        return ::mlir::success();
     }
 
-    void MLIRGeneratorImpl::operator()(const Loop &loop)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Loop> loop)
     {
-        auto location = loc(loop.get_location());
-        mlir::Value cond = std::get<Value>(visitor_gen(loop.pred()));
+        auto location = loc(loop->get_location());
+        mlir::Value cond = std::get<Value>(std::visit(*this, loop->pred()));
 
         auto voilaLoop = builder.create<LoopOp>(location, builder.getI1Type(), cond);
         auto &bodyRegion = voilaLoop.getBody();
@@ -349,196 +196,203 @@ namespace voila::mlir
         ::mlir::Block &bodyBlock = bodyRegion.front();
         ::mlir::OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPointToStart(&bodyBlock);
-        for (const auto &elem : loop.stmts())
+        for (const auto &elem : loop->stmts())
         {
-            visitor_gen(elem);
+            std::visit(*this, elem);
         }
 
-        result = ::mlir::success();
+        return ::mlir::success();
     }
 
-    void MLIRGeneratorImpl::operator()(const StatementWrapper &wrapper)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<StatementWrapper> wrapper)
     {
         // forward to expr
-        wrapper.expr().visit(*this);
+        return std::visit(*this, wrapper->expr());
     }
 
-    void MLIRGeneratorImpl::operator()(const Add &add)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Add> add)
     {
-        auto location = loc(add.get_location());
-        auto lhs = visitor_gen(add.lhs());
-        auto rhs = visitor_gen(add.rhs());
+        auto location = loc(add->get_location());
+        auto lhs = std::visit(*this, add->lhs());
+        auto rhs = std::visit(*this, add->rhs());
         auto resType = getTypes(add);
         assert(resType.size() == 1);
-        result = builder.create<AddOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
+        return builder.create<AddOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
-    void MLIRGeneratorImpl::operator()(const Sub &sub)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Sub> sub)
     {
-        auto location = loc(sub.get_location());
-        auto lhs = visitor_gen(sub.lhs());
-        auto rhs = visitor_gen(sub.rhs());
+        auto location = loc(sub->get_location());
+        auto lhs = std::visit(*this, sub->lhs());
+        auto rhs = std::visit(*this, sub->rhs());
         auto resType = getTypes(sub);
         assert(resType.size() == 1);
-        result = builder.create<SubOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
+        return builder.create<SubOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
-    void MLIRGeneratorImpl::operator()(const Mul &mul)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Mul> mul)
     {
-        auto location = loc(mul.get_location());
-        auto lhs = visitor_gen(mul.lhs());
-        auto rhs = visitor_gen(mul.rhs());
+        auto location = loc(mul->get_location());
+        auto lhs = std::visit(*this, mul->lhs());
+        auto rhs = std::visit(*this, mul->rhs());
         auto resType = getTypes(mul);
         assert(resType.size() == 1);
-        result = builder.create<MulOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
+        return builder.create<MulOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
-    void MLIRGeneratorImpl::operator()(const Div &div)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Div> div)
     {
-        auto location = loc(div.get_location());
-        auto lhs = visitor_gen(div.lhs());
-        auto rhs = visitor_gen(div.rhs());
+        auto location = loc(div->get_location());
+        auto lhs = std::visit(*this, div->lhs());
+        auto rhs = std::visit(*this, div->rhs());
 
         auto resType = getTypes(div);
         assert(resType.size() == 1);
-        result = builder.create<DivOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
+        return builder.create<DivOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
-    void MLIRGeneratorImpl::operator()(const Mod &mod)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Mod> mod)
     {
-        auto location = loc(mod.get_location());
-        auto lhs = visitor_gen(mod.lhs());
-        auto rhs = visitor_gen(mod.rhs());
+        auto location = loc(mod->get_location());
+        auto lhs = std::visit(*this, mod->lhs());
+        auto rhs = std::visit(*this, mod->rhs());
         auto resType = getTypes(mod);
         assert(resType.size() == 1);
-        result = builder.create<ModOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
+        return builder.create<ModOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
-    void MLIRGeneratorImpl::operator()(const Eq &eq) { result = getCmpOp<EqOp>(eq); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Eq> eq) { return getCmpOp<EqOp>(*eq); }
 
-    void MLIRGeneratorImpl::operator()(const Neq &neq) { result = getCmpOp<NeqOp>(neq); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Neq> neq) { return getCmpOp<NeqOp>(*neq); }
 
-    void MLIRGeneratorImpl::operator()(const Le &le) { result = getCmpOp<LeOp>(le); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Le> le) { return getCmpOp<LeOp>(*le); }
 
-    void MLIRGeneratorImpl::operator()(const Ge &ge) { result = getCmpOp<GeOp>(ge); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Ge> ge) { return getCmpOp<GeOp>(*ge); }
 
-    void MLIRGeneratorImpl::operator()(const Leq &leq) { result = getCmpOp<LeqOp>(leq); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Leq> leq) { return getCmpOp<LeqOp>(*leq); }
 
-    void MLIRGeneratorImpl::operator()(const Geq &geq) { result = getCmpOp<GeqOp>(geq); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Geq> geq) { return getCmpOp<GeqOp>(*geq); }
 
-    void MLIRGeneratorImpl::operator()(const And &anAnd)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<And> anAnd)
     {
-        auto location = loc(anAnd.get_location());
-        auto lhs = std::get<::mlir::Value>(visitor_gen(anAnd.lhs()));
-        auto rhs = std::get<::mlir::Value>(visitor_gen(anAnd.rhs()));
+        auto location = loc(anAnd->get_location());
+        auto lhs = std::get<::mlir::Value>(std::visit(*this, anAnd->lhs()));
+        auto rhs = std::get<::mlir::Value>(std::visit(*this, anAnd->rhs()));
         if (lhs.getType().isa<::mlir::TensorType>() || rhs.getType().isa<::mlir::TensorType>())
         {
             ::mlir::ArrayRef<int64_t> shape;
             shape = getShape(lhs, rhs);
 
-            result =
-                builder.create<AndOp>(location, ::mlir::RankedTensorType::get(shape, builder.getI1Type()), lhs, rhs);
+            return builder.create<AndOp>(location, ::mlir::RankedTensorType::get(shape, builder.getI1Type()), lhs, rhs);
         }
         else
-            result = builder.create<AndOp>(location, builder.getI1Type(), lhs, rhs);
+            return builder.create<AndOp>(location, builder.getI1Type(), lhs, rhs);
     }
 
-    void MLIRGeneratorImpl::operator()(const Or &anOr)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Or> anOr)
     {
-        auto location = loc(anOr.get_location());
-        auto lhs = std::get<Value>(visitor_gen(anOr.lhs()));
-        auto rhs = std::get<Value>(visitor_gen(anOr.rhs()));
-        result = builder.create<OrOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()), lhs, rhs);
+        auto location = loc(anOr->get_location());
+        auto lhs = std::get<Value>(std::visit(*this, anOr->lhs()));
+        auto rhs = std::get<Value>(std::visit(*this, anOr->rhs()));
+
+        return builder.create<OrOp>(location, ::mlir::RankedTensorType::get(ShapedType::kDynamic, builder.getI1Type()),
+                                    lhs, rhs);
     }
 
-    void MLIRGeneratorImpl::operator()(const Not &aNot)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Not> aNot)
     {
-        auto location = loc(aNot.get_location());
-        auto param = visitor_gen(aNot.param());
+        auto location = loc(aNot->get_location());
+        auto param = std::visit(*this, aNot->param());
 
-        result = builder.create<NotOp>(location, ::mlir::RankedTensorType::get(-1, builder.getI1Type()),
-                                       std::get<Value>(param));
+        return builder.create<NotOp>(location, ::mlir::RankedTensorType::get(ShapedType::kDynamic, builder.getI1Type()),
+                                     std::get<Value>(param));
     }
 
-    void MLIRGeneratorImpl::operator()(const Hash &hash)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Hash> hash)
     {
-        auto location = loc(hash.get_location());
-        auto params = std::get<SmallVector<Value>>(visitor_gen(hash.items()));
+        auto location = loc(hash->get_location());
+        SmallVector<Value> params;
+        for (auto &val : hash->items())
+        {
+            params.push_back(std::get<Value>(std::visit(*this, val)));
+        }
+
         auto retType = ::mlir::RankedTensorType::get(params.front().getType().dyn_cast<ShapedType>().getShape(),
                                                      builder.getI64Type());
-        result = builder.create<HashOp>(location, retType, params);
+        return builder.create<HashOp>(location, retType, params);
     }
 
-    void MLIRGeneratorImpl::operator()(const IntConst &intConst)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<IntConst> intConst)
     {
-        result = builder.create<IntConstOp>(loc(intConst.get_location()), getScalarType(intConst), intConst.val);
+        return builder.create<IntConstOp>(loc(intConst->get_location()), getScalarType(intConst), intConst->val);
     }
 
-    void MLIRGeneratorImpl::operator()(const BooleanConst &booleanConst)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<BooleanConst> booleanConst)
     {
-        result = builder.create<BoolConstOp>(loc(booleanConst.get_location()), builder.getI1Type(), booleanConst.val);
+        return builder.create<BoolConstOp>(loc(booleanConst->get_location()), builder.getI1Type(), booleanConst->val);
     }
 
-    void MLIRGeneratorImpl::operator()(const FltConst &fltConst)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<FltConst> fltConst)
     {
-        result = builder.create<FltConstOp>(loc(fltConst.get_location()), builder.getF64FloatAttr(fltConst.val));
+        return builder.create<FltConstOp>(loc(fltConst->get_location()), builder.getF64FloatAttr(fltConst->val));
     }
 
-    void MLIRGeneratorImpl::operator()(const StrConst &) { throw NotImplementedException(); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<StrConst>) { throw NotImplementedException(); }
 
-    void MLIRGeneratorImpl::operator()(const Predicate &pred) { result = std::get<Value>(visitor_gen(pred.expr())); }
-
-    void MLIRGeneratorImpl::operator()(const Read &read)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Predicate> pred)
     {
-        auto location = loc(read.get_location());
-        auto col = std::get<Value>(visitor_gen(read.column()));
-        auto idx = std::get<Value>(visitor_gen(read.idx()));
-
-        result = builder.create<ReadOp>(location, col.getType(), col, idx, Value());
+        return std::get<Value>(std::visit(*this, pred->expr()));
     }
 
-    void MLIRGeneratorImpl::operator()(const Gather &gather)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Read> read)
     {
-        auto location = loc(gather.get_location());
-        auto col = std::get<Value>(visitor_gen(gather.column()));
-        auto idx = std::get<Value>(visitor_gen(gather.idxs()));
-        result = builder.create<GatherOp>(
+        auto location = loc(read->get_location());
+        auto col = std::get<Value>(std::visit(*this, read->column()));
+        auto idx = std::get<Value>(std::visit(*this, read->idx()));
+
+        return builder.create<ReadOp>(location, col.getType(), col, idx, Value());
+    }
+
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Gather> gather)
+    {
+        auto location = loc(gather->get_location());
+        auto col = std::get<Value>(std::visit(*this, gather->column()));
+        auto idx = std::get<Value>(std::visit(*this, gather->idxs()));
+        return builder.create<GatherOp>(
             location, RankedTensorType::get(idx.getType().dyn_cast<TensorType>().getShape(), getElementTypeOrSelf(col)),
             col, idx, Value());
     }
 
-    void MLIRGeneratorImpl::operator()(const Ref &param)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Ref> param)
     {
-        if (symbolTable.count(param.ref().as_variable()->var))
+        const auto var = std::get<std::shared_ptr<Variable>>(param->ref())->var;
+        if (symbolTable.count(var))
         {
-            auto variable = symbolTable.lookup(param.ref().as_variable()->var);
-            result = variable;
-            return;
+            auto variable = symbolTable.lookup(var);
+            // FIXME
+            return variable;
+            return std::monostate(); // TODO
         }
         throw MLIRGenerationException();
     }
 
-    void MLIRGeneratorImpl::operator()(const TupleGet &) { throw NotImplementedException(); }
-
-    void MLIRGeneratorImpl::operator()(const TupleCreate &) { throw NotImplementedException(); }
-
-    void MLIRGeneratorImpl::operator()(const Fun &fun)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Fun> fun)
     {
         if (inferer.get_type(fun)->undef())
-            return;
+            return std::monostate(); // TODO
 
         ScopedHashTableScope<StringRef, Value> var_scope(symbolTable);
 
-        auto fName = fun.name();
-        auto location = loc(fun.loc);
+        auto fName = fun->name();
+        auto location = loc(fun->loc);
 
         // generic function, the return type will be inferred later.
         // Arguments type are uniformly unranked tensors.
 
         llvm::SmallVector<::mlir::Type> arg_types;
-        for (const auto &t : fun.args())
+        for (const auto &t : fun->args())
         {
-            auto types = getTypes(*t.as_expr());
+            auto types = getTypes(t);
             arg_types.insert(arg_types.end(), types.begin(), types.end());
         }
 
@@ -548,93 +402,101 @@ namespace voila::mlir
         assert(function);
 
         auto &entryBlock = *function.addEntryBlock();
-        auto protoArgs = fun.args();
+        auto protoArgs = fun->args();
 
         // Declare all the function arguments in the symbol table.
         for (const auto nameValue : llvm::zip(protoArgs, entryBlock.getArguments()))
         {
-            declare(std::get<0>(nameValue).as_variable()->var, std::get<1>(nameValue));
+            declare(std::get<std::shared_ptr<Variable>>(std::get<0>(nameValue))->var, std::get<1>(nameValue));
         }
 
         builder.setInsertionPointToStart(&entryBlock);
 
         // Emit the body of the function.
-        mlirGenBody(fun.body());
+        mlirGenBody(fun->body());
 
         EmitOp emitOp;
         if (!entryBlock.empty())
             emitOp = dyn_cast<EmitOp>(entryBlock.back());
         if (!emitOp)
         {
-            builder.create<EmitOp>(loc(fun.get_location()));
+            builder.create<EmitOp>(loc(fun->get_location()));
         }
         else if (emitOp.hasOperand())
         {
             // Otherwise, if this return operation has an operand then add a result to
             // the function.
             // TODO: get emit type
-            function.setType(
-                builder.getFunctionType(function.getFunctionType().getInputs(), getTypes(*(*fun.result()).as_stmt())));
+            function.setType(builder.getFunctionType(function.getFunctionType().getInputs(), getTypes(fun->result())));
         }
 
-        result = function;
+        return function;
     }
 
-    void MLIRGeneratorImpl::operator()(const Main &main)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Main> main)
     {
-        // TODO: can we just slice main to fun, or do we have to consider some special properties of main?
-        operator()(static_cast<Fun>(main));
+        operator()(std::dynamic_pointer_cast<Fun>(main));
+        return ::mlir::success();
     }
 
-    void MLIRGeneratorImpl::operator()(const Selection &selection)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Selection> selection)
     {
-        auto location = loc(selection.get_location());
-        auto values = std::get<Value>(visitor_gen(selection.param()));
-        auto pred = std::get<Value>(visitor_gen(selection.pred()));
+        auto location = loc(selection->get_location());
+        auto values = std::get<Value>(std::visit(*this, selection->param()));
+        auto pred = std::get<Value>(std::visit(*this, selection->pred()));
         assert(pred.getType().isa<::mlir::TensorType>());
 
-        result = builder.create<::mlir::voila::SelectOp>(
-            location, ::mlir::RankedTensorType::get(-1, getElementTypeOrSelf(values)), values, pred);
+        return builder.create<::mlir::voila::SelectOp>(
+            location, ::mlir::RankedTensorType::get(ShapedType::kDynamic, getElementTypeOrSelf(values)), values, pred);
     }
 
-    void MLIRGeneratorImpl::operator()(const Lookup &lookup)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Lookup> lookup)
     {
-        auto location = loc(lookup.get_location());
-        auto tables = std::get<SmallVector<Value>>(visitor_gen(lookup.tables()));
-        auto hashes = std::get<Value>(visitor_gen(lookup.hashes()));
-        auto values = std::get<SmallVector<Value>>(visitor_gen(lookup.values()));
+        auto location = loc(lookup->get_location());
+        SmallVector<Value> tables;
+        for (auto &val : lookup->tables())
+            tables.push_back(std::get<Value>(std::visit(*this, val)));
 
-        result = builder.create<LookupOp>(
+        auto hashes = std::get<Value>(std::visit(*this, lookup->hashes()));
+
+        SmallVector<Value> values;
+        for (auto &val : lookup->values())
+            values.push_back(std::get<Value>(std::visit(*this, val)));
+
+        return builder.create<LookupOp>(
             location,
             ::mlir::RankedTensorType::get(hashes.getType().dyn_cast<::mlir::TensorType>().getShape(),
                                           builder.getIndexType()),
             values, tables, hashes);
     }
 
-    void MLIRGeneratorImpl::operator()(const Insert &insert)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Insert> insert)
     {
-        auto location = loc(insert.get_location());
-        auto table = std::get<Value>(visitor_gen(insert.keys()));
-        auto data = std::get<SmallVector<Value>>(visitor_gen(insert.values()));
+        auto location = loc(insert->get_location());
+        auto table = std::get<Value>(std::visit(*this, insert->keys()));
+
+        SmallVector<Value> data;
+        for (auto &val : insert->values())
+            data.push_back(std::get<Value>(std::visit(*this, val)));
 
         ::mlir::SmallVector<::mlir::Type> retTypes;
         for (auto val : data)
         {
-            retTypes.push_back(::mlir::RankedTensorType::get({-1}, getElementTypeOrSelf(val)));
+            retTypes.push_back(::mlir::RankedTensorType::get(ShapedType::kDynamic, getElementTypeOrSelf(val)));
         }
         auto insertOp = builder.create<InsertOp>(location, retTypes, table, data);
-        result = insertOp.getHashtables();
+        return insertOp.getHashtables();
     }
 
-    void MLIRGeneratorImpl::operator()(const Variable &variable)
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Variable> variable)
     {
         // Register the value in the symbol table.
         // TODO: SSA
-        declare(variable.var, nullptr);
-        result = symbolTable.lookup(variable.var);
+        declare(variable->var, nullptr);
+        return symbolTable.lookup(variable->var);
     }
 
-    std::vector<::mlir::Type> MLIRGeneratorImpl::getTypes(const ASTNode &node)
+    std::vector<::mlir::Type> MLIRGeneratorImpl::getTypes(const ASTNodeVariant &node)
     {
         auto astType = inferer.get_type(node);
         std::vector<::mlir::Type> types;
@@ -661,7 +523,7 @@ namespace voila::mlir
         case DataType::BOOL:
             if (t.getArities().front().is_undef())
             {
-                return ::mlir::RankedTensorType::get(-1, builder.getI1Type());
+                return ::mlir::RankedTensorType::get(ShapedType::kDynamic, builder.getI1Type());
             }
             else if (t.getArities().front().get_size() <= 1)
             {
@@ -674,7 +536,7 @@ namespace voila::mlir
         case DataType::INT32:
             if (t.getArities().front().is_undef())
             {
-                return ::mlir::RankedTensorType::get(-1, builder.getI32Type());
+                return ::mlir::RankedTensorType::get(ShapedType::kDynamic, builder.getI32Type());
             }
             else if (t.getArities().front().get_size() <= 1)
             {
@@ -687,7 +549,7 @@ namespace voila::mlir
         case DataType::INT64:
             if (t.getArities().front().is_undef())
             {
-                return ::mlir::RankedTensorType::get(-1, builder.getI64Type());
+                return ::mlir::RankedTensorType::get(ShapedType::kDynamic, builder.getI64Type());
             }
             else if (t.getArities().front().get_size() <= 1)
             {
@@ -700,7 +562,7 @@ namespace voila::mlir
         case DataType::DBL:
             if (t.getArities().front().is_undef())
             {
-                return ::mlir::RankedTensorType::get(-1, builder.getF64Type());
+                return ::mlir::RankedTensorType::get(ShapedType::kDynamic, builder.getF64Type());
             }
             else if (t.getArities().front().get_size() <= 1)
             {
@@ -716,7 +578,7 @@ namespace voila::mlir
         }
     }
 
-    ::mlir::Type MLIRGeneratorImpl::getScalarType(const ASTNode &node)
+    ::mlir::Type MLIRGeneratorImpl::getScalarType(const ASTNodeVariant &node)
     {
         const auto astType = inferer.get_type(node);
         return scalarConvert(astType);
@@ -744,63 +606,15 @@ namespace voila::mlir
             loc.begin.column);
     }
 
-    inline void MLIRGeneratorImpl::mlirGenBody(const std::vector<Statement> &block)
+    inline void MLIRGeneratorImpl::mlirGenBody(const std::vector<ASTNodeVariant> &block)
     {
         ScopedHashTableScope<StringRef, Value> var_scope(symbolTable);
         for (auto &stmt : block)
         {
             // TODO: Specific handling for variable declarations and return statement.
 
-            visitor_gen(stmt);
+            std::visit(*this, stmt);
         }
-    }
-
-    MLIRGeneratorImpl::result_variant MLIRGeneratorImpl::visitor_gen(const Expression &node)
-    {
-        auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, inferer);
-        node.visit(visitor);
-        if (std::holds_alternative<std::monostate>(visitor.result))
-            throw MLIRGenerationException();
-        return visitor.result;
-    }
-
-    MLIRGeneratorImpl::result_variant MLIRGeneratorImpl::visitor_gen(const Statement &node)
-    {
-        auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, inferer);
-        node.visit(visitor);
-        if (std::holds_alternative<std::monostate>(visitor.result))
-            throw MLIRGenerationException();
-        return visitor.result;
-    }
-
-    MLIRGeneratorImpl::result_variant MLIRGeneratorImpl::visitor_gen(const std::vector<Statement> &nodes)
-    {
-        ::mlir::SmallVector<Value> values;
-        for (const auto &node : nodes)
-        {
-            auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, inferer);
-            node.visit(visitor);
-            if (std::holds_alternative<std::monostate>(visitor.result))
-                throw MLIRGenerationException();
-            values.push_back(std::get<Value>(visitor.result));
-        }
-
-        return values;
-    }
-
-    MLIRGeneratorImpl::result_variant MLIRGeneratorImpl::visitor_gen(const std::vector<Expression> &nodes)
-    {
-        ::mlir::SmallVector<Value> values;
-        for (const auto &node : nodes)
-        {
-            auto visitor = MLIRGeneratorImpl(builder, module, symbolTable, funcTable, inferer);
-            node.visit(visitor);
-            if (std::holds_alternative<std::monostate>(visitor.result))
-                throw MLIRGenerationException();
-            values.push_back(std::get<Value>(visitor.result));
-        }
-
-        return values;
     }
 
     llvm::ArrayRef<int64_t> MLIRGeneratorImpl::getShape(const Value &lhs, const Value &rhs)
@@ -818,9 +632,24 @@ namespace voila::mlir
         }
         else
         {
-            shape = llvm::SmallVector<int64_t, 1>{-1};
+            shape = ShapedType::kDynamic;
         }
         return shape;
+    }
+    template <class Op>::mlir::Value MLIRGeneratorImpl::getCmpOp(const Comparison &cmpNode)
+    {
+        auto location = loc(cmpNode.get_location());
+        auto lhs = std::get<::mlir::Value>(std::visit(*this, cmpNode.lhs()));
+        auto rhs = std::get<::mlir::Value>(std::visit(*this, cmpNode.rhs()));
+        if (lhs.getType().isa<::mlir::TensorType>() || rhs.getType().isa<::mlir::TensorType>())
+        {
+            ::mlir::ArrayRef<int64_t> shape;
+            shape = getShape(lhs, rhs);
+
+            return builder.create<Op>(location, ::mlir::RankedTensorType::get(shape, builder.getI1Type()), lhs, rhs);
+        }
+        else
+            return builder.create<Op>(location, builder.getI1Type(), lhs, rhs);
     }
 
     MLIRGeneratorImpl::MLIRGeneratorImpl(OpBuilder &builder,
@@ -828,7 +657,7 @@ namespace voila::mlir
                                          llvm::ScopedHashTable<llvm::StringRef, ::mlir::Value> &symbolTable,
                                          llvm::StringMap<::mlir::func::FuncOp> &funcTable,
                                          const TypeInferer &inferer)
-        : builder{builder}, module{module}, symbolTable{symbolTable}, funcTable{funcTable}, inferer{inferer}, result{}
+        : builder{builder}, module{module}, symbolTable{symbolTable}, funcTable{funcTable}, inferer{inferer}
     {
         (void)module;
     }

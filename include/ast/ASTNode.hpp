@@ -1,43 +1,36 @@
 #pragma once
-#include <bit>                  // for rotl
-#include <climits>              // for CHAR_BIT
-#include <cstddef>              // for size_t
-#include <functional>           // for hash
-#include <iostream>             // for ostream
-#include <memory>               // for shared_ptr
-#include <string>               // for string
-#include <variant>              // for hash
-#include "llvm/ADT/DenseMap.h"  // for DenseMap
-#include "location.hpp"         // for position, location
+#include "location.hpp"        // for position, location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <bit>                 // for rotl
+#include <climits>             // for CHAR_BIT
+#include <cstddef>             // for size_t
+#include <functional>          // for hash
+#include <iostream>            // for ostream
+#include <memory>              // for shared_ptr
+#include <string>              // for string
+#include <variant>             // for hash
+#include "ASTNodeVariant.hpp"
 
-namespace voila::ast {
-    class ASTVisitor;
-
-    class Fun;
-
-    class Main;
+namespace voila::ast
+{
+    template <class T> class ASTVisitor;
 
     using Location = voila::parser::location;
 
-    class ASTNode {
-    public:
+    class AbstractASTNode
+    {
+      public:
         Location loc;
 
         virtual void print(std::ostream &) const = 0;
 
         [[nodiscard]] virtual std::string type2string() const = 0;
 
-        virtual void visit(ASTVisitor &visitor) const;
+        virtual ~AbstractASTNode() = default;
 
-        virtual void visit(ASTVisitor &visitor);
+        explicit AbstractASTNode(Location loc);
 
-        virtual ~ASTNode() = default;
-
-        explicit ASTNode(Location loc);
-
-        ASTNode();
-
-        // ASTNode() = default;
+        AbstractASTNode();
 
         [[nodiscard]] Location get_location() const;
 
@@ -53,30 +46,27 @@ namespace voila::ast {
 
         virtual Main *as_main();
 
-        virtual bool operator==(const ASTNode &rhs) const;
+        virtual bool operator==(const AbstractASTNode &rhs) const;
 
-        virtual bool operator!=(const ASTNode &rhs) const;
+        virtual bool operator!=(const AbstractASTNode &rhs) const;
 
-        virtual std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) = 0;
+        virtual ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) = 0;
     };
-} // namespace voila::ast
 
+} // namespace voila::ast
 
 inline void hash_combine(std::size_t &) {}
 
-template<class T, class... Rest>
-inline void hash_combine(std::size_t &seed, const T &v, Rest... rest) {
+template <class T, class... Rest> inline void hash_combine(std::size_t &seed, const T &v, Rest... rest)
+{
     std::hash<T> hasher;
     seed ^= std::rotl(hasher(v), sizeof(size_t) * CHAR_BIT / 2);
     hash_combine(seed, rest...);
 }
 
-template<>
-struct std::hash<voila::ast::ASTNode> {
-    std::size_t operator()(voila::ast::ASTNode const &node) {
-        std::size_t res = 0;
-        hash_combine(res, *node.loc.begin.filename, *node.loc.end.filename, node.loc.begin.line, node.loc.end.line,
-                     node.loc.begin.column, node.loc.end.column);
-        return res;
-    }
+template <> struct std::hash<voila::ast::AbstractASTNode>
+{
+    std::size_t operator()(voila::ast::AbstractASTNode const &node);
 };
+
+std::ostream &operator<<(std::ostream &out, const voila::ast::AbstractASTNode &t);

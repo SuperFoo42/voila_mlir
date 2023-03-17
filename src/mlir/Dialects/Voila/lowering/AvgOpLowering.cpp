@@ -47,7 +47,7 @@ namespace voila::mlir::lowering
         else
         {
             Value dimSize = builder.create<::mlir::tensor::DimOp>(tensor, 0);
-            res = builder.create<tensor::EmptyOp>(-1, builder.getF64Type(), dimSize);
+            res = builder.create<tensor::EmptyOp>(ShapedType::kDynamic, builder.getF64Type(), dimSize);
         }
 
         SmallVector<Type, 1> res_type(1, res.getType());
@@ -80,9 +80,9 @@ namespace voila::mlir::lowering
         // this should work as long as ieee 754 is supported and division by 0 is inf
         if (adaptor.getIndices() && op->getResultTypes().front().isa<TensorType>())
         {
-            auto sum = builder.create<SumOp>(RankedTensorType::get(-1, builder.getF64Type()), adaptor.getInput(),
+            auto sum = builder.create<SumOp>(RankedTensorType::get(ShapedType::kDynamic, builder.getF64Type()), adaptor.getInput(),
                                              adaptor.getIndices(), adaptor.getPred());
-            auto count = builder.create<CountOp>(RankedTensorType::get(-1, builder.getI64Type()), adaptor.getInput(),
+            auto count = builder.create<CountOp>(RankedTensorType::get(ShapedType::kDynamic, builder.getI64Type()), adaptor.getInput(),
                                                  adaptor.getIndices(), adaptor.getPred());
 
             Value fltCnt, fltSum;
@@ -104,7 +104,7 @@ namespace voila::mlir::lowering
                 fltSum = sum;
             }
 
-            rewriter.replaceOpWithNewOp<DivOp>(op, RankedTensorType::get(-1, builder.getF64Type()), fltSum, fltCnt);
+            rewriter.replaceOpWithNewOp<DivOp>(op, RankedTensorType::get(ShapedType::kDynamic, builder.getF64Type()), fltSum, fltCnt);
         }
         else
         {

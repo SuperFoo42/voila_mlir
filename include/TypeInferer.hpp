@@ -1,5 +1,6 @@
 #pragma once
 #include "Types.hpp"          // for DataType (ptr only), type_id_t, Type (...
+#include <ast/ASTNode.hpp>    // for ASTVisitor
 #include <ast/ASTVisitor.hpp> // for ASTVisitor
 #include <cstddef>            // for size_t
 #include <memory>             // for shared_ptr
@@ -13,7 +14,6 @@ namespace voila
 
     namespace ast
     {
-        class ASTNode;
         class Add;
         class AggrAvg;
         class AggrCnt;
@@ -64,78 +64,68 @@ namespace voila
     } // namespace ast
 
     // TODO pimpl
-    class TypeInferer : public ast::ASTVisitor
+    class TypeInferer : public ast::ASTVisitor<>
     {
       public:
-        explicit TypeInferer(Program *prog) : prog(prog) {}
+        explicit TypeInferer(Program *prog);
 
-        void operator()(const ast::Write &write) final;
-        void operator()(const ast::Scatter &scatter) final;
-        void operator()(ast::FunctionCall &call) final;
-        void operator()(const ast::Assign &assign) final;
-        void operator()(const ast::Emit &emit) final;
-        void operator()(const ast::Loop &loop) final;
-        void operator()(const ast::Arithmetic &arithmetic) final;
-        void operator()(const ast::Comparison &comparison) final;
-        void operator()(const ast::IntConst &aConst) final;
-        void operator()(const ast::BooleanConst &aConst) final;
-        void operator()(const ast::FltConst &aConst) final;
-        void operator()(const ast::StrConst &aConst) final;
-        void operator()(const ast::Read &read) final;
-        void operator()(const ast::Gather &gather) final;
-        void operator()(const ast::Ref &param) final;
-        void operator()(const ast::TupleGet &get) final;
-        void operator()(const ast::TupleCreate &create) final;
-        void operator()(const ast::Fun &fun) final;
-        void operator()(const ast::Main &main) final;
-        void operator()(const ast::Selection &selection) final;
-        void operator()(const ast::Variable &var) final;
+        void operator()(std::shared_ptr<ast::Write> write) final;
+        void operator()(std::shared_ptr<ast::Scatter> scatter) final;
+        void operator()(std::shared_ptr<ast::FunctionCall> call) final;
+        void operator()(std::shared_ptr<ast::Assign> assign) final;
+        void operator()(std::shared_ptr<ast::Emit> emit) final;
+        void operator()(std::shared_ptr<ast::Loop> loop) final;
+        void operator()(std::shared_ptr<ast::IntConst> aConst) final;
+        void operator()(std::shared_ptr<ast::BooleanConst> aConst) final;
+        void operator()(std::shared_ptr<ast::FltConst> aConst) final;
+        void operator()(std::shared_ptr<ast::StrConst> aConst) final;
+        void operator()(std::shared_ptr<ast::Read> read) final;
+        void operator()(std::shared_ptr<ast::Gather> gather) final;
+        void operator()(std::shared_ptr<ast::Ref> param) final;
+        void operator()(std::shared_ptr<ast::Fun> fun) final;
+        void operator()(std::shared_ptr<ast::Main> main) final;
+        void operator()(std::shared_ptr<ast::Selection> selection) final;
+        void operator()(std::shared_ptr<ast::Variable> var) final;
 
-        void operator()(const ast::Add &var) final;
-        void operator()(const ast::Sub &sub) final;
-        void operator()(const ast::Mul &mul) final;
-        void operator()(const ast::Div &div1) final;
-        void operator()(const ast::Mod &mod) final;
-        void operator()(const ast::AggrSum &sum) final;
-        void operator()(const ast::AggrCnt &cnt) final;
-        void operator()(const ast::AggrMin &aggrMin) final;
-        void operator()(const ast::AggrMax &aggrMax) final;
-        void operator()(const ast::AggrAvg &avg) final;
-        void operator()(const ast::Eq &eq) final;
-        void operator()(const ast::Neq &neq) final;
-        void operator()(const ast::Le &le) final;
-        void operator()(const ast::Ge &ge) final;
-        void operator()(const ast::Leq &leq) final;
-        void operator()(const ast::Geq &geq) final;
-        void operator()(const ast::And &anAnd) final;
-        void operator()(const ast::Or &anOr) final;
-        void operator()(const ast::Not &aNot) final;
-        void operator()(const ast::Predicate &pred) final;
-        void operator()(const ast::StatementWrapper &wrapper) final;
-        void operator()(const ast::Hash &hash) final;
+        void operator()(std::shared_ptr<ast::Add> var) final;
+        void operator()(std::shared_ptr<ast::Sub> sub) final;
+        void operator()(std::shared_ptr<ast::Mul> mul) final;
+        void operator()(std::shared_ptr<ast::Div> div1) final;
+        void operator()(std::shared_ptr<ast::Mod> mod) final;
+        void operator()(std::shared_ptr<ast::AggrSum> sum) final;
+        void operator()(std::shared_ptr<ast::AggrCnt> cnt) final;
+        void operator()(std::shared_ptr<ast::AggrMin> aggrMin) final;
+        void operator()(std::shared_ptr<ast::AggrMax> aggrMax) final;
+        void operator()(std::shared_ptr<ast::AggrAvg> avg) final;
+        void operator()(std::shared_ptr<ast::Eq> eq) final;
+        void operator()(std::shared_ptr<ast::Neq> neq) final;
+        void operator()(std::shared_ptr<ast::Le> le) final;
+        void operator()(std::shared_ptr<ast::Ge> ge) final;
+        void operator()(std::shared_ptr<ast::Leq> leq) final;
+        void operator()(std::shared_ptr<ast::Geq> geq) final;
+        void operator()(std::shared_ptr<ast::And> anAnd) final;
+        void operator()(std::shared_ptr<ast::Or> anOr) final;
+        void operator()(std::shared_ptr<ast::Not> aNot) final;
+        void operator()(std::shared_ptr<ast::Predicate> pred) final;
+        void operator()(std::shared_ptr<ast::StatementWrapper> wrapper) final;
+        void operator()(std::shared_ptr<ast::Hash> hash) final;
 
-        std::shared_ptr<Type> get_type(const ast::ASTNode &node) const;
+        std::shared_ptr<Type> get_type(const ast::ASTNodeVariant &node) const;
 
-        std::shared_ptr<Type> get_type(const ast::Expression &node) const;
+        void set_arity(const ast::ASTNodeVariant &node, size_t ar);
+        void set_type(const ast::ASTNodeVariant &node, DataType type);
 
-        std::shared_ptr<Type> get_type(const ast::Statement &node) const;
+        void insertNewType(const ast::ASTNodeVariant &node, DataType t, Arity ar);
+        void insertNewTypeAs(const ast::ASTNodeVariant &node, const Type &t);
+        void operator()(std::shared_ptr<ast::Lookup> lookup) override;
+        void operator()(std::shared_ptr<ast::Insert> insert) override;
 
-        void set_arity(const ast::ASTNode *node, size_t ar);
-        void set_type(const ast::ASTNode *node, DataType type);
-
-        void insertNewType(const ast::ASTNode &node, DataType t, Arity ar);
-        void insertNewTypeAs(const ast::ASTNode &node, const Type &t);
-        void operator()(const ast::Lookup &lookup) override;
-        void operator()(const ast::Insert &insert) override;
+        using ast::ASTVisitor<void>::operator();
 
         std::vector<std::shared_ptr<Type>> types;
         Program *prog;
 
       private:
-        void unify(ast::ASTNode &t1, ast::ASTNode &t2);
-        void unify(const ast::Expression &t1, const ast::Expression &t2);
-        void unify(const ast::Statement &t1, const ast::Statement &t2);
-
         static DataType convert(DataType, DataType);
 
         static bool compatible(DataType, DataType);
@@ -148,27 +138,31 @@ namespace voila
          */
         static bool convertible(DataType t1, DataType t2);
 
-        void
-        insertNewFuncType(const ast::ASTNode &node, std::vector<size_t> typeParamIDs, DataType returnT, Arity returnAr);
+        void insertNewFuncType(const ast::ASTNodeVariant &node,
+                               std::vector<size_t> typeParamIDs,
+                               DataType returnT,
+                               Arity returnAr);
 
-        type_id_t get_type_id(const ast::Expression &node);
-        type_id_t get_type_id(const ast::Statement &node);
-        type_id_t get_type_id(const ast::ASTNode &node);
-        void unify(const ast::ASTNode &t1, const ast::Statement &t2);
-        void unify(ast::ASTNode &t1, ast::Expression &t2);
-        void insertNewFuncType(const ast::ASTNode &node, std::vector<type_id_t> typeParamIDs, type_id_t returnTypeID);
-        void insertNewFuncType(const ast::ASTNode &node,
+        type_id_t get_type_id(const ast::ASTNodeVariant &node);
+
+        void
+        insertNewFuncType(const ast::ASTNodeVariant &node, std::vector<type_id_t> typeParamIDs, type_id_t returnTypeID);
+
+        void insertNewFuncType(const ast::ASTNodeVariant &node,
                                std::vector<type_id_t> typeParamIDs,
                                const std::vector<std::pair<DataType, Arity>> &returnTypes);
-        void insertNewFuncType(const ast::ASTNode &node,
+
+        void insertNewFuncType(const ast::ASTNodeVariant &node,
                                std::vector<type_id_t> typeParamIDs,
                                std::vector<type_id_t> returnTypeIDs);
-        void unify(ast::ASTNode *t1, ast::ASTNode *const t2);
-        void unify(const ast::Expression &t1, const ast::Statement &t2);
 
-        std::unordered_map<const ast::ASTNode *, type_id_t> typeIDs;
-        void unify(const std::vector<ast::Expression> &t1, const ast::Expression &t2);
-        void unify(const std::vector<ast::ASTNode *> &t1, const ast::ASTNode *t2);
-        void unify(const std::vector<ast::Expression> &t1, const ast::Statement &t2);
+        std::unordered_map<ast::ASTNodeVariant, type_id_t> typeIDs;
+
+        void unify(const ast::ASTNodeVariant &t1, const ast::ASTNodeVariant &t2);
+        void unify(const std::vector<ast::ASTNodeVariant> &t1, const ast::ASTNodeVariant &t2);
+
+        template <class T> void visitArithmetic(T arithmetic);
+
+        template <class T> void visitComparison(T comparison);
     };
 } // namespace voila

@@ -1,6 +1,7 @@
 #include "ast/Not.hpp"
+#include "ASTNodes.hpp"
+#include "ast/ASTNodeVariant.hpp"
 #include "ast/ASTVisitor.hpp" // for ASTVisitor
-#include "ast/Expression.hpp" // for Expression
 
 namespace voila::ast
 {
@@ -8,11 +9,10 @@ namespace voila::ast
     bool Not::is_not() const { return true; }
     Not *Not::as_not() { return this; }
 
-    void Not::visit(ASTVisitor &visitor) const { visitor(*this); }
-    void Not::visit(ASTVisitor &visitor) { visitor(*this); }
-
-    std::shared_ptr<ASTNode> Not::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap)
+    ASTNodeVariant Not::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
     {
-        return std::make_shared<Not>(loc, mParam.clone(vmap));
+        auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
+                                       [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};
+        return std::make_shared<Not>(loc, std::visit(cloneVisitor, mParam));
     }
 } // namespace voila::ast

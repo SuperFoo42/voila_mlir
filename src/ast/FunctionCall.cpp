@@ -2,7 +2,8 @@
 #include <ostream>                           // for operator<<, ostream, bas...
 #include <utility>                           // for move
 #include "ast/ASTVisitor.hpp"                // for ASTVisitor
-#include "ast/Expression.hpp"                // for Expression, operator<<
+#include "ast/ASTNodeVariant.hpp"
+#include "ASTNodes.hpp"
 #include "ast/IStatement.hpp"                // for IStatement
 #include "range/v3/algorithm/transform.hpp"  // for transform, transform_fn
 #include "range/v3/functional/identity.hpp"  // for identity
@@ -16,7 +17,7 @@ namespace voila::ast {
         return this;
     }
 
-    FunctionCall::FunctionCall(const Location loc, std::string fun, std::vector<Expression> args) :
+    FunctionCall::FunctionCall(const Location loc, std::string fun, std::vector<ASTNodeVariant> args) :
             IStatement(loc), mFun{std::move(fun)}, mArgs{std::move(args)} {
     }
 
@@ -27,24 +28,17 @@ namespace voila::ast {
     void FunctionCall::print(std::ostream &ostream) const {
         ostream << mFun << "(";
         for (const auto &arg: mArgs) {
-            ostream << arg << ",";
+            std::visit(overloaded{[&ostream](auto &a) {ostream << *a << ",";}, [](std::monostate ) {}}, arg);
         }
         ostream << ")";
     }
-/*
 
-    void FunctionCall::visit(ASTVisitor &visitor) const {
-        visitor(*this);
-    }
-*/
-
-    void FunctionCall::visit(ASTVisitor &visitor) {
-        visitor(*this);
-    }
-
-    std::shared_ptr<ASTNode> FunctionCall::clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) {
-        std::vector<Expression> clonedArgs;
-        ranges::transform(mArgs, clonedArgs.begin(), [&vmap](auto &arg) { return arg.clone(vmap); });
+    ASTNodeVariant FunctionCall::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) {
+        std::vector<ASTNodeVariant> clonedArgs;
+        auto cloneVisitor =
+            overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
+                       [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};
+        ranges::transform(mArgs, clonedArgs.begin(), [&cloneVisitor](auto &arg) { return std::visit(cloneVisitor,arg);});
         return std::make_shared<FunctionCall>(loc, mFun, clonedArgs);
     }
 } // namespace voila::ast
