@@ -1,17 +1,18 @@
 #pragma once
 
 #include "ASTNode.hpp"
-#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include "range/v3/all.hpp"
 #include <iosfwd>              // for ostream
 #include <memory>              // for shared_ptr
 #include <optional>            // for optional
 #include <string>              // for string, hash
 #include <unordered_map>
 #include <vector>
+#include "EmitNotLastStatementException.hpp"
 
 namespace voila::ast
 {
-    class Fun : public AbstractASTNode
+    class Fun : public AbstractASTNode<Fun>
     {
         std::string mName;
         std::vector<ASTNodeVariant> mArgs;
@@ -20,9 +21,24 @@ namespace voila::ast
         std::unordered_map<std::string, ASTNodeVariant> mVariables;
 
       public:
-        Fun(Location loc, std::string fun, std::vector<ASTNodeVariant> args, std::vector<ASTNodeVariant> exprs);
-
-        Fun() = default;
+        Fun(Location loc, std::string fun, ranges::input_range auto && args, ranges::input_range auto && exprs)
+            : AbstractASTNode(loc),
+              mName{std::move(fun)},
+              mArgs{ranges::to<std::vector>(args)},
+              mBody{ranges::to<std::vector>(exprs)},
+              mResult{std::monostate()}
+        {
+            auto ret = std::find_if(mBody.begin(), mBody.end(),
+                                    [](auto &e) -> auto { return std::holds_alternative<std::shared_ptr<Emit>>(e); });
+            if (ret != mBody.end())
+            {
+                if (ret != mBody.end() - 1)
+                {
+                    throw EmitNotLastStatementException();
+                }
+                mResult = *ret;
+            }
+        }
 
         Fun(Fun &) = default;
 
@@ -32,17 +48,13 @@ namespace voila::ast
 
         Fun &operator=(const Fun &) = default;
 
-        ~Fun() override = default;
+        virtual ~Fun() = default;
 
-        [[nodiscard]] bool is_function_definition() const override;
+         [[nodiscard]] virtual std::string type2string_impl() const;
 
-        Fun *as_function_definition() override;
+        void print_impl(std::ostream &o) const;
 
-        [[nodiscard]] std::string type2string() const override;
-
-        void print(std::ostream &o) const override;
-
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
 
         const std::string &name() const { return mName; }
 

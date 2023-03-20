@@ -1,15 +1,14 @@
 #pragma once
-#include "location.hpp"        // for position, location
-#include "llvm/ADT/DenseMap.h" // for DenseMap
-#include <bit>                 // for rotl
-#include <climits>             // for CHAR_BIT
-#include <cstddef>             // for size_t
-#include <functional>          // for hash
-#include <iostream>            // for ostream
-#include <memory>              // for shared_ptr
-#include <string>              // for string
-#include <variant>             // for hash
 #include "ASTNodeVariant.hpp"
+#include "location.hpp" // for position, location
+#include <bit>          // for rotl
+#include <climits>      // for CHAR_BIT
+#include <cstddef>      // for size_t
+#include <functional>   // for hash
+#include <iostream>     // for ostream
+#include <memory>       // for shared_ptr
+#include <string>       // for string
+#include <variant>      // for hash
 
 namespace voila::ast
 {
@@ -17,40 +16,34 @@ namespace voila::ast
 
     using Location = voila::parser::location;
 
-    class AbstractASTNode
+    template <class ASTNode> class AbstractASTNode
     {
       public:
         Location loc;
 
-        virtual void print(std::ostream &) const = 0;
+        void print(std::ostream &o) const { static_cast<const ASTNode *>(this)->print_impl(o); }
 
-        [[nodiscard]] virtual std::string type2string() const = 0;
+        [[nodiscard]] std::string type2string() const { return static_cast<const ASTNode *>(this)->type2string_impl(); }
 
-        virtual ~AbstractASTNode() = default;
+        ~AbstractASTNode() = default;
 
-        explicit AbstractASTNode(Location loc);
+        explicit AbstractASTNode(Location loc) : loc(loc) {}
 
-        AbstractASTNode();
+        [[nodiscard]] Location get_location() const { return loc; }
 
-        [[nodiscard]] Location get_location() const;
+        bool operator==(const ASTNode &rhs) const
+        {
+            return *loc.begin.filename == *rhs.loc.begin.filename && loc.begin.column == rhs.loc.begin.column &&
+                   loc.begin.line == rhs.loc.begin.line && loc.end.filename == rhs.loc.end.filename &&
+                   loc.end.column == rhs.loc.end.column && loc.end.line == rhs.loc.end.line;
+        }
 
-        [[nodiscard]] virtual bool is_expr() const;
+        bool operator!=(const ASTNode &rhs) const { return !(*static_cast<ASTNode *>(this) == rhs); }
 
-        [[nodiscard]] virtual bool is_stmt() const;
-
-        [[nodiscard]] virtual bool is_function_definition() const;
-
-        [[nodiscard]] virtual bool is_main() const;
-
-        virtual Fun *as_function_definition();
-
-        virtual Main *as_main();
-
-        virtual bool operator==(const AbstractASTNode &rhs) const;
-
-        virtual bool operator!=(const AbstractASTNode &rhs) const;
-
-        virtual ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) = 0;
+        ASTNodeVariant clone(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap)
+        {
+            return static_cast<ASTNode *>(this)->clone_impl(vmap);
+        }
     };
 
 } // namespace voila::ast
@@ -64,9 +57,19 @@ template <class T, class... Rest> inline void hash_combine(std::size_t &seed, co
     hash_combine(seed, rest...);
 }
 
-template <> struct std::hash<voila::ast::AbstractASTNode>
+template <class Derived> struct std::hash<voila::ast::AbstractASTNode<Derived>>
 {
-    std::size_t operator()(voila::ast::AbstractASTNode const &node);
+    std::size_t operator()(voila::ast::AbstractASTNode<Derived> const &node)
+    {
+        std::size_t res = 0;
+        hash_combine(res, *node.loc.begin.filename, *node.loc.end.filename, node.loc.begin.line, node.loc.end.line,
+                     node.loc.begin.column, node.loc.end.column);
+        return res;
+    }
 };
 
-std::ostream &operator<<(std::ostream &out, const voila::ast::AbstractASTNode &t);
+template <class Derived> std::ostream &operator<<(std::ostream &out, const voila::ast::AbstractASTNode<Derived> &t)
+{
+    t.print(out);
+    return out;
+}

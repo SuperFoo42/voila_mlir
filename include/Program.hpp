@@ -24,7 +24,6 @@
 #include <mlir/IR/BuiltinOps.h>                   // for ModuleOp
 #include <mlir/IR/MLIRContext.h>                  // for MLIRContext
 #include <mlir/IR/OwningOpRef.h>                  // for OwningOpRef
-// #include "mlir/ExecutionEngine/CRunnerUtils.h"      // for StridedMemref
 #pragma GCC diagnostic pop
 
 #include "range/v3/view/all.hpp"    // for all_t
@@ -40,11 +39,6 @@ namespace llvm
 }
 namespace voila
 {
-    namespace ast
-    {
-        class Statement;
-        class AbstractASTNode;
-    } // namespace ast
     namespace lexer
     {
         class Lexer;
@@ -181,10 +175,6 @@ namespace voila
         void printMLIR(const std::string &filename);
 
         void printLLVM(const std::string &filename);
-
-        void infer_type(ast::AbstractASTNode &node);
-        void infer_type(ast::Expression &node);
-        void infer_type(ast::Statement &node);
 
         void inferTypes();
 

@@ -1,5 +1,4 @@
 #pragma once
-#include "Logical.hpp"         // for Logical
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <memory>              // for shared_ptr
@@ -8,24 +7,23 @@
 
 namespace voila::ast
 {
-    class Not : public Logical
+    class Not : public AbstractASTNode<Not>
     {
         ASTNodeVariant mParam;
 
       public:
-        explicit Not(const Location loc, ASTNodeVariant expr) : Logical(loc), mParam(std::move(expr))
+        explicit Not(const Location loc, ASTNodeVariant expr) : AbstractASTNode<Not>(loc), mParam(std::move(expr))
         {
             // TODO
         }
 
-        [[nodiscard]] std::string type2string() const final;
+        void print_impl(std::ostream &) const {  };
 
-        [[nodiscard]] bool is_not() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "not"; };
 
-        Not *as_not() final;
-
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
 
         [[nodiscard]] const ASTNodeVariant &param() const { return mParam; }
     };
+
 } // namespace voila::ast

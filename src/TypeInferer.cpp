@@ -15,7 +15,6 @@
 #include "ast/And.hpp"                            // for And
 #include "ast/Assign.hpp"                         // for Assign
 #include "ast/BooleanConst.hpp"                   // for BooleanConst
-#include "ast/Comparison.hpp"                     // for Comparison
 #include "ast/Div.hpp"                            // for Div
 #include "ast/Emit.hpp"                           // for Emit
 #include "ast/Eq.hpp"                             // for Eq
@@ -26,8 +25,6 @@
 #include "ast/Ge.hpp"                             // for Ge
 #include "ast/Geq.hpp"                            // for Geq
 #include "ast/Hash.hpp"                           // for Hash
-#include "ast/IExpression.hpp"                    // for IExpression
-#include "ast/IStatement.hpp"                     // for IStatement
 #include "ast/Insert.hpp"                         // for Insert
 #include "ast/IntConst.hpp"                       // for IntConst
 #include "ast/Le.hpp"                             // for Le
@@ -373,7 +370,7 @@ namespace voila
         if (!prog->has_func(call->fun(), fType))
         {
             // create function with types, change call and call inference
-            llvm::DenseMap<ast::AbstractASTNode *, ast::AbstractASTNode *> mapping;
+            std::unordered_map<ast::ASTNodeVariant, ast::ASTNodeVariant> mapping;
             auto clonedFun = std::get<std::shared_ptr<ast::Fun>>(prog->get_func(call->fun())->clone(mapping));
 
             // new scope for fun? add param types to new scope
@@ -735,32 +732,32 @@ namespace voila
 
     void TypeInferer::operator()(std::shared_ptr<ast::Eq> eq)
     {
-        TypeInferer::operator()(std::dynamic_pointer_cast<ast::Comparison>(eq));
+        visitComparison(eq);
     }
 
     void TypeInferer::operator()(std::shared_ptr<ast::Neq> neq)
     {
-        TypeInferer::operator()(std::dynamic_pointer_cast<ast::Comparison>(neq));
+        visitComparison(neq);
     }
 
     void TypeInferer::operator()(std::shared_ptr<ast::Le> le)
     {
-        TypeInferer::operator()(std::dynamic_pointer_cast<ast::Comparison>(le));
+        visitComparison(le);
     }
 
     void TypeInferer::operator()(std::shared_ptr<ast::Ge> ge)
     {
-        TypeInferer::operator()(std::dynamic_pointer_cast<ast::Comparison>(ge));
+        visitComparison(ge);
     }
 
     void TypeInferer::operator()(std::shared_ptr<ast::Leq> leq)
     {
-        TypeInferer::operator()(std::dynamic_pointer_cast<ast::Comparison>(leq));
+        visitComparison(leq);
     }
 
     void TypeInferer::operator()(std::shared_ptr<ast::Geq> geq)
     {
-        TypeInferer::operator()(std::dynamic_pointer_cast<ast::Comparison>(geq));
+        visitComparison(geq);
     }
 
     void TypeInferer::operator()(std::shared_ptr<ast::And> anAnd)

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Const.hpp"           // for Const
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <iosfwd>              // for ostream
@@ -15,13 +14,11 @@ namespace voila::ast
     class StrConst : public Const
     {
       public:
-        explicit StrConst(const Location loc, std::string val) : Const(loc), val{std::move(val)} {}
+        explicit StrConst(const Location loc, std::string val) : AbstractASTNode<StrConst>(loc), val{std::move(val)} {}
 
-        [[nodiscard]] bool is_string() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "string"; }
 
-        [[nodiscard]] std::string type2string() const final;
-
-        void print(std::ostream &ostream) const final;
+        void print_impl(std::ostream &ostream) const { ostream << "\"" << val << "\""; }
 
         void visit(ASTVisitor &visitor) const final;
 

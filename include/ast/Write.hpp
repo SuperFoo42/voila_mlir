@@ -1,6 +1,5 @@
 #pragma once
 
-#include "IStatement.hpp"      // for IStatement
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <iosfwd>              // for ostream
@@ -9,29 +8,26 @@
 
 namespace voila::ast
 {
-    class Write : public IStatement
+    class Write : public AbstractASTNode<Write>
     {
         ASTNodeVariant mDest;
         ASTNodeVariant mStart;
         ASTNodeVariant mSrc;
 
       public:
-        Write(Location loc, ASTNodeVariant src_col, ASTNodeVariant dest_col, ASTNodeVariant wpos);
+        Write(Location loc, ASTNodeVariant src_col, ASTNodeVariant dest_col, ASTNodeVariant wpos)
+            : AbstractASTNode<Write>(loc), mDest{std::move(dest_col)}, mStart{std::move(wpos)}, mSrc{std::move(src_col)}
+        {
+        }
 
-        [[nodiscard]] bool is_write() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "write"; }
 
-        Write *as_write() final;
+        void print_impl(std::ostream &ostream) const;
 
-        [[nodiscard]] std::string type2string() const final;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
 
-        void print(std::ostream &ostream) const final;
-
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
-
-        [[nodiscard]] const ASTNodeVariant &dest() const;
-
-        [[nodiscard]] const ASTNodeVariant &start() const;
-
-        [[nodiscard]] const ASTNodeVariant &src() const;
+        [[nodiscard]] const ASTNodeVariant &dest() const { return mDest; }
+        [[nodiscard]] const ASTNodeVariant &start() const { return mStart; }
+        [[nodiscard]] const ASTNodeVariant &src() const { return mSrc; }
     };
 } // namespace voila::ast

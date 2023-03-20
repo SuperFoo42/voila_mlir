@@ -1,25 +1,16 @@
 #include "ast/Variable.hpp"
-#include "ast/ASTVisitor.hpp" // for ASTVisitor
 
 namespace voila::ast
 {
-    bool Variable::is_variable() const { return true; }
-
-    Variable *Variable::as_variable() { return this; }
-
-    std::string Variable::type2string() const { return "variable"; }
-
-    void Variable::print(std::ostream &ostream) const { ostream << var; }
-
-    ASTNodeVariant Variable::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
+    ASTNodeVariant Variable::clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap)
     {
-        if (vmap.count(this))
+        if (vmap.contains(ASTNodeVariant(this->getptr())))
         {
-            return dynamic_cast<Variable *>(vmap.lookup(this))->getptr();
+            return vmap.at(ASTNodeVariant(this->getptr()));
         }
 
-        std::shared_ptr<Variable> res = std::make_shared<Variable>(loc, var);
-        vmap.insert(std::make_pair(this, res.get()));
+        auto res = std::make_shared<Variable>(loc, var);
+        vmap.emplace(this->getptr(), res);
         return res;
     }
 } // namespace voila::ast

@@ -8,16 +8,14 @@
 
 namespace voila::ast
 {
-    class AggrAvg : public Aggregation
+    class AggrAvg : public Aggregation<AggrAvg>
     {
       public:
         using Aggregation::Aggregation;
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) final;
 
-        [[nodiscard]] bool is_aggr_avg() const final;
-
-        AggrAvg *as_aggr_avg() final;
-
-        [[nodiscard]] std::string type2string() const final;
+        [[nodiscard]] std::string type2string_impl() const
+        {
+            return "avg aggregation";
+        }
     };
 } // namespace voila::ast

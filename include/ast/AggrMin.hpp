@@ -7,16 +7,14 @@
 
 namespace voila::ast
 {
-    class AggrMin : public Aggregation
+    class AggrMin : public Aggregation<AggrMax>
     {
       public:
         using Aggregation::Aggregation;
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) final;
 
-        [[nodiscard]] bool is_aggr_min() const final;
-
-        AggrMin *as_aggr_min() final;
-
-        [[nodiscard]] std::string type2string() const final;
+        [[nodiscard]] std::string type2string_impl() const
+        {
+            return "min aggregation";
+        }
     };
 } // namespace voila::ast

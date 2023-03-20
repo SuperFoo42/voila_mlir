@@ -5,20 +5,17 @@
 
 namespace voila::ast
 {
-    bool Gather::is_gather() const { return true; }
-    Gather *Gather::as_gather() { return this; }
-    std::string Gather::type2string() const { return "gather"; }
-    void Gather::print(std::ostream &ostream) const
+    void Gather::print_impl(std::ostream &ostream) const
     {
-        auto pVisitor = overloaded{[&ostream](auto &v) { ostream << *v; }, [](std::monostate) {}};
-        ostream << type2string() << "( ";
+        auto pVisitor = overloaded{[&ostream](auto &v) -> void { ostream << *v; }, [](std::monostate) {}};
+        ostream << type2string_impl() << "( ";
         std::visit(pVisitor, mColumn);
         ostream << ",";
         std::visit(pVisitor, mIdxs);
         ostream << ")";
     }
 
-    ASTNodeVariant Gather::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
+    ASTNodeVariant Gather::clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap)
     {
         auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
                                        [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};

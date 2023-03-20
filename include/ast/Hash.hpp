@@ -1,5 +1,4 @@
 #pragma once
-#include "IExpression.hpp"     // for IExpression
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <iosfwd>              // for ostream
@@ -7,25 +6,24 @@
 #include <string>              // for string
 #include <utility>             // for move
 #include <vector>              // for vector
-
+#include "range/v3/all.hpp"
 namespace voila::ast
 {
-    class Hash : public IExpression
+    class Hash : public AbstractASTNode<Hash>
     {
         std::vector<ASTNodeVariant> mItems;
 
       public:
-        Hash(const Location loc, std::vector<ASTNodeVariant> items) : IExpression(loc), mItems{std::move(items)} {}
+        Hash(const Location loc, ranges::input_range auto && items)
+            : AbstractASTNode<Hash>(loc), mItems(ranges::to<std::vector>(items))
+        {
+        }
 
-        [[nodiscard]] std::string type2string() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "hash"; };
 
-        [[nodiscard]] bool is_hash() const final;
+        void print_impl(std::ostream &) const {};
 
-        Hash *as_hash() final;
-
-        void print(std::ostream &ostream) const override;
-
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
 
         [[nodiscard]] const std::vector<ASTNodeVariant> &items() const { return mItems; }
     };

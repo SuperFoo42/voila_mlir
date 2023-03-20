@@ -1,54 +1,23 @@
 target_sources(voila_ast PRIVATE
         ${CMAKE_BINARY_DIR}/src/voila_parser.cpp
-        Add.cpp
-        AggrAvg.cpp
-        AggrCnt.cpp
-        Aggregation.cpp
-        AggrMax.cpp
-        AggrMin.cpp
-        AggrSum.cpp
-        And.cpp
-        Arithmetic.cpp
-        ASTNode.cpp
-        BooleanConst.cpp
-        Comparison.cpp
-        Const.cpp
-        Div.cpp
+        Assign.cpp
         Emit.cpp
-        Eq.cpp
-        FltConst.cpp
         Fun.cpp
         FunctionCall.cpp
         Gather.cpp
-        Ge.cpp
-        Geq.cpp
-        IExpression.cpp
-        IntConst.cpp
-        IStatement.cpp
-        Le.cpp
-        Leq.cpp
-        Logical.cpp
+        Hash.cpp
+        Insert.cpp
         Loop.cpp
-        Main.cpp
-        Mod.cpp
-        Mul.cpp
-        Neq.cpp
-        Not.cpp
-        Or.cpp
-        Read.cpp
-        Ref.cpp
+        Lookup.cpp
         Scatter.cpp
         Selection.cpp
-        StatementWrapper.cpp
-        StrConst.cpp
-        Sub.cpp
-        Write.cpp
-        Assign.cpp
-        Predicate.cpp
         Variable.cpp
-        Hash.cpp
-        Lookup.cpp
-        Insert.cpp)
+        Not.cpp
+        Read.cpp
+        Ref.cpp
+        StatementWrapper.cpp
+        Write.cpp
+        Predicate.cpp)
 
 target_link_libraries(voila_ast magic_enum range-v3)
 target_compile_features(voila_ast PUBLIC cxx_std_20)

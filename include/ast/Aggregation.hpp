@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
-#include "ast/IExpression.hpp" // for IExpression
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <iosfwd>              // for ostream
 #include <memory>              // for make_shared, shared_ptr
@@ -11,42 +10,33 @@
 
 namespace voila::ast
 {
-    class Aggregation : public IExpression
+    template <class Aggr> class Aggregation : public AbstractASTNode<Aggr>
     {
         ASTNodeVariant mSrc;
         ASTNodeVariant mGroups;
 
       public:
-        Aggregation(const Location loc, ASTNodeVariant col) : IExpression(loc), mSrc{std::move(col)}, mGroups() {}
-        Aggregation(const Location loc, ASTNodeVariant col, ASTNodeVariant groups)
-            : IExpression(loc), mSrc{std::move(col)}, mGroups(std::move(groups))
+        Aggregation(const Location loc, ASTNodeVariant col)
+            : AbstractASTNode<Aggr>(loc), mSrc{std::move(col)}, mGroups()
         {
         }
-        ~Aggregation() override = default;
+        Aggregation(const Location loc, ASTNodeVariant col, ASTNodeVariant groups)
+            : AbstractASTNode<Aggr>(loc), mSrc{std::move(col)}, mGroups(std::move(groups))
+        {
+        }
 
-        [[nodiscard]] bool is_aggr() const final;
-
-        Aggregation *as_aggr() final;
-
-        [[nodiscard]] std::string type2string() const override;
-
-        void print(std::ostream &) const final {}
+        void print_impl(std::ostream &) const {}
 
         [[nodiscard]] const ASTNodeVariant &src() const { return mSrc; }
 
-        [[nodiscard]] const ASTNodeVariant &groups() const
-        {
-                return mGroups;
-        }
+        [[nodiscard]] const ASTNodeVariant &groups() const { return mGroups; }
 
-      protected:
-        template <class T>
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
-            requires std::is_base_of_v<Aggregation, T>
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap)
         {
-            auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
-                                           [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};
-            return std::make_shared<T>(loc, std::visit(cloneVisitor, mSrc), std::visit(cloneVisitor, mGroups));
+            auto cloneVisitor =overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
+                                           [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};;
+            return std::make_shared<Aggr>(this->loc, std::visit(cloneVisitor, mSrc),
+                                          std::visit(cloneVisitor, mGroups));
         }
     };
 } // namespace voila::ast

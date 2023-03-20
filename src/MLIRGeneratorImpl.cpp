@@ -23,8 +23,6 @@
 #include "ast/Ge.hpp"
 #include "ast/Geq.hpp"
 #include "ast/Hash.hpp"
-#include "ast/IExpression.hpp"
-#include "ast/IStatement.hpp"
 #include "ast/Insert.hpp"
 #include "ast/IntConst.hpp"
 #include "ast/Le.hpp"
@@ -261,17 +259,17 @@ namespace voila::mlir
         return builder.create<ModOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Eq> eq) { return getCmpOp<EqOp>(*eq); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Eq> eq) { return getCmpOp(*eq); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Neq> neq) { return getCmpOp<NeqOp>(*neq); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Neq> neq) { return getCmpOp(*neq); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Le> le) { return getCmpOp<LeOp>(*le); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Le> le) { return getCmpOp(*le); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Ge> ge) { return getCmpOp<GeOp>(*ge); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Ge> ge) { return getCmpOp(*ge); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Leq> leq) { return getCmpOp<LeqOp>(*leq); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Leq> leq) { return getCmpOp(*leq); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Geq> geq) { return getCmpOp<GeqOp>(*geq); }
+    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Geq> geq) { return getCmpOp(*geq); }
 
     result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<And> anAnd)
     {
@@ -635,21 +633,6 @@ namespace voila::mlir
             shape = ShapedType::kDynamic;
         }
         return shape;
-    }
-    template <class Op>::mlir::Value MLIRGeneratorImpl::getCmpOp(const Comparison &cmpNode)
-    {
-        auto location = loc(cmpNode.get_location());
-        auto lhs = std::get<::mlir::Value>(std::visit(*this, cmpNode.lhs()));
-        auto rhs = std::get<::mlir::Value>(std::visit(*this, cmpNode.rhs()));
-        if (lhs.getType().isa<::mlir::TensorType>() || rhs.getType().isa<::mlir::TensorType>())
-        {
-            ::mlir::ArrayRef<int64_t> shape;
-            shape = getShape(lhs, rhs);
-
-            return builder.create<Op>(location, ::mlir::RankedTensorType::get(shape, builder.getI1Type()), lhs, rhs);
-        }
-        else
-            return builder.create<Op>(location, builder.getI1Type(), lhs, rhs);
     }
 
     MLIRGeneratorImpl::MLIRGeneratorImpl(OpBuilder &builder,

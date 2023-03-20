@@ -1,5 +1,6 @@
 #pragma once
-#include "IStatement.hpp"      // for IStatement
+#include "range/v3/range/concepts.hpp"
+#include "range/v3/range/conversion.hpp"
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <iosfwd>              // for ostream
@@ -10,22 +11,21 @@
 
 namespace voila::ast
 {
-    class Emit : public IStatement
+    class Emit : public AbstractASTNode<Emit>
     {
         std::vector<ASTNodeVariant> mExprs;
 
       public:
-        explicit Emit(Location loc, std::vector<ASTNodeVariant> expr) : IStatement(loc), mExprs{std::move(expr)} {}
+        explicit Emit(Location loc, ranges::input_range auto && expr)
+            : AbstractASTNode(loc), mExprs{ranges::to<std::vector>(expr)}
+        {
+        }
 
-        [[nodiscard]] bool is_emit() const final;
+        [[nodiscard]] std::string type2string_impl() const;
 
-        Emit *as_emit() final;
+        void print_impl(std::ostream &ostream) const;
 
-        [[nodiscard]] std::string type2string() const final;
-
-        void print(std::ostream &ostream) const final;
-
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
 
         [[nodiscard]] const std::vector<ASTNodeVariant> &exprs() const { return mExprs; }
     };

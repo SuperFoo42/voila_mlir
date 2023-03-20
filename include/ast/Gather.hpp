@@ -1,6 +1,5 @@
 #pragma once
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
-#include "ast/IExpression.hpp" // for IExpression
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <iosfwd>              // for ostream
 #include <memory>              // for shared_ptr
@@ -9,25 +8,21 @@
 
 namespace voila::ast
 {
-    class Gather : public IExpression
+    class Gather : public AbstractASTNode<Gather>
     {
         ASTNodeVariant mColumn, mIdxs;
 
       public:
         Gather(const Location loc, ASTNodeVariant lhs, ASTNodeVariant rhs)
-            : IExpression(loc), mColumn{std::move(lhs)}, mIdxs{std::move(rhs)}
+            : AbstractASTNode(loc), mColumn{std::move(lhs)}, mIdxs{std::move(rhs)}
         {
             // TODO
         }
 
-        [[nodiscard]] bool is_gather() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "gather"; };
+        void print_impl(std::ostream &ostream) const;
 
-        Gather *as_gather() final;
-
-        [[nodiscard]] std::string type2string() const final;
-        void print(std::ostream &ostream) const final;
-
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
 
         [[nodiscard]] const ASTNodeVariant &column() const { return mColumn; }
 

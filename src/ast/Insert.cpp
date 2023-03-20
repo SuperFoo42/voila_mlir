@@ -7,21 +7,13 @@
 
 namespace voila::ast
 {
-    bool Insert::is_insert() const { return true; }
-    Insert *Insert::as_insert() { return this; }
-    std::string Insert::type2string() const { return "hash_insert"; }
-    void Insert::print(std::ostream &) const {}
-
-    ASTNodeVariant Insert::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
+    ASTNodeVariant Insert::clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap)
     {
-        std::vector<ASTNodeVariant> clonedValues;
         auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
                                        [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};
-        for (auto &item : mValues)
-        {
-            clonedValues.push_back(std::visit(cloneVisitor, item));
-        }
 
-        return std::make_shared<Insert>(loc, std::visit(cloneVisitor, mKeys), clonedValues);
+        return std::make_shared<Insert>(
+            loc, std::visit(cloneVisitor, mKeys),
+            mValues | ranges::views::transform([&cloneVisitor](auto &el) { return std::visit(cloneVisitor, el); }));
     }
 } // namespace voila::ast

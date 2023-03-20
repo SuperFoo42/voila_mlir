@@ -4,8 +4,6 @@
 
 namespace voila::ast
 {
-    class Aggregation;
-
     class AggrSum;
 
     class AggrCnt;
@@ -36,7 +34,7 @@ namespace voila::ast
 
     class Add;
 
-    class Arithmetic;
+    template <class T> class Arithmetic;
 
     class Sub;
 
@@ -86,8 +84,6 @@ namespace voila::ast
 
     class TupleCreate;
 
-    class AbstractASTNode;
-
     class Fun;
 
     class Main;
@@ -109,11 +105,6 @@ namespace voila::ast
       public:
         using result_type = T;
         virtual ~ASTVisitor() = default;
-
-        virtual T operator()(std::shared_ptr<Aggregation>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
 
         virtual T operator()(std::shared_ptr<AggrSum>)
         {
@@ -181,11 +172,6 @@ namespace voila::ast
         }
 
         virtual T operator()(std::shared_ptr<Add>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Arithmetic>)
         {
             throw std::logic_error("Pure ASTNodes are not allowed to be visited");
         }

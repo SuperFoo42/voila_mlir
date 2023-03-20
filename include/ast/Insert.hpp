@@ -1,42 +1,34 @@
 #pragma once
-#include <iosfwd>               // for ostream
-#include <memory>               // for shared_ptr
-#include <string>               // for string
-#include <utility>              // for move
-#include <vector>               // for vector
-#include "IExpression.hpp"      // for IExpression
-#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
-#include "llvm/ADT/DenseMap.h"  // for DenseMap
+#include "ast/ASTNode.hpp" // for ASTNode (ptr only), Location
+#include "range/v3/all.hpp"
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <iosfwd>              // for ostream
+#include <memory>              // for shared_ptr
+#include <string>              // for string
+#include <utility>             // for move
+#include <vector>              // for vector
 
 namespace voila::ast
 {
-    class Insert : public IExpression
+    class Insert : public AbstractASTNode<Insert>
     {
         ASTNodeVariant mKeys;
         std::vector<ASTNodeVariant> mValues;
 
       public:
-        Insert(Location loc, ASTNodeVariant keys, std::vector<ASTNodeVariant> values) :
-            IExpression(loc), mKeys{std::move(keys)}, mValues{std::move(values)}
+        Insert(Location loc, ASTNodeVariant keys, ranges::input_range auto &&values)
+            : AbstractASTNode<Insert>(loc), mKeys{std::move(keys)}, mValues(ranges::to<std::vector>(values))
         {
             // TODO
         }
 
-        [[nodiscard]] bool is_insert() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "hash_insert"; }
+        void print_impl(std::ostream &) const {};
 
-        Insert *as_insert() final;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
 
-        [[nodiscard]] std::string type2string() const final;
-        void print(std::ostream &ostream) const final;
+        [[nodiscard]] const ASTNodeVariant &keys() const { return mKeys; }
 
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
-
-        [[nodiscard]] const ASTNodeVariant &keys() const {
-            return mKeys;
-        }
-
-        [[nodiscard]] const std::vector<ASTNodeVariant> &values() const {
-            return mValues;
-        }
+        [[nodiscard]] const std::vector<ASTNodeVariant> &values() const { return mValues; }
     };
 } // namespace voila::ast

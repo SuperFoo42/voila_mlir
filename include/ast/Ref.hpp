@@ -1,34 +1,28 @@
 #pragma once
 
-#include <iosfwd>               // for ostream
-#include <memory>               // for shared_ptr
-#include <string>               // for string
+#include <iosfwd> // for ostream
+#include <memory> // for shared_ptr
+#include <string> // for string
 
-#include "IExpression.hpp"      // for IExpression
-#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
-#include "llvm/ADT/DenseMap.h"  // for DenseMap
 #include "ASTNodeVariant.hpp"
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
 
-namespace voila::ast {
-
-    class Ref : public IExpression {
+namespace voila::ast
+{
+    class Ref : public AbstractASTNode<Ref>
+    {
         ASTNodeVariant mRef;
 
-    public:
-        explicit Ref(Location loc, ASTNodeVariant ref);
+      public:
+        explicit Ref(Location loc, ASTNodeVariant ref) : AbstractASTNode<Ref>(loc), mRef{std::move(ref)} {}
 
-        [[nodiscard]] bool is_reference() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "reference"; }
 
-        [[nodiscard]] std::string type2string() const override;
+        void print_impl(std::ostream &ostream) const;
 
-        [[nodiscard]] const Ref *as_reference() const final;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
 
-        void print(std::ostream &o) const final;
-
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
-
-        [[nodiscard]] const ASTNodeVariant &ref() const {
-            return mRef;
-        }
+        [[nodiscard]] const ASTNodeVariant &ref() const { return mRef; }
     };
 } // namespace voila::ast

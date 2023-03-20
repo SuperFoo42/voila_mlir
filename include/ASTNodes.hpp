@@ -8,8 +8,6 @@
 #include "ast/AggrSum.hpp"
 #include "ast/And.hpp"
 #include "ast/Assign.hpp"
-#include "ast/Arithmetic.hpp"
-#include "ast/Comparison.hpp"
 #include "ast/Aggregation.hpp"
 #include "ast/BooleanConst.hpp"
 #include "ast/Div.hpp"
@@ -44,4 +42,3 @@
 #include "ast/Hash.hpp"
 #include "ast/Lookup.hpp"
 #include "ast/Insert.hpp"
-#include "ast/Logical.hpp"

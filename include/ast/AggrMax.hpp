@@ -1,22 +1,17 @@
 #pragma once
-#include <memory>               // for shared_ptr
-#include <string>               // for string
-#include "Aggregation.hpp"      // for Aggregation
-#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
-#include "llvm/ADT/DenseMap.h"  // for DenseMap
+#include "Aggregation.hpp"     // for Aggregation
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <memory>              // for shared_ptr
+#include <string>              // for string
 
 namespace voila::ast
 {
-    class AggrMax : public Aggregation
+    class AggrMax : public Aggregation<AggrMax>
     {
       public:
         using Aggregation::Aggregation;
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) final;
 
-        [[nodiscard]] bool is_aggr_max() const final;
-
-        AggrMax *as_aggr_max() final;
-
-        [[nodiscard]] std::string type2string() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "max aggregation"; };
     };
 } // namespace voila::ast

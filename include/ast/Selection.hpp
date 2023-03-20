@@ -1,6 +1,5 @@
 #pragma once
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
-#include "ast/IExpression.hpp" // for IExpression
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <iosfwd>              // for ostream
 #include <memory>              // for shared_ptr
@@ -9,26 +8,22 @@
 
 namespace voila::ast
 {
-    class Selection : public IExpression
+    class Selection : public AbstractASTNode<Selection>
     {
         ASTNodeVariant mParam;
         ASTNodeVariant mPred;
 
       public:
         explicit Selection(const Location loc, ASTNodeVariant expr, ASTNodeVariant pred)
-            : IExpression(loc), mParam(std::move(expr)), mPred(std::move(pred))
+            : AbstractASTNode<Selection>(loc), mParam(std::move(expr)), mPred(std::move(pred))
         {
             // TODO
         }
 
-        [[nodiscard]] bool is_select() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "selection"; }
+        void print_impl(std::ostream &ostream) const;
 
-        Selection *as_select() final;
-
-        [[nodiscard]] std::string type2string() const final;
-        void print(std::ostream &ostream) const final;
-
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
 
         [[nodiscard]] const ASTNodeVariant &param() const { return mParam; }
 

@@ -1,5 +1,4 @@
 #pragma once
-#include "IExpression.hpp"     // for IExpression
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <iosfwd>              // for ostream
@@ -9,23 +8,19 @@
 
 namespace voila::ast
 {
-    class Variable : public IExpression, virtual public std::enable_shared_from_this<Variable>
+    class Variable : public AbstractASTNode<Variable>, virtual public std::enable_shared_from_this<Variable>
     {
       public:
         // TODO: private ctor to mitigate stack allocations and resulting getptr nullptr
-        explicit Variable(const Location loc, std::string val) : IExpression(loc), var{std::move(val)} {}
+        explicit Variable(const Location loc, std::string val) : AbstractASTNode<Variable>(loc), var{std::move(val)} {}
 
-        [[nodiscard]] bool is_variable() const final;
-
-        Variable *as_variable() final;
-
-        [[nodiscard]] std::string type2string() const final;
-        void print(std::ostream &ostream) const final;
+        [[nodiscard]] std::string type2string_impl() const { return "variable"; };
+        void print_impl(std::ostream &ostream) const { ostream << var; };
 
         std::shared_ptr<Variable> getptr() { return shared_from_this(); }
 
-        const std::string var;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
 
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
+        const std::string var;
     };
 } // namespace voila::ast

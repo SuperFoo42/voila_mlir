@@ -21,7 +21,7 @@ namespace voila
         class AggrMin;
         class AggrSum;
         class And;
-        class Arithmetic;
+        template <class T> class Arithmetic;
         class Assign;
         class BooleanConst;
         class Comparison;

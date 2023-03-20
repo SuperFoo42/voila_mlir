@@ -7,16 +7,11 @@
 
 namespace voila::ast
 {
-    class AggrCnt : public Aggregation
+    class AggrCnt : public Aggregation<AggrCnt>
     {
       public:
         using Aggregation::Aggregation;
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) final;
 
-        [[nodiscard]] bool is_aggr_cnt() const final;
-
-        AggrCnt *as_aggr_cnt() final;
-
-        [[nodiscard]] std::string type2string() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "count aggregation"; }
     };
 } // namespace voila::ast

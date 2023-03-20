@@ -1,5 +1,4 @@
 #pragma once
-#include "IExpression.hpp"     // for IExpression
 #include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
 #include "llvm/ADT/DenseMap.h" // for DenseMap
 #include <iosfwd>              // for ostream
@@ -12,22 +11,19 @@ namespace voila::ast
      * @brief Meta node to wrap expressions into predicates
      * @deprecated
      */
-    class Predicate : public IExpression
+    class Predicate : public AbstractASTNode<Predicate>
     {
         ASTNodeVariant mExpr;
 
       public:
-        explicit Predicate(Location loc, ASTNodeVariant expr);
+        explicit Predicate(Location loc, ASTNodeVariant expr) : AbstractASTNode<Predicate>(loc), mExpr(std::move(expr))
+        {
+        }
 
-        [[nodiscard]] std::string type2string() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "predicate"; }
+        void print_impl(std::ostream &) const {}
 
-        [[nodiscard]] bool is_predicate() const final;
-
-        Predicate *as_predicate() final;
-
-        void print(std::ostream &ostream) const final;
-
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
 
         [[nodiscard]] const ASTNodeVariant &expr() const { return mExpr; }
     };

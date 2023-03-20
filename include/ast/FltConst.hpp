@@ -1,27 +1,25 @@
 #pragma once
-#include <iosfwd>               // for ostream
-#include <memory>               // for shared_ptr
-#include <string>               // for string
-#include "Const.hpp"            // for Const
-#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
-#include "llvm/ADT/DenseMap.h"  // for DenseMap
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <iosfwd>              // for ostream
+#include <memory>              // for shared_ptr
+#include <string>              // for string
 
 namespace voila::ast
 {
-    class FltConst : public Const
+    class FltConst : public AbstractASTNode<FltConst>
     {
       public:
-        explicit FltConst(const Location loc, const double val) : Const(loc), val{val} {}
+        explicit FltConst(const Location loc, const double val) : AbstractASTNode<FltConst>(loc), val{val} {}
 
-        [[nodiscard]] bool is_float() const final;
+        [[nodiscard]] std::string type2string_impl() const { return "float"; }
 
-        FltConst *as_float() final;
+        void print_impl(std::ostream &ostream) const { ostream << std::to_string(val); }
 
-        [[nodiscard]] std::string type2string() const final;
-
-        void print(std::ostream &ostream) const final;
-
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &) override;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &)
+        {
+            return std::make_shared<FltConst>(loc, val);
+        }
 
         const double val;
     };

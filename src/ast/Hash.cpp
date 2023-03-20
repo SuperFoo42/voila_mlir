@@ -7,24 +7,11 @@
 
 namespace voila::ast
 {
-    [[nodiscard]] std::string Hash::type2string() const { return "hash"; }
-
-    [[nodiscard]] bool Hash::is_hash() const { return true; }
-
-    Hash *Hash::as_hash() { return this; }
-    void Hash::print(std::ostream &) const {}
-
-    ASTNodeVariant Hash::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
+    ASTNodeVariant Hash::clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap)
     {
-        std::vector<ASTNodeVariant> clonedItems;
         auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
                                        [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};
 
-        for (auto &item : mItems)
-        {
-            clonedItems.push_back(std::visit(cloneVisitor, item));
-        }
-
-        return std::make_shared<Hash>(loc, clonedItems);
+        return std::make_shared<Hash>(loc, mItems | ranges::views::transform([&cloneVisitor](auto &i) {return std::visit(cloneVisitor, i);}));
     }
 } // namespace voila::ast

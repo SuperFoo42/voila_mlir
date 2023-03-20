@@ -1,38 +1,36 @@
 #pragma once
 
-#include <iosfwd>               // for ostream
-#include <memory>               // for shared_ptr
-#include <optional>             // for optional
-#include <string>               // for string
-#include "IStatement.hpp"       // for IStatement
-#include "ast/ASTNode.hpp"      // for ASTNode (ptr only), Location
-#include "llvm/ADT/DenseMap.h"  // for DenseMap
+#include "ast/ASTNode.hpp"     // for ASTNode (ptr only), Location
+#include "llvm/ADT/DenseMap.h" // for DenseMap
+#include <iosfwd>              // for ostream
+#include <memory>              // for shared_ptr
+#include <optional>            // for optional
+#include <string>              // for string
 
-namespace voila::ast {
+namespace voila::ast
+{
     /**
      * @brief Meta node to wrap expressions into statements
      *
      */
-    class StatementWrapper : public IStatement {
+    class StatementWrapper : public AbstractASTNode<StatementWrapper>
+    {
         ASTNodeVariant mExpr;
 
-    public:
-        explicit StatementWrapper(Location loc, ASTNodeVariant expr);
-
-        [[nodiscard]] std::string type2string() const final;
-
-        [[nodiscard]] bool is_statement_wrapper() const final;
-
-        [[nodiscard]] StatementWrapper *as_statement_wrapper() final;
-
-        void print(std::ostream &ostream) const final;
-
-        ASTNodeVariant clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap) override;
-
-        [[nodiscard]] const ASTNodeVariant &expr() const
+      public:
+        explicit StatementWrapper(Location loc, ASTNodeVariant expr)
+            : AbstractASTNode<StatementWrapper>(loc), mExpr{std::move(expr)}
         {
-            return mExpr;
         }
+
+        [[nodiscard]] std::string type2string_impl() const { return "statement wrapper"; }
+
+        void print_impl(std::ostream &) const {};
+
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap);
+
+        [[nodiscard]] const ASTNodeVariant &expr() const { return mExpr; }
     };
+
 
 } // namespace voila::ast

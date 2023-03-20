@@ -5,10 +5,7 @@
 
 namespace voila::ast
 {
-    bool Selection::is_select() const { return true; }
-    Selection *Selection::as_select() { return this; }
-    std::string Selection::type2string() const { return "selection"; }
-    void Selection::print(std::ostream &ostream) const
+    void Selection::print_impl(std::ostream &ostream) const
     {
         auto pVisitor = overloaded{[&ostream](auto &v) { ostream << *v; }, [](std::monostate) {}};
         ostream << type2string() << "( ";
@@ -17,8 +14,7 @@ namespace voila::ast
         std::visit(pVisitor, mPred);
         ostream << ")";
     }
-
-    ASTNodeVariant Selection::clone(llvm::DenseMap<AbstractASTNode *, AbstractASTNode *> &vmap)
+    ASTNodeVariant Selection::clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &vmap)
     {
         auto cloneVisitor = overloaded{[&vmap](auto &e) -> ASTNodeVariant { return e->clone(vmap); },
                                        [](std::monostate &) -> ASTNodeVariant { throw std::logic_error(""); }};
