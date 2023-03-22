@@ -78,8 +78,6 @@ namespace mlir
 namespace voila::ast
 {
     class StrConst;
-    class TupleCreate;
-    class TupleGet;
     class Write;
 } // namespace voila::ast
 
@@ -95,26 +93,23 @@ namespace voila::mlir
     using ::mlir::ValueRange;
     using std::to_string;
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<AggrSum> sum) { return createAggr(sum); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<AggrSum> sum) { return createAggr(sum); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<AggrCnt> cnt) { return createAggr(cnt); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<AggrCnt> cnt) { return createAggr(cnt); }
 
     // TODO: is this behaviour better than explicit type checking and throw on monostate?
-    result_variant MLIRGeneratorImpl::operator()(std::monostate) { return Value(); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::monostate) { return Value(); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<AggrMin> min) { return createAggr(min); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<AggrMin> min) { return createAggr(min); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<AggrMax> max) { return createAggr(max); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<AggrMax> max) { return createAggr(max); }
 
     // TODO
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<AggrAvg> avg) { return createAggr(avg); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<AggrAvg> avg) { return createAggr(avg); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Write> write)
-    {
-        return ASTVisitor<result_variant>::operator()(write);
-    }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Write> ) { throw std::logic_error("Not implemented"); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Scatter> scatter)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Scatter> scatter)
     {
         auto location = loc(scatter->get_location());
         auto col = std::get<Value>(std::visit(*this, scatter->src()));
@@ -122,7 +117,7 @@ namespace voila::mlir
         return builder.create<ScatterOp>(location, col.getType(), idx, col, Value());
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<FunctionCall> call)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<FunctionCall> call)
     {
         auto location = loc(call->get_location());
         SmallVector<Value> operands;
@@ -138,7 +133,7 @@ namespace voila::mlir
             ->getResults();
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Assign> assign)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Assign> assign)
     {
         auto res = std::visit(*this, assign->expr());
         ValueRange val;
@@ -167,7 +162,7 @@ namespace voila::mlir
         return res;
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Emit> emit)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Emit> emit)
     {
         auto location = loc(emit->get_location());
 
@@ -183,7 +178,7 @@ namespace voila::mlir
         return ::mlir::success();
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Loop> loop)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Loop> loop)
     {
         auto location = loc(loop->get_location());
         mlir::Value cond = std::get<Value>(std::visit(*this, loop->pred()));
@@ -202,13 +197,13 @@ namespace voila::mlir
         return ::mlir::success();
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<StatementWrapper> wrapper)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<StatementWrapper> wrapper)
     {
         // forward to expr
         return std::visit(*this, wrapper->expr());
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Add> add)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Add> add)
     {
         auto location = loc(add->get_location());
         auto lhs = std::visit(*this, add->lhs());
@@ -218,7 +213,7 @@ namespace voila::mlir
         return builder.create<AddOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Sub> sub)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Sub> sub)
     {
         auto location = loc(sub->get_location());
         auto lhs = std::visit(*this, sub->lhs());
@@ -228,7 +223,7 @@ namespace voila::mlir
         return builder.create<SubOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Mul> mul)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Mul> mul)
     {
         auto location = loc(mul->get_location());
         auto lhs = std::visit(*this, mul->lhs());
@@ -238,7 +233,7 @@ namespace voila::mlir
         return builder.create<MulOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Div> div)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Div> div)
     {
         auto location = loc(div->get_location());
         auto lhs = std::visit(*this, div->lhs());
@@ -249,7 +244,7 @@ namespace voila::mlir
         return builder.create<DivOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Mod> mod)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Mod> mod)
     {
         auto location = loc(mod->get_location());
         auto lhs = std::visit(*this, mod->lhs());
@@ -259,19 +254,19 @@ namespace voila::mlir
         return builder.create<ModOp>(location, resType, std::get<Value>(lhs), std::get<Value>(rhs));
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Eq> eq) { return getCmpOp(*eq); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Eq> eq) { return getCmpOp(*eq); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Neq> neq) { return getCmpOp(*neq); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Neq> neq) { return getCmpOp(*neq); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Le> le) { return getCmpOp(*le); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Le> le) { return getCmpOp(*le); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Ge> ge) { return getCmpOp(*ge); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Ge> ge) { return getCmpOp(*ge); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Leq> leq) { return getCmpOp(*leq); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Leq> leq) { return getCmpOp(*leq); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Geq> geq) { return getCmpOp(*geq); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Geq> geq) { return getCmpOp(*geq); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<And> anAnd)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<And> anAnd)
     {
         auto location = loc(anAnd->get_location());
         auto lhs = std::get<::mlir::Value>(std::visit(*this, anAnd->lhs()));
@@ -287,7 +282,7 @@ namespace voila::mlir
             return builder.create<AndOp>(location, builder.getI1Type(), lhs, rhs);
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Or> anOr)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Or> anOr)
     {
         auto location = loc(anOr->get_location());
         auto lhs = std::get<Value>(std::visit(*this, anOr->lhs()));
@@ -297,7 +292,7 @@ namespace voila::mlir
                                     lhs, rhs);
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Not> aNot)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Not> aNot)
     {
         auto location = loc(aNot->get_location());
         auto param = std::visit(*this, aNot->param());
@@ -306,7 +301,7 @@ namespace voila::mlir
                                      std::get<Value>(param));
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Hash> hash)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Hash> hash)
     {
         auto location = loc(hash->get_location());
         SmallVector<Value> params;
@@ -320,29 +315,29 @@ namespace voila::mlir
         return builder.create<HashOp>(location, retType, params);
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<IntConst> intConst)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<IntConst> intConst)
     {
         return builder.create<IntConstOp>(loc(intConst->get_location()), getScalarType(intConst), intConst->val);
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<BooleanConst> booleanConst)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<BooleanConst> booleanConst)
     {
         return builder.create<BoolConstOp>(loc(booleanConst->get_location()), builder.getI1Type(), booleanConst->val);
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<FltConst> fltConst)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<FltConst> fltConst)
     {
         return builder.create<FltConstOp>(loc(fltConst->get_location()), builder.getF64FloatAttr(fltConst->val));
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<StrConst>) { throw NotImplementedException(); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<StrConst>) { throw NotImplementedException(); }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Predicate> pred)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Predicate> pred)
     {
         return std::get<Value>(std::visit(*this, pred->expr()));
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Read> read)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Read> read)
     {
         auto location = loc(read->get_location());
         auto col = std::get<Value>(std::visit(*this, read->column()));
@@ -351,7 +346,7 @@ namespace voila::mlir
         return builder.create<ReadOp>(location, col.getType(), col, idx, Value());
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Gather> gather)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Gather> gather)
     {
         auto location = loc(gather->get_location());
         auto col = std::get<Value>(std::visit(*this, gather->column()));
@@ -361,7 +356,7 @@ namespace voila::mlir
             col, idx, Value());
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Ref> param)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Ref> param)
     {
         const auto var = std::get<std::shared_ptr<Variable>>(param->ref())->var;
         if (symbolTable.count(var))
@@ -374,7 +369,7 @@ namespace voila::mlir
         throw MLIRGenerationException();
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Fun> fun)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Fun> fun)
     {
         if (inferer.get_type(fun)->undef())
             return std::monostate(); // TODO
@@ -431,13 +426,13 @@ namespace voila::mlir
         return function;
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Main> main)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Main> main)
     {
         operator()(std::dynamic_pointer_cast<Fun>(main));
         return ::mlir::success();
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Selection> selection)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Selection> selection)
     {
         auto location = loc(selection->get_location());
         auto values = std::get<Value>(std::visit(*this, selection->param()));
@@ -448,7 +443,7 @@ namespace voila::mlir
             location, ::mlir::RankedTensorType::get(ShapedType::kDynamic, getElementTypeOrSelf(values)), values, pred);
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Lookup> lookup)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Lookup> lookup)
     {
         auto location = loc(lookup->get_location());
         SmallVector<Value> tables;
@@ -468,7 +463,7 @@ namespace voila::mlir
             values, tables, hashes);
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Insert> insert)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Insert> insert)
     {
         auto location = loc(insert->get_location());
         auto table = std::get<Value>(std::visit(*this, insert->keys()));
@@ -486,7 +481,7 @@ namespace voila::mlir
         return insertOp.getHashtables();
     }
 
-    result_variant MLIRGeneratorImpl::operator()(std::shared_ptr<Variable> variable)
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Variable> variable)
     {
         // Register the value in the symbol table.
         // TODO: SSA

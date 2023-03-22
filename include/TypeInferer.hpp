@@ -21,14 +21,11 @@ namespace voila
         class AggrMin;
         class AggrSum;
         class And;
-        template <class T> class Arithmetic;
         class Assign;
         class BooleanConst;
-        class Comparison;
         class Div;
         class Emit;
         class Eq;
-        class Expression;
         class FltConst;
         class Fun;
         class FunctionCall;
@@ -53,62 +50,62 @@ namespace voila
         class Ref;
         class Scatter;
         class Selection;
-        class Statement;
         class StatementWrapper;
         class StrConst;
         class Sub;
-        class TupleCreate;
-        class TupleGet;
         class Variable;
         class Write;
     } // namespace ast
 
     // TODO pimpl
-    class TypeInferer : public ast::ASTVisitor<>
+    class TypeInferer : public ast::ASTVisitor<TypeInferer, void>
     {
       public:
+
         explicit TypeInferer(Program *prog);
 
-        void operator()(std::shared_ptr<ast::Write> write) final;
-        void operator()(std::shared_ptr<ast::Scatter> scatter) final;
-        void operator()(std::shared_ptr<ast::FunctionCall> call) final;
-        void operator()(std::shared_ptr<ast::Assign> assign) final;
-        void operator()(std::shared_ptr<ast::Emit> emit) final;
-        void operator()(std::shared_ptr<ast::Loop> loop) final;
-        void operator()(std::shared_ptr<ast::IntConst> aConst) final;
-        void operator()(std::shared_ptr<ast::BooleanConst> aConst) final;
-        void operator()(std::shared_ptr<ast::FltConst> aConst) final;
-        void operator()(std::shared_ptr<ast::StrConst> aConst) final;
-        void operator()(std::shared_ptr<ast::Read> read) final;
-        void operator()(std::shared_ptr<ast::Gather> gather) final;
-        void operator()(std::shared_ptr<ast::Ref> param) final;
-        void operator()(std::shared_ptr<ast::Fun> fun) final;
-        void operator()(std::shared_ptr<ast::Main> main) final;
-        void operator()(std::shared_ptr<ast::Selection> selection) final;
-        void operator()(std::shared_ptr<ast::Variable> var) final;
-
-        void operator()(std::shared_ptr<ast::Add> var) final;
-        void operator()(std::shared_ptr<ast::Sub> sub) final;
-        void operator()(std::shared_ptr<ast::Mul> mul) final;
-        void operator()(std::shared_ptr<ast::Div> div1) final;
-        void operator()(std::shared_ptr<ast::Mod> mod) final;
-        void operator()(std::shared_ptr<ast::AggrSum> sum) final;
-        void operator()(std::shared_ptr<ast::AggrCnt> cnt) final;
-        void operator()(std::shared_ptr<ast::AggrMin> aggrMin) final;
-        void operator()(std::shared_ptr<ast::AggrMax> aggrMax) final;
-        void operator()(std::shared_ptr<ast::AggrAvg> avg) final;
-        void operator()(std::shared_ptr<ast::Eq> eq) final;
-        void operator()(std::shared_ptr<ast::Neq> neq) final;
-        void operator()(std::shared_ptr<ast::Le> le) final;
-        void operator()(std::shared_ptr<ast::Ge> ge) final;
-        void operator()(std::shared_ptr<ast::Leq> leq) final;
-        void operator()(std::shared_ptr<ast::Geq> geq) final;
-        void operator()(std::shared_ptr<ast::And> anAnd) final;
-        void operator()(std::shared_ptr<ast::Or> anOr) final;
-        void operator()(std::shared_ptr<ast::Not> aNot) final;
-        void operator()(std::shared_ptr<ast::Predicate> pred) final;
-        void operator()(std::shared_ptr<ast::StatementWrapper> wrapper) final;
-        void operator()(std::shared_ptr<ast::Hash> hash) final;
+        return_type visit_impl(std::shared_ptr<ast::Write> write);
+        return_type visit_impl(std::shared_ptr<ast::Scatter> scatter);
+        return_type visit_impl(std::shared_ptr<ast::FunctionCall> call);
+        return_type visit_impl(std::shared_ptr<ast::Assign> assign);
+        return_type visit_impl(std::shared_ptr<ast::Emit> emit);
+        return_type visit_impl(std::shared_ptr<ast::Loop> loop);
+        return_type visit_impl(std::shared_ptr<ast::IntConst> aConst);
+        return_type visit_impl(std::shared_ptr<ast::BooleanConst> aConst);
+        return_type visit_impl(std::shared_ptr<ast::FltConst> aConst);
+        return_type visit_impl(std::shared_ptr<ast::StrConst> aConst);
+        return_type visit_impl(std::shared_ptr<ast::Read> read);
+        return_type visit_impl(std::shared_ptr<ast::Gather> gather);
+        return_type visit_impl(std::shared_ptr<ast::Ref> param);
+        return_type visit_impl(std::shared_ptr<ast::Fun> fun);
+        return_type visit_impl(std::shared_ptr<ast::Main> main);
+        return_type visit_impl(std::shared_ptr<ast::Selection> selection);
+        return_type visit_impl(std::shared_ptr<ast::Variable> var);
+        return_type visit_impl(std::shared_ptr<ast::Add> var);
+        return_type visit_impl(std::shared_ptr<ast::Sub> sub);
+        return_type visit_impl(std::shared_ptr<ast::Mul> mul);
+        return_type visit_impl(std::shared_ptr<ast::Div> div1);
+        return_type visit_impl(std::shared_ptr<ast::Mod> mod);
+        return_type visit_impl(std::shared_ptr<ast::AggrSum> sum);
+        return_type visit_impl(std::shared_ptr<ast::AggrCnt> cnt);
+        return_type visit_impl(std::shared_ptr<ast::AggrMin> aggrMin);
+        return_type visit_impl(std::shared_ptr<ast::AggrMax> aggrMax);
+        return_type visit_impl(std::shared_ptr<ast::AggrAvg> avg);
+        return_type visit_impl(std::shared_ptr<ast::Eq> eq);
+        return_type visit_impl(std::shared_ptr<ast::Neq> neq);
+        return_type visit_impl(std::shared_ptr<ast::Le> le);
+        return_type visit_impl(std::shared_ptr<ast::Ge> ge);
+        return_type visit_impl(std::shared_ptr<ast::Leq> leq);
+        return_type visit_impl(std::shared_ptr<ast::Geq> geq);
+        return_type visit_impl(std::shared_ptr<ast::And> anAnd);
+        return_type visit_impl(std::shared_ptr<ast::Or> anOr);
+        return_type visit_impl(std::shared_ptr<ast::Not> aNot);
+        return_type visit_impl(std::shared_ptr<ast::Predicate> pred);
+        return_type visit_impl(std::shared_ptr<ast::StatementWrapper> wrapper);
+        return_type visit_impl(std::shared_ptr<ast::Hash> hash);
+        return_type visit_impl(std::shared_ptr<ast::Lookup> lookup);
+        return_type visit_impl(std::shared_ptr<ast::Insert> insert);
+        return_type visit_impl(std::monostate);
 
         std::shared_ptr<Type> get_type(const ast::ASTNodeVariant &node) const;
 
@@ -117,10 +114,6 @@ namespace voila
 
         void insertNewType(const ast::ASTNodeVariant &node, DataType t, Arity ar);
         void insertNewTypeAs(const ast::ASTNodeVariant &node, const Type &t);
-        void operator()(std::shared_ptr<ast::Lookup> lookup) override;
-        void operator()(std::shared_ptr<ast::Insert> insert) override;
-
-        using ast::ASTVisitor<void>::operator();
 
         std::vector<std::shared_ptr<Type>> types;
         Program *prog;

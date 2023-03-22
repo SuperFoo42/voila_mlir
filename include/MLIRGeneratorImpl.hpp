@@ -144,7 +144,6 @@ namespace
         using type = ::mlir::voila::CountOp;
     };
 
-
     template <typename T> using aggr_to_op_t = typename aggr_to_op<T>::type;
 
     template <typename T> struct cmp_to_op;
@@ -179,7 +178,7 @@ namespace
 
 namespace voila::mlir
 {
-    class MLIRGeneratorImpl : public ast::ASTVisitor<result_variant>
+    class MLIRGeneratorImpl : public ast::ASTVisitor<MLIRGeneratorImpl, result_variant>
     {
         ::mlir::OpBuilder &builder;
         ::mlir::ModuleOp &module;
@@ -214,8 +213,7 @@ namespace voila::mlir
             auto rhs = std::get<::mlir::Value>(std::visit(*this, cmpNode.rhs()));
             ::mlir::Type retType =
                 (lhs.getType().template isa<::mlir::TensorType>() || rhs.getType().template isa<::mlir::TensorType>())
-                    ?
-                    static_cast<::mlir::Type>(::mlir::RankedTensorType::get(getShape(lhs, rhs), builder.getI1Type()))
+                    ? static_cast<::mlir::Type>(::mlir::RankedTensorType::get(getShape(lhs, rhs), builder.getI1Type()))
                     : static_cast<::mlir::Type>(builder.getI1Type());
 
             return builder.create<cmp_to_op_t<Cmp>>(location, retType, lhs, rhs);
@@ -253,49 +251,47 @@ namespace voila::mlir
                           llvm::StringMap<::mlir::func::FuncOp> &funcTable,
                           const TypeInferer &inferer);
 
-        result_variant operator()(std::shared_ptr<ast::AggrSum> sum) final;
-        result_variant operator()(std::shared_ptr<ast::AggrCnt> cnt) final;
-        result_variant operator()(std::shared_ptr<ast::AggrMin> min) final;
-        result_variant operator()(std::shared_ptr<ast::AggrMax> max) final;
-        result_variant operator()(std::shared_ptr<ast::AggrAvg> avg) final;
-        result_variant operator()(std::shared_ptr<ast::Write> write) final;
-        result_variant operator()(std::shared_ptr<ast::Scatter> scatter) final;
-
-        result_variant operator()(std::shared_ptr<ast::Assign> assign) final;
-        result_variant operator()(std::shared_ptr<ast::Emit> emit) final;
-        result_variant operator()(std::shared_ptr<ast::Loop> loop) final;
-        result_variant operator()(std::shared_ptr<ast::StatementWrapper> wrapper) final;
-        result_variant operator()(std::shared_ptr<ast::Add> add) final;
-        result_variant operator()(std::shared_ptr<ast::Sub> sub) final;
-        result_variant operator()(std::shared_ptr<ast::Mul> mul) final;
-        result_variant operator()(std::shared_ptr<ast::Div> div) final;
-        result_variant operator()(std::shared_ptr<ast::Mod> mod) final;
-        result_variant operator()(std::shared_ptr<ast::Eq> eq) final;
-        result_variant operator()(std::shared_ptr<ast::Neq> neq) final;
-        result_variant operator()(std::shared_ptr<ast::Le> le) final;
-        result_variant operator()(std::shared_ptr<ast::Ge> ge) final;
-        result_variant operator()(std::shared_ptr<ast::Leq> leq) final;
-        result_variant operator()(std::shared_ptr<ast::Geq> geq) final;
-        result_variant operator()(std::shared_ptr<ast::And> anAnd) final;
-        result_variant operator()(std::shared_ptr<ast::Or> anOr) final;
-        result_variant operator()(std::shared_ptr<ast::Not> aNot) final;
-        result_variant operator()(std::shared_ptr<ast::IntConst> intConst) final;
-        result_variant operator()(std::shared_ptr<ast::BooleanConst> booleanConst) final;
-        result_variant operator()(std::shared_ptr<ast::FltConst> fltConst) final;
-        result_variant operator()(std::shared_ptr<ast::StrConst> aConst) final;
-        result_variant operator()(std::shared_ptr<ast::Read> read) final;
-        result_variant operator()(std::shared_ptr<ast::Gather> gather) final;
-        result_variant operator()(std::shared_ptr<ast::Ref> param) final;
-        result_variant operator()(std::shared_ptr<ast::Fun> fun) final;
-        result_variant operator()(std::shared_ptr<ast::Main> main) final;
-        result_variant operator()(std::shared_ptr<ast::Selection> selection) final;
-        result_variant operator()(std::shared_ptr<ast::Variable> variable) final;
-        result_variant operator()(std::shared_ptr<ast::Predicate> pred) final;
-        result_variant operator()(std::shared_ptr<ast::Hash> hash) final;
-        result_variant operator()(std::shared_ptr<ast::Lookup> lookup) final;
-        result_variant operator()(std::shared_ptr<ast::Insert> insert) final;
-        result_variant operator()(std::shared_ptr<ast::FunctionCall> call) final;
-
-        result_variant operator()(std::monostate) final;
+        result_variant visit_impl(std::shared_ptr<ast::AggrSum> sum);
+        result_variant visit_impl(std::shared_ptr<ast::AggrCnt> cnt);
+        result_variant visit_impl(std::shared_ptr<ast::AggrMin> min);
+        result_variant visit_impl(std::shared_ptr<ast::AggrMax> max);
+        result_variant visit_impl(std::shared_ptr<ast::AggrAvg> avg);
+        result_variant visit_impl(std::shared_ptr<ast::Write> write);
+        result_variant visit_impl(std::shared_ptr<ast::Scatter> scatter);
+        result_variant visit_impl(std::shared_ptr<ast::Assign> assign);
+        result_variant visit_impl(std::shared_ptr<ast::Emit> emit);
+        result_variant visit_impl(std::shared_ptr<ast::Loop> loop);
+        result_variant visit_impl(std::shared_ptr<ast::StatementWrapper> wrapper);
+        result_variant visit_impl(std::shared_ptr<ast::Add> add);
+        result_variant visit_impl(std::shared_ptr<ast::Sub> sub);
+        result_variant visit_impl(std::shared_ptr<ast::Mul> mul);
+        result_variant visit_impl(std::shared_ptr<ast::Div> div);
+        result_variant visit_impl(std::shared_ptr<ast::Mod> mod);
+        result_variant visit_impl(std::shared_ptr<ast::Eq> eq);
+        result_variant visit_impl(std::shared_ptr<ast::Neq> neq);
+        result_variant visit_impl(std::shared_ptr<ast::Le> le);
+        result_variant visit_impl(std::shared_ptr<ast::Ge> ge);
+        result_variant visit_impl(std::shared_ptr<ast::Leq> leq);
+        result_variant visit_impl(std::shared_ptr<ast::Geq> geq);
+        result_variant visit_impl(std::shared_ptr<ast::And> anAnd);
+        result_variant visit_impl(std::shared_ptr<ast::Or> anOr);
+        result_variant visit_impl(std::shared_ptr<ast::Not> aNot);
+        result_variant visit_impl(std::shared_ptr<ast::IntConst> intConst);
+        result_variant visit_impl(std::shared_ptr<ast::BooleanConst> booleanConst);
+        result_variant visit_impl(std::shared_ptr<ast::FltConst> fltConst);
+        result_variant visit_impl(std::shared_ptr<ast::StrConst> aConst);
+        result_variant visit_impl(std::shared_ptr<ast::Read> read);
+        result_variant visit_impl(std::shared_ptr<ast::Gather> gather);
+        result_variant visit_impl(std::shared_ptr<ast::Ref> param);
+        result_variant visit_impl(std::shared_ptr<ast::Fun> fun);
+        result_variant visit_impl(std::shared_ptr<ast::Main> main);
+        result_variant visit_impl(std::shared_ptr<ast::Selection> selection);
+        result_variant visit_impl(std::shared_ptr<ast::Variable> variable);
+        result_variant visit_impl(std::shared_ptr<ast::Predicate> pred);
+        result_variant visit_impl(std::shared_ptr<ast::Hash> hash);
+        result_variant visit_impl(std::shared_ptr<ast::Lookup> lookup);
+        result_variant visit_impl(std::shared_ptr<ast::Insert> insert);
+        result_variant visit_impl(std::shared_ptr<ast::FunctionCall> call);
+        result_variant visit_impl(std::monostate);
     };
 } // namespace voila::mlir

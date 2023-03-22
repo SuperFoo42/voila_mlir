@@ -1,334 +1,198 @@
 #pragma once
 
 #include <stdexcept>
+#include <type_traits>
 
 namespace voila::ast
 {
     class AggrSum;
-
     class AggrCnt;
-
     class AggrMin;
-
     class AggrMax;
-
     class AggrAvg;
-
     class Write;
-
     class Scatter;
-
     class FunctionCall;
-
     class Assign;
-
     class Emit;
-
     class Loop;
-
     class StatementWrapper;
-
     class Selection;
-
     class Const;
-
     class Add;
-
-    template <class T> class Arithmetic;
-
     class Sub;
-
     class Mul;
-
     class Div;
-
     class Mod;
-
-    class Comparison;
-
     class Eq;
-
     class Neq;
-
     class Le;
-
     class Ge;
-
     class Leq;
-
     class Geq;
-
     class And;
-
     class Or;
-
     class Not;
-
-    class Logical;
-
     class IntConst;
-
     class BooleanConst;
-
     class FltConst;
-
     class StrConst;
-
     class Read;
-
     class Gather;
-
     class Ref;
-
-    class TupleGet;
-
-    class TupleCreate;
-
     class Fun;
-
     class Main;
-
-    class Comparison;
-
     class Variable;
-
     class Predicate;
-
     class Hash;
-
     class Lookup;
-
     class Insert;
 
-    template <typename T = void> class ASTVisitor
+    template <class Derived, typename R> class ASTVisitor
     {
       public:
-        using result_type = T;
+        using return_type = R;
         virtual ~ASTVisitor() = default;
 
-        virtual T operator()(std::shared_ptr<AggrSum>)
+        return_type operator()(std::shared_ptr<AggrSum> aggrSum)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(aggrSum);
         }
 
-        virtual T operator()(std::shared_ptr<AggrCnt>)
+        return_type operator()(std::shared_ptr<AggrCnt> aggrCnt)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(aggrCnt);
         }
 
-        virtual T operator()(std::shared_ptr<AggrMin>)
+        return_type operator()(std::shared_ptr<AggrMin> aggrMin)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(aggrMin);
         }
 
-        virtual T operator()(std::shared_ptr<AggrMax>)
+        return_type operator()(std::shared_ptr<AggrMax> aggrMax)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(aggrMax);
         }
 
-        virtual T operator()(std::shared_ptr<AggrAvg>)
+        return_type operator()(std::shared_ptr<AggrAvg> aggrAvg)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(aggrAvg);
         }
 
-        virtual T operator()(std::shared_ptr<Write>)
+        return_type operator()(std::shared_ptr<Write> write) { return static_cast<Derived *>(this)->visit_impl(write); }
+
+        return_type operator()(std::shared_ptr<Scatter> scatter)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(scatter);
         }
 
-        virtual T operator()(std::shared_ptr<Scatter>)
+        return_type operator()(std::shared_ptr<FunctionCall> functionCall)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(functionCall);
         }
 
-        virtual T operator()(std::shared_ptr<FunctionCall>)
+        return_type operator()(std::shared_ptr<Assign> assign)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(assign);
         }
 
-        virtual T operator()(std::shared_ptr<Assign>)
+        return_type operator()(std::shared_ptr<Emit> emit) { return static_cast<Derived *>(this)->visit_impl(emit); }
+
+        return_type operator()(std::shared_ptr<Loop> loop) { return static_cast<Derived *>(this)->visit_impl(loop); }
+
+        return_type operator()(std::shared_ptr<StatementWrapper> statementWrapper)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(statementWrapper);
         }
 
-        virtual T operator()(std::shared_ptr<Emit>)
+        return_type operator()(std::shared_ptr<Add> add) { return static_cast<Derived *>(this)->visit_impl(add); }
+
+        return_type operator()(std::shared_ptr<Sub> sub) { return static_cast<Derived *>(this)->visit_impl(sub); }
+
+        return_type operator()(std::shared_ptr<Mul> mul) { return static_cast<Derived *>(this)->visit_impl(mul); }
+
+        return_type operator()(std::shared_ptr<Div> div) { return static_cast<Derived *>(this)->visit_impl(div); }
+
+        return_type operator()(std::shared_ptr<Mod> mod) { return static_cast<Derived *>(this)->visit_impl(mod); }
+
+        return_type operator()(std::shared_ptr<Eq> eq) { return static_cast<Derived *>(this)->visit_impl(eq); }
+
+        return_type operator()(std::shared_ptr<Neq> neq) { return static_cast<Derived *>(this)->visit_impl(neq); }
+
+        return_type operator()(std::shared_ptr<Le> le) { return static_cast<Derived *>(this)->visit_impl(le); }
+
+        return_type operator()(std::shared_ptr<Ge> ge) { return static_cast<Derived *>(this)->visit_impl(ge); }
+
+        return_type operator()(std::shared_ptr<Leq> leq) { return static_cast<Derived *>(this)->visit_impl(leq); }
+
+        return_type operator()(std::shared_ptr<Geq> geq) { return static_cast<Derived *>(this)->visit_impl(geq); }
+
+        return_type operator()(std::shared_ptr<And> anAnd) { return static_cast<Derived *>(this)->visit_impl(anAnd); }
+
+        return_type operator()(std::shared_ptr<Or> anOr) { return static_cast<Derived *>(this)->visit_impl(anOr); }
+
+        return_type operator()(std::shared_ptr<Not> aNot) { return static_cast<Derived *>(this)->visit_impl(aNot); }
+
+        return_type operator()(std::shared_ptr<IntConst> intConst)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(intConst);
         }
 
-        virtual T operator()(std::shared_ptr<Loop>)
+        return_type operator()(std::shared_ptr<BooleanConst> booleanConst)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(booleanConst);
         }
 
-        virtual T operator()(std::shared_ptr<StatementWrapper>)
+        return_type operator()(std::shared_ptr<FltConst> fltConst)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(fltConst);
         }
 
-        virtual T operator()(std::shared_ptr<Const>)
+        return_type operator()(std::shared_ptr<StrConst> strConst)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(strConst);
         }
 
-        virtual T operator()(std::shared_ptr<Add>)
+        return_type operator()(std::shared_ptr<Read> read) { return static_cast<Derived *>(this)->visit_impl(read); }
+
+        return_type operator()(std::shared_ptr<Gather> gather)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(gather);
         }
 
-        virtual T operator()(std::shared_ptr<Sub>)
+        return_type operator()(std::shared_ptr<Ref> ref) { return static_cast<Derived *>(this)->visit_impl(ref); }
+
+        return_type operator()(std::shared_ptr<Fun> fun) { return static_cast<Derived *>(this)->visit_impl(fun); }
+
+        return_type operator()(std::shared_ptr<Main> main) { return static_cast<Derived *>(this)->visit_impl(main); }
+
+        return_type operator()(std::shared_ptr<Selection> selection)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(selection);
         }
 
-        virtual T operator()(std::shared_ptr<Mul>)
+        return_type operator()(std::shared_ptr<Variable> variable)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(variable);
         }
 
-        virtual T operator()(std::shared_ptr<Div>)
+        return_type operator()(std::shared_ptr<Predicate> predicate)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(predicate);
         }
 
-        virtual T operator()(std::shared_ptr<Mod>)
+        return_type operator()(std::shared_ptr<Hash> hash) { return static_cast<Derived *>(this)->visit_impl(hash); }
+
+        return_type operator()(std::shared_ptr<Lookup> lookup)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(lookup);
         }
 
-        virtual T operator()(std::shared_ptr<Eq>)
+        return_type operator()(std::shared_ptr<Insert> insert)
         {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
+            return static_cast<Derived *>(this)->visit_impl(insert);
         }
 
-        virtual T operator()(std::shared_ptr<Neq>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Le>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Ge>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Leq>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Geq>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<And>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Or>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Not>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Logical>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Comparison>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<IntConst>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<BooleanConst>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<FltConst>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<StrConst>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Read>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Gather>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Ref>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Fun>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Main>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Selection>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Variable>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Predicate>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Hash>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Lookup>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::shared_ptr<Insert>)
-        {
-            throw std::logic_error("Pure ASTNodes are not allowed to be visited");
-        }
-
-        virtual T operator()(std::monostate)
-        {
-            throw std::logic_error("No ASTNode");
-        }
+        return_type operator()(std::monostate m) { return static_cast<Derived *>(this)->visit_impl(m); }
     };
 } // namespace voila::ast

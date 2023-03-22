@@ -12,8 +12,6 @@
 
 namespace voila::ast
 {
-    template <class T> class ASTVisitor;
-
     using Location = voila::parser::location;
 
     template <class ASTNode> class AbstractASTNode

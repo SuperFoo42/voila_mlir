@@ -44,7 +44,7 @@
 
 namespace voila::ast
 {
-    void DotVisualizer::operator()(std::shared_ptr<AggrSum> sum)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<AggrSum> sum)
     {
         const auto id = nodeID;
         printVertex(sum);
@@ -53,7 +53,7 @@ namespace voila::ast
         std::visit(*this, sum->src());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<AggrCnt> cnt)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<AggrCnt> cnt)
     {
         const auto id = nodeID;
         printVertex(cnt);
@@ -62,7 +62,7 @@ namespace voila::ast
         std::visit(*this, cnt->src());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<AggrMin> min)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<AggrMin> min)
     {
         const auto id = nodeID;
         printVertex(min);
@@ -71,7 +71,7 @@ namespace voila::ast
         std::visit(*this, min->src());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<AggrMax> max)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<AggrMax> max)
     {
         const auto id = nodeID;
         printVertex(max);
@@ -80,7 +80,7 @@ namespace voila::ast
         std::visit(*this, max->src());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<AggrAvg> avg)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<AggrAvg> avg)
     {
         const auto id = nodeID;
         printVertex(avg);
@@ -89,7 +89,7 @@ namespace voila::ast
         std::visit(*this, avg->src());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Write> write)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Write> write)
     {
         const auto id = nodeID;
         printVertex(write);
@@ -98,7 +98,7 @@ namespace voila::ast
         std::visit(*this, write->start());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Scatter> scatter)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Scatter> scatter)
     {
         const auto id = nodeID;
         printVertex(scatter);
@@ -109,9 +109,9 @@ namespace voila::ast
         std::visit(*this, scatter->idxs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<FunctionCall> call) { printVertex(call); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<FunctionCall> call) { printVertex(call); }
 
-    void DotVisualizer::operator()(std::shared_ptr<Assign> assign)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Assign> assign)
     {
         const auto id = nodeID;
         printVertex(assign);
@@ -124,7 +124,7 @@ namespace voila::ast
         std::visit(*this, assign->expr());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Emit> emit)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Emit> emit)
     {
         const auto id = nodeID;
         printVertex(emit);
@@ -134,7 +134,7 @@ namespace voila::ast
             std::visit(*this, expr);
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Loop> loop)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Loop> loop)
     {
         const auto id = nodeID;
         printVertex<false>(loop);
@@ -149,7 +149,7 @@ namespace voila::ast
         std::visit(*this, loop->pred());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Add> add)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Add> add)
     {
         const auto id = nodeID;
         printVertex(add);
@@ -160,7 +160,7 @@ namespace voila::ast
         std::visit(*this, add->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Sub> sub)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Sub> sub)
     {
         const auto id = nodeID;
         printVertex(sub);
@@ -171,7 +171,7 @@ namespace voila::ast
         std::visit(*this, sub->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Mul> mul)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Mul> mul)
     {
         const auto id = nodeID;
         printVertex(mul);
@@ -182,7 +182,7 @@ namespace voila::ast
         std::visit(*this, mul->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Div> div)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Div> div)
     {
         const auto id = nodeID;
         printVertex(div);
@@ -193,7 +193,7 @@ namespace voila::ast
         std::visit(*this, div->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Mod> mod)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Mod> mod)
     {
         const auto id = nodeID;
         printVertex(mod);
@@ -204,7 +204,7 @@ namespace voila::ast
         std::visit(*this, mod->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Eq> eq)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Eq> eq)
     {
         const auto id = nodeID;
         printVertex(eq);
@@ -215,7 +215,7 @@ namespace voila::ast
         std::visit(*this, eq->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Neq> neq)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Neq> neq)
     {
         const auto id = nodeID;
         printVertex(neq);
@@ -226,7 +226,7 @@ namespace voila::ast
         std::visit(*this, neq->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Le> le)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Le> le)
     {
         const auto id = nodeID;
         printVertex(le);
@@ -237,7 +237,7 @@ namespace voila::ast
         std::visit(*this, le->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Ge> ge)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Ge> ge)
     {
         const auto id = nodeID;
         printVertex(ge);
@@ -248,7 +248,7 @@ namespace voila::ast
         std::visit(*this, ge->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Leq> leq)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Leq> leq)
     {
         const auto id = nodeID;
         printVertex(leq);
@@ -259,7 +259,7 @@ namespace voila::ast
         std::visit(*this, leq->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Geq> geq)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Geq> geq)
     {
         const auto id = nodeID;
         printVertex(geq);
@@ -270,7 +270,7 @@ namespace voila::ast
         std::visit(*this, geq->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<And> anAnd)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<And> anAnd)
     {
         const auto id = nodeID;
         printVertex(anAnd);
@@ -280,7 +280,7 @@ namespace voila::ast
         std::visit(*this, anAnd->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Or> anOr)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Or> anOr)
     {
         const auto id = nodeID;
         printVertex(anOr);
@@ -290,7 +290,7 @@ namespace voila::ast
         std::visit(*this, anOr->rhs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Not> aNot)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Not> aNot)
     {
         const auto id = nodeID;
         printVertex(aNot);
@@ -298,15 +298,15 @@ namespace voila::ast
         std::visit(*this, aNot->param());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<IntConst> intConst) { printVertex(intConst); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<IntConst> intConst) { printVertex(intConst); }
 
-    void DotVisualizer::operator()(std::shared_ptr<BooleanConst> boolConst) { printVertex(boolConst); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<BooleanConst> boolConst) { printVertex(boolConst); }
 
-    void DotVisualizer::operator()(std::shared_ptr<FltConst> fltConst) { printVertex(fltConst); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<FltConst> fltConst) { printVertex(fltConst); }
 
-    void DotVisualizer::operator()(std::shared_ptr<StrConst> strConst) { printVertex(strConst); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<StrConst> strConst) { printVertex(strConst); }
 
-    void DotVisualizer::operator()(std::shared_ptr<Read> read)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Read> read)
     {
         const auto id = nodeID;
         printVertex(read);
@@ -317,7 +317,7 @@ namespace voila::ast
         std::visit(*this, read->idx());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Gather> gather)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Gather> gather)
     {
         const auto id = nodeID;
         printVertex(gather);
@@ -328,9 +328,11 @@ namespace voila::ast
         std::visit(*this, gather->idxs());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Ref> param) { printVertex(param); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Ref> param) { printVertex(param); }
 
-    void DotVisualizer::operator()(std::shared_ptr<Selection> create)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::monostate) { throw std::logic_error("Invalid node type monostate"); }
+
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Selection> create)
     {
         const auto id = nodeID;
         printVertex(create);
@@ -342,7 +344,7 @@ namespace voila::ast
         std::visit(*this, create->pred());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<StatementWrapper> wrapper)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<StatementWrapper> wrapper)
     {
         const auto id = nodeID;
         printVertex<false>(wrapper);
@@ -351,7 +353,7 @@ namespace voila::ast
         std::visit(*this, wrapper->expr());
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Fun> fun)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Fun> fun)
     {
         const auto id = nodeID;
         printVertex(fun);
@@ -363,7 +365,7 @@ namespace voila::ast
         }
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Main> fun)
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Main> fun)
     {
         const auto id = nodeID;
         printVertex(fun);
@@ -375,7 +377,7 @@ namespace voila::ast
         }
     }
 
-    void DotVisualizer::operator()(std::shared_ptr<Variable> var) { printVertex(var); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Variable> var) { printVertex(var); }
 
     std::ostream &operator<<(std::ostream &out, DotVisualizer &t)
     {
@@ -387,6 +389,14 @@ namespace voila::ast
         out << "}" << std::endl;
         return out;
     }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Predicate>) { throw std::logic_error("Not implemented"); }
+
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Insert>) { throw std::logic_error("Not implemented"); }
+
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Lookup>) { throw std::logic_error("Not implemented"); }
+
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Hash>) { throw std::logic_error("Not implemented"); }
+
     template <bool infer_type> void DotVisualizer::printVertex(const ASTNodeVariant &node)
     {
         *os << llvm::formatv("n{0} [label=<<b>{1} <br/>", nodeID,

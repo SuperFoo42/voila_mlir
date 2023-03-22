@@ -16,7 +16,7 @@
 namespace voila::ast
 {
 
-    class DotVisualizer : public ASTVisitor<>
+    class DotVisualizer : public ASTVisitor<DotVisualizer, void>
     {
       protected:
         std::shared_ptr<Fun> to_dot;
@@ -33,80 +33,89 @@ namespace voila::ast
         {
         }
 
-        void operator()(std::shared_ptr<AggrSum> sum) final;
+        return_type visit_impl(std::shared_ptr<AggrSum> sum);
 
-        void operator()(std::shared_ptr<AggrCnt> cnt) final;
+        return_type visit_impl(std::shared_ptr<AggrCnt> cnt);
 
-        void operator()(std::shared_ptr<AggrMin> min) final;
+        return_type visit_impl(std::shared_ptr<AggrMin> min);
 
-        void operator()(std::shared_ptr<AggrMax> max) final;
+        return_type visit_impl(std::shared_ptr<AggrMax> max);
 
-        void operator()(std::shared_ptr<AggrAvg> avg) final;
+        return_type visit_impl(std::shared_ptr<AggrAvg> avg);
 
-        void operator()(std::shared_ptr<Write> write) final;
+        return_type visit_impl(std::shared_ptr<Write> write);
 
-        void operator()(std::shared_ptr<Scatter> scatter) final;
+        return_type visit_impl(std::shared_ptr<Scatter> scatter);
 
-        void operator()(std::shared_ptr<FunctionCall> call) final;
+        return_type visit_impl(std::shared_ptr<FunctionCall> call);
 
-        void operator()(std::shared_ptr<Assign> assign) final;
+        return_type visit_impl(std::shared_ptr<Assign> assign);
 
-        void operator()(std::shared_ptr<Emit> emit) final;
+        return_type visit_impl(std::shared_ptr<Emit> emit);
 
-        void operator()(std::shared_ptr<Loop> loop) final;
+        return_type visit_impl(std::shared_ptr<Loop> loop);
 
-        void operator()(std::shared_ptr<StatementWrapper> wrapper) final;
+        return_type visit_impl(std::shared_ptr<StatementWrapper> wrapper);
 
-        void operator()(std::shared_ptr<Add> add) final;
+        return_type visit_impl(std::shared_ptr<Add> add);
 
-        void operator()(std::shared_ptr<Sub> sub) final;
+        return_type visit_impl(std::shared_ptr<Sub> sub);
 
-        void operator()(std::shared_ptr<Mul> mul) final;
+        return_type visit_impl(std::shared_ptr<Mul> mul);
 
-        void operator()(std::shared_ptr<Div> div) final;
+        return_type visit_impl(std::shared_ptr<Div> div);
 
-        void operator()(std::shared_ptr<Mod> mod) final;
+        return_type visit_impl(std::shared_ptr<Mod> mod);
 
-        void operator()(std::shared_ptr<Eq> eq) final;
+        return_type visit_impl(std::shared_ptr<Eq> eq);
 
-        void operator()(std::shared_ptr<Neq> neq) final;
+        return_type visit_impl(std::shared_ptr<Neq> neq);
 
-        void operator()(std::shared_ptr<Le> le) final;
+        return_type visit_impl(std::shared_ptr<Le> le);
 
-        void operator()(std::shared_ptr<Ge> ge) final;
+        return_type visit_impl(std::shared_ptr<Ge> ge);
 
-        void operator()(std::shared_ptr<Leq> leq) final;
+        return_type visit_impl(std::shared_ptr<Leq> leq);
 
-        void operator()(std::shared_ptr<Geq> geq) final;
+        return_type visit_impl(std::shared_ptr<Geq> geq);
 
-        void operator()(std::shared_ptr<And> anAnd) final;
+        return_type visit_impl(std::shared_ptr<And> anAnd);
 
-        void operator()(std::shared_ptr<Or> anOr) final;
+        return_type visit_impl(std::shared_ptr<Or> anOr);
 
-        void operator()(std::shared_ptr<Not> aNot) final;
+        return_type visit_impl(std::shared_ptr<Predicate>);
 
-        void operator()(std::shared_ptr<IntConst> aConst) final;
+        return_type visit_impl(std::shared_ptr<Insert>);
 
-        void operator()(std::shared_ptr<BooleanConst> aConst) final;
+        return_type visit_impl(std::shared_ptr<Hash>);
 
-        void operator()(std::shared_ptr<FltConst> aConst) final;
+        return_type visit_impl(std::shared_ptr<Lookup>);
 
-        void operator()(std::shared_ptr<StrConst> aConst) final;
+        return_type visit_impl(std::shared_ptr<Not> aNot);
 
-        void operator()(std::shared_ptr<Read> read) final;
+        return_type visit_impl(std::shared_ptr<IntConst> aConst);
 
-        void operator()(std::shared_ptr<Gather> gather) final;
+        return_type visit_impl(std::shared_ptr<BooleanConst> aConst);
 
-        void operator()(std::shared_ptr<Ref> param) final;
+        return_type visit_impl(std::shared_ptr<FltConst> aConst);
 
-        void operator()(std::shared_ptr<Main> create) final;
+        return_type visit_impl(std::shared_ptr<StrConst> aConst);
 
-        void operator()(std::shared_ptr<Fun> create) final;
+        return_type visit_impl(std::shared_ptr<Read> read);
 
-        void operator()(std::shared_ptr<Selection> create) final;
+        return_type visit_impl(std::shared_ptr<Gather> gather);
 
-        void operator()(std::shared_ptr<Variable> var) final;
-        using ASTVisitor<void>::operator();
+        return_type visit_impl(std::shared_ptr<Ref> param);
+
+        return_type visit_impl(std::shared_ptr<Main> create);
+
+        return_type visit_impl(std::shared_ptr<Fun> create);
+
+        return_type visit_impl(std::shared_ptr<Selection> create);
+
+        return_type visit_impl(std::shared_ptr<Variable> var);
+
+        return_type visit_impl(std::monostate);
 
         friend std::ostream &operator<<(std::ostream &out, DotVisualizer &t);
     };

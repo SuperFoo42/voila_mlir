@@ -321,7 +321,7 @@ namespace voila
         }
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Write> write)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Write> write)
     {
         std::visit(*this, write->start());
         std::visit(*this, write->src());
@@ -338,7 +338,7 @@ namespace voila
                           DataType::VOID);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Scatter> scatter)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Scatter> scatter)
     {
         std::visit(*this, scatter->src());
         std::visit(*this, scatter->idxs());
@@ -353,7 +353,7 @@ namespace voila
                           get_type(scatter->idxs())->getArities().front());
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::FunctionCall> call)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::FunctionCall> call)
     {
         for (auto &arg : call->args())
         {
@@ -393,9 +393,9 @@ namespace voila
         insertNewFuncType(call, argIds, DataType::UNKNOWN, Arity()); // TODO
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Variable> var) { insertNewType(var); }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Variable> var) { insertNewType(var); }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Assign> assign)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Assign> assign)
     {
         for (auto &dest : assign->dests())
         {
@@ -420,7 +420,7 @@ namespace voila
         insertNewFuncType(assign, paramIds, DataType::VOID);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Emit> emit)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Emit> emit)
     {
         std::vector<type_id_t> returnTypeIds;
         for (auto &expr : emit->exprs())
@@ -432,7 +432,7 @@ namespace voila
         insertNewFuncType(emit, {}, returnTypeIds);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Loop> loop)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Loop> loop)
     {
         std::visit(*this, loop->pred());
 
@@ -447,7 +447,7 @@ namespace voila
         }
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Hash> hash)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Hash> hash)
     {
         // TODO: check same arities
         for (auto &elem : hash->items())
@@ -461,31 +461,31 @@ namespace voila
         insertNewFuncType(hash, type_ids, DataType::INT64, get_type(hash->items().front())->getArities().front());
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::IntConst> aConst)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::IntConst> aConst)
     {
         assert(!typeIDs.contains(aConst));
         insertNewType(aConst, get_int_type(aConst->val));
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::BooleanConst> aConst)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::BooleanConst> aConst)
     {
         assert(!typeIDs.contains(aConst));
         insertNewType(aConst, DataType::BOOL);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::FltConst> aConst)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::FltConst> aConst)
     {
         assert(!typeIDs.contains(aConst));
         insertNewType(aConst, DataType::DBL);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::StrConst> aConst)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::StrConst> aConst)
     {
         assert(!typeIDs.contains(aConst));
         insertNewType(aConst, DataType::STRING);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Read> read)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Read> read)
     {
         std::visit(*this, read->column());
         std::visit(*this, read->idx());
@@ -499,7 +499,7 @@ namespace voila
         insertNewFuncType(read, {get_type_id(read->column()), get_type_id(read->idx())}, DataType::VOID);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Gather> gather)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Gather> gather)
     {
         std::visit(*this, gather->column());
         std::visit(*this, gather->idxs());
@@ -515,12 +515,12 @@ namespace voila
                           get_type(gather->idxs())->getArities().front());
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Ref>)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Ref>)
     {
         // do not infer type, just act as a wrapper around variable
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Fun> fun)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Fun> fun)
     {
         // TODO: clear infered types at start of new function?
         // no need to infer arguments, as they are already passed from calls
@@ -541,12 +541,12 @@ namespace voila
             insertNewFuncType(fun, argIds, get_type_id(fun->result()));
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Main> main)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Main> main)
     {
-        (*this)(std::dynamic_pointer_cast<ast::Fun>(main));
+        visit_impl(std::dynamic_pointer_cast<ast::Fun>(main));
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Selection> selection)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Selection> selection)
     {
         std::visit(*this, selection->pred());
         std::visit(*this, selection->param());
@@ -567,7 +567,7 @@ namespace voila
                           type->getTypes().front());
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Lookup> lookup)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Lookup> lookup)
     {
         for (auto &item : lookup->values())
         {
@@ -592,7 +592,7 @@ namespace voila
         insertNewFuncType(lookup, paramTypeIds, DataType::INT64, get_type(lookup->hashes())->getArities().front());
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Insert> insert)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Insert> insert)
     {
         std::visit(*this, insert->keys());
 
@@ -620,7 +620,7 @@ namespace voila
         insertNewFuncType(insert, paramTypeIds, returnTypes);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Predicate> pred)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Predicate> pred)
     {
         std::visit(*this, pred->expr());
 
@@ -639,17 +639,17 @@ namespace voila
         insertNewFuncType(pred, {get_type_id(pred->expr()), get_type_id(pred->expr())}, type->getTypes().front());
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Add> var) { visitArithmetic(var); }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Add> var) { visitArithmetic(std::move(var)); }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Sub> sub) { visitArithmetic(sub); }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Sub> sub) { visitArithmetic(std::move(sub)); }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Mul> mul) { visitArithmetic(mul); }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Mul> mul) { visitArithmetic(std::move(mul)); }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Div> div1) { visitArithmetic(div1); }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Div> div1) { visitArithmetic(std::move(div1)); }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Mod> mod) { visitArithmetic(mod); }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Mod> mod) { visitArithmetic(std::move(mod)); }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::AggrSum> sum)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::AggrSum> sum)
     {
         std::visit(*this, sum->src());
 
@@ -666,7 +666,7 @@ namespace voila
         }
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::AggrCnt> cnt)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::AggrCnt> cnt)
     {
         std::visit(*this, cnt->src());
 
@@ -681,7 +681,7 @@ namespace voila
         }
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::AggrMin> aggrMin)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::AggrMin> aggrMin)
     {
         std::visit(*this, aggrMin->src());
 
@@ -698,7 +698,7 @@ namespace voila
         }
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::AggrMax> aggrMax)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::AggrMax> aggrMax)
     {
         std::visit(*this, aggrMax->src());
 
@@ -715,7 +715,7 @@ namespace voila
         }
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::AggrAvg> avg)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::AggrAvg> avg)
     {
         std::visit(*this, avg->src());
 
@@ -730,37 +730,37 @@ namespace voila
         }
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Eq> eq)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Eq> eq)
     {
         visitComparison(eq);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Neq> neq)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Neq> neq)
     {
         visitComparison(neq);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Le> le)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Le> le)
     {
         visitComparison(le);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Ge> ge)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Ge> ge)
     {
         visitComparison(ge);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Leq> leq)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Leq> leq)
     {
         visitComparison(leq);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Geq> geq)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Geq> geq)
     {
         visitComparison(geq);
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::And> anAnd)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::And> anAnd)
     {
         std::visit(*this, anAnd->lhs());
         std::visit(*this, anAnd->rhs());
@@ -786,7 +786,7 @@ namespace voila
                           Arity(get_type(anAnd->lhs())->getArities().front()));
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Or> anOr)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Or> anOr)
     {
         std::visit(*this, anOr->lhs());
         std::visit(*this, anOr->rhs());
@@ -812,7 +812,7 @@ namespace voila
                           Arity(get_type(anOr->lhs())->getArities().front()));
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::Not> aNot)
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Not> aNot)
     {
         std::visit(*this, aNot->param());
 
@@ -831,7 +831,7 @@ namespace voila
                           Arity(get_type(aNot->param())->getArities().front()));
     }
 
-    void TypeInferer::operator()(std::shared_ptr<ast::StatementWrapper> wrapper) { std::visit(*this, wrapper->expr()); }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::StatementWrapper> wrapper) { std::visit(*this, wrapper->expr()); }
 
     void TypeInferer::set_arity(const ast::ASTNodeVariant &node, const size_t ar)
     {
@@ -846,6 +846,8 @@ namespace voila
                 ->ar = Arity(ar);
         }
     }
+
+    TypeInferer::return_type TypeInferer::visit_impl(std::monostate) { throw std::logic_error("Invalid node type monostate"); }
 
     void TypeInferer::set_type(const ast::ASTNodeVariant &node, const DataType type)
     {
