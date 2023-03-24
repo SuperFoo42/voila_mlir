@@ -32,49 +32,18 @@ namespace voila::mlir::lowering
     using namespace ::mlir::arith;
     using ::mlir::voila::ScatterOp;
     using ::mlir::voila::ScatterOpAdaptor;
-    ScatterOpLowering::ScatterOpLowering(::mlir::MLIRContext *ctx)
-        : ConversionPattern(ScatterOp::getOperationName(), 1, ctx)
-    {
-    }
 
-    ::mlir::LogicalResult ScatterOpLowering::matchAndRewrite(::mlir::Operation *op,
-                                                             ::mlir::ArrayRef<::mlir::Value> operands,
+    ::mlir::LogicalResult ScatterOpLowering::matchAndRewrite(ScatterOp op,
+                                                             OpAdaptor adaptor,
                                                              ::mlir::ConversionPatternRewriter &rewriter) const
     {
-        auto loc = op->getLoc();
-        ImplicitLocOpBuilder builder(loc, rewriter);
-        ScatterOpAdaptor scatterOpAdaptor(operands);
-        auto tt = scatterOpAdaptor.getSrc().getType().dyn_cast<TensorType>();
+        Value out = rewriter.create<tensor::EmptyOp>(
+            op->getLoc(), op.getSrc().getType(),
+            rewriter.create<tensor::DimOp>(op->getLoc(), op.getSrc(), 0)->getResults());
 
-        Value out;
-
-        if (tt.hasStaticShape())
-        {
-            out = builder.create<memref::AllocOp>(MemRefType::get(tt.getShape(), tt.getElementType()));
-        }
-        else
-        {
-            out = builder.create<memref::AllocOp>(
-                MemRefType::get(tt.getShape(), tt.getElementType()),
-                builder.create<tensor::DimOp>(scatterOpAdaptor.getIdxs(), 0).getResult());
-        }
-
-        auto loopFunc = [&scatterOpAdaptor, &out](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
-        {
-            ImplicitLocOpBuilder builder(loc, nestedBuilder);
-            Value idx = builder.create<tensor::ExtractOp>(scatterOpAdaptor.getIdxs(), vals);
-            if (!idx.getType().isIndex())
-                idx = builder.create<IndexCastOp>(builder.getIndexType(), idx);
-            auto res = builder.create<tensor::ExtractOp>(scatterOpAdaptor.getSrc(), vals).getResult();
-            builder.create<memref::StoreOp>(res, out, idx);
-        };
-
-        llvm::SmallVector<AffineMap, 2> iter_maps(2, builder.getDimIdentityMap());
-
-        buildAffineLoopNest(rewriter, loc, builder.create<ConstantIndexOp>(0).getResult(),
-                            builder.create<tensor::DimOp>(scatterOpAdaptor.getIdxs(), 0).getResult(), {1}, loopFunc);
-
-        rewriter.replaceOpWithNewOp<bufferization::ToTensorOp>(op, out);
+        rewriter.replaceOpWithNewOp<tensor::ScatterOp>(op.getOperation(), op.getSrc().getType(), op.getSrc(), out,
+                                                       op.getIdxs(), rewriter.getDenseI64ArrayAttr(1),
+                                                       /*TODO: can we guarantee that we have unique indices?*/ true);
         return success();
     }
 } // namespace voila::mlir::lowering
