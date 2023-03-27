@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mlir/Dialects/Voila/IR/VoilaOps.h"   // for GatherOpAdaptor
 #include "mlir/Support/LLVM.h"                 // for function_ref
 #include "mlir/Support/LogicalResult.h"        // for LogicalResult
 #include "mlir/Transforms/DialectConversion.h" // for ConversionPattern
@@ -8,7 +9,6 @@
 namespace mlir
 {
     class ImplicitLocOpBuilder;
-    class MLIRContext;
     class Operation;
     class ValueRange;
     class Value;
@@ -20,15 +20,15 @@ namespace mlir
 }
 namespace voila::mlir::lowering
 {
-    struct NotOpLowering : public ::mlir::ConversionPattern
+    struct NotOpLowering : public ::mlir::OpConversionPattern<::mlir::voila::NotOp>
     {
-        explicit NotOpLowering(::mlir::MLIRContext *ctx);
+        using OpConversionPattern<::mlir::voila::NotOp>::OpConversionPattern;
 
         using LoopIterationFn = ::mlir::function_ref<::mlir::Value(
-            ::mlir::ImplicitLocOpBuilder &rewriter, ::mlir::ValueRange memRefOperands, ::mlir::ValueRange loopIvs)>;
+            ::mlir::ImplicitLocOpBuilder &rewriter, ::mlir::voila::NotOp op, ::mlir::ValueRange loopIvs)>;
 
-        ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                              llvm::ArrayRef<::mlir::Value> operands,
+        ::mlir::LogicalResult matchAndRewrite(::mlir::voila::NotOp op,
+                                              OpAdaptor adaptor,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final;
     };
 } // namespace voila::mlir::lowering

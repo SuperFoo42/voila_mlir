@@ -1,42 +1,40 @@
 #include "mlir/Dialects/Voila/lowering/HashOpLowering.hpp"
-#include <cassert>                                     // for assert
-#include <climits>                                     // for CHAR_BIT
-#include <cstddef>                                     // for size_t
-#include <cstdint>                                     // for uint8_t, int64_t
-#include <array>                                        // for array, to_array
-#include <memory>                                       // for allocator
-#include <stdexcept>                                    // for logic_error
-#include <type_traits>                                  // for remove_cv_t
-#include <utility>                                      // for pair, make_pair
-#include "NotImplementedException.hpp"                  // for NotImplemente...
-#include "llvm/ADT/PointerUnion.h"                      // for operator==
-#include "llvm/ADT/STLExtras.h"                         // for indexed_acces...
-#include "llvm/ADT/SmallVector.h"                       // for SmallVector
-#include "llvm/ADT/StringRef.h"                         // for operator==
-#include "llvm/ADT/Twine.h"                             // for operator+
-#include "llvm/ADT/iterator.h"                          // for iterator_faca...
-#include "llvm/Support/Casting.h"                       // for dyn_cast
-#include "llvm/Support/FormatVariadic.h"                // for formatv, form...
-#include "mlir/Dialect/Arith/IR/Arith.h"                // for XOrIOp, Const...
-#include "mlir/Dialect/Linalg/IR/Linalg.h"              // for YieldOp, Gene...
-#include "mlir/Dialect/SCF/IR/SCF.h"                    // for YieldOp, IfOp
-#include "mlir/Dialect/Tensor/IR/Tensor.h"              // for EmptyOp, DimOp
-#include "mlir/Dialects/Voila/IR/VoilaOps.h"            // for HashOp, HashO...
-#include "mlir/IR/AffineMap.h"                          // for AffineMap
-#include "mlir/IR/Builders.h"                           // for OpBuilder
-#include "mlir/IR/BuiltinTypeInterfaces.h"          // for ShapedType
-#include "mlir/IR/BuiltinTypes.h"                       // for IntegerType
-#include "mlir/IR/ImplicitLocOpBuilder.h"               // for ImplicitLocOp...
-#include "mlir/IR/Location.h"                           // for Location
-#include "mlir/IR/OpDefinition.h"                       // for OpState
-#include "mlir/IR/Operation.h"                          // for Operation
-#include "mlir/IR/PatternMatch.h"                       // for PatternBenefit
-#include "mlir/IR/Types.h"                              // for Type
-#include "mlir/IR/Value.h"                              // for Value
-#include "mlir/IR/ValueRange.h"                         // for ValueRange
-#include "mlir/Support/LLVM.h"                          // for dyn_cast, mlir
-
-namespace mlir { class MLIRContext; }
+#include "NotImplementedException.hpp"       // for NotImplemente...
+#include "mlir/Dialect/Arith/IR/Arith.h"     // for XOrIOp, Const...
+#include "mlir/Dialect/Linalg/IR/Linalg.h"   // for YieldOp, Gene...
+#include "mlir/Dialect/SCF/IR/SCF.h"         // for YieldOp, IfOp
+#include "mlir/Dialect/Tensor/IR/Tensor.h"   // for EmptyOp, DimOp
+#include "mlir/Dialects/Voila/IR/VoilaOps.h" // for HashOp, HashO...
+#include "mlir/IR/AffineMap.h"               // for AffineMap
+#include "mlir/IR/Builders.h"                // for OpBuilder
+#include "mlir/IR/BuiltinTypeInterfaces.h"   // for ShapedType
+#include "mlir/IR/BuiltinTypes.h"            // for IntegerType
+#include "mlir/IR/ImplicitLocOpBuilder.h"    // for ImplicitLocOp...
+#include "mlir/IR/Location.h"                // for Location
+#include "mlir/IR/OpDefinition.h"            // for OpState
+#include "mlir/IR/Operation.h"               // for Operation
+#include "mlir/IR/PatternMatch.h"            // for PatternBenefit
+#include "mlir/IR/Types.h"                   // for Type
+#include "mlir/IR/Value.h"                   // for Value
+#include "mlir/IR/ValueRange.h"              // for ValueRange
+#include "mlir/Support/LLVM.h"               // for dyn_cast, mlir
+#include "llvm/ADT/PointerUnion.h"           // for operator==
+#include "llvm/ADT/STLExtras.h"              // for indexed_acces...
+#include "llvm/ADT/SmallVector.h"            // for SmallVector
+#include "llvm/ADT/StringRef.h"              // for operator==
+#include "llvm/ADT/Twine.h"                  // for operator+
+#include "llvm/ADT/iterator.h"               // for iterator_faca...
+#include "llvm/Support/Casting.h"            // for dyn_cast
+#include "llvm/Support/FormatVariadic.h"     // for formatv, form...
+#include <array>                             // for array, to_array
+#include <cassert>                           // for assert
+#include <climits>                           // for CHAR_BIT
+#include <cstddef>                           // for size_t
+#include <cstdint>                           // for uint8_t, int64_t
+#include <memory>                            // for allocator
+#include <stdexcept>                         // for logic_error
+#include <type_traits>                       // for remove_cv_t
+#include <utility>                           // for pair, make_pair
 
 namespace voila::mlir::lowering
 {
@@ -44,8 +42,6 @@ namespace voila::mlir::lowering
     using namespace arith;
     using ::mlir::voila::HashOp;
     using ::mlir::voila::HashOpAdaptor;
-
-    HashOpLowering::HashOpLowering(MLIRContext *ctx) : ConversionPattern(HashOp::getOperationName(), 1, ctx) {}
 
     static constexpr auto XXH_PRIME64_1 = 0x9E3779B185EBCA87ULL;
     static constexpr auto XXH_SECRET = std::to_array<uint8_t>(
@@ -100,8 +96,7 @@ namespace voila::mlir::lowering
                                    builder.create<ConstantIntOp>(0x00000000000000ffULL, builder.getI64Type())));
     }
 
-    template<int WIDTH>
-    static Value getINT(ImplicitLocOpBuilder &builder, Value val)
+    template <int WIDTH> static Value getINT(ImplicitLocOpBuilder &builder, Value val)
     {
         if (val.getType().getIntOrFloatBitWidth() < WIDTH)
         {
@@ -441,32 +436,31 @@ namespace voila::mlir::lowering
         return res;
     }
 
-    LogicalResult
-    HashOpLowering::matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const
+    LogicalResult HashOpLowering::matchAndRewrite(::mlir::voila::HashOp op,
+                                                  OpAdaptor adaptor,
+                                                  ConversionPatternRewriter &rewriter) const
     {
-        auto hOp = dyn_cast<HashOp>(op);
-        HashOpAdaptor hashOpAdaptor(hOp);
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
 
-        const auto &shape = hashOpAdaptor.getInput().front().getType().dyn_cast<::mlir::TensorType>().getShape();
-        for (const auto &in : hashOpAdaptor.getInput())
+        const auto &shape = op.getInput().front().getType().dyn_cast<::mlir::TensorType>().getShape();
+        for (const auto &in : op.getInput())
         {
             assert(in.getType().isa<TensorType>());
             assert(in.getType().dyn_cast<TensorType>().getShape() == shape);
         }
 
         ::mlir::Value outTensor;
-        if (hOp.getResult().getType().dyn_cast<ShapedType>().hasStaticShape())
+        if (op.getResult().getType().dyn_cast<ShapedType>().hasStaticShape())
         {
-            outTensor = builder.create<tensor::EmptyOp>(
-                hOp.getResult().getType().dyn_cast<ShapedType>().getShape(), builder.getI64Type());
+            outTensor = builder.create<tensor::EmptyOp>(op.getResult().getType().dyn_cast<ShapedType>().getShape(),
+                                                        builder.getI64Type());
         }
         else
         {
             SmallVector<Value, 1> outTensorSize;
-            outTensorSize.push_back(builder.create<tensor::DimOp>(hashOpAdaptor.getInput().front(), 0));
-            outTensor = builder.create<tensor::EmptyOp>(ShapedType::kDynamic, builder.getI64Type(),outTensorSize);
+            outTensorSize.push_back(builder.create<tensor::DimOp>(op.getInput().front(), 0));
+            outTensor = builder.create<tensor::EmptyOp>(ShapedType::kDynamic, builder.getI64Type(), outTensorSize);
         }
 
         SmallVector<Value, 1> res;
@@ -474,40 +468,41 @@ namespace voila::mlir::lowering
 
         SmallVector<Type, 1> ret_type;
         ret_type.push_back(outTensor.getType());
-        SmallVector<AffineMap> indexing_maps(hashOpAdaptor.getInput().size() + 1 + bool(hashOpAdaptor.getPred()),
+        SmallVector<AffineMap> indexing_maps(op.getInput().size() + 1 + bool(op.getPred()),
                                              builder.getDimIdentityMap());
 
         SmallVector<Value> inputs;
-        if (hashOpAdaptor.getPred())
-            inputs.push_back(hashOpAdaptor.getPred());
-        inputs.insert(inputs.end(), hashOpAdaptor.getInput().begin(), hashOpAdaptor.getInput().end());
+        if (op.getPred())
+            inputs.push_back(op.getPred());
+        inputs.insert(inputs.end(), op.getInput().begin(), op.getInput().end());
 
         auto linalgOp = builder.create<linalg::GenericOp>(
             /*results*/ ret_type,
             /*inputs*/ inputs, /*outputs*/ res,
             /*indexing maps*/ indexing_maps,
             /*iterator types*/ utils::IteratorType::parallel,
-            [&hashOpAdaptor](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
+            [&op](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
             {
                 ImplicitLocOpBuilder builder(loc, nestedBuilder);
 
-                if (hashOpAdaptor.getPred())
+                if (op.getPred())
                 {
                     auto pred = vals.take_front()[0];
                     vals = vals.drop_front();
-                    auto res =
-                        builder
-                            .create<scf::IfOp>(pred,
-                                [&](OpBuilder &b, Location loc)
-                                {
-                                    ImplicitLocOpBuilder nb(loc, b);
-                                    auto res = hashFunc(nb, vals);
-                                    b.create<scf::YieldOp>(loc, res);
-                                },
-                                [&](OpBuilder &b, Location loc) {
-                                    b.create<scf::YieldOp>(loc, b.create<ConstantIntOp>(loc, 0, b.getI64Type()).getResult());
-                                })
-                            ->getResults();
+                    auto res = builder
+                                   .create<scf::IfOp>(
+                                       pred,
+                                       [&](OpBuilder &b, Location loc)
+                                       {
+                                           ImplicitLocOpBuilder nb(loc, b);
+                                           auto res = hashFunc(nb, vals);
+                                           b.create<scf::YieldOp>(loc, res);
+                                       },
+                                       [&](OpBuilder &b, Location loc) {
+                                           b.create<scf::YieldOp>(
+                                               loc, b.create<ConstantIntOp>(loc, 0, b.getI64Type()).getResult());
+                                       })
+                                   ->getResults();
                     builder.create<linalg::YieldOp>(res);
                 }
                 else

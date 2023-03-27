@@ -14,5 +14,6 @@ set(VoilaLowerings
         ${CMAKE_CURRENT_LIST_DIR}/InsertOpLowering.cpp
         ${CMAKE_CURRENT_LIST_DIR}/LookupOpLowering.cpp
         ${CMAKE_CURRENT_LIST_DIR}/ScatterOpLowering.cpp
+        ${CMAKE_CURRENT_LIST_DIR}/utility/HashingUtils.cpp
         PARENT_SCOPE
 )

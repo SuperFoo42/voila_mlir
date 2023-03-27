@@ -24,7 +24,6 @@
 
 namespace mlir
 {
-    class MLIRContext;
     class OpBuilder;
 } // namespace mlir
 
@@ -33,8 +32,6 @@ namespace voila::mlir::lowering
     using namespace ::mlir;
     using namespace arith;
     using namespace ::mlir::voila;
-
-    AvgOpLowering::AvgOpLowering(MLIRContext *ctx) : ConversionPattern(AvgOp::getOperationName(), 1, ctx) {}
 
     static Value castITensorToFTensor(ImplicitLocOpBuilder &builder, Value tensor)
     {
@@ -69,21 +66,19 @@ namespace voila::mlir::lowering
     }
 
     LogicalResult
-    AvgOpLowering::matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const
+    AvgOpLowering::matchAndRewrite(::mlir::voila::AvgOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const
     {
         assert(!op->getResultTypes().empty() && op->getResultTypes().size() == 1);
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
-        auto avgOp = llvm::dyn_cast<AvgOp>(op);
-        AvgOpAdaptor adaptor(avgOp);
 
         // this should work as long as ieee 754 is supported and division by 0 is inf
-        if (adaptor.getIndices() && op->getResultTypes().front().isa<TensorType>())
+        if (op.getIndices() && op->getResultTypes().front().isa<TensorType>())
         {
-            auto sum = builder.create<SumOp>(RankedTensorType::get(ShapedType::kDynamic, builder.getF64Type()), adaptor.getInput(),
-                                             adaptor.getIndices(), adaptor.getPred());
-            auto count = builder.create<CountOp>(RankedTensorType::get(ShapedType::kDynamic, builder.getI64Type()), adaptor.getInput(),
-                                                 adaptor.getIndices(), adaptor.getPred());
+            auto sum = builder.create<SumOp>(RankedTensorType::get(ShapedType::kDynamic, builder.getF64Type()), op.getInput(),
+                                             op.getIndices(), op.getPred());
+            auto count = builder.create<CountOp>(RankedTensorType::get(ShapedType::kDynamic, builder.getI64Type()), op.getInput(),
+                                                 op.getIndices(), op.getPred());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())
@@ -108,10 +103,10 @@ namespace voila::mlir::lowering
         }
         else
         {
-            auto sum = builder.create<SumOp>(getElementTypeOrSelf(adaptor.getInput()), adaptor.getInput(),
-                                             adaptor.getIndices(), adaptor.getPred());
-            auto count = builder.create<CountOp>(builder.getI64Type(), adaptor.getInput(), adaptor.getIndices(),
-                                                 adaptor.getPred());
+            auto sum = builder.create<SumOp>(getElementTypeOrSelf(op.getInput()), op.getInput(),
+                                             op.getIndices(), op.getPred());
+            auto count = builder.create<CountOp>(builder.getI64Type(), op.getInput(), op.getIndices(),
+                                                 op.getPred());
 
             Value fltCnt, fltSum;
             if (!getElementTypeOrSelf(count).isa<FloatType>())
@@ -132,7 +127,7 @@ namespace voila::mlir::lowering
                 fltSum = sum;
             }
 
-            rewriter.replaceOpWithNewOp<DivOp>(op, rewriter.getF64Type(), fltSum, fltCnt);
+            rewriter.replaceOpWithNewOp<DivOp>(op.getOperation(), rewriter.getF64Type(), fltSum, fltCnt);
         }
         return success();
     }

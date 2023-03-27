@@ -1,4 +1,5 @@
 #pragma once
+#include "mlir/Dialects/Voila/IR/VoilaOps.h"   // for GatherOpAdaptor
 #include "mlir/Support/LogicalResult.h"        // for LogicalResult
 #include "mlir/Transforms/DialectConversion.h" // for ConversionPattern
 #include "llvm/ADT/ArrayRef.h"                 // for ArrayRef
@@ -16,12 +17,12 @@ namespace voila::mlir::lowering
      * Hash function based on XXH3 with seed = 0
      * @link{https://cyan4973.github.io/xxHash/}
      */
-    struct HashOpLowering : public ::mlir::ConversionPattern
+    struct HashOpLowering : public ::mlir::OpConversionPattern<::mlir::voila::HashOp>
     {
-        explicit HashOpLowering(::mlir::MLIRContext *ctx);
+        using OpConversionPattern<::mlir::voila::HashOp>::OpConversionPattern;
 
-        ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                              ::mlir::ArrayRef<::mlir::Value> operands,
+        ::mlir::LogicalResult matchAndRewrite(::mlir::voila::HashOp op,
+                                              OpAdaptor adaptor,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final;
     };
 } // namespace voila::mlir::lowering

@@ -2,19 +2,16 @@
 #include "mlir/Transforms/DialectConversion.h"
 
 #include "MLIRLoweringError.hpp"
+#include "mlir/Dialects/Voila/IR/VoilaOps.h" // for GatherOpAdaptor
 
 namespace voila::mlir::lowering
 {
-    struct MinOpLowering : public ::mlir::ConversionPattern
+    struct MinOpLowering : public ::mlir::OpConversionPattern<::mlir::voila::MinOp>
     {
-        using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter,
-                                                                   ::mlir::ValueRange memRefOperands,
-                                                                   ::mlir::ValueRange loopIvs,
-                                                                   ::mlir::Value iter_var)>;
-        explicit MinOpLowering(::mlir::MLIRContext *ctx);
+        using OpConversionPattern<::mlir::voila::MinOp>::OpConversionPattern;
 
-        ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                              llvm::ArrayRef<::mlir::Value> operands,
+        ::mlir::LogicalResult matchAndRewrite(::mlir::voila::MinOp op,
+                                              OpAdaptor adaptor,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final;
     };
 } // namespace voila::mlir::lowering

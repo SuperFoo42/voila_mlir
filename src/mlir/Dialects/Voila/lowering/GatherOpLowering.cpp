@@ -8,7 +8,6 @@
 #include "mlir/IR/ValueRange.h"              // for ValueRange
 namespace mlir
 {
-    class MLIRContext;
     class Value;
 } // namespace mlir
 

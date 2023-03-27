@@ -1,4 +1,5 @@
 #pragma once
+#include "mlir/Dialects/Voila/IR/VoilaOps.h"   // for GatherOpAdaptor
 #include "mlir/Support/LogicalResult.h"        // for LogicalResult
 #include "mlir/Transforms/DialectConversion.h" // for ConversionPattern
 #include "llvm/ADT/ArrayRef.h"                 // for ArrayRef
@@ -12,12 +13,12 @@ namespace mlir
 
 namespace voila::mlir::lowering
 {
-    struct LookupOpLowering : public ::mlir::ConversionPattern
+    struct LookupOpLowering : public ::mlir::OpConversionPattern<::mlir::voila::LookupOp>
     {
-        explicit LookupOpLowering(::mlir::MLIRContext *ctx);
+        using OpConversionPattern<::mlir::voila::LookupOp>::OpConversionPattern;
 
-        ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                              llvm::ArrayRef<::mlir::Value> operands,
+        ::mlir::LogicalResult matchAndRewrite(::mlir::voila::LookupOp op,
+                                              OpAdaptor adaptor,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final;
     };
 } // namespace voila::mlir::lowering

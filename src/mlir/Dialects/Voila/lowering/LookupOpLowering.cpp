@@ -1,16 +1,5 @@
 #include "mlir/Dialects/Voila/lowering/LookupOpLowering.hpp"
-#include <cstddef>
-#include <cstdint>
-#include <limits>
 #include "NotImplementedException.hpp"
-#include "llvm/ADT/PointerUnion.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/STLForwardCompat.h"
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Twine.h"
-#include "llvm/ADT/iterator.h"
-#include "llvm/Support/Casting.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/IR/AllocationOpInterface.h"
@@ -20,6 +9,7 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/Dialects/Voila/lowering/utility/HashingUtils.hpp"
 #include "mlir/IR/AffineMap.h"
 #include "mlir/IR/Block.h"
 #include "mlir/IR/Builders.h"
@@ -33,104 +23,39 @@
 #include "mlir/IR/Types.h"
 #include "mlir/IR/Value.h"
 #include "mlir/IR/ValueRange.h"
+#include "llvm/ADT/PointerUnion.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/STLForwardCompat.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
+#include "llvm/ADT/iterator.h"
+#include "llvm/Support/Casting.h"
+#include <cstddef>
+#include <cstdint>
+#include <limits>
 
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
     using namespace arith;
     using namespace bufferization;
+    using namespace ::voila::mlir::lowering::utils;
     using ::mlir::voila::LookupOp;
     using ::mlir::voila::LookupOpAdaptor;
+    using ::mlir::utils::IteratorType;
 
-    // TODO: extract insert + lookup common utils
-    LookupOpLowering::LookupOpLowering(::mlir::MLIRContext *ctx) :
-        ConversionPattern(LookupOp::getOperationName(), 1, ctx)
-    {
-    }
-
-    static auto anyNotEmpty(ImplicitLocOpBuilder &builder, ValueRange hashInvalidConsts, ValueRange bucketVals)
-    {
-        llvm::SmallVector<Value> empties;
-        for (size_t i = 0; i < bucketVals.size(); ++i)
-        {
-            if (hashInvalidConsts[i].getType().isa<IntegerType>())
-            {
-                empties.push_back(builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i],
-                                                         hashInvalidConsts[i]));
-            }
-            else if (hashInvalidConsts[i].getType().isa<FloatType>())
-            {
-                empties.push_back(builder.create<CmpFOp>(builder.getI1Type(), CmpFPredicate::ONE, bucketVals[i],
-                                                         hashInvalidConsts[i]));
-            }
-            else
-            {
-                throw NotImplementedException();
-            }
-        }
-        Value anyNotEmpty = empties[0];
-        for (size_t i = 1; i < empties.size(); ++i)
-        {
-            anyNotEmpty = builder.create<OrIOp>(anyNotEmpty, empties[i]);
-        }
-
-        return anyNotEmpty;
-    }
-
-    static auto createKeyComparisons(ImplicitLocOpBuilder &builder,
-                                     ValueRange hts,
-                                     ValueRange hashInvalidConsts,
-                                     ValueRange toStores,
-                                     ValueRange idx)
-    {
-        SmallVector<Value> bucketVals;
-        for (auto ht : hts)
-        {
-            bucketVals.push_back(builder.create<tensor::ExtractOp>(ht, idx));
-        }
-
-        Value notEmpty = anyNotEmpty(builder, hashInvalidConsts, bucketVals);
-
-        SmallVector<Value> founds;
-        for (size_t i = 0; i < bucketVals.size(); ++i)
-        {
-            if (bucketVals[i].getType().isa<IntegerType>())
-            {
-                founds.push_back(
-                    builder.create<CmpIOp>(builder.getI1Type(), CmpIPredicate::ne, bucketVals[i], toStores[i]));
-            }
-            else if (bucketVals[i].getType().isa<FloatType>())
-            {
-                founds.push_back(
-                    builder.create<CmpFOp>(builder.getI1Type(), CmpFPredicate::ONE, bucketVals[i], toStores[i]));
-            }
-            else
-            {
-                throw NotImplementedException();
-            }
-        }
-        Value anyNotFound = founds[0];
-        for (size_t i = 1; i < founds.size(); ++i)
-        {
-            anyNotFound = builder.create<OrIOp>(anyNotFound, founds[i]);
-        }
-
-        return builder.create<AndIOp>(notEmpty, anyNotFound);
-    }
-
-    ::mlir::LogicalResult LookupOpLowering::matchAndRewrite(::mlir::Operation *op,
-                                                            llvm::ArrayRef<::mlir::Value> operands,
+    ::mlir::LogicalResult LookupOpLowering::matchAndRewrite(::mlir::voila::LookupOp op,
+                                                            OpAdaptor adaptor,
                                                             ConversionPatternRewriter &rewriter) const
     {
-        auto lOop = llvm::dyn_cast<LookupOp>(op);
-        LookupOpAdaptor lookupOpAdaptor(lOop);
         auto loc = op->getLoc();
 
-        auto htSizes = rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.getHashtables().front(), 0);
+        auto htSizes = rewriter.create<tensor::DimOp>(loc, op.getHashtables().front(), 0);
         auto modSize = rewriter.create<SubIOp>(loc, htSizes, rewriter.create<ConstantIndexOp>(loc, 1));
 
         SmallVector<Value> hashInvalidConsts;
-        for (auto val : lookupOpAdaptor.getValues())
+        for (auto val : op.getValues())
         { // we uce all ones value of data type size
             const auto &elementType = getElementTypeOrSelf(val);
             if (elementType.isIntOrFloat())
@@ -166,7 +91,7 @@ namespace voila::mlir::lowering
 
             // lookup entries
             auto comparison =
-                createKeyComparisons(condBuilder, lookupOpAdaptor.getHashtables(), hashInvalidConsts, vals, probeIdx);
+                createKeyComparisons(condBuilder, op.getHashtables(), hashInvalidConsts, vals, probeIdx);
             condBuilder.create<scf::ConditionOp>(comparison, probeIdx);
 
             // body
@@ -183,11 +108,11 @@ namespace voila::mlir::lowering
 
             Value resIdx = loop->getResults().front();
             SmallVector<Value> bucketVals;
-            for (auto ht : lookupOpAdaptor.getHashtables())
+            for (auto ht : op.getHashtables())
             {
                 bucketVals.push_back(builder.create<tensor::ExtractOp>(ht, resIdx));
             }
-            auto notEmpty = anyNotEmpty(builder, hashInvalidConsts, bucketVals);
+            auto notEmpty = createValueCmp(builder, bucketVals, hashInvalidConsts);
 
             Value res = builder.create<SelectOp>(loc, notEmpty, resIdx,
                                                  builder.create<ConstantIndexOp>(std::numeric_limits<uint64_t>::max()));
@@ -195,33 +120,31 @@ namespace voila::mlir::lowering
             builder.create<linalg::YieldOp>(loc, res);
         };
 
-        llvm::SmallVector<Value> inputs(1, lookupOpAdaptor.getHashes());
-        inputs.append(lookupOpAdaptor.getValues().begin(), lookupOpAdaptor.getValues().end());
-        if (lookupOpAdaptor.getPred())
+        llvm::SmallVector<Value> inputs(1, op.getHashes());
+        inputs.append(op.getValues().begin(), op.getValues().end());
+        if (op.getPred())
         {
             Value outMemref = rewriter.create<memref::AllocOp>(
                 loc,
-                MemRefType::get(lookupOpAdaptor.getHashes().getType().dyn_cast<TensorType>().getShape(),
-                                rewriter.getIndexType()),
-                lookupOpAdaptor.getHashes().getType().dyn_cast<TensorType>().hasStaticShape() ?
-                    ValueRange() :
-                    rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.getHashes(), 0).getResult());
+                MemRefType::get(op.getHashes().getType().dyn_cast<TensorType>().getShape(), rewriter.getIndexType()),
+                op.getHashes().getType().dyn_cast<TensorType>().hasStaticShape()
+                    ? ValueRange()
+                    : rewriter.create<tensor::DimOp>(loc, op.getHashes(), 0).getResult());
             buildAffineLoopNest(
-                rewriter, loc,rewriter.create<ConstantIndexOp>(loc, 0).getResult(),
-                rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.getHashes(), 0).getResult(),
-                ArrayRef<int64_t>(1),
+                rewriter, loc, rewriter.create<ConstantIndexOp>(loc, 0).getResult(),
+                rewriter.create<tensor::DimOp>(loc, op.getHashes(), 0).getResult(), ArrayRef<int64_t>(1),
                 [&](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
                 {
                     ImplicitLocOpBuilder builder(loc, nestedBuilder);
-                    auto pred = builder.create<tensor::ExtractOp>(lookupOpAdaptor.getPred(), vals);
+                    auto pred = builder.create<tensor::ExtractOp>(op.getPred(), vals);
                     builder.create<scf::IfOp>(
                         pred,
                         [&](OpBuilder &b, Location loc)
                         {
                             ImplicitLocOpBuilder nb(loc, b);
-                            auto hashVal = nb.create<tensor::ExtractOp>(lookupOpAdaptor.getHashes(), vals);
+                            auto hashVal = nb.create<tensor::ExtractOp>(op.getHashes(), vals);
                             SmallVector<Value, 6> values;
-                            for (auto v : lookupOpAdaptor.getValues())
+                            for (auto v : op.getValues())
                             {
                                 values.push_back(nb.create<tensor::ExtractOp>(v, vals));
                             }
@@ -239,8 +162,8 @@ namespace voila::mlir::lowering
                             Value probeIdx = beforeBlock->getArgument(0);
 
                             // lookup entries
-                            auto comparison = createKeyComparisons(condBuilder, lookupOpAdaptor.getHashtables(),
-                                                                   hashInvalidConsts, values, probeIdx);
+                            auto comparison = createKeyComparisons(condBuilder, op.getHashtables(),
+                                                                          hashInvalidConsts, values, probeIdx);
                             condBuilder.create<scf::ConditionOp>(comparison, probeIdx);
 
                             // body
@@ -258,11 +181,11 @@ namespace voila::mlir::lowering
 
                             Value resIdx = loop->getResults().front();
                             SmallVector<Value> bucketVals;
-                            for (auto ht : lookupOpAdaptor.getHashtables())
+                            for (auto ht : op.getHashtables())
                             {
                                 bucketVals.push_back(nb.create<tensor::ExtractOp>(ht, resIdx));
                             }
-                            auto notEmpty = anyNotEmpty(nb, hashInvalidConsts, bucketVals);
+                            auto notEmpty = createValueCmp(nb, bucketVals, hashInvalidConsts);
 
                             Value res =
                                 nb.create<SelectOp>(loc, notEmpty, resIdx,
@@ -276,19 +199,20 @@ namespace voila::mlir::lowering
         }
         else
         {
-            Value outTensor = rewriter.create<tensor::EmptyOp>(loc,
-                lookupOpAdaptor.getHashes().getType().dyn_cast<TensorType>().getShape(), rewriter.getIndexType(),
-                lookupOpAdaptor.getHashes().getType().dyn_cast<TensorType>().hasStaticShape() ?
-                ValueRange() : rewriter.create<tensor::DimOp>(loc, lookupOpAdaptor.getHashes(), 0).getResult());
+            Value outTensor = rewriter.create<tensor::EmptyOp>(
+                loc, op.getHashes().getType().dyn_cast<TensorType>().getShape(), rewriter.getIndexType(),
+                op.getHashes().getType().dyn_cast<TensorType>().hasStaticShape()
+                    ? ValueRange()
+                    : rewriter.create<tensor::DimOp>(loc, op.getHashes(), 0).getResult());
 
-            llvm::SmallVector<AffineMap> indexing_maps(/*hashes+outTensor*/ 2 + lookupOpAdaptor.getValues().size(),
+            llvm::SmallVector<AffineMap> indexing_maps(/*hashes+outTensor*/ 2 + op.getValues().size(),
                                                        rewriter.getDimIdentityMap());
-            auto linalgOp = rewriter.create<linalg::GenericOp>(
-                loc, /*results*/ outTensor.getType(),
-                /*inputs*/ inputs,
-                /*outputs*/ outTensor,
-                /*indexing maps*/ indexing_maps,
-                /*iterator types*/ utils::IteratorType::parallel, lookupFunc);
+            auto linalgOp =
+                rewriter.create<linalg::GenericOp>(loc, /*results*/ outTensor.getType(),
+                                                   /*inputs*/ inputs,
+                                                   /*outputs*/ outTensor,
+                                                   /*indexing maps*/ indexing_maps,
+                                                   /*iterator types*/ IteratorType::parallel, lookupFunc);
             rewriter.replaceOp(op, linalgOp->getResults());
         }
 

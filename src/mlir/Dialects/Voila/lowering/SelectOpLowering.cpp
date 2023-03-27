@@ -25,11 +25,6 @@
 #include "llvm/ADT/Twine.h"
 #include <cassert>
 
-namespace mlir
-{
-    class MLIRContext;
-}
-
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -68,8 +63,7 @@ namespace voila::mlir::lowering
         return alloc;
     }
 
-    void SelectOpLowering::lowerOpToLoops(Operation *op,
-                                          ValueRange operands,
+    void SelectOpLowering::lowerOpToLoops(::mlir::voila::SelectOp op,
                                           PatternRewriter &rewriter,
                                           LoopIterationFn processIteration)
     {
@@ -117,7 +111,7 @@ namespace voila::mlir::lowering
                 // and the loop induction variables. This function will return the value
                 // to store at the current index.
                 ImplicitLocOpBuilder b(loc, nestedBuilder);
-                Value nextIdx = processIteration(b, operands, iter_var, ivs.front(), alloc);
+                Value nextIdx = processIteration(b, op, iter_var, ivs.front(), alloc);
                 nestedBuilder.create<AffineYieldOp>(loc, nextIdx);
             });
 
@@ -135,18 +129,17 @@ namespace voila::mlir::lowering
         rewriter.replaceOpWithNewOp<ToTensorOp>(op, res);
     }
 
-    LogicalResult SelectOpLowering::matchAndRewrite(Operation *op,
-                                                    ArrayRef<Value> operands,
+    LogicalResult SelectOpLowering::matchAndRewrite(::mlir::voila::SelectOp op,
+                                                    OpAdaptor adaptor,
                                                     ConversionPatternRewriter &rewriter) const
     {
         auto loc = op->getLoc();
-        lowerOpToLoops(op, operands, rewriter,
-                       [loc](ImplicitLocOpBuilder &builder, ValueRange memRefOperands, ValueRange loopIvs,
+        lowerOpToLoops(op, rewriter,
+                       [loc](ImplicitLocOpBuilder &builder, ::mlir::voila::SelectOp op, ValueRange loopIvs,
                              Value iter_var, Value dest) -> Value
                        {
-                           SelectOpAdaptor binaryAdaptor(memRefOperands);
-                           auto values = binaryAdaptor.getValues();
-                           auto pred = binaryAdaptor.getPred();
+                           auto values = op.getValues();
+                           auto pred = op.getPred();
 
                            if (values.getType().isa<TensorType>() && pred.getType().isa<TensorType>())
                            {
@@ -229,10 +222,5 @@ namespace voila::mlir::lowering
                            }
                        });
         return success();
-    }
-
-    SelectOpLowering::SelectOpLowering(::mlir::MLIRContext *ctx)
-        : ConversionPattern(::mlir::voila::SelectOp::getOperationName(), 1, ctx)
-    {
     }
 } // namespace voila::mlir::lowering

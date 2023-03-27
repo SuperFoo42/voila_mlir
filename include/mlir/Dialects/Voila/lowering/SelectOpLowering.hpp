@@ -5,21 +5,21 @@
 #include "mlir/Support/LogicalResult.h" // for LogicalResult
 #include "mlir/Transforms/DialectConversion.h" // for ConversionPattern
 #include "llvm/ADT/ArrayRef.h"                 // for ArrayRef
+#include "mlir/Dialects/Voila/IR/VoilaOps.h"   // for GatherOpAdaptor
 
 namespace mlir
 {
     class ImplicitLocOpBuilder;
-    class MLIRContext;
     class Operation;
     class PatternRewriter;
 }
 
 namespace voila::mlir::lowering
 {
-    class SelectOpLowering : public ::mlir::ConversionPattern
+    class SelectOpLowering : public ::mlir::OpConversionPattern<::mlir::voila::SelectOp>
     {
         using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::ImplicitLocOpBuilder &builder,
-                                                                   ::mlir::ValueRange memRefOperands,
+                                                                   ::mlir::voila::SelectOp,
                                                                    ::mlir::ValueRange loopIvs,
                                                                    ::mlir::Value iter_var,
                                                                    ::mlir::Value dest)>;
@@ -28,16 +28,15 @@ namespace voila::mlir::lowering
         /// corresponding to the operands of the input operation, and the range of loop
         /// induction variables for the iteration. It returns a value to store at the
         /// current index of the iteration.
-        static void lowerOpToLoops(::mlir::Operation *op,
-                                   ::mlir::ValueRange operands,
+        static void lowerOpToLoops(::mlir::voila::SelectOp op,
                                    ::mlir::PatternRewriter &rewriter,
                                    LoopIterationFn processIteration);
 
       public:
-        explicit SelectOpLowering(::mlir::MLIRContext *ctx);
+        using OpConversionPattern<::mlir::voila::SelectOp>::OpConversionPattern;
 
-        ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                              ::mlir::ArrayRef<::mlir::Value> operands,
+        ::mlir::LogicalResult matchAndRewrite(::mlir::voila::SelectOp op,
+                                              OpAdaptor adaptor,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final;
     };
 } // namespace voila::mlir::lowering

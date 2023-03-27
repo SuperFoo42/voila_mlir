@@ -5,6 +5,7 @@
 #include "mlir/Support/LogicalResult.h" // for LogicalResult
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/ADT/ArrayRef.h" // for ArrayRef
+#include "mlir/Dialects/Voila/IR/VoilaOps.h" // for GatherOpAdaptor
 
 namespace mlir
 {
@@ -15,17 +16,15 @@ namespace mlir
 
 namespace voila::mlir::lowering
 {
-    struct LoopOpLowering : public ::mlir::ConversionPattern
+    struct LoopOpLowering : public ::mlir::OpConversionPattern<::mlir::voila::LoopOp>
     {
         using LoopIterationFn = ::mlir::function_ref<void(::mlir::PatternRewriter &rewriter,
-                                                          ::mlir::ValueRange memRefOperands,
                                                           ::mlir::ValueRange loopIvs,
                                                           ::mlir::Value iter_var)>;
 
-        explicit LoopOpLowering(::mlir::MLIRContext *ctx);
+        using OpConversionPattern<::mlir::voila::LoopOp>::OpConversionPattern;
 
-        ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                              ::mlir::ArrayRef<::mlir::Value> operands,
+        ::mlir::LogicalResult matchAndRewrite(::mlir::voila::LoopOp op, OpAdaptor adaptor,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final;
     };
 } // namespace voila::mlir::lowering

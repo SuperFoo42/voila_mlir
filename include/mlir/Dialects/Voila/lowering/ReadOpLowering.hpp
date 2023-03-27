@@ -3,22 +3,22 @@
 #include "mlir/Support/LogicalResult.h"        // for LogicalResult
 #include "mlir/Transforms/DialectConversion.h" // for ConversionPattern
 #include "llvm/ADT/ArrayRef.h"                 // for ArrayRef
+#include "mlir/Dialects/Voila/IR/VoilaOps.h"   // for GatherOpAdaptor
 
 namespace mlir
 {
-    class MLIRContext;
     class Operation;
     class Value;
 } // namespace mlir
 
 namespace voila::mlir::lowering
 {
-    struct ReadOpLowering : public ::mlir::ConversionPattern
+    struct ReadOpLowering : public  ::mlir::OpConversionPattern<::mlir::voila::ReadOp>
     {
-        explicit ReadOpLowering(::mlir::MLIRContext *ctx);
+        using OpConversionPattern<::mlir::voila::ReadOp>::OpConversionPattern;
 
-        ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                              ::mlir::ArrayRef<::mlir::Value> operands,
+        ::mlir::LogicalResult matchAndRewrite(::mlir::voila::ReadOp op,
+                                              OpAdaptor adaptor,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final;
     };
 } // namespace voila::mlir::lowering

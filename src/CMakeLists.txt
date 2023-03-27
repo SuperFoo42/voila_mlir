@@ -1,5 +1,5 @@
 CPMAddPackage("gh:Neargye/magic_enum@0.7.3")
-CPMAddPackage("gh:ericniebler/range-v3#0.11.0")
+CPMAddPackage("gh:ericniebler/range-v3#0.12.0")
 
 if (BUILD_DOC AND DOXYGEN_FOUND)
     doxygen_add_docs(docs)

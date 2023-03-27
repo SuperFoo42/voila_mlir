@@ -6,8 +6,9 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
-#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
+#include "mlir/Dialects/Voila/lowering/utility/HashingUtils.hpp"
 
 namespace voila::mlir::lowering
 {
@@ -16,43 +17,11 @@ namespace voila::mlir::lowering
     using namespace ::mlir::tensor;
     using namespace ::mlir::bufferization;
     using ::mlir::voila::CountOp;
-    using ::mlir::voila::CountOpAdaptor;
+    using ::voila::mlir::lowering::utils::getHTSize;
 
-    CountOpLowering::CountOpLowering(MLIRContext *ctx) : ConversionPattern(CountOp::getOperationName(), 1, ctx) {}
-
-    static Value getHTSize(ImplicitLocOpBuilder &builder, Value values)
+    static Value scalarCountLowering(CountOp &op, ImplicitLocOpBuilder &builder)
     {
-        auto insertSize = builder.create<DimOp>(values, 0);
-        /** algorithm to find the next power of 2 taken from
-         *  https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-         *
-         * v |= v >> 1;
-         * v |= v >> 2;
-         * v |= v >> 4;
-         * v |= v >> 8;
-         * v |= v >> 16;
-         * v |= v >> 32;
-         * v++;
-         */
-        auto firstOr =
-            builder.create<OrIOp>(insertSize, builder.create<ShRUIOp>(insertSize, builder.create<ConstantIndexOp>(1)));
-        auto secondOr =
-            builder.create<OrIOp>(firstOr, builder.create<ShRUIOp>(firstOr, builder.create<ConstantIndexOp>(2)));
-        auto thirdOr =
-            builder.create<OrIOp>(secondOr, builder.create<ShRUIOp>(secondOr, builder.create<ConstantIndexOp>(4)));
-        auto fourthOr =
-            builder.create<OrIOp>(thirdOr, builder.create<ShRUIOp>(thirdOr, builder.create<ConstantIndexOp>(8)));
-        auto fithOr =
-            builder.create<OrIOp>(fourthOr, builder.create<ShRUIOp>(fourthOr, builder.create<ConstantIndexOp>(16)));
-        auto sixthOr =
-            builder.create<OrIOp>(fithOr, builder.create<ShRUIOp>(fithOr, builder.create<ConstantIndexOp>(32)));
-
-        return builder.create<AddIOp>(sixthOr, builder.create<ConstantIndexOp>(1));
-    }
-
-    static Value scalarCountLowering(CountOpAdaptor &countOpAdaptor, ImplicitLocOpBuilder &builder)
-    {
-        if (countOpAdaptor.getPred())
+        if (op.getPred())
         {
             Value start = builder.create<arith::ConstantOp>(DenseIntElementsAttr::get(
                 RankedTensorType::get({}, builder.getIndexType()), builder.getIndexAttr(0).getValue()));
@@ -62,62 +31,61 @@ namespace voila::mlir::lowering
             SmallVector<AffineExpr, 1> dstExprs;
             auto inferred = AffineMap::inferFromExprList({srcExprs, dstExprs});
             return builder
-                .create<linalg::GenericOp>(start.getType(), countOpAdaptor.getPred(), start, inferred,
-                                           utils::IteratorType::reduction,
-                                           [](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
-                                           {
-                                               auto indexPred = nestedBuilder.create<arith::IndexCastOp>(
-                                                   loc, nestedBuilder.getIndexType(), vals.front());
-                                               Value res = nestedBuilder.create<AddIOp>(loc, indexPred, vals.back());
-                                               nestedBuilder.create<linalg::YieldOp>(loc, res);
-                                           })
+                .create<linalg::GenericOp>(
+                    start.getType(), op.getPred(), start, inferred, ::mlir::utils::IteratorType::reduction,
+                    [](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
+                    {
+                        auto indexPred =
+                            nestedBuilder.create<arith::IndexCastOp>(loc, nestedBuilder.getIndexType(), vals.front());
+                        Value res = nestedBuilder.create<AddIOp>(loc, indexPred, vals.back());
+                        nestedBuilder.create<linalg::YieldOp>(loc, res);
+                    })
                 ->getResult(0);
         }
         else
         {
-            auto cnt = builder.create<DimOp>(countOpAdaptor.getInput(), 0);
+            auto cnt = builder.create<DimOp>(op.getInput(), 0);
             return cnt;
         }
     }
 
-    static Value groupedCountLowering(CountOpAdaptor &countOpAdaptor, ImplicitLocOpBuilder &rewriter)
+    static Value groupedCountLowering(CountOp &op, ImplicitLocOpBuilder &rewriter)
     {
         Value res;
         auto allocSize =
-            getHTSize(rewriter, countOpAdaptor.getInput()); // FIXME: not the best solution, indices can be out of range.
+            getHTSize(rewriter, op.getInput()); // FIXME: not the best solution, indices can be out of range.
 
-        res = rewriter.create<memref::AllocOp>(MemRefType::get(-1, rewriter.getI64Type()),
-                                               ArrayRef(allocSize));
-        buildAffineLoopNest(rewriter, rewriter.getLoc(),rewriter.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
+        res = rewriter.create<memref::AllocOp>(MemRefType::get(-1, rewriter.getI64Type()), ArrayRef(allocSize));
+        buildAffineLoopNest(rewriter, rewriter.getLoc(), rewriter.create<ConstantIndexOp>(0).getResult(), allocSize,
+                            {1},
                             [&res](OpBuilder &builder, Location loc, ValueRange vals) {
                                 builder.create<AffineStoreOp>(
                                     loc, builder.create<ConstantIntOp>(loc, 0, builder.getI64Type()), res, vals);
                             });
 
-        auto fn = [&res, &countOpAdaptor](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
+        auto fn = [&res, &op](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
         {
             ImplicitLocOpBuilder builder(loc, nestedBuilder);
             auto idx = vals.front();
-            if (countOpAdaptor.getPred())
+            if (op.getPred())
             {
-                auto pred = builder.create<tensor::ExtractOp>(countOpAdaptor.getPred(), idx);
-                builder.create<scf::IfOp>(
-                    pred,
-                    [&](OpBuilder &b, Location loc)
-                    {
-                        ImplicitLocOpBuilder nb(loc, b);
-                        Value groupIdx = nb.create<tensor::ExtractOp>(countOpAdaptor.getIndices(), idx);
-                        auto oldVal = nb.create<memref::LoadOp>(res, groupIdx);
-                        Value newVal =
-                            nb.create<AddIOp>(oldVal, nb.create<ConstantIntOp>(1, builder.getI64Type()));
+                auto pred = builder.create<tensor::ExtractOp>(op.getPred(), idx);
+                builder.create<scf::IfOp>(pred,
+                                          [&](OpBuilder &b, Location loc)
+                                          {
+                                              ImplicitLocOpBuilder nb(loc, b);
+                                              Value groupIdx = nb.create<tensor::ExtractOp>(op.getIndices(), idx);
+                                              auto oldVal = nb.create<memref::LoadOp>(res, groupIdx);
+                                              Value newVal = nb.create<AddIOp>(
+                                                  oldVal, nb.create<ConstantIntOp>(1, builder.getI64Type()));
 
-                        nb.create<memref::StoreOp>(newVal, res, groupIdx);
-                        nb.create<scf::YieldOp>();
-                    });
+                                              nb.create<memref::StoreOp>(newVal, res, groupIdx);
+                                              nb.create<scf::YieldOp>();
+                                          });
             }
             else
             {
-                Value groupIdx = builder.create<tensor::ExtractOp>(countOpAdaptor.getIndices(), idx);
+                Value groupIdx = builder.create<tensor::ExtractOp>(op.getIndices(), idx);
                 auto oldVal = builder.create<memref::LoadOp>(res, groupIdx);
                 Value newVal = builder.create<AddIOp>(oldVal, builder.create<ConstantIntOp>(1, builder.getI64Type()));
 
@@ -125,32 +93,29 @@ namespace voila::mlir::lowering
             }
         };
 
-        buildAffineLoopNest(rewriter, rewriter.getLoc(),
-                            ValueRange(rewriter.create<ConstantIndexOp>(0).getResult()),
-                            rewriter.create<DimOp>(countOpAdaptor.getInput(), 0).getResult(), {1}, fn);
+        buildAffineLoopNest(rewriter, rewriter.getLoc(), ValueRange(rewriter.create<ConstantIndexOp>(0).getResult()),
+                            rewriter.create<DimOp>(op.getInput(), 0).getResult(), {1}, fn);
 
         return rewriter.create<ToTensorOp>(res);
     }
 
     LogicalResult
-    CountOpLowering::matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const
+    CountOpLowering::matchAndRewrite(CountOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const
     {
         auto loc = op->getLoc();
-        auto cOp = llvm::dyn_cast<CountOp>(op);
-        CountOpAdaptor cntOpAdaptor(cOp);
         Value res;
         ImplicitLocOpBuilder builder(loc, rewriter);
 
-        if (cntOpAdaptor.getIndices() && op->getResultTypes().front().isa<TensorType>())
+        if (op.getIndices() && op->getResult(0).getType().isa<TensorType>())
         {
-            res = groupedCountLowering(cntOpAdaptor, builder);
+            res = groupedCountLowering(op, builder);
         }
         else
         {
-            res = scalarCountLowering(cntOpAdaptor, builder);
+            res = scalarCountLowering(op, builder);
         }
 
-        rewriter.replaceOp(op, res);
+        rewriter.replaceOp(op.getOperation(), res);
 
         return success();
     }

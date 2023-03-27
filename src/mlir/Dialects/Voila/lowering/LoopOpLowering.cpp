@@ -26,11 +26,6 @@
 #include "mlir/IR/Value.h"
 #include "mlir/IR/ValueRange.h"
 
-namespace mlir
-{
-    class MLIRContext;
-}
-
 namespace voila::mlir::lowering
 {
     using namespace ::mlir;
@@ -45,14 +40,11 @@ namespace voila::mlir::lowering
         return MemRefType::get(type.getShape(), type.getElementType());
     }
 
-    LoopOpLowering::LoopOpLowering(MLIRContext *ctx) : ConversionPattern(LoopOp::getOperationName(), 1, ctx) {}
-    // TODO: refactor
-    static void lowerOpToLoops(Operation *op,
-                               ValueRange operands,
+
+    static void lowerOpToLoops(::mlir::voila::LoopOp op,
                                PatternRewriter &rewriter,
                                LoopOpLowering::LoopIterationFn processIteration)
     {
-        LoopOpAdaptor loopOpAdaptor(operands);
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
 
@@ -69,17 +61,17 @@ namespace voila::mlir::lowering
         // start index for store
         SmallVector<Value> iter_args;
         Value cond;
-        if (loopOpAdaptor.getCond().getType().isa<TensorType>())
+        if (op.getCond().getType().isa<TensorType>())
         {
             cond = builder.create<ToMemrefOp>(
-                convertTensorToMemRef(loopOpAdaptor.getCond().getType().dyn_cast<TensorType>()),
-                loopOpAdaptor.getCond());
-            upperBound = builder.create<AddIOp>(builder.create<memref::DimOp>(loopOpAdaptor.getCond(), 0),
+                convertTensorToMemRef(op.getCond().getType().dyn_cast<TensorType>()),
+                op.getCond());
+            upperBound = builder.create<AddIOp>(builder.create<memref::DimOp>(op.getCond(), 0),
                                                 builder.create<ConstantIndexOp>(1));
         }
         else
         {
-            cond = loopOpAdaptor.getCond();
+            cond = op.getCond();
             upperBound = builder.create<ConstantIndexOp>(2);
         }
 
@@ -102,7 +94,7 @@ namespace voila::mlir::lowering
                 // Call the processing function with the rewriter, the memref operands,
                 // and the loop induction variables. This function will return the value
                 // to store at the current index.
-                processIteration(rewriter, operands, iter_var, ivs.front());
+                processIteration(rewriter, iter_var, ivs.front());
                 // load next cond bit and yield
                 if (cond.getType().isa<MemRefType>())
                 {
@@ -119,14 +111,13 @@ namespace voila::mlir::lowering
     }
 
     LogicalResult
-    LoopOpLowering::matchAndRewrite(Operation *op, ArrayRef<Value> operands, ConversionPatternRewriter &rewriter) const
+    LoopOpLowering::matchAndRewrite(::mlir::voila::LoopOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const
     {
         auto loc = op->getLoc();
         lowerOpToLoops(
-            op, operands, rewriter,
-            [op, loc](PatternRewriter &builder, ValueRange memRefOperands, ValueRange loopIvs, Value iter_var)
+            op, rewriter,
+            [op, loc](PatternRewriter &builder, ValueRange loopIvs, Value iter_var)
             {
-                LoopOpAdaptor loopOpAdaptor(memRefOperands);
                 auto ifOp = builder.create<scf::IfOp>(loc, iter_var, false);
 
                 builder.inlineRegionBefore(op->getRegion(0), &ifOp.getThenRegion().back());

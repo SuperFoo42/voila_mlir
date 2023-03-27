@@ -3,6 +3,7 @@
 #include "mlir/Support/LogicalResult.h"        // for LogicalResult
 #include "mlir/Transforms/DialectConversion.h" // for ConversionPattern
 #include "llvm/ADT/ArrayRef.h"                 // for ArrayRef
+#include "mlir/Dialects/Voila/IR/VoilaOps.h" // for GatherOpAdaptor
 
 namespace mlir
 {
@@ -13,12 +14,11 @@ namespace mlir
 
 namespace voila::mlir::lowering
 {
-    struct InsertOpLowering : public ::mlir::ConversionPattern
+    struct InsertOpLowering : public ::mlir::OpConversionPattern<::mlir::voila::InsertOp>
     {
-        explicit InsertOpLowering(::mlir::MLIRContext *ctx);
+        using OpConversionPattern<::mlir::voila::InsertOp>::OpConversionPattern;
 
-        ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                              llvm::ArrayRef<::mlir::Value> operands,
+        ::mlir::LogicalResult matchAndRewrite(::mlir::voila::InsertOp op, OpAdaptor adaptor,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final;
     };
 } // namespace voila::mlir::lowering

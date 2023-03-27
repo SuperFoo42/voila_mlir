@@ -15,45 +15,65 @@ namespace mlir::voila
     class GeOp;
 } // namespace mlir::voila
 
+namespace {
+    template <class VCmpOp> struct CmpPred {
+    };
+
+    template <> struct CmpPred<::mlir::voila::EqOp> {
+        static const auto value = ::mlir::arith::CmpFPredicate::OEQ;
+    };
+    template <> struct CmpPred<::mlir::voila::NeqOp> {
+        static const auto value = ::mlir::arith::CmpFPredicate::ONE;
+    };
+    template <> struct CmpPred<::mlir::voila::LeOp> {
+        static const auto value = ::mlir::arith::CmpFPredicate::OLT;
+    };
+    template <> struct CmpPred<::mlir::voila::LeqOp> {
+        static const auto value = ::mlir::arith::CmpFPredicate::OLE;
+    };
+    template <> struct CmpPred<::mlir::voila::GeqOp> {
+        static const auto value = ::mlir::arith::CmpFPredicate::OGE;
+    };
+    template <> struct CmpPred<::mlir::voila::GeOp> {
+        static const auto value = ::mlir::arith::CmpFPredicate::OGT;
+    };
+    template <class VCmpOp> struct CmpIPred {
+    };
+
+    template <> struct CmpIPred<::mlir::voila::EqOp> {
+        static const auto value = ::mlir::arith::CmpIPredicate::eq;
+    };
+    template <> struct CmpIPred<::mlir::voila::NeqOp> {
+        static const auto value = ::mlir::arith::CmpIPredicate::ne;
+    };
+    template <> struct CmpIPred<::mlir::voila::LeOp> {
+        static const auto value = ::mlir::arith::CmpIPredicate::slt;
+    };
+    template <> struct CmpIPred<::mlir::voila::LeqOp> {
+        static const auto value = ::mlir::arith::CmpIPredicate::sle;
+    };
+    template <> struct CmpIPred<::mlir::voila::GeqOp> {
+        static const auto value = ::mlir::arith::CmpIPredicate::sge;
+    };
+    template <> struct CmpIPred<::mlir::voila::GeOp> {
+        static const auto value = ::mlir::arith::CmpIPredicate::sgt;
+    };
+
+    template <class VCmpOp>
+    inline constexpr ::mlir::arith::CmpFPredicate cmp_pred_v = CmpPred<VCmpOp>::value;
+
+    template <class VCmpOp>
+    inline constexpr ::mlir::arith::CmpIPredicate cmp_i_pred_v = CmpIPred<VCmpOp>::value;
+}
+
 namespace voila::mlir::lowering
 {
+
     template<typename CmpOp>
-    class ComparisonOpLowering : public ::mlir::ConversionPattern
+    class ComparisonOpLowering : public ::mlir::OpConversionPattern<CmpOp>
     {
-        static constexpr auto getIntCmpPred()
-        {
-            if constexpr (std::is_same_v<CmpOp, ::mlir::voila::EqOp>)
-                return ::mlir::arith::CmpIPredicate::eq;
-            else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::NeqOp>)
-                return ::mlir::arith::CmpIPredicate::ne;
-            else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeOp>)
-                return ::mlir::arith::CmpIPredicate::slt;
-            else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeqOp>)
-                return ::mlir::arith::CmpIPredicate::sle;
-            else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeqOp>)
-                return ::mlir::arith::CmpIPredicate::sge;
-            else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeOp>)
-                return ::mlir::arith::CmpIPredicate::sgt;
-            else
-                throw std::logic_error("Sth. went wrong");
-        }
-        static constexpr auto getFltCmpPred()
-        {
-            if constexpr (std::is_same_v<CmpOp, ::mlir::voila::EqOp>)
-                return ::mlir::arith::CmpFPredicate::OEQ;
-            else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::NeqOp>)
-                return ::mlir::arith::CmpFPredicate::ONE;
-            else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeOp>)
-                return ::mlir::arith::CmpFPredicate::OLT;
-            else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::LeqOp>)
-                return ::mlir::arith::CmpFPredicate::OLE;
-            else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeqOp>)
-                return ::mlir::arith::CmpFPredicate::OGE;
-            else if constexpr (std::is_same_v<CmpOp, ::mlir::voila::GeOp>)
-                return ::mlir::arith::CmpFPredicate::OGT;
-            else
-                throw std::logic_error("Sth. went wrong");
-        }
+        static constexpr auto int_pred = cmp_i_pred_v<CmpOp>;
+        static constexpr auto flt_pred = cmp_pred_v<CmpOp>;
 
         static inline ::mlir::Value
         createTypedCmpOp(::mlir::ImplicitLocOpBuilder &builder, ::mlir::Value lhs, ::mlir::Value rhs)
@@ -63,39 +83,35 @@ namespace voila::mlir::lowering
 
             if (lhsType.isa<::mlir::FloatType>() && rhsType.isa<::mlir::FloatType>())
             {
-                return builder.create<::mlir::arith::CmpFOp>(getFltCmpPred(), lhs, rhs);
+                return builder.create<::mlir::arith::CmpFOp>(flt_pred, lhs, rhs);
             }
             else if (lhsType.template isa<::mlir::FloatType>())
             {
                 auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(lhs.getType(), rhs);
-                return builder.create<::mlir::arith::CmpFOp>(getFltCmpPred(), lhs, castedFlt);
+                return builder.create<::mlir::arith::CmpFOp>(flt_pred, lhs, castedFlt);
             }
             else if (rhsType.template isa<::mlir::FloatType>())
             {
                 auto castedFlt = builder.template create<::mlir::arith::SIToFPOp>(rhs.getType(), lhs);
-                return builder.create<::mlir::arith::CmpFOp>(getFltCmpPred(), castedFlt, rhs);
+                return builder.create<::mlir::arith::CmpFOp>(flt_pred, castedFlt, rhs);
             }
             else
             {
-                return builder.create<::mlir::arith::CmpIOp>(getIntCmpPred(), lhs, rhs);
+                return builder.create<::mlir::arith::CmpIOp>(int_pred, lhs, rhs);
             }
         }
 
       public:
-        [[maybe_unused]] explicit ComparisonOpLowering(::mlir::MLIRContext *ctx) :
-            ConversionPattern(CmpOp::getOperationName(), 1, ctx)
-        {
-        }
+        using ::mlir::OpConversionPattern<CmpOp>::OpConversionPattern;
+        using OpAdaptor =  typename::mlir::OpConversionPattern<CmpOp>::OpAdaptor;
 
-        ::mlir::LogicalResult matchAndRewrite(::mlir::Operation *op,
-                                              llvm::ArrayRef<::mlir::Value> operands,
+        ::mlir::LogicalResult matchAndRewrite(CmpOp op, OpAdaptor,
                                               ::mlir::ConversionPatternRewriter &rewriter) const final
         {
-            typename CmpOp::Adaptor opAdaptor(operands);
             auto loc = op->getLoc();
             ::mlir::ImplicitLocOpBuilder builder(loc, rewriter);
-            auto lhs = opAdaptor.getLhs();
-            auto rhs = opAdaptor.getRhs();
+            auto lhs = op.getLhs();
+            auto rhs = op.getRhs();
 
             if (lhs.getType().template isa<::mlir::TensorType>() && !rhs.getType().template isa<::mlir::TensorType>())
             {
@@ -137,7 +153,7 @@ namespace voila::mlir::lowering
             }
 
             auto res = createTypedCmpOp(builder, lhs, rhs);
-            rewriter.replaceOp(op, res);
+            rewriter.replaceOp(op.getOperation(), res);
             return ::mlir::success();
         }
     };
