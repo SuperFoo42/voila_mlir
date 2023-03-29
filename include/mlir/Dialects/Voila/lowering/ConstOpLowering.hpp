@@ -1,6 +1,7 @@
 #pragma once
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "mlir/Dialects/Voila/lowering/utility/TypeUtils.hpp"
 
 namespace voila::mlir::lowering
 {
@@ -15,7 +16,7 @@ namespace voila::mlir::lowering
             ::mlir::Attribute valAttr = op.getValueAttr();
             auto t = op.getType();
             auto loc = op.getLoc();
-            if (t.template isa<::mlir::TensorType>())
+            if (isTensor(t))
             {
                 auto tt = t.template dyn_cast<::mlir::RankedTensorType>();
 

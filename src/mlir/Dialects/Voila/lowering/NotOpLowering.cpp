@@ -5,6 +5,7 @@
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/Dialects/Voila/lowering/utility/TypeUtils.hpp"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/ImplicitLocOpBuilder.h"
@@ -24,6 +25,7 @@
 #include "llvm/ADT/iterator.h"
 #include <cassert>
 #include <cstdint>
+
 namespace mlir
 {
     class OpBuilder;
@@ -37,13 +39,6 @@ namespace voila::mlir::lowering
     using ::mlir::voila::NotOp;
     using ::mlir::voila::NotOpAdaptor;
 
-    /// Convert the given TensorType into the corresponding MemRefType.
-    static MemRefType convertTensorToMemRef(TensorType type)
-    {
-        assert(type.hasRank() && "expected only ranked shapes");
-        return MemRefType::get(type.getShape(), type.getElementType());
-    }
-
     /// Insert an allocation and deallocation for the given MemRefType.
     static Value insertAllocAndDealloc(MemRefType type, Value dynamicMemref, Location, ImplicitLocOpBuilder &builder)
     {
@@ -52,15 +47,14 @@ namespace voila::mlir::lowering
         {
             return builder.create<memref::AllocOp>(type);
         }
-        else if (dynamicMemref.getType().dyn_cast<TensorType>().isDynamicDim(0))
+        else if (asShapedType(dynamicMemref).isDynamicDim(0))
         {
             auto allocSize = builder.create<memref::DimOp>(dynamicMemref, 0);
             return builder.create<memref::AllocOp>(type, Value(allocSize));
         }
         else
         {
-            auto allocSize =
-                builder.create<ConstantIndexOp>(dynamicMemref.getType().dyn_cast<TensorType>().getDimSize(0));
+            auto allocSize = builder.create<ConstantIndexOp>(asShapedType(dynamicMemref).getDimSize(0));
             return builder.create<memref::AllocOp>(type, Value(allocSize));
         }
     }
@@ -72,7 +66,7 @@ namespace voila::mlir::lowering
     /// current index of the iteration.
     static void lowerOpToLoops(NotOp op, PatternRewriter &rewriter, NotOpLowering::LoopIterationFn processIteration)
     {
-        auto tensorType = (*op->result_type_begin()).template dyn_cast<TensorType>();
+        auto tensorType = asTensorType(*op->result_type_begin());
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
         // Insert an allocation and deallocation for the result of this operation.
@@ -81,7 +75,7 @@ namespace voila::mlir::lowering
         Value tensorOp;
         for (auto operand : op->getOperands())
         {
-            if (operand.getType().template isa<TensorType>() || operand.getType().template isa<MemRefType>())
+            if (isTensor(operand) || isMemRef(operand))
             {
                 tensorOp = operand;
                 break;
@@ -104,7 +98,7 @@ namespace voila::mlir::lowering
 
         for (auto dim = 0; dim < tensorOp.getType().template dyn_cast<TensorType>().getRank(); ++dim)
         {
-            if (tensorOp.getType().template dyn_cast<TensorType>().isDynamicDim(dim))
+            if (asShapedType(tensorOp).isDynamicDim(dim))
             {
                 upperBounds.push_back(builder.template create<memref::DimOp>(tensorOp, dim));
             }
@@ -145,11 +139,10 @@ namespace voila::mlir::lowering
                            // ODS.
 
                            Value value;
-                           if (op.getValue().getType().isa<TensorType>())
+                           if (isTensor(op.getValue()))
                            {
                                value = builder.create<ToMemrefOp>(
-                                   loc, convertTensorToMemRef(op.getValue().getType().template dyn_cast<TensorType>()),
-                                   op.getValue());
+                                   loc, convertTensorToMemRef(asTensorType(op.getValue())), op.getValue());
                            }
                            else
                            {
@@ -158,7 +151,7 @@ namespace voila::mlir::lowering
 
                            auto oneConst =
                                builder.create<arith::ConstantOp>(loc, builder.getIntegerAttr(builder.getI1Type(), 1));
-                           if (value.getType().isa<MemRefType>())
+                           if (isMemRef(value))
                            {
                                auto loadedLhs = builder.create<AffineLoadOp>(loc, value, loopIvs);
                                // Create the binary operation performed on the loaded values.

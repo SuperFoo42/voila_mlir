@@ -19,10 +19,6 @@ namespace voila::mlir::lowering
 {
     struct AvgOpLowering : public ::mlir::OpConversionPattern<::mlir::voila::AvgOp>
     {
-        using LoopIterationFn = ::mlir::function_ref<::mlir::Value(::mlir::OpBuilder &rewriter,
-                                                                   ::mlir::ValueRange memRefOperands,
-                                                                   ::mlir::ValueRange loopIvs,
-                                                                   ::mlir::Value iter_var)>;
         using OpConversionPattern<::mlir::voila::AvgOp>::OpConversionPattern;
 
 

@@ -374,7 +374,7 @@ namespace voila
             auto clonedFun = std::get<std::shared_ptr<ast::Fun>>(prog->get_func(call->fun())->clone(mapping));
 
             // new scope for fun? add param types to new scope
-            for (auto &en : llvm::enumerate(llvm::zip(clonedFun->args(), argIds)))
+            for (const auto &en : llvm::enumerate(llvm::zip(clonedFun->args(), argIds)))
             {
                 ast::ASTNodeVariant arg;
                 type_id_t param;

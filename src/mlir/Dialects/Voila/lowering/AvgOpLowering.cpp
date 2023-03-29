@@ -21,6 +21,7 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/Casting.h"
 #include <cassert>
+#include "mlir/Dialects/Voila/lowering/utility/TypeUtils.hpp"
 
 namespace mlir
 {
@@ -36,9 +37,9 @@ namespace voila::mlir::lowering
     static Value castITensorToFTensor(ImplicitLocOpBuilder &builder, Value tensor)
     {
         Value res;
-        if (tensor.getType().dyn_cast<TensorType>().hasStaticShape())
+        if (hasStaticShape(tensor))
         {
-            res = builder.create<tensor::EmptyOp>(tensor.getType().dyn_cast<TensorType>().getShape(),
+            res = builder.create<tensor::EmptyOp>(getShape(tensor),
                                                   builder.getF64Type());
         }
         else
@@ -73,7 +74,7 @@ namespace voila::mlir::lowering
         ImplicitLocOpBuilder builder(loc, rewriter);
 
         // this should work as long as ieee 754 is supported and division by 0 is inf
-        if (op.getIndices() && op->getResultTypes().front().isa<TensorType>())
+        if (op.getIndices() && isTensor(op->getResult(0)))
         {
             auto sum = builder.create<SumOp>(RankedTensorType::get(ShapedType::kDynamic, builder.getF64Type()), op.getInput(),
                                              op.getIndices(), op.getPred());
@@ -81,7 +82,7 @@ namespace voila::mlir::lowering
                                                  op.getIndices(), op.getPred());
 
             Value fltCnt, fltSum;
-            if (!getElementTypeOrSelf(count).isa<FloatType>())
+            if (!isFloat(getElementTypeOrSelf(count)))
             {
                 fltCnt = castITensorToFTensor(builder, count);
             }
@@ -90,7 +91,7 @@ namespace voila::mlir::lowering
                 fltCnt = count;
             }
 
-            if (!getElementTypeOrSelf(sum).isa<FloatType>())
+            if (!isFloat(getElementTypeOrSelf(sum)))
             {
                 fltSum = castITensorToFTensor(builder, sum);
             }
@@ -109,7 +110,7 @@ namespace voila::mlir::lowering
                                                  op.getPred());
 
             Value fltCnt, fltSum;
-            if (!getElementTypeOrSelf(count).isa<FloatType>())
+            if (!isFloat(getElementTypeOrSelf(count)))
             {
                 fltCnt = builder.create<SIToFPOp>(builder.getF64Type(), count);
             }
@@ -118,7 +119,7 @@ namespace voila::mlir::lowering
                 fltCnt = count;
             }
 
-            if (!getElementTypeOrSelf(sum).isa<FloatType>())
+            if (!isFloat(getElementTypeOrSelf(sum)))
             {
                 fltSum = builder.create<SIToFPOp>(builder.getF64Type(), sum);
             }

@@ -9,6 +9,8 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/Dialects/Voila/lowering/utility/HashingUtils.hpp"
+#include "mlir/Dialects/Voila/lowering/utility/TypeUtils.hpp"
 #include "mlir/IR/AffineExpr.h"
 #include "mlir/IR/AffineMap.h"
 #include "mlir/IR/BuiltinAttributes.h"
@@ -36,7 +38,6 @@
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
-#include "mlir/Dialects/Voila/lowering/utility/HashingUtils.hpp"
 
 namespace mlir
 {
@@ -57,12 +58,12 @@ namespace voila::mlir::lowering
         SmallVector<int64_t, 1> shape;
         SmallVector<Value, 1> res;
 
-        if (op->getResultTypes().front().isa<IntegerType>())
+        if (isInteger(op->getResult(0)))
         {
             res.push_back(builder.create<arith::ConstantOp>(DenseIntElementsAttr::get(
                 RankedTensorType::get(shape, builder.getI64Type()), builder.getI64IntegerAttr(0).getValue())));
         }
-        else if (op->getResultTypes().front().isa<FloatType>())
+        else if (isFloat(op->getResult(0)))
         {
             res.push_back(builder.create<arith::ConstantOp>(DenseFPElementsAttr::get(
                 RankedTensorType::get(shape, builder.getF64Type()), builder.getF64FloatAttr(0).getValue())));
@@ -81,10 +82,10 @@ namespace voila::mlir::lowering
             auto input = vals.front();
             auto output = vals.back();
             Value neutralElem;
-            if (input.getType().isa<FloatType>())
+            if (isFloat(input))
                 neutralElem =
                     builder.create<ConstantFloatOp>(builder.getF64FloatAttr(0).getValue(), builder.getF64Type());
-            else if (input.getType().isa<IntegerType>())
+            else if (isInteger(input))
                 neutralElem = builder.create<ConstantIntOp>(0, input.getType());
             else
                 throw std::logic_error("Not usable with type");
@@ -93,7 +94,7 @@ namespace voila::mlir::lowering
                 input = builder.create<arith::SelectOp>(vals[1], input, neutralElem);
             }
             ::mlir::Value res;
-            if (input.getType().isa<IntegerType>())
+            if (isInteger(input))
                 res = builder.create<AddIOp>(input, output);
             else
                 res = builder.create<AddFOp>(input, output);
@@ -114,10 +115,11 @@ namespace voila::mlir::lowering
         if (op.getPred())
             inputs.push_back(op.getPred());
 
-        auto linalgOp = builder.create<linalg::GenericOp>(builder.getLoc(), /*results*/ res_type,
-                                                          /*inputs*/ inputs, /*outputs*/ res,
-                                                          /*indexing maps*/ maps,
-                                                          /*iterator types*/ ::mlir::utils::IteratorType::reduction, fn);
+        auto linalgOp =
+            builder.create<linalg::GenericOp>(builder.getLoc(), /*results*/ res_type,
+                                              /*inputs*/ inputs, /*outputs*/ res,
+                                              /*indexing maps*/ maps,
+                                              /*iterator types*/ ::mlir::utils::IteratorType::reduction, fn);
 
         return builder.create<tensor::ExtractOp>(linalgOp->getResult(0));
     }
@@ -125,12 +127,12 @@ namespace voila::mlir::lowering
     static Value groupedSumLowering(SumOp op, ImplicitLocOpBuilder &builder)
     {
         Value res;
-        auto allocSize =
-            getHTSize(builder,
-                      op.getInput()); // FIXME: not the best solution, indices can be out of range.
-        if (getElementTypeOrSelf(op->getResultTypes().front()).isa<IntegerType>())
+        auto allocSize = getHTSize(builder,
+                                   op.getInput()); // FIXME: not the best solution, indices can be out of range.
+        if (isInteger(getElementTypeOrSelf(op->getResult(0))))
         {
-            res = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, builder.getI64Type()), ArrayRef(allocSize));
+            res = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, builder.getI64Type()),
+                                                  ArrayRef(allocSize));
             buildAffineLoopNest(
                 builder, builder.getLoc(), builder.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
                 [&res](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
@@ -139,9 +141,10 @@ namespace voila::mlir::lowering
                     builder.create<AffineStoreOp>(builder.create<ConstantIntOp>(0, builder.getI64Type()), res, vals);
                 });
         }
-        else if (getElementTypeOrSelf(op->getResultTypes().front()).isa<FloatType>())
+        else if (isFloat(getElementTypeOrSelf(op->getResult(0))))
         {
-            res = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, builder.getF64Type()), ArrayRef(allocSize));
+            res = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, builder.getF64Type()),
+                                                  ArrayRef(allocSize));
             buildAffineLoopNest(
                 builder, builder.getLoc(), builder.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
                 [&res](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
@@ -168,12 +171,11 @@ namespace voila::mlir::lowering
                                           {
                                               ImplicitLocOpBuilder nb(loc, b);
                                               auto toSum = nb.create<tensor::ExtractOp>(op.getInput(), idx);
-                                              Value groupIdx =
-                                                  nb.create<tensor::ExtractOp>(op.getIndices(), idx);
+                                              Value groupIdx = nb.create<tensor::ExtractOp>(op.getIndices(), idx);
                                               auto oldVal = nb.create<memref::LoadOp>(res, groupIdx);
                                               Value newVal;
 
-                                              if (toSum.getType().isa<IntegerType>())
+                                              if (isInteger(toSum))
                                               {
                                                   Value tmp = toSum;
                                                   if (toSum.getType() != nb.getI64Type())
@@ -198,7 +200,7 @@ namespace voila::mlir::lowering
                 auto oldVal = builder.create<memref::LoadOp>(res, groupIdx);
                 Value newVal;
 
-                if (toSum.getType().isa<IntegerType>())
+                if (isInteger(toSum))
                 {
                     Value tmp = toSum;
                     if (toSum.getType() != builder.getI64Type())
@@ -222,17 +224,15 @@ namespace voila::mlir::lowering
         return builder.create<ToTensorOp>(res);
     }
 
-    LogicalResult
-    SumOpLowering::matchAndRewrite(::mlir::voila::SumOp op,
-                                   OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const
+    LogicalResult SumOpLowering::matchAndRewrite(::mlir::voila::SumOp op,
+                                                 OpAdaptor adaptor,
+                                                 ConversionPatternRewriter &rewriter) const
     {
         assert(!op->getResultTypes().empty() && op->getResultTypes().size() == 1);
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
-        auto sumOp = dyn_cast<SumOp>(op);
-        SumOpAdaptor sumOpAdaptor(sumOp);
         Value res;
-        if (sumOp.getIndices() && op->getResultTypes().front().isa<TensorType>())
+        if (op.getIndices() && isTensor(op->getResult(0)))
         {
             res = groupedSumLowering(op, builder); // grouped aggregation is a pipeline breaker
         }

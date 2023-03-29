@@ -4,7 +4,7 @@
 #include "mlir/Support/LogicalResult.h"        // for LogicalResult
 #include "mlir/Transforms/DialectConversion.h" // for ConversionPattern
 #include "llvm/ADT/ArrayRef.h"                 // for ArrayRef
-
+#include <climits>
 namespace mlir
 {
     class ImplicitLocOpBuilder;
@@ -25,4 +25,6 @@ namespace voila::mlir::lowering::utils
                                      const ::mlir::ValueRange &idx);
 
     ::mlir::Value getHTSize(::mlir::ImplicitLocOpBuilder &builder, ::mlir::Value values);
+
+    constexpr auto HASH_INVALID = std::numeric_limits<uint64_t>::max();
 } // namespace voila::mlir::lowering::utils

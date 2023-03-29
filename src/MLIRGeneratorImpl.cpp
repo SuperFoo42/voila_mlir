@@ -143,7 +143,7 @@ namespace voila::mlir
             val = std::get<ValueRange>(res);
 
         // assign value to variable
-        for (auto &en : llvm::enumerate(llvm::zip(assign->dests(), val)))
+        for (const auto &en : llvm::enumerate(llvm::zip(assign->dests(), val)))
         {
             Value value;
             ASTNodeVariant dest;

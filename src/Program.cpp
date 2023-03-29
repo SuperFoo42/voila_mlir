@@ -465,7 +465,7 @@ namespace voila
 
         //  bufferization passes
         pm.addPass(createVoilaBufferizePass());
-        pm.addNestedPass<FuncOp>(createTensorBufferizePass());
+        pm.addNestedPass<FuncOp>(tensor::createTensorBufferizePass());
         pm.addNestedPass<FuncOp>(createLinalgBufferizePass());
         // FIXME: pm.addPass(createFuncBufferizePass());
 

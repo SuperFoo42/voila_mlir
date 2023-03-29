@@ -8,9 +8,6 @@
 namespace mlir
 {
     class OpBuilder;
-    class Operation;
-    class Value;
-    class ValueRange;
 } // namespace mlir
 
 namespace voila::mlir::lowering

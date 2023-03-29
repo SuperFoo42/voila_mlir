@@ -1,11 +1,4 @@
 #include "mlir/Dialects/Voila/lowering/LoopOpLowering.hpp"
-#include <cassert>
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/STLForwardCompat.h"
-#include "llvm/ADT/STLFunctionalExtras.h"
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/Twine.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/IR/AllocationOpInterface.h"
@@ -13,6 +6,7 @@
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/Dialects/Voila/lowering/utility/TypeUtils.hpp"
 #include "mlir/IR/AffineMap.h"
 #include "mlir/IR/Block.h"
 #include "mlir/IR/Builders.h"
@@ -25,6 +19,13 @@
 #include "mlir/IR/Types.h"
 #include "mlir/IR/Value.h"
 #include "mlir/IR/ValueRange.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/STLForwardCompat.h"
+#include "llvm/ADT/STLFunctionalExtras.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
+#include <cassert>
 
 namespace voila::mlir::lowering
 {
@@ -33,13 +34,6 @@ namespace voila::mlir::lowering
     using namespace bufferization;
     using ::mlir::voila::LoopOp;
     using ::mlir::voila::LoopOpAdaptor;
-
-    static MemRefType convertTensorToMemRef(TensorType type)
-    {
-        assert(type.hasRank() && "expected only ranked shapes");
-        return MemRefType::get(type.getShape(), type.getElementType());
-    }
-
 
     static void lowerOpToLoops(::mlir::voila::LoopOp op,
                                PatternRewriter &rewriter,
@@ -61,11 +55,10 @@ namespace voila::mlir::lowering
         // start index for store
         SmallVector<Value> iter_args;
         Value cond;
-        if (op.getCond().getType().isa<TensorType>())
+        if (isTensor(op.getCond()))
         {
-            cond = builder.create<ToMemrefOp>(
-                convertTensorToMemRef(op.getCond().getType().dyn_cast<TensorType>()),
-                op.getCond());
+            cond = builder.create<ToMemrefOp>(convertTensorToMemRef(op.getCond().getType().dyn_cast<TensorType>()),
+                                              op.getCond());
             upperBound = builder.create<AddIOp>(builder.create<memref::DimOp>(op.getCond(), 0),
                                                 builder.create<ConstantIndexOp>(1));
         }
@@ -75,7 +68,7 @@ namespace voila::mlir::lowering
             upperBound = builder.create<ConstantIndexOp>(2);
         }
 
-        if (cond.getType().isa<MemRefType>())
+        if (isMemRef(cond))
         {
             SmallVector<Value> idx;
             idx.push_back(builder.create<ConstantIndexOp>(0));
@@ -96,7 +89,7 @@ namespace voila::mlir::lowering
                 // to store at the current index.
                 processIteration(rewriter, iter_var, ivs.front());
                 // load next cond bit and yield
-                if (cond.getType().isa<MemRefType>())
+                if (isMemRef(cond))
                 {
                     SmallVector<Value> loadedCond;
                     loadedCond.push_back(rewriter.create<AffineLoadOp>(
@@ -110,22 +103,22 @@ namespace voila::mlir::lowering
             });
     }
 
-    LogicalResult
-    LoopOpLowering::matchAndRewrite(::mlir::voila::LoopOp op, OpAdaptor adaptor, ConversionPatternRewriter &rewriter) const
+    LogicalResult LoopOpLowering::matchAndRewrite(::mlir::voila::LoopOp op,
+                                                  OpAdaptor adaptor,
+                                                  ConversionPatternRewriter &rewriter) const
     {
         auto loc = op->getLoc();
-        lowerOpToLoops(
-            op, rewriter,
-            [op, loc](PatternRewriter &builder, ValueRange loopIvs, Value iter_var)
-            {
-                auto ifOp = builder.create<scf::IfOp>(loc, iter_var, false);
+        lowerOpToLoops(op, rewriter,
+                       [op, loc](PatternRewriter &builder, ValueRange loopIvs, Value iter_var)
+                       {
+                           auto ifOp = builder.create<scf::IfOp>(loc, iter_var, false);
 
-                builder.inlineRegionBefore(op->getRegion(0), &ifOp.getThenRegion().back());
-                builder.eraseBlock(&ifOp.getThenRegion().back());
-                OpBuilder thenBuilder(&ifOp.getThenRegion().back().back());
-                thenBuilder.setInsertionPointAfter(&ifOp.getThenRegion().back().back());
-                thenBuilder.create<scf::YieldOp>(loc);
-            });
+                           builder.inlineRegionBefore(op->getRegion(0), &ifOp.getThenRegion().back());
+                           builder.eraseBlock(&ifOp.getThenRegion().back());
+                           OpBuilder thenBuilder(&ifOp.getThenRegion().back().back());
+                           thenBuilder.setInsertionPointAfter(&ifOp.getThenRegion().back().back());
+                           thenBuilder.create<scf::YieldOp>(loc);
+                       });
         return success();
     }
 } // namespace voila::mlir::lowering

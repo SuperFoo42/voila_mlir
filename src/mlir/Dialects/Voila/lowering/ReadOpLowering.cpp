@@ -1,11 +1,11 @@
 #include "mlir/Dialects/Voila/lowering/ReadOpLowering.hpp"
-
 #include "MLIRLoweringError.hpp"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Bufferization/IR/AllocationOpInterface.h"
 #include "mlir/Dialect/Bufferization/IR/Bufferization.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/Dialects/Voila/lowering/utility/TypeUtils.hpp"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/PatternMatch.h"
@@ -28,12 +28,6 @@ namespace voila::mlir::lowering
     using ::mlir::voila::ReadOp;
     using ::mlir::voila::ReadOpAdaptor;
 
-    static MemRefType convertTensorToMemRef(TensorType type)
-    {
-        assert(type.hasRank() && "expected only ranked shapes");
-        return MemRefType::get(type.getShape(), type.getElementType());
-    }
-
     LogicalResult ReadOpLowering::matchAndRewrite(::mlir::voila::ReadOp op,
                                                   OpAdaptor adaptor,
                                                   ConversionPatternRewriter &rewriter) const
@@ -42,12 +36,12 @@ namespace voila::mlir::lowering
 
         Value col;
         // TODO: only for tensors
-        if (op.getColumn().getType().isa<TensorType>())
+        if (isTensor(op.getColumn()))
         {
             col = rewriter.create<ToMemrefOp>(
-                loc, convertTensorToMemRef(op.getColumn().getType().dyn_cast<TensorType>()), op.getColumn());
+                loc, convertTensorToMemRef(asTensorType(op.getColumn())), op.getColumn());
         }
-        else if (op.getColumn().getType().isa<MemRefType>())
+        else if (isMemRef(op.getColumn()))
         {
             col = op.getColumn();
         }

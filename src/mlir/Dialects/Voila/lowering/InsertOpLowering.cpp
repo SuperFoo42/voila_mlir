@@ -69,7 +69,7 @@ namespace voila::mlir::lowering
             if (elementType.isIntOrFloat())
             {
                 hashInvalidConsts.push_back(builder.create<BitcastOp>(
-                    elementType, builder.create<ConstantIntOp>(std::numeric_limits<uint64_t>::max(),
+                    elementType, builder.create<ConstantIntOp>(HASH_INVALID,
                                                                elementType.getIntOrFloatBitWidth())));
             }
             else
@@ -103,10 +103,7 @@ namespace voila::mlir::lowering
             {
                 toStores.push_back(builder.create<tensor::ExtractOp>(val, vals));
             }
-            SmallVector<Type, 1> resTypes;
-            resTypes.push_back(hashIdx.getType());
-            // probing
-            auto loop = builder.create<::mlir::scf::WhileOp>(resTypes, correctedHashIdx);
+            auto loop = builder.create<::mlir::scf::WhileOp>(hashIdx.getType(), correctedHashIdx);
 
             // condition block
             auto beforeBlock = builder.createBlock(&loop.getBefore());
@@ -118,7 +115,7 @@ namespace voila::mlir::lowering
             beforeBuilder.create<scf::ConditionOp>(comparisons, beforeBlock->getArgument(0));
             // body block
             auto afterBlock = builder.createBlock(&loop.getAfter());
-            afterBlock->addArgument(loop->getOperands().front().getType(), loc);
+            afterBlock->addArgument(loop->getOperand(0).getType(), loc);
             ImplicitLocOpBuilder afterBuilder(loc, OpBuilder::atBlockEnd(afterBlock));
 
             auto nextIdx =

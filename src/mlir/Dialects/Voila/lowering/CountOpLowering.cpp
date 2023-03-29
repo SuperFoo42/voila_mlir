@@ -7,8 +7,9 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
-#include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/Dialects/Voila/lowering/utility/HashingUtils.hpp"
+#include "mlir/Dialects/Voila/lowering/utility/TypeUtils.hpp"
+#include "mlir/IR/ImplicitLocOpBuilder.h"
 
 namespace voila::mlir::lowering
 {
@@ -44,8 +45,7 @@ namespace voila::mlir::lowering
         }
         else
         {
-            auto cnt = builder.create<DimOp>(op.getInput(), 0);
-            return cnt;
+            return builder.create<DimOp>(op.getInput(), 0);
         }
     }
 
@@ -55,7 +55,7 @@ namespace voila::mlir::lowering
         auto allocSize =
             getHTSize(rewriter, op.getInput()); // FIXME: not the best solution, indices can be out of range.
 
-        res = rewriter.create<memref::AllocOp>(MemRefType::get(-1, rewriter.getI64Type()), ArrayRef(allocSize));
+        res = rewriter.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, rewriter.getI64Type()), ArrayRef(allocSize));
         buildAffineLoopNest(rewriter, rewriter.getLoc(), rewriter.create<ConstantIndexOp>(0).getResult(), allocSize,
                             {1},
                             [&res](OpBuilder &builder, Location loc, ValueRange vals) {
@@ -106,7 +106,7 @@ namespace voila::mlir::lowering
         Value res;
         ImplicitLocOpBuilder builder(loc, rewriter);
 
-        if (op.getIndices() && op->getResult(0).getType().isa<TensorType>())
+        if (op.getIndices() && isTensor(op->getResult(0)))
         {
             res = groupedCountLowering(op, builder);
         }

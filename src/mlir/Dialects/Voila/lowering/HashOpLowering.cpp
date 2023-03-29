@@ -5,36 +5,37 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"         // for YieldOp, IfOp
 #include "mlir/Dialect/Tensor/IR/Tensor.h"   // for EmptyOp, DimOp
 #include "mlir/Dialects/Voila/IR/VoilaOps.h" // for HashOp, HashO...
-#include "mlir/IR/AffineMap.h"               // for AffineMap
-#include "mlir/IR/Builders.h"                // for OpBuilder
-#include "mlir/IR/BuiltinTypeInterfaces.h"   // for ShapedType
-#include "mlir/IR/BuiltinTypes.h"            // for IntegerType
-#include "mlir/IR/ImplicitLocOpBuilder.h"    // for ImplicitLocOp...
-#include "mlir/IR/Location.h"                // for Location
-#include "mlir/IR/OpDefinition.h"            // for OpState
-#include "mlir/IR/Operation.h"               // for Operation
-#include "mlir/IR/PatternMatch.h"            // for PatternBenefit
-#include "mlir/IR/Types.h"                   // for Type
-#include "mlir/IR/Value.h"                   // for Value
-#include "mlir/IR/ValueRange.h"              // for ValueRange
-#include "mlir/Support/LLVM.h"               // for dyn_cast, mlir
-#include "llvm/ADT/PointerUnion.h"           // for operator==
-#include "llvm/ADT/STLExtras.h"              // for indexed_acces...
-#include "llvm/ADT/SmallVector.h"            // for SmallVector
-#include "llvm/ADT/StringRef.h"              // for operator==
-#include "llvm/ADT/Twine.h"                  // for operator+
-#include "llvm/ADT/iterator.h"               // for iterator_faca...
-#include "llvm/Support/Casting.h"            // for dyn_cast
-#include "llvm/Support/FormatVariadic.h"     // for formatv, form...
-#include <array>                             // for array, to_array
-#include <cassert>                           // for assert
-#include <climits>                           // for CHAR_BIT
-#include <cstddef>                           // for size_t
-#include <cstdint>                           // for uint8_t, int64_t
-#include <memory>                            // for allocator
-#include <stdexcept>                         // for logic_error
-#include <type_traits>                       // for remove_cv_t
-#include <utility>                           // for pair, make_pair
+#include "mlir/Dialects/Voila/lowering/utility/TypeUtils.hpp"
+#include "mlir/IR/AffineMap.h"             // for AffineMap
+#include "mlir/IR/Builders.h"              // for OpBuilder
+#include "mlir/IR/BuiltinTypeInterfaces.h" // for ShapedType
+#include "mlir/IR/BuiltinTypes.h"          // for IntegerType
+#include "mlir/IR/ImplicitLocOpBuilder.h"  // for ImplicitLocOp...
+#include "mlir/IR/Location.h"              // for Location
+#include "mlir/IR/OpDefinition.h"          // for OpState
+#include "mlir/IR/Operation.h"             // for Operation
+#include "mlir/IR/PatternMatch.h"          // for PatternBenefit
+#include "mlir/IR/Types.h"                 // for Type
+#include "mlir/IR/Value.h"                 // for Value
+#include "mlir/IR/ValueRange.h"            // for ValueRange
+#include "mlir/Support/LLVM.h"             // for dyn_cast, mlir
+#include "llvm/ADT/PointerUnion.h"         // for operator==
+#include "llvm/ADT/STLExtras.h"            // for indexed_acces...
+#include "llvm/ADT/SmallVector.h"          // for SmallVector
+#include "llvm/ADT/StringRef.h"            // for operator==
+#include "llvm/ADT/Twine.h"                // for operator+
+#include "llvm/ADT/iterator.h"             // for iterator_faca...
+#include "llvm/Support/Casting.h"          // for dyn_cast
+#include "llvm/Support/FormatVariadic.h"   // for formatv, form...
+#include <array>                           // for array, to_array
+#include <cassert>                         // for assert
+#include <climits>                         // for CHAR_BIT
+#include <cstddef>                         // for size_t
+#include <cstdint>                         // for uint8_t, int64_t
+#include <memory>                          // for allocator
+#include <stdexcept>                       // for logic_error
+#include <type_traits>                     // for remove_cv_t
+#include <utility>                         // for pair, make_pair
 
 namespace voila::mlir::lowering
 {
@@ -115,7 +116,7 @@ namespace voila::mlir::lowering
 
     static auto split(ImplicitLocOpBuilder &builder, Value val)
     {
-        if (val.getType().isa<FloatType>())
+        if (isFloat(val))
             val = builder.create<arith::BitcastOp>(builder.getIntegerType(val.getType().getIntOrFloatBitWidth()), val);
 
         auto lower = builder.create<arith::TruncIOp>(builder.getI32Type(), val);
@@ -127,12 +128,12 @@ namespace voila::mlir::lowering
 
     static auto combine(ImplicitLocOpBuilder &builder, Value val1, Value val2)
     {
-        if (val1.getType().isa<FloatType>())
+        if (isFloat(val1))
         {
             val1 =
                 builder.create<arith::BitcastOp>(builder.getIntegerType(val1.getType().getIntOrFloatBitWidth()), val1);
         }
-        if (val2.getType().isa<FloatType>())
+        if (isFloat(val2))
         {
             val2 =
                 builder.create<arith::BitcastOp>(builder.getIntegerType(val2.getType().getIntOrFloatBitWidth()), val2);
@@ -443,17 +444,17 @@ namespace voila::mlir::lowering
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
 
-        const auto &shape = op.getInput().front().getType().dyn_cast<::mlir::TensorType>().getShape();
+        const auto &shape = getShape(op.getInput().front());
         for (const auto &in : op.getInput())
         {
-            assert(in.getType().isa<TensorType>());
-            assert(in.getType().dyn_cast<TensorType>().getShape() == shape);
+            assert(isTensor(in));
+            assert(getShape(in) == shape);
         }
 
         ::mlir::Value outTensor;
-        if (op.getResult().getType().dyn_cast<ShapedType>().hasStaticShape())
+        if (hasStaticShape(op.getResult()))
         {
-            outTensor = builder.create<tensor::EmptyOp>(op.getResult().getType().dyn_cast<ShapedType>().getShape(),
+            outTensor = builder.create<tensor::EmptyOp>(getShape(op.getResult()),
                                                         builder.getI64Type());
         }
         else

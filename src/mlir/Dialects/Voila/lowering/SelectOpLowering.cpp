@@ -7,11 +7,13 @@
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Tensor/IR/Tensor.h"
 #include "mlir/Dialects/Voila/IR/VoilaOps.h"
+#include "mlir/Dialects/Voila/lowering/utility/TypeUtils.hpp"
 #include "mlir/IR/AffineMap.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/ImplicitLocOpBuilder.h"
 #include "mlir/IR/Location.h"
+#include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/Operation.h"
 #include "mlir/IR/PatternMatch.h"
@@ -32,12 +34,6 @@ namespace voila::mlir::lowering
     using namespace ::mlir::bufferization;
     using ::mlir::voila::SelectOpAdaptor;
 
-    static MemRefType convertTensorToMemRef(TensorType type)
-    {
-        assert(type.hasRank() && "expected only ranked shapes");
-        return MemRefType::get(type.getShape(), type.getElementType());
-    }
-
     static Value
     insertAllocAndDealloc(MemRefType type, Value dynamicMemref, Location loc, ImplicitLocOpBuilder &builder)
     {
@@ -47,16 +43,17 @@ namespace voila::mlir::lowering
         {
             alloc = builder.create<memref::AllocOp>(type);
         }
-        else if (dynamicMemref.getType().dyn_cast<TensorType>().isDynamicDim(0))
+        else if (asShapedType(dynamicMemref).isDynamicDim(0))
         {
             auto allocSize = builder.create<memref::DimOp>(dynamicMemref, 0);
-            alloc = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, type.getElementType()), Value(allocSize));
+            alloc = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, type.getElementType()),
+                                                    Value(allocSize));
         }
         else
         {
-            auto allocSize =
-                builder.create<ConstantIndexOp>(dynamicMemref.getType().dyn_cast<TensorType>().getDimSize(0));
-            alloc = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, type.getElementType()), Value(allocSize));
+            auto allocSize = builder.create<ConstantIndexOp>(asShapedType(dynamicMemref).getDimSize(0));
+            alloc = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, type.getElementType()),
+                                                    Value(allocSize));
         }
 
         // buffer deallocation instructions are added in the buffer deallocation pass
@@ -67,11 +64,11 @@ namespace voila::mlir::lowering
                                           PatternRewriter &rewriter,
                                           LoopIterationFn processIteration)
     {
-        auto tensorType = (*op->result_type_begin()).dyn_cast<TensorType>();
+        auto tensorType = asTensorType(*op->result_type_begin());
         auto loc = op->getLoc();
         ImplicitLocOpBuilder builder(loc, rewriter);
         ::mlir::Value tensorOp;
-        assert(op->getOperand(0).getType().isa<TensorType>());
+        assert(isTensor(op->getOperand(0)));
         tensorOp = op->getOperand(0);
 
         // Insert an allocation and deallocation for the result of this operation.
@@ -95,7 +92,7 @@ namespace voila::mlir::lowering
         }
         else
         {
-            upperBound = builder.create<ConstantIndexOp>(tensorOp.getType().dyn_cast<TensorType>().getDimSize(0));
+            upperBound = builder.create<ConstantIndexOp>(asShapedType(tensorOp).getDimSize(0));
         }
 
         // start index for store
@@ -124,7 +121,7 @@ namespace voila::mlir::lowering
         sizes.push_back(resultSize.getResult(0));
         builder.create<memref::StoreOp>(resultSize->getResult(0), resSizeMemRef, indices);
         auto res = builder.create<memref::ReinterpretCastOp>(
-            MemRefType::get(-1, alloc.getType().dyn_cast<MemRefType>().getElementType()), alloc, zeroConst, sizes,
+            MemRefType::get(-1, getElementTypeOrSelf(alloc)), alloc, zeroConst, sizes,
             indices);
         rewriter.replaceOpWithNewOp<ToTensorOp>(op, res);
     }
@@ -141,7 +138,7 @@ namespace voila::mlir::lowering
                            auto values = op.getValues();
                            auto pred = op.getPred();
 
-                           if (values.getType().isa<TensorType>() && pred.getType().isa<TensorType>())
+                           if (isTensor(values) && isTensor(pred))
                            {
                                auto cond = builder.create<tensor::ExtractOp>(pred, loopIvs);
                                // Create the binary operation performed on the loaded values.
@@ -162,7 +159,7 @@ namespace voila::mlir::lowering
                                elseBuilder.setInsertionPoint(oneConst);
                                return ifOp.getResult(0); // only new index to return
                            }
-                           else if (values.getType().isa<TensorType>())
+                           else if (isTensor(values))
                            {
                                // Create the binary operation performed on the loaded values.
                                auto ifOp = builder.create<scf::IfOp>(builder.getIndexType(), pred, true);
@@ -181,7 +178,7 @@ namespace voila::mlir::lowering
                                elseBuilder.setInsertionPoint(oneConst);
                                return ifOp.getResult(0); // only new index to return
                            }
-                           else if (pred.getType().isa<TensorType>())
+                           else if (isTensor(pred))
                            {
                                auto cond = builder.create<tensor::ExtractOp>(pred, loopIvs);
                                // Create the binary operation performed on the loaded values.
