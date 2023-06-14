@@ -20,7 +20,7 @@ namespace voila::mlir
         {
             void getDependentDialects(::mlir::DialectRegistry &registry) const override
             {
-                registry.insert<::mlir::AffineDialect, ::mlir::memref::MemRefDialect, ::mlir::func::FuncDialect,
+                registry.insert<::mlir::affine::AffineDialect, ::mlir::memref::MemRefDialect, ::mlir::func::FuncDialect,
                                 ::mlir::linalg::LinalgDialect, ::mlir::scf::SCFDialect,
                                 ::mlir::bufferization::BufferizationDialect>();
             }

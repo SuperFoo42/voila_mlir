@@ -292,6 +292,7 @@ namespace voila::mlir
         result_variant visit_impl(std::shared_ptr<ast::Lookup> lookup);
         result_variant visit_impl(std::shared_ptr<ast::Insert> insert);
         result_variant visit_impl(std::shared_ptr<ast::FunctionCall> call);
+        result_variant visit_impl(std::shared_ptr<ast::Load> load);
         result_variant visit_impl(std::monostate);
     };
 } // namespace voila::mlir

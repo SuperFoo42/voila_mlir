@@ -6,47 +6,7 @@
 #include "ast/ASTNode.hpp"                // for ASTNode
 #include "ast/ASTNodeVariant.hpp"
 #include "ast/ASTVisitor.hpp"                     // for ASTVisitor
-#include "ast/Add.hpp"                            // for Add
-#include "ast/AggrAvg.hpp"                        // for AggrAvg
-#include "ast/AggrCnt.hpp"                        // for AggrCnt
-#include "ast/AggrMax.hpp"                        // for AggrMax
-#include "ast/AggrMin.hpp"                        // for AggrMin
-#include "ast/AggrSum.hpp"                        // for AggrSum
-#include "ast/And.hpp"                            // for And
-#include "ast/Assign.hpp"                         // for Assign
-#include "ast/BooleanConst.hpp"                   // for BooleanConst
-#include "ast/Div.hpp"                            // for Div
-#include "ast/Emit.hpp"                           // for Emit
-#include "ast/Eq.hpp"                             // for Eq
-#include "ast/FltConst.hpp"                       // for FltConst
-#include "ast/Fun.hpp"                            // for Fun
-#include "ast/FunctionCall.hpp"                   // for FunctionCall
-#include "ast/Gather.hpp"                         // for Gather
-#include "ast/Ge.hpp"                             // for Ge
-#include "ast/Geq.hpp"                            // for Geq
-#include "ast/Hash.hpp"                           // for Hash
-#include "ast/Insert.hpp"                         // for Insert
-#include "ast/IntConst.hpp"                       // for IntConst
-#include "ast/Le.hpp"                             // for Le
-#include "ast/Leq.hpp"                            // for Leq
-#include "ast/Lookup.hpp"                         // for Lookup
-#include "ast/Loop.hpp"                           // for Loop
-#include "ast/Main.hpp"                           // for Main
-#include "ast/Mod.hpp"                            // for Mod
-#include "ast/Mul.hpp"                            // for Mul
-#include "ast/Neq.hpp"                            // for Neq
-#include "ast/Not.hpp"                            // for Not
-#include "ast/Or.hpp"                             // for Or
-#include "ast/Predicate.hpp"                      // for Predicate
-#include "ast/Read.hpp"                           // for Read
-#include "ast/Ref.hpp"                            // for Ref
-#include "ast/Scatter.hpp"                        // for Scatter
-#include "ast/Selection.hpp"                      // for Selection
-#include "ast/StatementWrapper.hpp"               // for StatementWrapper
-#include "ast/StrConst.hpp"                       // for StrConst
-#include "ast/Sub.hpp"                            // for Sub
-#include "ast/Variable.hpp"                       // for Variable
-#include "ast/Write.hpp"                          // for Write
+#include "ASTNodes.hpp"
 #include "range/v3/algorithm/copy.hpp"            // for copy_fn, copy
 #include "range/v3/algorithm/equal.hpp"           // for equal, equal_fn
 #include "range/v3/algorithm/for_each.hpp"        // for for_each, for_each_fn
@@ -513,6 +473,18 @@ namespace voila
         insertNewFuncType(gather, {get_type_id(gather->column()), get_type_id(gather->idxs())},
                           get_type(gather->column())->getTypes().front(),
                           get_type(gather->idxs())->getArities().front());
+    }
+
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Load> load)
+    {
+        std::visit(*this, load->src());
+        std::visit(*this, load->dest());
+        std::visit(*this, load->mask());
+
+
+        insertNewFuncType(load, {get_type_id(load->src()), get_type_id(load->dest()),get_type_id(load->mask())},
+                          get_type(load->dest())->getTypes().front(),
+                          get_type(load->dest())->getArities().front());
     }
 
     TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Ref>)

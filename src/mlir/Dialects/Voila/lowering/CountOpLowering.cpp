@@ -56,10 +56,10 @@ namespace voila::mlir::lowering
             getHTSize(rewriter, op.getInput()); // FIXME: not the best solution, indices can be out of range.
 
         res = rewriter.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, rewriter.getI64Type()), ArrayRef(allocSize));
-        buildAffineLoopNest(rewriter, rewriter.getLoc(), rewriter.create<ConstantIndexOp>(0).getResult(), allocSize,
+        affine::buildAffineLoopNest(rewriter, rewriter.getLoc(), rewriter.create<ConstantIndexOp>(0).getResult(), allocSize,
                             {1},
                             [&res](OpBuilder &builder, Location loc, ValueRange vals) {
-                                builder.create<AffineStoreOp>(
+                                builder.create<affine::AffineStoreOp>(
                                     loc, builder.create<ConstantIntOp>(loc, 0, builder.getI64Type()), res, vals);
                             });
 
@@ -93,7 +93,7 @@ namespace voila::mlir::lowering
             }
         };
 
-        buildAffineLoopNest(rewriter, rewriter.getLoc(), ValueRange(rewriter.create<ConstantIndexOp>(0).getResult()),
+        affine::buildAffineLoopNest(rewriter, rewriter.getLoc(), ValueRange(rewriter.create<ConstantIndexOp>(0).getResult()),
                             rewriter.create<DimOp>(op.getInput(), 0).getResult(), {1}, fn);
 
         return rewriter.create<ToTensorOp>(res);

@@ -21,18 +21,20 @@ CPMAddPackage("gh:vincentlaucsb/csv-parser#2.1.3")
 
 CPMAddPackage("gh:Cyan4973/xxHash#v0.8.1")
 
-CPMAddPackage(
-        NAME bxzstr
-        GIT_TAG master
-        GITHUB_REPOSITORY tmaklin/bxzstr
-        OPTIONS "ZLIB_FOUND FALSE" "BZIP2_FOUND FALSE"
-)
+#CPMAddPackage("gh:tmaklin/bxzstr#v1.2.1")
 
-if (bxzstr_ADDED)
-    add_library(bxzstr INTERFACE IMPORTED)
-    target_include_directories(bxzstr INTERFACE "${bxzstr_SOURCE_DIR}/include")
-    target_link_libraries(bxzstr INTERFACE lzma)
-endif ()
+#CPMAddPackage(
+#        NAME bxzstr
+#        VERSION 1.2.1
+#        GITHUB_REPOSITORY tmaklin/bxzstr
+#)
+
+#if (bxzstr_ADDED)
+#    add_library(bxzstr INTERFACE IMPORTED)
+#    target_include_directories(bxzstr INTERFACE "${bxzstr_SOURCE_DIR}/include")
+    #target_link_libraries(bxzstr INTERFACE lzma)
+    #target_link_libraries(bxzstr INTERFACE bzip2)
+#endif ()
 
 #TODO
 #CPMAddPackage("gh:xqhe/db-engine-paradigms#master")

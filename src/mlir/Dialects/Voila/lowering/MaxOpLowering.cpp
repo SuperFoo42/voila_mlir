@@ -120,12 +120,12 @@ namespace voila::mlir::lowering
         {
             res = rewriter.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, rewriter.getI64Type()),
                                                    ArrayRef(allocSize));
-            buildAffineLoopNest(
+            affine::buildAffineLoopNest(
                 rewriter, rewriter.getLoc(), rewriter.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
                 [&res, &op](OpBuilder &builder, Location loc, ValueRange vals)
                 {
                     ImplicitLocOpBuilder b(loc, builder);
-                    b.create<AffineStoreOp>(b.create<ConstantIntOp>(std::numeric_limits<int64_t>::min(),
+                    b.create<affine::AffineStoreOp>(b.create<ConstantIntOp>(std::numeric_limits<int64_t>::min(),
                                                                     getElementTypeOrSelf(op.getInput())),
                                             res, vals);
                 });
@@ -134,12 +134,12 @@ namespace voila::mlir::lowering
         {
             res = rewriter.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, rewriter.getF64Type()),
                                                    ArrayRef(allocSize));
-            buildAffineLoopNest(rewriter, rewriter.getLoc(), rewriter.create<ConstantIndexOp>(0).getResult(), allocSize,
+            affine::buildAffineLoopNest(rewriter, rewriter.getLoc(), rewriter.create<ConstantIndexOp>(0).getResult(), allocSize,
                                 {1},
                                 [&res](OpBuilder &builder, Location loc, ValueRange vals)
                                 {
                                     ImplicitLocOpBuilder b(loc, builder);
-                                    b.create<AffineStoreOp>(
+                                    b.create<affine::AffineStoreOp>(
                                         b.create<ConstantFloatOp>(::llvm::APFloat(std::numeric_limits<double>::min()),
                                                                   builder.getF64Type()),
                                         res, // TODO: any float type
@@ -195,7 +195,7 @@ namespace voila::mlir::lowering
             }
         };
 
-        buildAffineLoopNest(rewriter, rewriter.getLoc(), rewriter.create<ConstantIndexOp>(0).getResult(),
+        affine::buildAffineLoopNest(rewriter, rewriter.getLoc(), rewriter.create<ConstantIndexOp>(0).getResult(),
                             rewriter.create<tensor::DimOp>(op.getInput(), 0).getResult(), {1}, fn);
 
         return rewriter.create<ToTensorOp>(res);

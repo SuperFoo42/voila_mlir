@@ -135,7 +135,7 @@ namespace voila::mlir::lowering
             }
         };
 
-        buildAffineLoopNest(builder, builder.getLoc(), lb,
+        affine::buildAffineLoopNest(builder, builder.getLoc(), lb,
                             builder.create<tensor::DimOp>(op.getHashValues(), 0).getResult(), {1},
                             [&](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
                             {

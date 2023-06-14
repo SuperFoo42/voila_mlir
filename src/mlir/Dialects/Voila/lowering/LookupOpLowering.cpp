@@ -127,7 +127,7 @@ namespace voila::mlir::lowering
                 loc, MemRefType::get(getShape(op.getHashes()), rewriter.getIndexType()),
                 hasStaticShape(op.getHashes()) ? ValueRange()
                                                : rewriter.create<tensor::DimOp>(loc, op.getHashes(), 0).getResult());
-            buildAffineLoopNest(
+            affine::buildAffineLoopNest(
                 rewriter, loc, rewriter.create<ConstantIndexOp>(loc, 0).getResult(),
                 rewriter.create<tensor::DimOp>(loc, op.getHashes(), 0).getResult(), ArrayRef<int64_t>(1),
                 [&](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
@@ -188,7 +188,7 @@ namespace voila::mlir::lowering
                                 nb.create<SelectOp>(loc, notEmpty, resIdx,
                                                     nb.create<ConstantIndexOp>(std::numeric_limits<uint64_t>::max()));
                             // store result
-                            nb.create<AffineStoreOp>(loc, res, outMemref, vals);
+                            nb.create<affine::AffineStoreOp>(loc, res, outMemref, vals);
                             nb.create<scf::YieldOp>();
                         });
                 });

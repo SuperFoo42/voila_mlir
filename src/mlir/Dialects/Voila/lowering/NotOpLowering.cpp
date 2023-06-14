@@ -111,7 +111,7 @@ namespace voila::mlir::lowering
 
         SmallVector<int64_t> steps(tensorType.getRank(), 1);
 
-        buildAffineLoopNest(builder, loc, lowerBounds, upperBounds, steps,
+        affine::buildAffineLoopNest(builder, loc, lowerBounds, upperBounds, steps,
                             [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs)
                             {
                                 // Call the processing function with the rewriter, the memref operands,
@@ -119,7 +119,7 @@ namespace voila::mlir::lowering
                                 // to store at the current index.
                                 ImplicitLocOpBuilder builder(loc, nestedBuilder);
                                 Value valueToStore = processIteration(builder, op, ivs);
-                                builder.create<AffineStoreOp>(valueToStore, alloc, ivs);
+                                builder.create<affine::AffineStoreOp>(valueToStore, alloc, ivs);
                             });
 
         // Replace this operation with the generated alloc.
@@ -153,7 +153,7 @@ namespace voila::mlir::lowering
                                builder.create<arith::ConstantOp>(loc, builder.getIntegerAttr(builder.getI1Type(), 1));
                            if (isMemRef(value))
                            {
-                               auto loadedLhs = builder.create<AffineLoadOp>(loc, value, loopIvs);
+                               auto loadedLhs = builder.create<affine::AffineLoadOp>(loc, value, loopIvs);
                                // Create the binary operation performed on the loaded values.
                                return builder.create<XOrIOp>(loc, loadedLhs, oneConst);
                            }

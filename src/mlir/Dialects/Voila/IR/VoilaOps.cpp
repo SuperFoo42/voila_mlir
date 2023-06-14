@@ -24,19 +24,6 @@ using namespace ::mlir;
 using namespace ::mlir::arith;
 using namespace mlir::voila;
 using namespace mlir::fpmath;
-/// Return the callee of the generic call operation, this is required by the
-/// call interface.
-[[maybe_unused]] CallInterfaceCallable GenericCallOp::getCallableForCallee()
-{
-    return getCallee();
-}
-
-/// Get the argument operands to the called function, this is required by the
-/// call interface.
-[[maybe_unused]] Operation::operand_range GenericCallOp::getArgOperands()
-{
-    return getInputs();
-}
 
 bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs)
 {

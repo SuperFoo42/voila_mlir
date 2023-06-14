@@ -37,21 +37,21 @@ namespace voila::mlir
                 auto pOp = load.getOperation()->getBlock()->getParentOp();
                 while (!isa<FuncOp>(pOp))
                 {
-                    if (isa<AffineForOp>(pOp))
+                    if (isa<affine::AffineForOp>(pOp))
                     {
-                        auto iv = llvm::dyn_cast<AffineForOp>(pOp).getInductionVar();
+                        auto iv = llvm::dyn_cast<affine::AffineForOp>(pOp).getInductionVar();
                         ivs.push_back(iv);
                     }
-                    else if (isa<AffineParallelOp>(pOp))
+                    else if (isa<affine::AffineParallelOp>(pOp))
                     {
-                        auto iv = llvm::dyn_cast<AffineParallelOp>(pOp).getIVs();
+                        auto iv = llvm::dyn_cast<affine::AffineParallelOp>(pOp).getIVs();
                         ivs.insert(ivs.end(), iv.begin(), iv.end());
                     }
                     pOp = pOp->getBlock()->getParentOp();
                 }
                 if (llvm::all_of(load.getIndices(), [&ivs](auto idx) { return llvm::find(ivs, idx) != nullptr; }))
                 {
-                    rewriter.replaceOpWithNewOp<AffineLoadOp>(load.getOperation(), load.getMemRef(), load.getIndices());
+                    rewriter.replaceOpWithNewOp<affine::AffineLoadOp>(load.getOperation(), load.getMemRef(), load.getIndices());
                 }
                 return success();
             }
@@ -67,21 +67,21 @@ namespace voila::mlir
                 auto pOp = store.getOperation()->getBlock()->getParentOp();
                 while (!isa<FuncOp>(pOp))
                 {
-                    if (isa<AffineForOp>(pOp))
+                    if (isa<affine::AffineForOp>(pOp))
                     {
-                        auto iv = llvm::dyn_cast<AffineForOp>(pOp).getInductionVar();
+                        auto iv = llvm::dyn_cast<affine::AffineForOp>(pOp).getInductionVar();
                         ivs.push_back(iv);
                     }
-                    else if (isa<AffineParallelOp>(pOp))
+                    else if (isa<affine::AffineParallelOp>(pOp))
                     {
-                        auto iv = llvm::dyn_cast<AffineParallelOp>(pOp).getIVs();
+                        auto iv = llvm::dyn_cast<affine::AffineParallelOp>(pOp).getIVs();
                         ivs.insert(ivs.end(), iv.begin(), iv.end());
                     }
                     pOp = pOp->getBlock()->getParentOp();
                 }
                 if (llvm::all_of(store.getIndices(), [&ivs](auto idx) { return llvm::find(ivs, idx) != nullptr; }))
                 {
-                    rewriter.replaceOpWithNewOp<AffineStoreOp>(store.getOperation(), store.getValueToStore(),
+                    rewriter.replaceOpWithNewOp<affine::AffineStoreOp>(store.getOperation(), store.getValueToStore(),
                                                                store.getMemRef(), store.getIndices());
                 }
                 return success();
@@ -96,7 +96,7 @@ namespace voila::mlir
 
         void MemOpsToAffineMemOpsConversionPass::getDependentDialects(mlir::DialectRegistry &registry) const
         {
-            registry.insert<AffineDialect, MemRefDialect>();
+            registry.insert<affine::AffineDialect, MemRefDialect>();
             Pass::getDependentDialects(registry);
         }
         StringRef MemOpsToAffineMemOpsConversionPass::getDescription() const

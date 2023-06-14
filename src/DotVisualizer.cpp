@@ -22,6 +22,7 @@
 #include "ast/IntConst.hpp"              // for IntConst
 #include "ast/Le.hpp"                    // for Le
 #include "ast/Leq.hpp"                   // for Leq
+#include "ast/Load.hpp"                  // for Load
 #include "ast/Loop.hpp"                  // for Loop
 #include "ast/Main.hpp"                  // for Main
 #include "ast/Mod.hpp"                   // for Mod
@@ -40,7 +41,6 @@
 #include "ast/Write.hpp"                 // for Write
 #include "llvm/Support/FormatVariadic.h" // for formatv, formatv_object
 #include <variant>
-#include <vector> // for vector
 
 namespace voila::ast
 {
@@ -300,7 +300,10 @@ namespace voila::ast
 
     DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<IntConst> intConst) { printVertex(intConst); }
 
-    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<BooleanConst> boolConst) { printVertex(boolConst); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<BooleanConst> boolConst)
+    {
+        printVertex(boolConst);
+    }
 
     DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<FltConst> fltConst) { printVertex(fltConst); }
 
@@ -330,7 +333,10 @@ namespace voila::ast
 
     DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Ref> param) { printVertex(param); }
 
-    DotVisualizer::return_type DotVisualizer::visit_impl(std::monostate) { throw std::logic_error("Invalid node type monostate"); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::monostate)
+    {
+        throw std::logic_error("Invalid node type monostate");
+    }
 
     DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Selection> create)
     {
@@ -389,13 +395,31 @@ namespace voila::ast
         out << "}" << std::endl;
         return out;
     }
-    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Predicate>) { throw std::logic_error("Not implemented"); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Predicate>)
+    {
+        throw std::logic_error("Not implemented");
+    }
 
-    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Insert>) { throw std::logic_error("Not implemented"); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Insert>)
+    {
+        throw std::logic_error("Not implemented");
+    }
 
-    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Lookup>) { throw std::logic_error("Not implemented"); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Lookup>)
+    {
+        throw std::logic_error("Not implemented");
+    }
 
-    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Hash>) { throw std::logic_error("Not implemented"); }
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Hash>)
+    {
+        throw std::logic_error("Not implemented");
+    }
+
+    DotVisualizer::return_type DotVisualizer::visit_impl(std::shared_ptr<Load>)
+    {
+        throw std::logic_error("Not implemented");
+    }
+
 
     template <bool infer_type> void DotVisualizer::printVertex(const ASTNodeVariant &node)
     {
@@ -428,7 +452,7 @@ namespace voila::ast
             *os << "<br/>";
         }
         *os << "@"
-            << std::visit(overloaded{[](auto &n) -> Location{ return n->get_location(); },
+            << std::visit(overloaded{[](auto &n) -> Location { return n->get_location(); },
                                      [](std::monostate) -> Location { throw std::logic_error(""); }},
                           node)
             << "</b> <br/>";

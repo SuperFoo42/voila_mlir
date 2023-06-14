@@ -99,7 +99,7 @@ namespace voila::mlir::lowering
         SmallVector<Value> iter_args;
         iter_args.push_back(builder.create<ConstantIndexOp>(0));
 
-        auto resultSize = builder.create<AffineForOp>(
+        auto resultSize = builder.create<affine::AffineForOp>(
             lowerBound, builder.getDimIdentityMap(), upperBound, builder.getDimIdentityMap(), 1, iter_args,
             [&](OpBuilder &nestedBuilder, ::mlir::Location loc,
                 Value iter_var /*index on which to store selected value*/, ValueRange ivs) -> void
@@ -109,7 +109,7 @@ namespace voila::mlir::lowering
                 // to store at the current index.
                 ImplicitLocOpBuilder b(loc, nestedBuilder);
                 Value nextIdx = processIteration(b, op, iter_var, ivs.front(), alloc);
-                nestedBuilder.create<AffineYieldOp>(loc, nextIdx);
+                nestedBuilder.create<affine::AffineYieldOp>(loc, nextIdx);
             });
 
         // Replace this operation with the generated reshaped alloc.
@@ -150,7 +150,7 @@ namespace voila::mlir::lowering
                                auto elseBuilder = ImplicitLocOpBuilder(loc, ifOp.getThenBodyBuilder());
                                // value is constant
                                auto valToStore = elseBuilder.create<tensor::ExtractOp>(values, loopIvs);
-                               elseBuilder.create<AffineStoreOp>(valToStore, dest, iter_var);
+                               elseBuilder.create<affine::AffineStoreOp>(valToStore, dest, iter_var);
                                auto oneConst = elseBuilder.create<ConstantIndexOp>(1);
                                SmallVector<Value> res;
                                auto addOp = elseBuilder.create<AddIOp>(iter_var, oneConst);
@@ -169,7 +169,7 @@ namespace voila::mlir::lowering
                                auto elseBuilder = ImplicitLocOpBuilder(loc, ifOp.getThenBodyBuilder());
                                // value is constant
                                auto valToStore = elseBuilder.create<tensor::ExtractOp>(values, loopIvs);
-                               elseBuilder.create<AffineStoreOp>(valToStore, dest, iter_var);
+                               elseBuilder.create<affine::AffineStoreOp>(valToStore, dest, iter_var);
                                auto oneConst = elseBuilder.create<ConstantIndexOp>(1);
                                SmallVector<Value> res;
                                auto addOp = elseBuilder.create<AddIOp>(iter_var, oneConst);
@@ -186,7 +186,7 @@ namespace voila::mlir::lowering
                                auto ifBuilder = ImplicitLocOpBuilder(loc, ifOp.getThenBodyBuilder());
                                // value is constant
                                auto valToStore = values;
-                               ifBuilder.create<AffineStoreOp>(valToStore, dest, iter_var);
+                               ifBuilder.create<affine::AffineStoreOp>(valToStore, dest, iter_var);
                                auto oneConst = ifBuilder.create<ConstantIndexOp>(1);
                                SmallVector<Value> res;
                                auto addOp = ifBuilder.create<AddIOp>(iter_var, oneConst);
@@ -205,7 +205,7 @@ namespace voila::mlir::lowering
                                auto ifBuilder = ImplicitLocOpBuilder(loc, ifOp.getThenBodyBuilder());
                                // value is constant
                                auto valToStore = values;
-                               ifBuilder.create<AffineStoreOp>(valToStore, dest, iter_var);
+                               ifBuilder.create<affine::AffineStoreOp>(valToStore, dest, iter_var);
                                auto oneConst = ifBuilder.create<ConstantIndexOp>(1);
                                SmallVector<Value> res;
                                auto addOp = ifBuilder.create<AddIOp>(iter_var, oneConst);

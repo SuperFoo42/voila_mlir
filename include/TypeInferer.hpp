@@ -105,6 +105,7 @@ namespace voila
         return_type visit_impl(std::shared_ptr<ast::Hash> hash);
         return_type visit_impl(std::shared_ptr<ast::Lookup> lookup);
         return_type visit_impl(std::shared_ptr<ast::Insert> insert);
+        return_type visit_impl(std::shared_ptr<ast::Load> load);
         return_type visit_impl(std::monostate);
 
         std::shared_ptr<Type> get_type(const ast::ASTNodeVariant &node) const;

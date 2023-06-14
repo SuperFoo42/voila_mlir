@@ -79,7 +79,7 @@ namespace voila::mlir::lowering
             iter_args.push_back(cond);
         }
 
-        rewriter.replaceOpWithNewOp<AffineForOp>(
+        rewriter.replaceOpWithNewOp<affine::AffineForOp>(
             op, lowerBound, rewriter.getDimIdentityMap(), upperBound, rewriter.getDimIdentityMap(), 1, iter_args,
             [&](OpBuilder &nestedBuilder, Location loc, Value iter_var /*index on which to store selected value*/,
                 ValueRange ivs) -> void
@@ -92,13 +92,13 @@ namespace voila::mlir::lowering
                 if (isMemRef(cond))
                 {
                     SmallVector<Value> loadedCond;
-                    loadedCond.push_back(rewriter.create<AffineLoadOp>(
+                    loadedCond.push_back(rewriter.create<affine::AffineLoadOp>(
                         loc, cond, ivs)); // FIXME: oob load in last iteration - add affine if
-                    rewriter.create<AffineYieldOp>(loc, loadedCond);
+                    rewriter.create<affine::AffineYieldOp>(loc, loadedCond);
                 }
                 else
                 {
-                    rewriter.create<AffineYieldOp>(loc, cond);
+                    rewriter.create<affine::AffineYieldOp>(loc, cond);
                 }
             });
     }

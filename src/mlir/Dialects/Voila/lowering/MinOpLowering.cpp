@@ -86,11 +86,11 @@ namespace voila::mlir::lowering
         {
             res = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, builder.getI64Type()),
                                                   ArrayRef(allocSize));
-            buildAffineLoopNest(builder, builder.getLoc(), builder.create<ConstantIndexOp>(0).getResult(), allocSize,
+            affine::buildAffineLoopNest(builder, builder.getLoc(), builder.create<ConstantIndexOp>(0).getResult(), allocSize,
                                 {1},
                                 [&res, &op](OpBuilder &builder, Location loc, ValueRange vals)
                                 {
-                                    builder.create<AffineStoreOp>(
+                                    builder.create<affine::AffineStoreOp>(
                                         loc,
                                         builder.create<ConstantIntOp>(loc, std::numeric_limits<int64_t>::max(),
                                                                       getElementTypeOrSelf(op.getInput())),
@@ -101,12 +101,12 @@ namespace voila::mlir::lowering
         {
             res = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, builder.getF64Type()),
                                                   ArrayRef(allocSize));
-            buildAffineLoopNest(
+            affine::buildAffineLoopNest(
                 builder, builder.getLoc(), builder.create<ConstantIndexOp>(0)->getResults(), allocSize, {1},
                 [&res](OpBuilder &builder, Location loc, ValueRange vals)
                 {
                     ImplicitLocOpBuilder b(loc, builder);
-                    b.create<AffineStoreOp>(
+                    b.create<affine::AffineStoreOp>(
                         b.create<ConstantFloatOp>(::llvm::APFloat(std::numeric_limits<double>::max()), b.getF64Type()),
                         res, // TODO: any float type
                         vals);
@@ -158,7 +158,7 @@ namespace voila::mlir::lowering
             }
         };
 
-        buildAffineLoopNest(builder, builder.getLoc(), builder.create<ConstantIndexOp>(0)->getResults(),
+        affine::buildAffineLoopNest(builder, builder.getLoc(), builder.create<ConstantIndexOp>(0)->getResults(),
                             builder.create<tensor::DimOp>(op.getInput(), 0).getResult(), {1}, fn);
 
         return builder.create<ToTensorOp>(res);

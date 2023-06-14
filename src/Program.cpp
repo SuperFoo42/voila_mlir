@@ -355,7 +355,8 @@ namespace voila
         // Initialize LLVM targets.
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
-        ExecutionEngine::setupTargetTriple(llvmModule.get());
+        //TODO: options
+        //ExecutionEngine::setupTargetTriple(llvmModule.get());
         // An optimization pipeline to use within the execution engine.
         auto tmBuilderOrError = llvm::orc::JITTargetMachineBuilder::detectHost();
         if (!tmBuilderOrError)
@@ -473,17 +474,17 @@ namespace voila
         pm.addNestedPass<FuncOp>(bufferization::createBufferLoopHoistingPass());
         // pm.addNestedPass<FuncOp>(bufferization::createPromoteBuffersToStackPass()); //potential double free if result
         // res small enough to fit into stack
-        pm.addNestedPass<FuncOp>(createSimplifyAffineStructuresPass());
-        pm.addNestedPass<FuncOp>(createAffineScalarReplacementPass());
-        pm.addNestedPass<FuncOp>(createAffineLoopInvariantCodeMotionPass());
-        pm.addNestedPass<FuncOp>(createAffineLoopNormalizePass());
+        pm.addNestedPass<FuncOp>(affine::createSimplifyAffineStructuresPass());
+        pm.addNestedPass<FuncOp>(affine::createAffineScalarReplacementPass());
+        pm.addNestedPass<FuncOp>(affine::createAffineLoopInvariantCodeMotionPass());
+        pm.addNestedPass<FuncOp>(affine::createAffineLoopNormalizePass());
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
 
         pm.addNestedPass<FuncOp>(createConvertLinalgToAffineLoopsPass());
         if (config._optimize && config._vectorize)
         {
-            std::unique_ptr<Pass> vectorizationPass = createAffineVectorize();
+            std::unique_ptr<Pass> vectorizationPass = affine::createAffineVectorize();
             if (config._vectorize_reductions)
             {
                 (void)vectorizationPass->initializeOptions("vectorize-reductions=true");
@@ -493,14 +494,15 @@ namespace voila
         }
         // pm.addNestedPass<FuncOp>(::voila::mlir::createConvertLinalgTiledLoopsToAffineForPass());
 
-        pm.addNestedPass<FuncOp>(createSimplifyAffineStructuresPass());
-        pm.addNestedPass<FuncOp>(createAffineScalarReplacementPass());
-        pm.addNestedPass<FuncOp>(createAffineLoopInvariantCodeMotionPass());
-        pm.addNestedPass<FuncOp>(createAffineLoopNormalizePass());
+        pm.addNestedPass<FuncOp>(affine::createSimplifyAffineStructuresPass());
+        pm.addNestedPass<FuncOp>(affine::createAffineScalarReplacementPass());
+        pm.addNestedPass<FuncOp>(affine::createAffineLoopInvariantCodeMotionPass());
+        pm.addNestedPass<FuncOp>(affine::createAffineLoopNormalizePass());
         pm.addNestedPass<FuncOp>(createMemOpsToAffineMemOpsConversionPass());
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
-        pm.addNestedPass<FuncOp>(createLoopFusionPass(0, 0, true));
+        //TODO
+        //pm.addNestedPass<FuncOp>(affine::createLoopFusionPass(0, 0, true));
 
         // pm.addNestedPass<FuncOp>(createConvertLinalgTiledLoopsToSCFPass());
         //
@@ -517,16 +519,16 @@ namespace voila
 
         pm.addNestedPass<FuncOp>(createConvertLinalgToLoopsPass());
 
-        pm.addNestedPass<FuncOp>(createSimplifyAffineStructuresPass());
-        pm.addNestedPass<FuncOp>(createAffineScalarReplacementPass());
-        pm.addNestedPass<FuncOp>(createAffineLoopInvariantCodeMotionPass());
-        pm.addNestedPass<FuncOp>(createAffineLoopNormalizePass());
+        pm.addNestedPass<FuncOp>(affine::createSimplifyAffineStructuresPass());
+        pm.addNestedPass<FuncOp>(affine::createAffineScalarReplacementPass());
+        pm.addNestedPass<FuncOp>(affine::createAffineLoopInvariantCodeMotionPass());
+        pm.addNestedPass<FuncOp>(affine::createAffineLoopNormalizePass());
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
 
         if (config._optimize && config._parallelize)
         {
-            std::unique_ptr<Pass> parallelizationPass = createAffineParallelizePass();
+            std::unique_ptr<Pass> parallelizationPass = affine::createAffineParallelizePass();
             if (config._parallelize_reductions)
             {
                 (void)parallelizationPass->initializeOptions("parallel-reductions=true");
@@ -541,10 +543,11 @@ namespace voila
         // pm.addNestedPass<FuncOp>(createLoopUnrollPass(8));
 
         if (config._optimize && config._unroll_factor > 1)
-            pm.addNestedPass<FuncOp>(createLoopUnrollAndJamPass(config._unroll_factor));
+            pm.addNestedPass<FuncOp>(affine::createLoopUnrollAndJamPass(config._unroll_factor));
         pm.addNestedPass<FuncOp>(createForLoopSpecializationPass());
         pm.addNestedPass<FuncOp>(createParallelLoopFusionPass());
-        pm.addNestedPass<FuncOp>(createParallelLoopCollapsingPass());
+        //TODO
+        //pm.addNestedPass<FuncOp>(createParallelLoopCollapsingPass());
         pm.addNestedPass<FuncOp>(createParallelLoopTilingPass());
         pm.addNestedPass<FuncOp>(createParallelLoopSpecializationPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());
@@ -567,8 +570,9 @@ namespace voila
             pm.addNestedPass<FuncOp>(createParallelLoopToGpuPass());
         }
 
-        if (config._optimize && config._fuse)
-            pm.addNestedPass<FuncOp>(createLoopFusionPass());
+        //TODO
+//        if (config._optimize && config._fuse)
+//            pm.addNestedPass<FuncOp>(createLoopFusionPass());
 
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());

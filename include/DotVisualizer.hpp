@@ -115,6 +115,8 @@ namespace voila::ast
 
         return_type visit_impl(std::shared_ptr<Variable> var);
 
+        return_type visit_impl(std::shared_ptr<Load> var);
+
         return_type visit_impl(std::monostate);
 
         friend std::ostream &operator<<(std::ostream &out, DotVisualizer &t);

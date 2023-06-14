@@ -45,7 +45,7 @@ namespace voila::mlir
 
             // We define the specific operations, or dialects, that are legal targets for
             // this lowering.
-            target.addLegalDialect<BuiltinDialect, AffineDialect, memref::MemRefDialect, func::FuncDialect,
+            target.addLegalDialect<BuiltinDialect, affine::AffineDialect, memref::MemRefDialect, func::FuncDialect,
                                    linalg::LinalgDialect, tensor::TensorDialect, scf::SCFDialect, vector::VectorDialect,
                                    arith::ArithDialect, bufferization::BufferizationDialect>();
 

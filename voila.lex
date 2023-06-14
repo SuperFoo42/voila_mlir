@@ -72,6 +72,7 @@ using namespace voila::ast;
 "main" return voila::parser::Parser::make_MAIN(location());
 
 "select" return voila::parser::Parser::make_SELECT(location());
+"load" return voila::parser::Parser::make_LOAD(location());
 
 "hash" return voila::parser::Parser::make_HASH(location());
 "insert" return voila::parser::Parser::make_INSERT(location());

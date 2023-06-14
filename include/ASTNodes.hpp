@@ -42,3 +42,4 @@
 #include "ast/Hash.hpp"
 #include "ast/Lookup.hpp"
 #include "ast/Insert.hpp"
+#include "ast/Load.hpp"

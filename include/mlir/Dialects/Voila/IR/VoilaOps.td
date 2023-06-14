@@ -6,9 +6,11 @@ include "mlir/Dialects/FPMath/IR/FPMathTypes.td"
 include "mlir/Dialects/FPMath/IR/FPMathAttr.td"
 include "../Interfaces/PredicationOpInterface.td"
 include "mlir/IR/OpBase.td"
-include "mlir/Interfaces/SideEffectInterfaces.td"
+include "mlir/IR/FunctionInterfaces.td"
+include "mlir/IR/SymbolInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/CastInterfaces.td"
+include "mlir/Interfaces/SideEffectInterfaces.td"
 
 def RationalLike : TypeConstraint<Or<[
         FloatLike.predicate, DecimalLike.predicate]>,
@@ -439,7 +441,7 @@ OpBuilder<(ins), [{ build($_builder, $_state, std::nullopt); }]>
 */
 }
 
-def GenericCallOp : Voila_Op<"generic_call", [DeclareOpInterfaceMethods<CallOpInterface>]> {
+def GenericCallOp : Voila_Op<"generic_call"> {
   let summary = "generic call operation";
   let description = [{
     Generic calls represent calls to a user defined function that needs to
@@ -478,9 +480,9 @@ let results = (outs I1); //only needed because we translate this to affine loop 
 let regions = (region AnyRegion:$body);
 }
 
-def CastOp : Voila_Op<"cast", [
-DeclareOpInterfaceMethods<CastOpInterface>,
-SameOperandsAndResultShape]
+def CastOp : Voila_Op<"cast", [     DeclareOpInterfaceMethods<CastOpInterface>,
+                                    Pure,
+                                    SameOperandsAndResultShape]
 > {
 let summary = "shape cast operation";
 let description = [{
@@ -634,7 +636,7 @@ let skipDefaultBuilders = 1;
 def LookupOp : Voila_Op<"lookup", [AttrSizedOperandSegments,DeclareOpInterfaceMethods<PredicationOpInterface>]> {
 let summary = "lookup index of hash values";
 let description = [{
-This is a convenience function, basically consisting of hashing and gather + linear probing for collision resolution
+This is a convenience function, basically consisting of hashing and gather + linear probing for collision resolutiont
 }];
 
 let arguments = (ins Variadic<1DTensorOf<[AnyType]>>:$values, Variadic<1DTensorOf<[AnyType]>>:$hashtables, 1DTensorOf<[I64]>:$hashes, Optional<1DTensorOf<[I1]>>:$pred);
@@ -645,5 +647,16 @@ let skipDefaultBuilders = 1;
     OpBuilder<(ins "ValueRange":$values,"ValueRange":$hashtables,"Value":$hashes, CArg<"Value", "{}">:$pred)>,
       OpBuilder<(ins "TypeRange":$resTypes, "ValueRange":$values,"ValueRange":$hashtables,"Value":$hashes, CArg<"Value", "{}">:$pred)>
   ];
+}
+
+
+def LoadOp : Voila_Op<"load"> {
+ let summary = "lookup index of hash values";
+ let description = [{
+selective load operatiion
+ }];
+
+ let arguments = (ins AnyVoilaType:$src, AnyVoilaType:$dest, BoolLike:$mask);
+ let results = (outs 1DTensorOf<[AnyType]>:$output);
 }
 #endif // VOILA_OPS

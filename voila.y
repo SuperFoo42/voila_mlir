@@ -87,6 +87,7 @@
 %token NOT "not"
 
 %token SELECT "matching selection"
+%token LOAD "selective load"
 
 /* binary operators */
 %token GATHER "gather"
@@ -201,6 +202,7 @@ expr:
 	| logical {$$ = $1; }
 	| read_op {$$ = $1;  }
 	| selection { $$ = $1; }
+	| LOAD LPAREN expr COMMA expr COMMA expr RPAREN { $$ = std::make_shared<ast::Load>(@0+@4,$3, $5, $7); }
 	| aggregation {$$ = $1; }
 	| HASH LPAREN expr_list RPAREN { $$ = std::make_shared<ast::Hash>(@0+@4, $3); }
 	| LOOKUP LPAREN expr_list RPAREN {  auto hashes = $3.back(); $3.pop_back(); const auto half = $3.size() / 2;

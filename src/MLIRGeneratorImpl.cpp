@@ -107,7 +107,10 @@ namespace voila::mlir
     // TODO
     result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<AggrAvg> avg) { return createAggr(avg); }
 
-    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Write> ) { throw std::logic_error("Not implemented"); }
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Write>) { throw std::logic_error("Not implemented"); }
+
+    // TODO
+    result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Load>) { throw std::logic_error("Not implemented"); }
 
     result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Scatter> scatter)
     {
@@ -126,11 +129,14 @@ namespace voila::mlir
             auto arg = std::visit(*this, expr);
             operands.push_back(std::get<Value>(arg));
         }
-
-        return builder
-            .create<GenericCallOp>(location, call->fun(), operands,
-                                   funcTable.lookup(call->fun()).getFunctionType().getResult(0))
-            ->getResults();
+        assert(funcTable.lookup(call->fun()).getFunctionType().getNumResults() <= 1);
+        if (funcTable.lookup(call->fun()).getFunctionType().getNumResults() > 0)
+            return builder
+                .create<GenericCallOp>(location, call->fun(), operands,
+                                       funcTable.lookup(call->fun()).getFunctionType().getResult(0))
+                ->getResults();
+        else
+            return builder.create<GenericCallOp>(location, call->fun(), operands)->getResults();
     }
 
     result_variant MLIRGeneratorImpl::visit_impl(std::shared_ptr<Assign> assign)
@@ -170,7 +176,12 @@ namespace voila::mlir
         SmallVector<Value> exprs;
         for (auto &val : emit->exprs())
         {
-            exprs.push_back(std::get<Value>(std::visit(*this, val)));
+            auto visRes = std::visit(*this, val);
+            const auto visitor = overloaded{[&exprs](Value &val) { exprs.push_back(val); },
+                                      [&exprs](ValueRange &val) { exprs.append(val.begin(), val.end()); },
+                                      [](auto val) { throw std::bad_variant_access(); }};
+
+            std::visit(visitor, visRes);
         }
 
         // Otherwise, this return operation has zero operands.

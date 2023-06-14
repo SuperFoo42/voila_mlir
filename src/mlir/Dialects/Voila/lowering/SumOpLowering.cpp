@@ -133,24 +133,24 @@ namespace voila::mlir::lowering
         {
             res = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, builder.getI64Type()),
                                                   ArrayRef(allocSize));
-            buildAffineLoopNest(
+            affine::buildAffineLoopNest(
                 builder, builder.getLoc(), builder.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
                 [&res](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
                 {
                     ImplicitLocOpBuilder builder(loc, nestedBuilder);
-                    builder.create<AffineStoreOp>(builder.create<ConstantIntOp>(0, builder.getI64Type()), res, vals);
+                    builder.create<affine::AffineStoreOp>(builder.create<ConstantIntOp>(0, builder.getI64Type()), res, vals);
                 });
         }
         else if (isFloat(getElementTypeOrSelf(op->getResult(0))))
         {
             res = builder.create<memref::AllocOp>(MemRefType::get(ShapedType::kDynamic, builder.getF64Type()),
                                                   ArrayRef(allocSize));
-            buildAffineLoopNest(
+            affine::buildAffineLoopNest(
                 builder, builder.getLoc(), builder.create<ConstantIndexOp>(0).getResult(), allocSize, {1},
                 [&res](OpBuilder &nestedBuilder, Location loc, ValueRange vals)
                 {
                     ImplicitLocOpBuilder builder(loc, nestedBuilder);
-                    builder.create<AffineStoreOp>(
+                    builder.create<affine::AffineStoreOp>(
                         builder.create<ConstantFloatOp>(::llvm::APFloat(0.0), builder.getF64Type()), res, vals);
                 });
         }
@@ -218,7 +218,7 @@ namespace voila::mlir::lowering
             }
         };
 
-        buildAffineLoopNest(builder, builder.getLoc(), builder.create<ConstantIndexOp>(0).getResult(),
+        affine::buildAffineLoopNest(builder, builder.getLoc(), builder.create<ConstantIndexOp>(0).getResult(),
                             builder.create<tensor::DimOp>(op.getInput(), 0).getResult(), {1}, fn);
 
         return builder.create<ToTensorOp>(res);
