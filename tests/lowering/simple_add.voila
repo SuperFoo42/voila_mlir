@@ -1,0 +1,8 @@
+// RUN: voila-mlir-translate -emit=mlir %s INT32:100 INT32:100 | voila-opt | FileCheck %s
+
+main(x, y)
+{
+//CHECK: llvm.addi
+    z = add(x, y);
+    emit z;
+}

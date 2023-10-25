@@ -93,7 +93,7 @@ namespace voila::mlir::lowering
             if (isInteger(vals.front()))
                 maxVal = b.create<MaxSIOp>(input, output);
             else
-                maxVal = b.create<MaxFOp>(input, output);
+                maxVal = b.create<MaximumFOp>(input, output);
 
             b.create<linalg::YieldOp>(maxVal);
         };
@@ -169,7 +169,7 @@ namespace voila::mlir::lowering
                                         if (isInteger(toCmp))
                                             maxVal = nb.create<MaxSIOp>(toCmp, oldVal);
                                         else
-                                            maxVal = nb.create<MaxFOp>(toCmp, oldVal);
+                                            maxVal = nb.create<MaximumFOp>(toCmp, oldVal);
 
                                         nb.create<memref::StoreOp>(maxVal, res, groupIdx);
                                         nb.create<scf::YieldOp>();
@@ -188,7 +188,7 @@ namespace voila::mlir::lowering
                 }
                 else
                 {
-                    maxVal = b.create<MaxFOp>(toCmp, oldVal);
+                    maxVal = b.create<MaximumFOp>(toCmp, oldVal);
                 }
 
                 b.create<memref::StoreOp>(maxVal, res, groupIdx);

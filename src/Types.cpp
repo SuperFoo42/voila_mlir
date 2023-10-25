@@ -21,17 +21,17 @@ namespace voila
 
     std::string to_string(const Arity &ar)
     {
-        if (ar.undef)
+        if (ar.undef())
             return "undef";
 
         return std::to_string(ar.arity);
     }
 
-    bool Arity::operator==(const Arity &rhs) const { return arity == rhs.arity || undef == rhs.undef; }
+    bool Arity::operator==(const Arity &rhs) const { return arity == rhs.arity; }
 
     bool Arity::operator!=(const Arity &rhs) const { return !(rhs == *this); }
 
-    bool Arity::is_undef() const { return undef; }
+    bool Arity::undef() const { return arity == UNDEF; }
 
     size_t Arity::get_size() const { return arity; }
 
@@ -42,7 +42,7 @@ namespace voila
         return os;
     }
 
-    bool ScalarType::undef() const { return t == DataType::UNKNOWN && ar.is_undef(); }
+    bool ScalarType::undef() const { return t == DataType::UNKNOWN && ar.undef(); }
 
     ScalarType::ScalarType(type_id_t tID, TypeInferer &inferer, DataType t, Arity ar) : Type(tID, inferer), t(t), ar{ar}
     {

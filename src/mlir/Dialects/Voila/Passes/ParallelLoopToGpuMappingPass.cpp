@@ -23,8 +23,9 @@ namespace voila::mlir
                 }*/
         void ParallelLoopToGPUMappingPass::runOnOperation()
         {
-            Operation *op = getOperation();
+
             // TODO:
+            //Operation *op = getOperation();
             // for (auto &region : op->getRegions())
             //     greedilyMapParallelSCFToGPU(region);
         }

@@ -1,7 +1,7 @@
 CPMAddPackage(
         NAME benchmark
         GITHUB_REPOSITORY google/benchmark
-        VERSION 1.6.0
+        VERSION 1.8.3
         OPTIONS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}" "BENCHMARK_ENABLE_TESTING Off" "BENCHMARK_ENABLE_LTO True"
 )
 if (benchmark_ADDED)
@@ -19,7 +19,7 @@ CPMAddPackage(
 
 CPMAddPackage("gh:vincentlaucsb/csv-parser#2.1.3")
 
-CPMAddPackage("gh:Cyan4973/xxHash#v0.8.1")
+CPMAddPackage("gh:Cyan4973/xxHash#v0.8.2")
 
 #CPMAddPackage("gh:tmaklin/bxzstr#v1.2.1")
 

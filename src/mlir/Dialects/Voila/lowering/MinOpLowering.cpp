@@ -67,7 +67,7 @@ namespace voila::mlir::lowering
             if (isInteger(vals.front()))
                 minVal = builder.create<MinSIOp>(loc, input, output);
             else
-                minVal = builder.create<MinFOp>(loc, input, output);
+                minVal = builder.create<MinimumFOp>(loc, input, output);
 
             builder.create<linalg::YieldOp>(loc, minVal);
         };
@@ -136,7 +136,7 @@ namespace voila::mlir::lowering
                                         if (isInteger(toCmp))
                                             minVal = nb.create<MinSIOp>(toCmp, oldVal);
                                         else
-                                            minVal = nb.create<MinFOp>(toCmp, oldVal);
+                                            minVal = nb.create<MinimumFOp>(toCmp, oldVal);
 
                                         nb.create<memref::StoreOp>(minVal, res, groupIdx);
                                         nb.create<scf::YieldOp>();
@@ -152,7 +152,7 @@ namespace voila::mlir::lowering
                 if (isInteger(toCmp))
                     minVal = b.create<MinSIOp>(toCmp, oldVal);
                 else
-                    minVal = b.create<MinFOp>(toCmp, oldVal);
+                    minVal = b.create<MinimumFOp>(toCmp, oldVal);
 
                 b.create<memref::StoreOp>(minVal, res, groupIdx);
             }

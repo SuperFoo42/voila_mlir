@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 
 if(POLICY CMP0116)
-    cmake_policy(SET CMP0116 OLD)
+    cmake_policy(SET CMP0116 NEW)
 endif()
 
 
@@ -136,7 +136,7 @@ add_custom_command(
 CPMAddPackage(
         NAME reflex
         GITHUB_REPOSITORY Genivia/RE-flex
-        GIT_TAG v3.2.8
+        GIT_TAG v3.3.8
 )
 if (reflex_ADDED)
     execute_process(
@@ -150,7 +150,7 @@ if (reflex_ADDED)
     target_include_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/include")
     include_directories(${reflex_SOURCE_DIR}/include)
     cmake_policy(SET CMP0004 OLD) # workaround for underscore in reflex lib path
-    target_link_libraries(reflex INTERFACE "${reflex_SOURCE_DIR}/lib/libreflex.a")
+    target_link_libraries(reflex INTERFACE "${reflex_SOURCE_DIR}/lib/libreflexmin.a")
 endif ()
 
 add_custom_command(
@@ -188,8 +188,8 @@ if (BUILD_TEST)
     CPMAddPackage(
             NAME googletest
             GITHUB_REPOSITORY google/googletest
-            GIT_TAG release-1.11.0
-            VERSION 1.11.0
+            GIT_TAG v1.14.0
+            VERSION 1.14.0
             OPTIONS "INSTALL_GTEST OFF" "gtest_force_shared_crt"
     )
     add_subdirectory(tests)

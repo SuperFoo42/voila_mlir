@@ -1,4 +1,5 @@
 #include "TypeInferer.hpp"
+#include "ASTNodes.hpp"
 #include "IncompatibleTypesException.hpp" // for IncompatibleTypesE...
 #include "NonMatchingArityException.hpp"  // for NonMatchingArityEx...
 #include "NotInferedException.hpp"        // for NotInferedException
@@ -6,7 +7,6 @@
 #include "ast/ASTNode.hpp"                // for ASTNode
 #include "ast/ASTNodeVariant.hpp"
 #include "ast/ASTVisitor.hpp"                     // for ASTVisitor
-#include "ASTNodes.hpp"
 #include "range/v3/algorithm/copy.hpp"            // for copy_fn, copy
 #include "range/v3/algorithm/equal.hpp"           // for equal, equal_fn
 #include "range/v3/algorithm/for_each.hpp"        // for for_each, for_each_fn
@@ -81,7 +81,7 @@ namespace voila
                                     const DataType t = DataType::UNKNOWN,
                                     const Arity ar = Arity())
     {
-        typeIDs.emplace(node, types.size());
+        add_type_id(node, types.size());
         types.push_back(std::make_unique<ScalarType>(types.size(), *this, t, ar));
     }
 
@@ -125,17 +125,47 @@ namespace voila
                                         std::vector<type_id_t> typeParamIDs,
                                         std::vector<type_id_t> returnTypeIDs)
     {
-        typeIDs.emplace(node, types.size());
+        add_type_id(node, types.size());
         types.push_back(
             std::make_unique<FunctionType>(types.size(), *this, std::move(typeParamIDs), std::move(returnTypeIDs)));
     }
 
-    type_id_t TypeInferer::get_type_id(const ast::ASTNodeVariant &node)
+    type_id_t &TypeInferer::get_type_id(const ast::ASTNodeVariant &node)
     {
-        return std::visit(ast::overloaded{[&](const auto &var) -> type_id_t { return typeIDs.at(var); },
-                                          [&](const std::shared_ptr<ast::Ref> &ref) -> type_id_t
-                                          { return typeIDs.at(ref->ref()); }},
+        return std::visit(ast::overloaded{[&](const auto &var) -> type_id_t & { return typeIDs.at(var); },
+                                          [&](const std::shared_ptr<ast::Ref> &ref) -> type_id_t &
+                                          { return typeIDs.at(ref->ref()); },
+                                          [&](const std::shared_ptr<ast::StatementWrapper> &ref) -> type_id_t &
+                                          { return typeIDs.at(ref->expr()); }},
                           node);
+    }
+
+    bool TypeInferer::has_type_id(const ast::ASTNodeVariant &node)
+    {
+        return std::visit(ast::overloaded{[&](const auto &var) -> bool { return typeIDs.contains(var); },
+                                          [&](const std::shared_ptr<ast::Ref> &ref) -> bool
+                                          { return typeIDs.contains(ref->ref()); },
+                                          [&](const std::shared_ptr<ast::StatementWrapper> &ref) -> bool
+                                          { return typeIDs.contains(ref->expr()); }},
+                          node);
+    }
+
+    void TypeInferer::add_type_id(const ast::ASTNodeVariant &node, const type_id_t typeId)
+    {
+        std::visit(ast::overloaded{[&](const auto &var) { typeIDs.emplace(var, typeId); },
+                                   [&](const std::shared_ptr<ast::Ref> &ref) { typeIDs.emplace(ref->ref(), typeId); },
+                                   [&](const std::shared_ptr<ast::StatementWrapper> &ref)
+                                   { typeIDs.emplace(ref->expr(), typeId); }},
+                   node);
+    }
+
+    void TypeInferer::set_type_id(const ast::ASTNodeVariant &node, const type_id_t typeId)
+    {
+        std::visit(ast::overloaded{[&](const auto &var) { typeIDs[var] = typeId; },
+                                   [&](const std::shared_ptr<ast::Ref> &ref) { typeIDs[ref->ref()] = typeId; },
+                                   [&](const std::shared_ptr<ast::StatementWrapper> &ref)
+                                   { typeIDs[ref->expr()] = typeId; }},
+                   node);
     }
 
     std::shared_ptr<Type> TypeInferer::get_type(const ast::ASTNodeVariant &node) const
@@ -231,43 +261,48 @@ namespace voila
                 */
 
     // TODO: references and statement wrappers?
-    void TypeInferer::unify(const std::vector<ast::ASTNodeVariant> &t1, const ast::ASTNodeVariant &t2)
+    void TypeInferer::unify(const std::vector<ast::ASTNodeVariant> &t1, const ast::ASTNodeVariant &rType)
     {
-        for (size_t i = 0; i < t1.size(); ++i)
+        for (const auto &en : llvm::enumerate(t1))
         {
-            auto &tmp1 = t1[i];
-            if (typeIDs.contains(tmp1) && !typeIDs.contains(t2))
+            auto lType = en.value();
+            assert(!std::holds_alternative<std::shared_ptr<ast::Ref>>(lType) &&
+                   !std::holds_alternative<std::shared_ptr<ast::StatementWrapper>>(lType));
+            auto i = en.index();
+
+            if (has_type_id(lType) && !has_type_id(rType))
             {
-                typeIDs.emplace(t2, get_type_id(tmp1));
+                add_type_id(rType, get_type_id(lType));
             }
-            else if (!typeIDs.contains(tmp1) && typeIDs.contains(tmp1))
+            else if (!has_type_id(lType) && has_type_id(lType))
             {
-                typeIDs.emplace(tmp1, get_type_id(t2));
+                add_type_id(lType, get_type_id(rType));
             }
-            else if (typeIDs.contains(tmp1) && typeIDs.contains(t2))
+            else if (has_type_id(lType) && has_type_id(rType))
             {
-                if (types[typeIDs[tmp1]]->convertible(types[typeIDs[t2]]->getTypes().at(i)))
+                if (get_type(lType)->convertible(get_type(rType)->getTypes().at(i)))
                 {
-                    if (dynamic_cast<FunctionType *>(types[typeIDs[t2]].get()))
+                    if (std::dynamic_pointer_cast<FunctionType>(get_type(rType)))
                     {
-                        typeIDs[tmp1] = dynamic_cast<FunctionType *>(types[typeIDs[t2]].get())->returnTypeIDs.at(i);
+                        get_type_id(lType) =
+                            std::dynamic_pointer_cast<FunctionType>(get_type(rType))->returnTypeIDs.at(i);
                     }
                     else
                     {
-                        typeIDs[tmp1] = dynamic_cast<ScalarType *>(types[typeIDs[t2]].get())->typeID;
+                        get_type_id(lType) = std::dynamic_pointer_cast<ScalarType>(get_type(rType))->typeID;
                     }
                 }
-                else if (dynamic_cast<FunctionType *>(types[typeIDs[t2]].get()) &&
-                         types.at(dynamic_cast<FunctionType *>(types[typeIDs[t2]].get())->returnTypeIDs.at(i))
-                             ->convertible(*types[typeIDs[tmp1]]))
+                else if (std::dynamic_pointer_cast<FunctionType>(get_type(rType)) &&
+                         types.at(std::dynamic_pointer_cast<FunctionType>(get_type(rType))->returnTypeIDs.at(i))
+                             ->convertible(*get_type(lType)))
                 {
-                    dynamic_cast<FunctionType *>(types[typeIDs[t2]].get())->returnTypeIDs.at(i) = typeIDs[tmp1];
+                    std::dynamic_pointer_cast<FunctionType>(get_type(rType))->returnTypeIDs.at(i) = get_type_id(lType);
                 }
-                else if (dynamic_cast<ScalarType *>(types[typeIDs[t2]].get()) &&
-                         types.at(dynamic_cast<ScalarType *>(types[typeIDs[t2]].get())->typeID)
-                             ->convertible(*types[typeIDs[tmp1]]))
+                else if (std::dynamic_pointer_cast<ScalarType>(get_type(rType)) &&
+                         types.at(std::dynamic_pointer_cast<ScalarType>(get_type(rType))->typeID)
+                             ->convertible(*get_type(lType)))
                 {
-                    dynamic_cast<ScalarType *>(types[typeIDs[t2]].get())->typeID = typeIDs[tmp1];
+                    std::dynamic_pointer_cast<ScalarType>(get_type(rType))->typeID = get_type_id(lType);
                 }
                 else
                 {
@@ -423,25 +458,25 @@ namespace voila
 
     TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::IntConst> aConst)
     {
-        assert(!typeIDs.contains(aConst));
+        assert(!has_type_id(aConst));
         insertNewType(aConst, get_int_type(aConst->val));
     }
 
     TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::BooleanConst> aConst)
     {
-        assert(!typeIDs.contains(aConst));
+        assert(!has_type_id(aConst));
         insertNewType(aConst, DataType::BOOL);
     }
 
     TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::FltConst> aConst)
     {
-        assert(!typeIDs.contains(aConst));
+        assert(!has_type_id(aConst));
         insertNewType(aConst, DataType::DBL);
     }
 
     TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::StrConst> aConst)
     {
-        assert(!typeIDs.contains(aConst));
+        assert(!has_type_id(aConst));
         insertNewType(aConst, DataType::STRING);
     }
 
@@ -481,10 +516,8 @@ namespace voila
         std::visit(*this, load->dest());
         std::visit(*this, load->mask());
 
-
-        insertNewFuncType(load, {get_type_id(load->src()), get_type_id(load->dest()),get_type_id(load->mask())},
-                          get_type(load->dest())->getTypes().front(),
-                          get_type(load->dest())->getArities().front());
+        insertNewFuncType(load, {get_type_id(load->src()), get_type_id(load->dest()), get_type_id(load->mask())},
+                          get_type(load->dest())->getTypes().front(), get_type(load->dest())->getArities().front());
     }
 
     TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Ref>)
@@ -617,7 +650,10 @@ namespace voila
 
     TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Mul> mul) { visitArithmetic(std::move(mul)); }
 
-    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Div> div1) { visitArithmetic(std::move(div1)); }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Div> div1)
+    {
+        visitArithmetic(std::move(div1));
+    }
 
     TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Mod> mod) { visitArithmetic(std::move(mod)); }
 
@@ -702,35 +738,17 @@ namespace voila
         }
     }
 
-    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Eq> eq)
-    {
-        visitComparison(eq);
-    }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Eq> eq) { visitComparison(eq); }
 
-    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Neq> neq)
-    {
-        visitComparison(neq);
-    }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Neq> neq) { visitComparison(neq); }
 
-    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Le> le)
-    {
-        visitComparison(le);
-    }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Le> le) { visitComparison(le); }
 
-    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Ge> ge)
-    {
-        visitComparison(ge);
-    }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Ge> ge) { visitComparison(ge); }
 
-    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Leq> leq)
-    {
-        visitComparison(leq);
-    }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Leq> leq) { visitComparison(leq); }
 
-    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Geq> geq)
-    {
-        visitComparison(geq);
-    }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::Geq> geq) { visitComparison(geq); }
 
     TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::And> anAnd)
     {
@@ -739,11 +757,12 @@ namespace voila
 
         const auto left_type = get_type(anAnd->lhs());
         const auto right_type = get_type(anAnd->rhs());
-        if (!ranges::equal(left_type->getArities(), right_type->getArities(),
+        //TODO: remove, because this doesn't allow broadcasting and requires same size of both variables
+/*        if (!ranges::equal(left_type->getArities(), right_type->getArities(),
                            [](auto &l, auto &r) { return l.get() == r.get(); }))
         {
             throw NonMatchingArityException();
-        }
+        }*/
         if (!left_type->convertible(DataType::BOOL) || !right_type->convertible(DataType::BOOL))
         {
             throw IncompatibleTypesException();
@@ -765,11 +784,12 @@ namespace voila
 
         const auto left_type = get_type(anOr->lhs());
         const auto right_type = get_type(anOr->rhs());
-        if (!ranges::equal(left_type->getArities(), right_type->getArities(),
+        //TODO: remove, because this doesn't allow broadcasting and requires same size of both variables
+/*        if (!ranges::equal(left_type->getArities(), right_type->getArities(),
                            [](auto &l, auto &r) { return l.get() == r.get(); }))
         {
             throw NonMatchingArityException();
-        }
+        }*/
         if (!left_type->convertible(DataType::BOOL) || !right_type->convertible(DataType::BOOL))
         {
             throw IncompatibleTypesException();
@@ -803,7 +823,10 @@ namespace voila
                           Arity(get_type(aNot->param())->getArities().front()));
     }
 
-    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::StatementWrapper> wrapper) { std::visit(*this, wrapper->expr()); }
+    TypeInferer::return_type TypeInferer::visit_impl(std::shared_ptr<ast::StatementWrapper> wrapper)
+    {
+        std::visit(*this, wrapper->expr());
+    }
 
     void TypeInferer::set_arity(const ast::ASTNodeVariant &node, const size_t ar)
     {
@@ -819,7 +842,10 @@ namespace voila
         }
     }
 
-    TypeInferer::return_type TypeInferer::visit_impl(std::monostate) { throw std::logic_error("Invalid node type monostate"); }
+    TypeInferer::return_type TypeInferer::visit_impl(std::monostate)
+    {
+        throw std::logic_error("Invalid node type monostate");
+    }
 
     void TypeInferer::set_type(const ast::ASTNodeVariant &node, const DataType type)
     {
@@ -838,7 +864,7 @@ namespace voila
 
     void TypeInferer::insertNewTypeAs(const ast::ASTNodeVariant &node, const Type &t)
     {
-        typeIDs.emplace(node, types.size());
+        add_type_id(node, types.size());
         if (dynamic_cast<const ScalarType *>(&t))
             types.emplace_back(new ScalarType(dynamic_cast<const ScalarType &>(t)));
         else
@@ -865,9 +891,9 @@ namespace voila
         auto rightArities = right_type->getArities().front();
 
         // TODO: insert for all binary preds
-        if (leftArities.get().is_undef() xor rightArities.get().is_undef())
+        if (leftArities.get().undef() xor rightArities.get().undef())
         {
-            if (leftArities.get().is_undef())
+            if (leftArities.get().undef())
             {
                 leftArities = rightArities;
             }
@@ -903,12 +929,12 @@ namespace voila
 
         const auto left_type = get_type(arithmetic->lhs());
         const auto right_type = get_type(arithmetic->rhs());
-
-        if (!ranges::equal(left_type->getArities(), right_type->getArities(),
+        //TODO: remove, because this doesn't allow broadcasting and requires same size of both variables
+/*        if (!ranges::equal(left_type->getArities(), right_type->getArities(),
                            [](auto &l, auto &r) { return l.get() == r.get(); }))
         {
             throw NonMatchingArityException();
-        }
+        }*/
         if (!left_type->compatible(DataType::NUMERIC) || !right_type->compatible(DataType::NUMERIC))
         {
             throw IncompatibleTypesException();

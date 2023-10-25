@@ -29,8 +29,7 @@ namespace voila
 
     class Arity
     {
-        size_t arity;
-        bool undef;
+        int64_t arity;
 
       public:
         friend std::string to_string(const Arity &ar);
@@ -39,17 +38,18 @@ namespace voila
 
         bool operator!=(const Arity &rhs) const;
 
-        [[nodiscard]] bool is_undef() const;
+        [[nodiscard]] bool undef() const;
 
         [[nodiscard]] size_t get_size() const;
 
         explicit Arity(const size_t i)
         {
             arity = i;
-            undef = false;
         }
 
-        Arity() : arity{std::numeric_limits<decltype(arity)>::max()}, undef{true} {}
+        Arity() : arity{UNDEF} {}
+
+        static constexpr int64_t UNDEF = -1;
     };
 
     std::string to_string(const Arity &ar);

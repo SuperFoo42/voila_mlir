@@ -153,7 +153,7 @@ namespace voila::mlir
         {
             Value value;
             ASTNodeVariant dest;
-            std::tie(dest, val) = en.value();
+            std::tie(dest, value) = en.value();
 
             symbolTable.insert(
                 std::visit(overloaded{[](std::shared_ptr<Variable> &var) { return var; },
@@ -525,7 +525,7 @@ namespace voila::mlir
         switch (t.getTypes().front())
         {
         case DataType::BOOL:
-            if (t.getArities().front().is_undef())
+            if (t.getArities().front().undef())
             {
                 return ::mlir::RankedTensorType::get(ShapedType::kDynamic, builder.getI1Type());
             }
@@ -538,7 +538,7 @@ namespace voila::mlir
                 return ::mlir::RankedTensorType::get(t.getArities().front().get_size(), builder.getI1Type());
             }
         case DataType::INT32:
-            if (t.getArities().front().is_undef())
+            if (t.getArities().front().undef())
             {
                 return ::mlir::RankedTensorType::get(ShapedType::kDynamic, builder.getI32Type());
             }
@@ -551,7 +551,7 @@ namespace voila::mlir
                 return ::mlir::RankedTensorType::get(t.getArities().front().get_size(), builder.getI32Type());
             }
         case DataType::INT64:
-            if (t.getArities().front().is_undef())
+            if (t.getArities().front().undef())
             {
                 return ::mlir::RankedTensorType::get(ShapedType::kDynamic, builder.getI64Type());
             }
@@ -564,7 +564,7 @@ namespace voila::mlir
                 return ::mlir::RankedTensorType::get(t.getArities().front().get_size(), builder.getI64Type());
             }
         case DataType::DBL:
-            if (t.getArities().front().is_undef())
+            if (t.getArities().front().undef())
             {
                 return ::mlir::RankedTensorType::get(ShapedType::kDynamic, builder.getF64Type());
             }

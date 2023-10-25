@@ -1,3 +1,5 @@
+
+//DEPRECATED: functionality is integrated into voila-opt. This tool will be removed soon
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"

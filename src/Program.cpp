@@ -97,6 +97,7 @@ namespace voila
     using namespace func;
     using namespace ::voila::lexer;
     using namespace ::voila::mlir;
+    using namespace ::mlir::arith;
 
     template <typename T>
     static auto &resolveAndFetchResult(Arity arity,
@@ -104,7 +105,7 @@ namespace voila
                                        void *elemPtr,
                                        std::vector<Program::result_t> &res)
     {
-        if (!arity.is_undef() && arity.get_size() <= 1)
+        if (!arity.undef() && arity.get_size() <= 1)
         {
             auto *extractedRes = reinterpret_cast<T *>(elemPtr);
             res.emplace_back(*extractedRes);
@@ -576,7 +577,7 @@ namespace voila
 
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
-        pm.addPass(arith::createConstantBufferizePass());
+        pm.addPass(createConstantBufferizePass());
         pm.addNestedPass<FuncOp>(bufferization::createBufferDeallocationPass());
         pm.addNestedPass<FuncOp>(::mlir::bufferization::createFinalizingBufferizePass());
 
@@ -601,7 +602,7 @@ namespace voila
                                                          */
         }
 
-        pm.addNestedPass<FuncOp>(arith::createArithExpandOpsPass());
+        pm.addNestedPass<FuncOp>(createArithExpandOpsPass());
         pm.addNestedPass<FuncOp>(memref::createExpandOpsPass());
         // pm.addPass(createLowerHostCodeToLLVMPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());
@@ -764,7 +765,7 @@ namespace voila
             const auto arities = type->getArities();
             for (size_t i = 0; i < types.size(); ++i)
             {
-                if (!arities[i].get().is_undef() && arities[i].get().get_size() <= 1)
+                if (!arities[i].get().undef() && arities[i].get().get_size() <= 1)
                 {
                     switch (types[i])
                     {
@@ -794,21 +795,21 @@ namespace voila
                     case DataType::INT32:
                         resTypes.push_back(llvm::StructType::create(
                             llvmContext,
-                            {llvm::Type::getInt32PtrTy(llvmContext), llvm::Type::getInt32PtrTy(llvmContext),
+                            {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
                              ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
                              ::llvm::Type::getInt64Ty(llvmContext)}));
                         break;
                     case DataType::INT64:
                         resTypes.push_back(llvm::StructType::create(
                             llvmContext,
-                            {llvm::Type::getInt64PtrTy(llvmContext), llvm::Type::getInt64PtrTy(llvmContext),
+                            {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
                              ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
                              ::llvm::Type::getInt64Ty(llvmContext)}));
                         break;
                     case DataType::DBL:
                         resTypes.push_back(llvm::StructType::create(
                             llvmContext,
-                            {llvm::Type::getDoublePtrTy(llvmContext), llvm::Type::getDoublePtrTy(llvmContext),
+                            {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
                              ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
                              ::llvm::Type::getInt64Ty(llvmContext)}));
                         break;

@@ -137,7 +137,7 @@ namespace voila
                                DataType returnT,
                                Arity returnAr);
 
-        type_id_t get_type_id(const ast::ASTNodeVariant &node);
+        type_id_t &get_type_id(const ast::ASTNodeVariant &node);
 
         void
         insertNewFuncType(const ast::ASTNodeVariant &node, std::vector<type_id_t> typeParamIDs, type_id_t returnTypeID);
@@ -158,5 +158,8 @@ namespace voila
         template <class T> void visitArithmetic(T arithmetic);
 
         template <class T> void visitComparison(T comparison);
+        bool has_type_id(const ast::ASTNodeVariant &node);
+        void add_type_id(const ast::ASTNodeVariant &node, type_id_t typeId);
+        void set_type_id(const ast::ASTNodeVariant &node, const type_id_t typeId);
     };
 } // namespace voila
