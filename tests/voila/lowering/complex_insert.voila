@@ -1,6 +1,0 @@
-main(x,y)
-{
-    h = hash(x,y);
-    a,b = insert(h,x,y);
-    emit a,b;
-}

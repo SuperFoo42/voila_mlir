@@ -9,9 +9,7 @@
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
-    class StrConst : public Const
+    class StrConst : public AbstractASTNode<StrConst>
     {
       public:
         explicit StrConst(const Location loc, std::string val) : AbstractASTNode<StrConst>(loc), val{std::move(val)} {}
@@ -20,11 +18,10 @@ namespace voila::ast
 
         void print_impl(std::ostream &ostream) const { ostream << "\"" << val << "\""; }
 
-        void visit(ASTVisitor &visitor) const final;
-
-        void visit(ASTVisitor &visitor) final;
-
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &) override;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &)
+        {
+            return std::make_shared<StrConst>(loc, val);
+        };
 
         const std::string val;
     };

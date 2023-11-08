@@ -1,0 +1,12 @@
+// RUN: voila-mlir-translate -emit=mlir %s INT32 INT32:100 INT64 INT64:128 DBL DBL:128 BOOL BOOL:7 | FileCheck %s
+
+main(a,b,c,d,e,f,g,h)
+{
+    simple_lookup(b,f,d);
+}
+
+def simple_lookup(vals, ht, hv)
+{
+//CHECK: voila.lookup
+    emit  lookup(vals,ht,hv);
+}

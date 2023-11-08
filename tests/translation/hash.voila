@@ -1,0 +1,13 @@
+// RUN: voila-mlir-translate -emit=mlir %s INT32 INT32:100 INT64 INT64:7 DBL DBL:128 BOOL BOOL:7 | FileCheck %s
+
+main(a,b,c,d,e,f,g,h)
+{
+    simple_hash(b);
+    #complex_hash(b,b);
+}
+
+def simple_hash(x)
+{
+//CHECK: voila.hash
+    emit hash(x);
+}

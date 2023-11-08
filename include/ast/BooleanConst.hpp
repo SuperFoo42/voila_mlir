@@ -7,9 +7,7 @@
 
 namespace voila::ast
 {
-    class ASTVisitor;
-
-    class BooleanConst : public Const
+    class BooleanConst : public AbstractASTNode<BooleanConst>
     {
       public:
         explicit BooleanConst(const Location loc, const bool val) : AbstractASTNode<BooleanConst>(loc), val{val} {}
@@ -17,10 +15,10 @@ namespace voila::ast
         [[nodiscard]] std::string type2string_impl() const { return "bool"; }
         void print_impl(std::ostream &ostream) const { ostream << std::boolalpha << val << std::noboolalpha; };
 
-        void visit(ASTVisitor &visitor) const final;
-        void visit(ASTVisitor &visitor) final;
-
-        std::shared_ptr<ASTNode> clone(llvm::DenseMap<ASTNode *, ASTNode *> &vmap) override;
+        ASTNodeVariant clone_impl(std::unordered_map<ASTNodeVariant, ASTNodeVariant> &)
+        {
+            return std::make_shared<BooleanConst>(loc, val);
+        }
 
         const bool val;
     };

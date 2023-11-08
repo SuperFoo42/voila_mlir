@@ -7,14 +7,14 @@
 #include <cassert>         // for assert
 #include <cstdint>         // for int64_t, uint32_t
 #include <cstdlib>         // for free, size_t
-#include <memory>          // for allocator, shared_ptr
-#include <optional>        // for optional, nullopt
-#include <string>          // for string, operator+
-#include <unordered_map>   // for operator==, unorde...
-#include <utility>         // for move
-#include <variant>         // for variant
-#include <vector>          // for vector
-
+#include <fstream>
+#include <memory>        // for allocator, shared_ptr
+#include <optional>      // for optional, nullopt
+#include <string>        // for string, operator+
+#include <unordered_map> // for operator==, unorde...
+#include <utility>       // for move
+#include <variant>       // for variant
+#include <vector>        // for vector
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wambiguous-reversed-operator"
@@ -26,11 +26,13 @@
 #include <mlir/IR/OwningOpRef.h>                  // for OwningOpRef
 #pragma GCC diagnostic pop
 
+#include "ParsingError.hpp"
 #include "range/v3/view/all.hpp"    // for all_t
 #include "range/v3/view/filter.hpp" // for filter_view, cpp20...
 #include "range/v3/view/map.hpp"    // for values, values_fn
 #include "range/v3/view/view.hpp"   // for view_closure
-
+// #include "voila_parser.hpp"
+#include "voila_lexer.hpp"
 template <typename T, int N> struct StridedMemRefType;
 
 namespace llvm
@@ -39,6 +41,12 @@ namespace llvm
 }
 namespace voila
 {
+    enum InputType
+    {
+        Voila,
+        MLIR
+    };
+
     namespace lexer
     {
         class Lexer;
@@ -72,33 +80,37 @@ namespace voila
 
     template <class T, int N> using strided_memref_ptr = std::shared_ptr<StridedMemRefType<T, N>>;
 
-    template <typename T> Parameter make_param(T *val, size_t size)
+    template <typename T> struct TypeMap
     {
-        if constexpr (std::is_same_v<int32_t, T>)
-        {
-            return make_param(val, size, DataType::INT32);
-        }
-        else if constexpr (std::is_same_v<int64_t, T>)
-        {
-            return make_param(val, size, DataType::INT64);
-        }
-        else if constexpr (std::is_same_v<double, T>)
-        {
-            return make_param(val, size, DataType::DBL);
-        }
-        else if constexpr (std::is_same_v<bool, T>)
-        {
-            return make_param(val, size, DataType::BOOL);
-        }
-        else
-        {
-            assert(false && "Could not deduce type of parameter");
-        }
-    }
+        static_assert(false && "Could not deduce type of parameter");
+    };
+
+    template <> struct TypeMap<int32_t>
+    {
+        const static auto type = DataType::INT32;
+    };
+
+    template <> struct TypeMap<int64_t>
+    {
+        const static auto type = DataType::INT64;
+    };
+
+    template <> struct TypeMap<double>
+    {
+        const static auto type = DataType::DBL;
+    };
+
+    template <> struct TypeMap<bool>
+    {
+        const static auto type = DataType::BOOL;
+    };
+
+    template <typename T> Parameter make_param(T *val, size_t size) { return make_param(val, size, TypeMap<T>::type); }
 
     template <typename T> Parameter make_param(std::vector<T> &val) { return make_param(val.data(), val.size()); }
 
     template <typename T> Parameter make_param(T *val) { return make_param(val, 0); }
+    template <typename T> Parameter make_param(T &val) { return make_param(&val, 0); }
 
     class Program
     {
@@ -117,6 +129,7 @@ namespace voila
         long long timer = 0;
         int64_t max_in_table_size;
         void runJIT(const std::optional<std::string> &objPath = std::nullopt);
+        void loadInputFile(InputType type, const std::string &source_path);
 
       public:
         using result_t = std::variant<strided_memref_ptr<uint32_t, 1>,
@@ -132,7 +145,54 @@ namespace voila
 
         explicit Program(Config config = Config());
 
-        explicit Program(const std::string &source_path = "-", Config config = Config());
+        template <class... Ts>
+        explicit Program(const InputType inputType,
+                         const std::string &source_path = "-",
+                         Ts... params,
+                         Config config = Config())
+            : func_vars(),
+              context(),
+              llvmContext(),
+              mlirModule(),
+              llvmModule(),
+              maybeEngine(std::nullopt),
+              functions(),
+              config{std::move(config)},
+              max_in_table_size(0),
+              inferer(this)
+        {
+            loadInputFile(inputType, source_path);
+
+            // supply program parameters
+            (this->operator<<(std::forward<Ts>(params)), ...);
+
+            this->inferTypes();
+        }
+
+        template <class Iterator>
+        explicit Program(const InputType inputType,
+                         const std::string &source_path,
+                         Iterator begin,
+                         Iterator end,
+                         Config config = Config())
+            : func_vars(),
+              context(),
+              llvmContext(),
+              mlirModule(),
+              llvmModule(),
+              maybeEngine(std::nullopt),
+              functions(),
+              config{std::move(config)},
+              max_in_table_size(0),
+              inferer(this)
+        {
+            loadInputFile(inputType, source_path);
+
+            // supply program parameters
+            std::for_each(begin, end, [this](auto &el) { (*this) << el; });
+
+            inferTypes();
+        }
 
         ~Program();
 

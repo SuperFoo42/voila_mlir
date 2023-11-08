@@ -54,12 +54,14 @@
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include <MlirModuleVerificationError.hpp>
 #include <algorithm>
@@ -89,6 +91,7 @@
 #include <system_error>
 #include <type_traits>
 #include <utility>
+#include "mlir/Parser/Parser.h"
 
 namespace voila
 {
@@ -143,10 +146,9 @@ namespace voila
                                        m->variables() = std::move(func_vars);
                                        func_vars.clear();
                                    },
-                                   [](auto ) { throw std::logic_error("Invalid type"); }},
+                                   [](auto) { throw std::logic_error("Invalid type"); }},
                    f);
     }
-
 
     void Program::add_cloned_func(ast::ASTNodeVariant f)
     {
@@ -163,7 +165,7 @@ namespace voila
                                        functions.emplace(fun->name() + "_" + to_string(*inferer.get_type(fun)), fun);
                                        func_vars.clear();
                                    },
-                                   [](auto ) { throw std::logic_error("Invalid type"); }},
+                                   [](auto) { throw std::logic_error("Invalid type"); }},
                    f);
     }
 
@@ -356,9 +358,9 @@ namespace voila
         // Initialize LLVM targets.
         llvm::InitializeNativeTarget();
         llvm::InitializeNativeTargetAsmPrinter();
-        //TODO: options
-        //ExecutionEngine::setupTargetTriple(llvmModule.get());
-        // An optimization pipeline to use within the execution engine.
+        // TODO: options
+        // ExecutionEngine::setupTargetTriple(llvmModule.get());
+        //  An optimization pipeline to use within the execution engine.
         auto tmBuilderOrError = llvm::orc::JITTargetMachineBuilder::detectHost();
         if (!tmBuilderOrError)
             throw std::runtime_error("Failed to create a JITTargetMachineBuilder for the host");
@@ -502,8 +504,8 @@ namespace voila
         pm.addNestedPass<FuncOp>(createMemOpsToAffineMemOpsConversionPass());
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
-        //TODO
-        //pm.addNestedPass<FuncOp>(affine::createLoopFusionPass(0, 0, true));
+        // TODO
+        // pm.addNestedPass<FuncOp>(affine::createLoopFusionPass(0, 0, true));
 
         // pm.addNestedPass<FuncOp>(createConvertLinalgTiledLoopsToSCFPass());
         //
@@ -547,8 +549,8 @@ namespace voila
             pm.addNestedPass<FuncOp>(affine::createLoopUnrollAndJamPass(config._unroll_factor));
         pm.addNestedPass<FuncOp>(createForLoopSpecializationPass());
         pm.addNestedPass<FuncOp>(createParallelLoopFusionPass());
-        //TODO
-        //pm.addNestedPass<FuncOp>(createParallelLoopCollapsingPass());
+        // TODO
+        // pm.addNestedPass<FuncOp>(createParallelLoopCollapsingPass());
         pm.addNestedPass<FuncOp>(createParallelLoopTilingPass());
         pm.addNestedPass<FuncOp>(createParallelLoopSpecializationPass());
         pm.addNestedPass<FuncOp>(createLowerAffinePass());
@@ -571,9 +573,9 @@ namespace voila
             pm.addNestedPass<FuncOp>(createParallelLoopToGpuPass());
         }
 
-        //TODO
-//        if (config._optimize && config._fuse)
-//            pm.addNestedPass<FuncOp>(createLoopFusionPass());
+        // TODO
+        //        if (config._optimize && config._fuse)
+        //            pm.addNestedPass<FuncOp>(createLoopFusionPass());
 
         pm.addNestedPass<FuncOp>(createCanonicalizerPass());
         pm.addNestedPass<FuncOp>(createCSEPass());
@@ -794,24 +796,21 @@ namespace voila
                     {
                     case DataType::INT32:
                         resTypes.push_back(llvm::StructType::create(
-                            llvmContext,
-                            {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
-                             ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
-                             ::llvm::Type::getInt64Ty(llvmContext)}));
+                            llvmContext, {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
+                                          ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
+                                          ::llvm::Type::getInt64Ty(llvmContext)}));
                         break;
                     case DataType::INT64:
                         resTypes.push_back(llvm::StructType::create(
-                            llvmContext,
-                            {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
-                             ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
-                             ::llvm::Type::getInt64Ty(llvmContext)}));
+                            llvmContext, {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
+                                          ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
+                                          ::llvm::Type::getInt64Ty(llvmContext)}));
                         break;
                     case DataType::DBL:
                         resTypes.push_back(llvm::StructType::create(
-                            llvmContext,
-                            {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
-                             ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
-                             ::llvm::Type::getInt64Ty(llvmContext)}));
+                            llvmContext, {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
+                                          ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
+                                          ::llvm::Type::getInt64Ty(llvmContext)}));
                         break;
                     case DataType::BOOL:
                     case DataType::STRING:
@@ -875,43 +874,50 @@ namespace voila
         typeInference.inferTypes(*this);
     }
 
-    Program::Program(const std::string &source_path, Config config)
-        : func_vars(),
-          context(),
-          llvmContext(),
-          mlirModule(),
-          llvmModule(),
-          maybeEngine(std::nullopt),
-          functions(),
-          config{std::move(config)},
-          max_in_table_size(0),
-          inferer(this)
+    Program::Program(Config config) : Program(InputType::Voila, "", std::move(config)) {}
+    void Program::loadInputFile(InputType type, const std::string &source_path)
     {
-
         if (source_path.empty())
             return;
 
-        auto fst = std::unique_ptr<std::istream>(source_path == "-" ? &std::cin
-                                                                    : new std::ifstream(source_path, std::ios::in));
-
-        if (fst->good())
+        if (type != MLIR && !source_path.ends_with(".mlir")) // Parse voila
         {
-            lexer = std::make_unique<Lexer>(*fst); // read file, decode UTF-8/16/32 format
-            lexer->filename = source_path;         // the filename to display with error locations
+            auto fst = std::unique_ptr<std::istream>(source_path == "-" ? &std::cin
+                                                                        : new std::ifstream(source_path, std::ios::in));
 
-            ::voila::parser::Parser parser(*lexer, *this);
-            if (parser() != 0)
-                throw ::voila::ParsingError();
+            if (fst->good())
+            {
+                lexer = std::make_unique<lexer::Lexer>(*fst); // read file, decode UTF-8/16/32 format
+                lexer->filename = source_path;                // the filename to display with error locations
+
+                ::voila::parser::Parser parser(*lexer, *this);
+                if (parser() != 0)
+                    throw ::voila::ParsingError();
+            }
+            else
+            {
+                throw std::runtime_error("failed to read from input" + source_path);
+            }
         }
         else
-        {
-            llvm::errs() << "failed to read from input" << source_path;
+        { // parse mlir
+            llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> fileOrErr =
+                llvm::MemoryBuffer::getFileOrSTDIN(source_path);
+            if (std::error_code ec = fileOrErr.getError())
+            {
+                throw std::runtime_error("Could not open input file: " + ec.message() + "\n");
+            }
+
+            // Parse the input mlir.
+            llvm::SourceMgr sourceMgr;
+            sourceMgr.AddNewSourceBuffer(std::move(*fileOrErr), llvm::SMLoc());
+            module = ::mlir::parseSourceFile<::mlir::ModuleOp>(sourceMgr, &context);
+            if (!module)
+            {
+                throw ::voila::ParsingError();
+            }
         }
-
-        // llvm::DebugFlag = config.debug;
     }
-
-    Program::Program(Config config) : Program("", std::move(config)) {}
 
     Program::~Program() = default;
 
