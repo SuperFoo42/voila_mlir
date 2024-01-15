@@ -38,7 +38,7 @@ namespace voila::mlir
         /// operation(toy.return). We handle the return by replacing the values
         /// previously returned by the call operation with the operands of the
         /// return.
-        void handleTerminator(::mlir::Operation *op, ::mlir::ArrayRef<::mlir::Value> valuesToRepl) const final;
+        void handleTerminator(::mlir::Operation *op, ::mlir::ValueRange valuesToRepl) const final;
 
         ::mlir::Operation *materializeCallConversion(::mlir::OpBuilder &builder,
                                                      ::mlir::Value input,

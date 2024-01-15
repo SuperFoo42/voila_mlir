@@ -34,9 +34,8 @@ target_link_libraries(voila_compiler
         ${dialect_libs}
         ${conversion_libs}
         magic_enum
-        reflex
+        Reflex::ReflexLib
         voila_ast
-        reflex
         range-v3
         MLIRExecutionEngine
         MLIRIR

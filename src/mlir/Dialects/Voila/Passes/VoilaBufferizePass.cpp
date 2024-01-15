@@ -55,11 +55,11 @@ namespace voila::mlir
     std::unique_ptr<::mlir::Pass> createVoilaBufferizePass()
     {
         bufferization::OneShotBufferizationOptions bufferizationOps;
-        bufferizationOps.allowReturnAllocs = true;
+        bufferizationOps.allowReturnAllocsFromLoops = true;
         bufferizationOps.allowUnknownOps = true;
         bufferizationOps.bufferizeFunctionBoundaries = true;
         // bufferizationOps.bufferAlignment = 128; TODO: buffer alignment option?
-        bufferizationOps.createDeallocs = false; // not yet possible, as return values are also deallocated
+        //bufferizationOps.createDeallocs = false; // not yet possible, as return values are also deallocated
         // bufferizationOps.
         // bufferizationOps.allowDialectInFilter<tensor::TensorDialect, linalg::LinalgDialect,
         // arith::ArithmeticDialect>();

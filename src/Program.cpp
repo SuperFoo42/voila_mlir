@@ -240,7 +240,8 @@ namespace voila
                 throw std::runtime_error("Failed to create a TargetMachine for the host");
 
             auto optPipeline = makeOptimizingTransformer(
-                /*optLevel=*/config._optimize ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None,
+                /*optLevel=*/static_cast<unsigned int>(config._optimize ? llvm::CodeGenOptLevel::Aggressive
+                                                                        : llvm::CodeGenOptLevel::None),
                 /*sizeLevel=*/llvm::CodeModel::Tiny,
                 /*targetMachine=*/tmOrError->get());
 
@@ -294,7 +295,7 @@ namespace voila
             ExecutionEngineOptions opts;
             opts.transformer = optPipeline;
             // opts.enableObjectCache = true;
-            opts.jitCodeGenOptLevel = llvm::CodeGenOpt::Level::Aggressive;
+            opts.jitCodeGenOptLevel = llvm::CodeGenOptLevel::Aggressive;
             opts.enableObjectDump = true;
             SmallVector<StringRef> pathRefs;
             for (auto &path : libPaths)
@@ -370,7 +371,8 @@ namespace voila
             throw std::runtime_error("Failed to create a TargetMachine for the host");
 
         auto optPipeline = makeOptimizingTransformer(
-            /*optLevel=*/config._optimize ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None,
+            /*optLevel=*/static_cast<unsigned int>(config._optimize ? llvm::CodeGenOptLevel::Aggressive
+                                                                    : llvm::CodeGenOptLevel::None),
             /*sizeLevel=*/llvm::CodeModel::Tiny,
             /*targetMachine=*/tmOrError->get());
         if (auto err = optPipeline(llvmModule.get()))
@@ -796,19 +798,19 @@ namespace voila
                     {
                     case DataType::INT32:
                         resTypes.push_back(llvm::StructType::create(
-                            llvmContext, {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
+                            llvmContext, {llvm::Type::getInt8Ty(llvmContext)->getPointerTo(), llvm::Type::getInt8Ty(llvmContext)->getPointerTo(),
                                           ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
                                           ::llvm::Type::getInt64Ty(llvmContext)}));
                         break;
                     case DataType::INT64:
                         resTypes.push_back(llvm::StructType::create(
-                            llvmContext, {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
+                            llvmContext, {llvm::Type::getInt8Ty(llvmContext)->getPointerTo(), llvm::Type::getInt8Ty(llvmContext)->getPointerTo(),
                                           ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
                                           ::llvm::Type::getInt64Ty(llvmContext)}));
                         break;
                     case DataType::DBL:
                         resTypes.push_back(llvm::StructType::create(
-                            llvmContext, {llvm::Type::getInt8PtrTy(llvmContext), llvm::Type::getInt8PtrTy(llvmContext),
+                            llvmContext, {llvm::Type::getInt8Ty(llvmContext)->getPointerTo(), llvm::Type::getInt8Ty(llvmContext)->getPointerTo(),
                                           ::llvm::Type::getInt64Ty(llvmContext), ::llvm::Type::getInt64Ty(llvmContext),
                                           ::llvm::Type::getInt64Ty(llvmContext)}));
                         break;
@@ -911,8 +913,8 @@ namespace voila
             // Parse the input mlir.
             llvm::SourceMgr sourceMgr;
             sourceMgr.AddNewSourceBuffer(std::move(*fileOrErr), llvm::SMLoc());
-            module = ::mlir::parseSourceFile<::mlir::ModuleOp>(sourceMgr, &context);
-            if (!module)
+            mlirModule = ::mlir::parseSourceFile<::mlir::ModuleOp>(sourceMgr, &context);
+            if (!mlirModule)
             {
                 throw ::voila::ParsingError();
             }

@@ -20,7 +20,7 @@ target_sources(voila_ast PRIVATE
         Predicate.cpp
         Load.cpp)
 
-target_link_libraries(voila_ast magic_enum range-v3)
+target_link_libraries(voila_ast magic_enum range-v3 Reflex::ReflexLib)
 target_compile_features(voila_ast PUBLIC cxx_std_20)
 target_compile_options(voila_ast PUBLIC
         -Wpedantic

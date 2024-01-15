@@ -22,7 +22,7 @@ namespace voila::mlir
     using namespace ::mlir::voila;
     bool VoilaInlinerInterface::isLegalToInline(Operation *, Operation *, bool) const { return true; }
     bool VoilaInlinerInterface::isLegalToInline(Operation *, Region *, bool, IRMapping &) const { return true; }
-    void VoilaInlinerInterface::handleTerminator(Operation *op, llvm::ArrayRef<Value> valuesToRepl) const
+    void VoilaInlinerInterface::handleTerminator(Operation *op, ValueRange valuesToRepl) const
     {
         // Only "toy.return" needs to be handled here.
         auto returnOp = cast<EmitOp>(op);

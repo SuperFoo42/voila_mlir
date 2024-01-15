@@ -26,19 +26,18 @@ option(BUILD_DOC "Build documentation" ON)
 option(BUILD_TEST "Build tests" ON)
 option(BUILD_BENCH "Build benchmarks" ON)
 
-# check LTO support
-include(CheckIPOSupported)
-check_ipo_supported(RESULT LTO_SUPPORT OUTPUT error)
-#set(CMAKE_INTERPROCEDURAL_OPTIMIZATION LTO_SUPPORT)
-
 # check PIE support
+if (NOT CMAKE_POSITION_INDEPENDENT_CODE)
 include(CheckPIESupported)
 check_pie_supported(OUTPUT_VARIABLE PIE_SUPPORT LANGUAGES C CXX)
 set(CMAKE_POSITION_INDEPENDENT_CODE PIE_SUPPORT)
+endif ()
 
+if (NOT CMAKE_INTERPROCEDURAL_OPTIMIZATION)
 include(CheckIPOSupported)
 check_ipo_supported(RESULT IPO_SUPPORT OUTPUT error)
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION IPO_SUPPORT)
+endif ()
 
 find_program(CCACHE_FOUND ccache)
 if (CCACHE_FOUND)
@@ -48,19 +47,20 @@ endif (CCACHE_FOUND)
 
 CPMAddPackage(
         NAME llvm
-        GITHUB_REPOSITORY SuperFoo42/llvm-project
+        GITHUB_REPOSITORY llvm/llvm-project
         GIT_TAG main
         DOWNLOAD_ONLY
 )
-#-DLLVM_ENABLE_LTO="${CMAKE_INTERPROCEDURAL_OPTIMIZATION}"  -DLLVM_PARALLEL_LINK_JOBS=2
+
 execute_process(
         COMMAND ${CMAKE_COMMAND} -B ${llvm_BINARY_DIR} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                 -G ${CMAKE_GENERATOR} -DLLVM_ENABLE_PROJECTS=mlir -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_ENABLE_RTTI=True
-                -DLLVM_USE_LINKER=mold -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False -DLLVM_PARALLEL_LINK_JOBS=1
+                -DLLVM_USE_LINKER=mold -DLLVM_ENABLE_EH=True -DLLVM_ENABLE_BINDINGS=False
                 -DLLVM_CCACHE_BUILD=True -DLLVM_BUILD_TESTS=False -DLLVM_ENABLE_IDE=TRUE -DLLVM_OPTIMIZED_TABLEGEN=TRUE
-        #        -DLLVM_USE_SPLIT_DWARF=True
-        -DLLVM_INSTALL_UTILS=ON
+                -DLLVM_INSTALL_UTILS=ON -DLLVM_ENABLE_LTO=OFF # ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}
+                -DLLVM_TARGETS_TO_BUILD=X86;NVPTX;AMDGPU -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=SPIRV
+                -DLLVM_USE_SPLIT_DWARF=ON -DLLVM_PARALLEL_LINK_JOBS=1
         WORKING_DIRECTORY ${llvm_SOURCE_DIR}/llvm
 )
 message(STATUS "build llvm")
@@ -116,10 +116,6 @@ if (BUILD_DOC)
 endif ()
 
 
-find_package(TBB)
-include_directories(${TBB_INCLUDE_DIRS})
-
-add_definitions(${TBB_DEFINITIONS})
 
 include(CheckSymbolExists)
 
@@ -136,30 +132,45 @@ add_custom_command(
 CPMAddPackage(
         NAME reflex
         GITHUB_REPOSITORY Genivia/RE-flex
-        GIT_TAG v3.3.8
+        GIT_TAG v3.5.1
+        DOWNLOAD_ONLY
 )
-if (reflex_ADDED)
-    execute_process(
-            COMMAND sh ./clean.sh
-            WORKING_DIRECTORY ${reflex_SOURCE_DIR}
-    )
-    execute_process(COMMAND sh ./build.sh
-            WORKING_DIRECTORY ${reflex_SOURCE_DIR}
-            )
-    add_library(reflex INTERFACE IMPORTED include/mlir/Dialects/Voila/lowering/LogicalOpLowering.hpp include/ast/Hash.cpp include/ast/Hash.hpp)
-    target_include_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/include")
-    include_directories(${reflex_SOURCE_DIR}/include)
-    cmake_policy(SET CMP0004 OLD) # workaround for underscore in reflex lib path
-    target_link_libraries(reflex INTERFACE "${reflex_SOURCE_DIR}/lib/libreflexmin.a")
-endif ()
+
+execute_process(
+        COMMAND ${CMAKE_COMMAND} -B ${reflex_BINARY_DIR} -DCMAKE_INSTALL_PREFIX=${reflex_BINARY_DIR}/install
+        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+        -G ${CMAKE_GENERATOR} ${reflex_SOURCE_DIR}
+)
+message(STATUS "building and installing Reflex")
+execute_process(
+        COMMAND ${CMAKE_COMMAND} --build ${reflex_BINARY_DIR} --target install
+)
+
+set(Reflex_DIR "${reflex_BINARY_DIR}/install/lib64/cmake/reflex")
+find_package(Reflex REQUIRED)
+#include_directories(${reflex_BINARY_DIR}/install/include)
+#if (reflex_ADDED)
+#    execute_process(
+#            COMMAND sh ./clean.sh
+#            WORKING_DIRECTORY ${reflex_SOURCE_DIR}
+#    )
+#    execute_process(COMMAND sh ./build.sh
+#            WORKING_DIRECTORY ${reflex_SOURCE_DIR}
+#            )
+    #add_library(reflex INTERFACE IMPORTED include/mlir/Dialects/Voila/lowering/LogicalOpLowering.hpp include/ast/Hash.cpp include/ast/Hash.hpp)
+    #target_include_directories(reflex INTERFACE "${reflex_SOURCE_DIR}/include")
+
+#    cmake_policy(SET CMP0004 OLD) # workaround for underscore in reflex lib path
+#    target_link_libraries(reflex INTERFACE "${reflex_SOURCE_DIR}/lib/libreflexmin.a")
+#endif ()
 
 add_custom_command(
         OUTPUT ${CMAKE_BINARY_DIR}/src/voila_lexer.cpp
-        COMMAND ./reflex -d --fast --bison-complete --bison-locations --namespace=voila::lexer --lexer=Lexer --header-file=${CMAKE_BINARY_DIR}/include/voila_lexer.hpp −−graphs-file=${CMAKE_BINARY_DIR}/lexer.gv -o ${CMAKE_BINARY_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/voila.lex
-        WORKING_DIRECTORY ${reflex_SOURCE_DIR}/bin
+        COMMAND Reflex::Reflex -d --fast --bison-complete --bison-locations --namespace=voila::lexer --lexer=Lexer --header-file=${CMAKE_BINARY_DIR}/include/voila_lexer.hpp −−graphs-file=${CMAKE_BINARY_DIR}/lexer.gv -o ${CMAKE_BINARY_DIR}/src/voila_lexer.cpp ${CMAKE_SOURCE_DIR}/voila.lex
         DEPENDS ${CMAKE_BINARY_DIR}/src/voila_parser.cpp
-        COMMENT "Generating Voila lexer"
 )
+
+#include_directories(${reflex_BINARY_DIR}/install/include)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_BINARY_DIR}/include)
@@ -167,6 +178,7 @@ include_directories(${CMAKE_BINARY_DIR}/include)
 add_custom_target(voila_parser_and_lexer ALL
         DEPENDS ${CMAKE_BINARY_DIR}/src/voila_lexer.cpp ${CMAKE_BINARY_DIR}/src/voila_parser.cpp
         SOURCES ${CMAKE_BINARY_DIR}/src/voila_lexer.cpp ${CMAKE_BINARY_DIR}/src/voila_parser.cpp
+        COMMENT "Generating Voila lexer and parser"
         )
 
 # add targets

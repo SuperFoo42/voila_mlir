@@ -24,13 +24,15 @@ set(LIBS
         MLIRLLVMToLLVMIRTranslation
         MLIRTargetLLVMIRExport
         voila_compiler
-        reflex
+        Reflex::ReflexLib
         magic_enum
         )
 
 add_llvm_executable(voila-mlir-translate
         voila_translate.cpp
         )
+
+add_dependencies(voila-mlir-translate voila_compiler)
 
 target_compile_options(voila-mlir-translate PUBLIC
         -Wpedantic
@@ -43,6 +45,8 @@ target_compile_options(voila-mlir-translate PUBLIC
 
 target_compile_features(voila-mlir-translate PUBLIC cxx_std_20)
 llvm_update_compile_flags(voila-mlir-translate)
-target_link_libraries(voila-mlir-translate PRIVATE ${LIBS})
+target_link_libraries(voila-mlir-translate PRIVATE
+        ${LIBS}
+)
 
 mlir_check_all_link_libraries(voila-mlir-translate)

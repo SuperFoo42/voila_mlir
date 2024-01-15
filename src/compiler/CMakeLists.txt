@@ -24,8 +24,9 @@ set(LIBS
         MLIRLLVMToLLVMIRTranslation
         MLIRTargetLLVMIRExport
         voila_compiler
-        reflex
+        Reflex::ReflexLib
         spdlog
+        magic_enum
         )
 
 add_subdirectory(translate)

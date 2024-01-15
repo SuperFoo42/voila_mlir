@@ -1,3 +1,8 @@
+find_package(TBB)
+include_directories(${TBB_INCLUDE_DIRS})
+
+add_definitions(${TBB_DEFINITIONS})
+
 CPMAddPackage(
         NAME benchmark
         GITHUB_REPOSITORY google/benchmark

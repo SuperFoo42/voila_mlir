@@ -23,7 +23,7 @@ set(LIBS
         MLIRExecutionEngine
         MLIRLLVMToLLVMIRTranslation
         MLIRTargetLLVMIRExport
-        reflex
+        Reflex::ReflexLib
         magic_enum
         )
 
